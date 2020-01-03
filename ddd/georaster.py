@@ -1,17 +1,17 @@
-from collections import namedtuple
-import logging
-import sys
+# ddd - D1D2D3
+# Library for simple scene modelling.
+# Jose Juan Montes 2020
 
+import logging
+import math
+import numpy
 from osgeo import gdal
 from osgeo.gdalconst import GA_ReadOnly
-import shapely
-from shapely.geometry.linestring import LineString
-import numpy as np
-
 from scipy.interpolate.interpolate import interp2d
-import math
+from shapely.geometry.linestring import LineString
+
 from geographiclib.geodesic import Geodesic
-import numpy
+import numpy as np
 
 
 # Get instance of logger for this module
@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 class ElevationChunk(object):
+
+    _chunk = None
 
     def __init__(self):
 
@@ -86,6 +88,9 @@ class ElevationChunk(object):
     @staticmethod
     def load(geotiff_file):
 
+        if ElevationChunk._chunk:
+            return ElevationChunk._chunk
+
         logger.info("Loading GeoTIFF with elevation data: %s" % geotiff_file)
 
         chunk = ElevationChunk()
@@ -104,6 +109,7 @@ class ElevationChunk(object):
         except Exception as e:
             logger.error("Could not read elevation data file: %s" % geotiff_file)
 
+        ElevationChunk._chunk = chunk
         return chunk
 
 
@@ -235,76 +241,6 @@ class ElevationModel(object):
         data = ElevationInfo(longitude, latitude, altitude, alt_wgs84, alt_msl, alt_grnd, terrain_alt_msl, alt_egm, alt_type, valid_alt, None)
 
         return data
-
-    def fractal_dimension(self, point, radius, h_factor):
-        """
-        See: https://journals.openedition.org/geomorphologie/622
-             https://gist.github.com/viveksck/1110dfca01e4ec2c608515f0d5a5b1d1 (similar process and line fitting, but not for DEMs)
-        """
-
-        # Calculate square coordinartes to retrieve raster area
-        dst = Geodesic.WGS84.Direct(point[1], point[0], 0, radius)
-        dst_north = (dst['lon2'], dst['lat2'])
-        dst = Geodesic.WGS84.Direct(point[1], point[0], 90, radius)
-        dst_east = (dst['lon2'], dst['lat2'])
-
-        point1 = ((point[0] - (dst_east[0] - point[0])), (point[1] - (dst_north[1] - point[1])))
-        point2 = ((point[0] + (dst_east[0] - point[0])), (point[1] + (dst_north[1] - point[1])))
-
-        data = self.area([point1[0], point1[1], point2[0], point2[1]])
-        #data = np.random.rand(512, 512) * 500
-
-        size_px = min(np.shape(data))
-        pixel_size_m = (2.0 * radius) / ((np.sum(np.shape(data))) / 2.0)
-
-        #print(np.shape(data))
-
-        # Greatest power of 2 less than or equal to p, then extract the exponent
-        n = 2 ** np.floor(np.log(size_px) / np.log(2))
-        n = int(np.log(n) / np.log(2))
-
-        # Build successive box sizes (from 2**n down to 2**1)   (this parameter hjas a large impact on output)
-        #q_sizes = 2 ** np.arange(n - 1, 2, -1)  # arange(n, 0, -1)
-        q_sizes = [128, 64, 32, 16, 8, 4]  # , 2, 1]  # ~ 3 Km - 120m
-        #q_sizes = [64, 32, 24, 16, 12, 8, 6, 4]  # , 3, 2]  # From ~ to ~120m
-
-        # TODO: Center data and corp to max_size
-        max_size = int(math.floor(float(size_px) / q_sizes[0]) * q_sizes[0])
-        max_size = q_sizes[0] * 2
-
-        #pixel_size_m = pixel_size_m * (float(max_size) / size_px)
-        offset_x = (np.shape(data)[0] - max_size) / 2
-        offset_y = (np.shape(data)[1] - max_size) / 2
-        data = data[offset_x:offset_x + max_size, offset_y:offset_y + max_size]
-
-        central_pixel_height = data[max_size / 2, max_size / 2]
-
-        #print(np.shape(data))
-
-        voxel_counts = []
-        for q in q_sizes:
-            voxels_q_sum = []
-            for i in np.arange(max_size / q):
-                for j in np.arange(max_size / q):
-                    height_max = np.amax(data[i * q:(i + 1) * q, j * q:(j + 1) * q])
-                    #height_min = np.amin(data[i * q:(i + 1) * q, j * q:(j + 1) * q])
-                    #voxels_q_chunk = math.floor((height_max * h_factor) / (pixel_size_m * q)) - math.floor((height_min * h_factor) / (pixel_size_m * q)) + 1.0
-                    #voxels_q_chunk = math.ceil(((0.5 + height_max - height_min) * h_factor) / (q * pixel_size_m))
-
-                    voxels_q_chunk = math.ceil(((height_max - central_pixel_height) * h_factor + ((max_size * pixel_size_m) / 2)) / (q * pixel_size_m))
-                    if voxels_q_chunk < 0.0: voxels_q_chunk = 0.0
-
-                    voxels_q_sum.append(voxels_q_chunk)
-
-            voxels = sum(voxels_q_sum)
-            voxel_counts.append(voxels)
-
-            cells = len(voxels_q_sum) * (max_size / q)
-            #print("q=%s chunks=%s voxels=%s cells=%s v/cell=%s" % (q, len(voxels_q_sum), voxels, cells, voxels / cells))
-            #print("q=%s chunks=%s voxels=%s v/chunk=%s" % (q, len(voxels_q_sum), voxels, voxels / len(voxels_q_sum)))
-
-        coeffs = np.polyfit(np.log(q_sizes), np.log(voxel_counts), 1)
-        return -coeffs[0]
 
     def circle_func(self, point, radius, func=numpy.sum):
         # Calculate square coordinartes to retrieve raster area

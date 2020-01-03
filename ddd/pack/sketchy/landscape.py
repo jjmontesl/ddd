@@ -1,8 +1,6 @@
-'''
-'''
-
-'''
-'''
+# ddd - D1D2D3
+# Library for simple scene modelling.
+# Jose Juan Montes 2020
 
 from shapely import geometry
 from trimesh.path import segments

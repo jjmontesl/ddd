@@ -1,11 +1,10 @@
-'''
-'''
-import math
-from ddd import DDDObject3
-from ddd_sketchy import filters
+# ddd - D1D2D3
+# Library for simple scene modelling.
+# Jose Juan Montes 2020
 
-'''
-'''
+import math
+from ddd.ddd import DDDObject3
+from ddd.pack.sketchy import filters
 
 from shapely import geometry
 from trimesh.path import segments
@@ -18,7 +17,7 @@ import trimesh
 from csg.core import CSG
 from csg import geom as csggeom 
 import random
-from ddd import ddd
+from ddd.ddd import ddd
 import noise
 
 
@@ -26,7 +25,7 @@ import noise
 #    pass
 
 # TODO: This is actually the recursive tree builder (not trunk), generalize more, callbacks shall accept level and do their thing, returning followup settings
-def trunk(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_scale=0.8, fork_spawn=3, fork_iters=2, leave_callback=None, material=None):
+def trunk(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_scale=0.8, fork_spawn=3, fork_iters=2, fork_level=0, leave_callback=None, material=None):
 
     # Create trunk part
     section = ddd.point([0, 0, 0]).buffer(r, resolution=2).extrude(height * fork_height_ratio)
@@ -38,8 +37,9 @@ def trunk(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_s
         azimuth = 0
         num_items = fork_spawn + random.randint(-1, +1)
         
-        stop_prob = 0.1
-        if random.uniform(0.0, 1.0) < stop_prob: num_items = 0
+        if fork_level > 0:
+            stop_prob = 0.1
+            if random.uniform(0.0, 1.0) < stop_prob: num_items = 0
 
         # Only 1 leave in last iter
         if fork_iters == 1: num_items = 1
@@ -47,7 +47,8 @@ def trunk(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_s
         for i in range(num_items):
             azimuth = (360.0 / fork_spawn) * i + (360.0 / fork_spawn) * random.uniform(-0.15, 0.15)
             if fork_iters > 1:
-                ssection = trunk(height=height * fork_height_ratio * random.uniform(0.8, 1.2), r=r * fork_r_scale, fork_height_ratio=fork_height_ratio * random.uniform(0.8, 1.2), fork_r_scale=fork_r_scale, fork_iters=fork_iters - 1, leave_callback=leave_callback)
+                ssection = trunk(height=height * fork_height_ratio * random.uniform(0.8, 1.2), r=r * fork_r_scale, fork_height_ratio=fork_height_ratio * random.uniform(0.8, 1.2), fork_r_scale=fork_r_scale, 
+                                 fork_iters=fork_iters - 1, fork_level=fork_level + 1, leave_callback=leave_callback, material=material)
             elif leave_callback:
                 ssection = leave_callback()
             ssection = ssection.rotate([(fork_angle * random.uniform(0.65, 1.35)) / 180.0 * math.pi, 0.0, 0.0])
@@ -88,7 +89,7 @@ def plant(height=3.5, r=0.40, fork_iters=3):
     '''
     objs = [p for p in ptrunk.recurse_objects() if p.mesh]
     while len(objs) > 1:
-        newo = objs[0].union(objs[1])objs
+        newo = objs[0].union(objs[1])
         newo.mesh.merge_vertices()
         objs = objs[2:] + [newo]
     obj = objs[0]

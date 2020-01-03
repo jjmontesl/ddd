@@ -1,0 +1,55 @@
+# DDD (1D-2D-3D)
+
+DDD is a library for programatic generation of 2D and 3D objects.
+
+## Introduction
+
+
+
+## Features
+
+## Installation
+
+
+**GDAL installation on Ubuntu 18.04**
+
+For 18.04, installed gdal==2.2.3 (matches libgdal version, gdal-config --version):
+Exported C and CPLUS_LIBRARY_PATH as per https://gis.stackexchange.com/questions/28966/python-gdal-package-missing-header-file-when-installing-via-pip
+export CPLUS_INCLUDE_PATH=/usr/include/gdal/
+export C_INCLUDE_PATH=/usr/include/gdal/
+
+
+## Example
+
+## Documentation
+
+## License
+
+- - -
+
+Initial:
+
+## Objectives
+
+- Allow easy programatic definition of 1D, 2D and 3D objects.
+- Handle materials, which will ultimately generate textures and materials.
+- Offer a viewer (favour WebGL), with "watch file" support.
+- Read SVGs as inputs, and other filters (ie. text files with square encodigs).
+- Export to format(s) supported by Unity (and export extra metadata as needed, colliders, etc).
+- Favour geometry reuse (ie. trees, golf holes, can be reused).
+- Support hierarchies and transformations.
+- Support marked "gameobjects" and/or repeated geometry, and export them separately or as needed (ie. trees).
+
+- Provide functions for procedurally generating varied geometry (extensible).
+- Provide functions for procedurally generating and aligning materials (extensible).
+- Procedurally populating trees, grass, etc... as needed.
+
+- Solve Anastutia Minigolf minigame needs and possibly others (snake 3D, tanks, boxes / voxels, karts?).
+
+Wishlist:
+
+- Export to other intermediate and final formats (SVG, etc). 
+- Procedurally generating characters and animations?
+- Supporting 2D scenes generation too? what for? tiles / scenes? graphic adventures?...
+- Some minimium animation standards (as properties maybe?) for using in Unity
+
