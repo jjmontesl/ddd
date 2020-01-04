@@ -1,5 +1,7 @@
 '''
 '''
+import math
+from ddd.pack.sketchy import filters
 
 '''
 '''
@@ -79,17 +81,24 @@ def sign_pharmacy(size=1.0, depth=0.3):
     l2 = ddd.line([[0, -size / 2], [0, size / 2]]).buffer(size / 3.0, cap_style=3)
     sign = l1.union(l2)
     sign = sign.extrude(depth)
+    sign = sign.rotate([math.pi / 2.0, 0, 0])
     sign = sign.material(ddd.material('#00ff00'))
-    
+    sign.name = "Pharmacy Sign"
     return sign
     
-def sign_pharmacy_side():
+def sign_pharmacy_side(size=1.0, depth=0.3, arm_length=1.0):
     '''
     A pharmacy sign, attached sideways to a post arm. The post attaches centered
     (on the vertical plane).
     '''
-    pass
-
+    arm_thick = depth / 2
+    sign = sign_pharmacy(size, depth)
+    arm = ddd.rect([-arm_thick / 2, -arm_thick / 2, arm_thick / 2, arm_thick / 2]).extrude(arm_length)
+    arm = arm.rotate([math.pi / 2.0, 0, 0])
+    arm = arm.material(ddd.material('#888888'))
+    sign = sign.rotate([0, 0, -math.pi / 2.0]).translate([depth / 2, 0, 0])
+    sign = sign.translate([0, -(arm_length + size * 0.66), 0])
+    return ddd.group([sign, arm], name="Pharmacy Side Sign with Arm")
 
 def panel(height=1.0, width=2.0, depth=0.3):
     '''
@@ -124,6 +133,21 @@ def mailbox():
     
 def statue():
     pass
+
+def sculpture(d=1.0, height=4.0):
+    """
+    An urban sculpture, sitting centered on the XY plane.
+    """
+    pedestal = ddd.cube(d=d / 2.0)
+    
+    item = ddd.sphere(r=1, subdivisions=2)
+    item = item.scale([d, d, height / 2])
+    item = filters.noise_random(item, scale=0.50)
+    item = item.translate([0, 0, height / 2 + d])
+    
+    item = ddd.group([pedestal, item], name="Urban sculpture")
+    
+    return item
 
 def fountain(r=1.5):
     

@@ -119,12 +119,13 @@ class D1D2D3():
     @staticmethod
     def cube(center=None, d=None):
         """
-        Cube is sitting on the Z plane defined by the center position
+        Cube is sitting on the Z plane defined by the center position.
+        D is the distance to the side, so cube side length will be twice that value.
         """
         if center is not None: raise NotImplementedError()  # 
         if center is None: center = ddd.point([0, 0, 0])
         if d is None: d = 1.0
-        cube = D1D2D3.rect([-d, -d], [d, d]).extrude(d * 2).translate([0, 0, 0])
+        cube = D1D2D3.rect([-d, -d, d, d]).extrude(d * 2).translate([0, 0, 0])
         return cube
     
     @staticmethod
@@ -206,6 +207,12 @@ class DDDObject():
         for c in self.children:
             if not isinstance(c, self.__class__):
                 raise ValueError("Invalid children type (not %s): %s" % (self.__class__, c))
+
+    def dump(self, indent_level=0):
+        print("  " * indent_level + str(self))
+        for c in self.children:
+            c.dump(indent_level=indent_level + 1)
+
 
 class DDDObject2(DDDObject):
     
@@ -364,7 +371,7 @@ class DDDObject2(DDDObject):
         '''
 
         if self.geom:
-            if self.geom.type == 'MultiPolygon':
+            if self.geom.type == 'MultiPolygon' or self.geom.type == 'GeometryCollection':
                 meshes = []
                 for geom in self.geom.geoms:
                     pol = DDDObject2(geom=geom, material=self.mat)
@@ -376,7 +383,7 @@ class DDDObject2(DDDObject):
                     except IndexError as e:
                         logger.error("Could not extrude Polygon in MultiPolygon: %s", e)
                 result = DDDObject3(children=meshes, name=self.name)
-            elif not self.geom.is_empty:
+            elif not self.geom.is_empty and not self.geom.type == 'LineString':
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)
                 #vertices, faces = creation.triangulate_polygon(self.geom, engine="meshpy")  # , min_angle=math.pi / 180.0)
@@ -389,7 +396,7 @@ class DDDObject2(DDDObject):
                 result = DDDObject3(mesh=mesh)
             
                 if height < 0:
-                    result = result.translate([0, 0, -height])
+                    result = result.translate([0, 0, height])
             else:
                 #logger.warn("Cannot extrude (empty polygon)")
                 result = DDDObject3()
@@ -422,6 +429,14 @@ class DDDObject2(DDDObject):
                 result.append(pnt.coords[0])
 
         return result
+
+    def distance(self, other):
+        """
+        Returns the minimum distance from this object to other. 
+        """
+        if self.children: raise AssertionError()
+        if other.children: raise AssertionError()
+        return self.geom.distance(other.geom)
 
     def geom_recursive(self):
         geoms = []
@@ -581,7 +596,9 @@ class DDDObject3(DDDObject):
     def _recurse_scene(self):
         
         scene = Scene()
-        scene.add_geometry(geometry=self.mesh, node_name="node_%s_%s" % (id(self), str(self.mat).replace(" ", "_")))
+        auto_name = "node_%s_%s" % (id(self), str(self.mat))
+        node_name = self.name if self.name else auto_name
+        scene.add_geometry(geometry=self.mesh, node_name=node_name.replace(" ", "_"))
         
         cscenes = []
         if self.children:
@@ -626,11 +643,6 @@ class DDDObject3(DDDObject):
             prm = pyrender.Mesh.from_trimesh(m, smooth=False) #, wireframe=True)
             pr_scene.add(prm)
         pyrender.Viewer(pr_scene, lighting="direct")  #, viewport_size=resolution)
-
-    def dump(self, indent_level=0):
-        print("  " * indent_level + str(self))
-        for c in self.children:
-            c.dump(indent_level=indent_level + 1)
 
     def save(self, path):
         logger.info("Saving to: %s (%s)", path, self)
