@@ -65,6 +65,9 @@ class AreasOSMBuilder():
                 area = self.generate_area_2d_unused(feature)
             elif feature['properties'].get('amenity', None) in ('school', ):
                 area = self.generate_area_2d_school(feature)
+            
+            #elif feature['properties'].get('amenity', None) in ('fountain', ):
+            #    area = self.generate_area_2d_school(feature)
                 
             if area:
                 logger.debug("Area: %s", area)
@@ -166,6 +169,10 @@ class AreasOSMBuilder():
         for way in self.osm.ways_1d.children:
             if way.extra['feature']['properties'].get('natural', None) == 'coastline':
                 coastlines.append(way.buffer(0.1))
+        
+        if not coastlines:
+            return
+        
         coastlines = ddd.group(coastlines).union()
         
         coastline_areas = water.subtract(coastlines)

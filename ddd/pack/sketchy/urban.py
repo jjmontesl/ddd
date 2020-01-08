@@ -162,6 +162,35 @@ def fountain(r=1.5):
     item = ddd.group([base, fountain])
     return item
 
+def religion_cross(width=1, height=1.5):
+    """
+    Religion cross.
+    """
+    l1 = ddd.line([[-width / 2, height - width], [width / 2, height - width]]).buffer(width / 8.0, cap_style=2)
+    l2 = ddd.line([[0, 0], [0, height]]).buffer(width / 8.0, cap_style=2)
+    sign = l1.union(l2)
+    sign = sign.extrude(width / 4.0)
+    sign = sign.translate([0, 0, -width / 8.0]).rotate([-math.pi / 2.0, 0, 0])
+    sign = sign.translate([0, 0, height])
+    sign.name = "Cross"
+    return sign
+
+def column(r=0.1, height=2.0, top=None):
+    col = ddd.point([0, 0]).buffer(r, resolution =1).extrude(height)
+    if top:
+        top = top.translate([0, 0, height])
+        col = ddd.group([col, top])
+    return col
+
+def wayside_cross():
+    """
+    A wayside cross. A cross on a pole on a pedestal.
+    """
+    cross = religion_cross()
+    col = column(height=2.0, top=cross)
+    #ped = pedestal(top=col)
+    return col
+
 def plaque():
     '''
     A plaque, just the square form with text.

@@ -47,7 +47,7 @@ class WaysOSMBuilder():
     def generate_ways_1d(self):
         
         # Generate paths
-        logger.info("Generating way path objects.")
+        logger.info("Generating 1D way path objects.")
         ways = []
         for feature in self.osm.features:
             if feature['geometry']['type'] != 'LineString': continue
@@ -236,7 +236,9 @@ class WaysOSMBuilder():
     def generate_way_1d(self, feature):
         
         highway = feature['properties'].get('highway', None)
+        barrier = feature['properties'].get('barrier', None)
         railway = feature['properties'].get('railway', None)
+        historic = feature['properties'].get('historic', None)
         path = ddd.shape(feature['geometry'])
         #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
         
@@ -262,8 +264,13 @@ class WaysOSMBuilder():
         elif highway == "pedestrian": 
             material = self.osm.mat_pathwalk
             extra_height = 0.2
-        else: 
-            logger.warn("Unknown highway type: %s", highway)
+        elif highway == "cycleway":
+            lanes = 0.6
+            material = self.osm.mat_sidewalk
+            extra_height = 0.2
+        else:
+            if highway: 
+                logger.warn("Unknown highway type: %s", highway)
         
         flanes = feature['properties'].get('lanes', None)
         lanes = float(flanes) if flanes else lanes
@@ -271,13 +278,47 @@ class WaysOSMBuilder():
         width = (lanes * 3.30)
         
         if railway:
-            lanes = 1.0
+            lanes = None
             width = 0.6
             material = self.osm.mat_railway
             extra_height = 0.5
         
+        if barrier == 'city_wall':
+            lanes = None
+            width = 1.0
+            material = self.osm.mat_stone
+            extra_height = 2.0
+        if historic == 'castle_wall':
+            lanes = None
+            width = 3.0
+            material = self.osm.mat_stone
+            extra_height = 3.5
+        
+        # Fixme: do a proper hedge, do not use ways/areas for everything
+        if barrier == 'hedge':
+            lanes = None
+            width = 0.6
+            material = self.osm.mat_leaves
+            extra_height = 1.2
+            
+        if barrier == 'retaining_wall':
+            lanes = None
+            width = 1.0
+            material = self.osm.mat_stone
+            extra_height = 2.0
+        if barrier == 'wall':
+            # TODO: Get height and material from metadata
+            lanes = None
+            width = 0.4
+            material = self.osm.mat_brick
+            extra_height = 2.0    
+        
         path = path.material(material)
         path.name = "Way: %s" % (feature['properties'].get('name', None))
+        path.extra['highway'] = highway
+        path.extra['barrier'] = barrier
+        path.extra['railway'] = railway
+        path.extra['historic'] = historic
         path.extra['feature'] = feature
         path.extra['width'] = width
         path.extra['lanes'] = lanes
@@ -332,7 +373,7 @@ class WaysOSMBuilder():
         elif highway == "pedestrian": weight = 32
         elif highway == "footway": weight = 33
         elif highway == "path": weight = 34
-        else: weight = 19
+        else: weight = 99
         
         if junction == "roundabout": weight = 1 
         

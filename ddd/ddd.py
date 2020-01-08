@@ -269,6 +269,8 @@ class DDDObject2(DDDObject):
     
     def buffer(self, distance, resolution=8, cap_style=1, join_style=1, mitre_limit=5.0):
         '''
+        Resolution is: 
+        
         shapely.geometry.CAP_STYLE
             round    1
             flat    2

@@ -76,6 +76,7 @@ def generate_geojson(files, area, osm_proj, ddd_proj, config=None):
     features = dedup
             
     # Filter features
+    '''
     filtered = []
     for f in features:
         geom = shape(f['geometry'])
@@ -86,6 +87,7 @@ def generate_geojson(files, area, osm_proj, ddd_proj, config=None):
             print("Ignored geometry: %s" % e)
     features = filtered
     print("Using %d features after filtering" % (len(features)))
+    '''
             
     # Project to local
     transformer = pyproj.Transformer.from_proj(osm_proj, ddd_proj)

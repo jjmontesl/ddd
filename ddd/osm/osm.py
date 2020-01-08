@@ -69,9 +69,12 @@ class OSMBuilder():
     mat_park = ddd.material(color='#1db345')
     mat_pitch = ddd.material(color='#196118')
     mat_sea = ddd.material(color='#3d43b5')
+    mat_leaves = ddd.material(color='#1da345')
     
     mat_bronze = ddd.material(color='#f0cb11')
     mat_steel = ddd.material(color='#78839c')
+    mat_stone = ddd.material(color='#9c9378')
+    mat_brick = ddd.material(color='#d49156')
     
     mat_building_1 = ddd.material(color='#f7f0be')
     mat_building_2 = ddd.material(color='#bdb9a0')
@@ -101,8 +104,17 @@ class OSMBuilder():
         
         self.features = features if features else []
         self.area = area  # Polygon or shape for initial selectionof features (ie: city)
-        self.area_crop = ddd.rect([-500, -500, 500, 500]).geom # Square to generate
-        #self.area_crop = ddd.rect([-500, -750, 1000, 750]).geom # Square to generate
+        
+        #self.area_crop = ddd.rect([-500, -500, 500, 500]).geom # Alameda (1 km2)
+        #self.area_crop = ddd.rect([-1000, -1000, 0, 0]).geom # Castro (1 km2)
+        self.area_crop = ddd.rect([-500, -750, 1000, 750]).geom # Elduayen-Torres GB (2.25 km2)
+        #self.area_crop = ddd.rect([-500, -750, 1500, 750]).geom # Elduayen-Nudo (3 km2)
+        #self.area_crop = ddd.rect([-1500, -1500, 500, 250]).geom # Independencia - Granvía
+        
+        #self.area_crop = ddd.rect([-1000, -1000, 1000, 1000]).geom # 4km2 around 
+        #self.area_crop = ddd.rect([-2000, -2000, 2000, 2000]).geom # 16km2 around
+        #self.area_crop = ddd.rect([-3000, -3000, 3000, 3000]).geom # 36km2 around
+        #self.area_crop = ddd.rect([-4000, -4000, 4000, 4000]).geom # 64km2 around
         
         self.osm_proj = osm_proj
         self.ddd_proj = ddd_proj
@@ -153,7 +165,8 @@ class OSMBuilder():
         seen = set()
         dedup = []
         for f in features:
-            oid = hash(str(f))  # f['properties']['osm_id']
+            #oid = hash(str(f))  # f['properties']['osm_id']
+            oid = f['id']
             if oid not in seen:
                 seen.add(oid)
                 dedup.append(f)
@@ -189,7 +202,7 @@ class OSMBuilder():
             if self.area_crop.intersects(geom):
                 filtered.append(f)
         features = filtered
-        logger.info("Using %d features after cropping" % (len(features)))
+        logger.info("Using %d features after cropping to %s" % (len(features), self.area_crop.bounds))
         
         self.features = features
 

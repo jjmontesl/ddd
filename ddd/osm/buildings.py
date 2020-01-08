@@ -59,6 +59,7 @@ class BuildingOSMBuilder():
 
     def generate_building_2d(self, feature):
         building_2d = ddd.shape(feature["geometry"], name="Building (%s)" % (feature['properties'].get("name", None)))
+        building_2d.extra['building'] = feature['properties'].get('building', None)
         building_2d.extra['feature'] = feature
         building_2d.extra['amenities'] = []
         return building_2d

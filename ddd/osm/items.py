@@ -56,9 +56,11 @@ class ItemsOSMBuilder():
     def generate_item_1d(self, feature):
         item = ddd.shape(feature['geometry'], name="Item: %s" % feature['properties'].get('name', None))
         item.extra['feature'] = feature
+        item.extra['name'] = feature['properties'].get('name', None)
         item.extra['amenity'] = feature['properties'].get('amenity', None)
         item.extra['natural'] = feature['properties'].get('natural', None)
         item.extra['tourism'] = feature['properties'].get('tourism', None)
+        item.extra['historic'] = feature['properties'].get('historic', None)
         item.extra['artwork_type'] = feature['properties'].get('artwork_type', None)
         
         return item
@@ -85,6 +87,12 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_tree(item_2d)
         elif item_2d.extra['tourism'] == 'artwork' and item_2d.extra['artwork_type'] == 'sculpture':
             item_3d = self.generate_item_3d_sculpture(item_2d)
+        elif item_2d.extra['historic'] == 'monument':  # Monumento grande
+            item_3d = self.generate_item_3d_monument(item_2d)
+        elif item_2d.extra['historic'] == 'memorial':
+            item_3d = self.generate_item_3d_monument(item_2d)
+        elif item_2d.extra['historic'] == 'wayside_cross':
+            item_3d = self.generate_item_3d_wayside_cross(item_2d)
         
         return item_3d
                 
@@ -105,8 +113,19 @@ class ItemsOSMBuilder():
     def generate_item_3d_sculpture(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
-        item_3d = urban.sculpture(1.75).translate([coords[0], coords[1], 0.0]).material(self.osm.mat_steel)  # mat_bronze
+        item_3d = urban.sculpture(1.5).translate([coords[0], coords[1], 0.0]).material(self.osm.mat_steel)  # mat_bronze
         item_3d.name = 'Sculpture: %s' % item_2d.name
         return item_3d
     
-
+    def generate_item_3d_monument(self, item_2d):
+        # Todo: Use fountain shape if available, instead of centroid
+        coords = item_2d.geom.coords[0]
+        item_3d = urban.sculpture(2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(self.osm.mat_bronze)  # mat_bronze
+        item_3d.name = 'Monument: %s' % item_2d.name
+        return item_3d    
+    
+    def generate_item_3d_wayside_cross(self, item_2d):
+        coords = item_2d.geom.coords[0]
+        item_3d = urban.wayside_cross().translate([coords[0], coords[1], 0.0]).material(self.osm.mat_stone)  # mat_bronze
+        item_3d.name = 'Wayside Cross: %s' % item_2d.name
+        return item_3d
