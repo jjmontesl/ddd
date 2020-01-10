@@ -6,7 +6,7 @@ import logging
 import math
 import random
 
-from csg import geom as csggeom 
+from csg import geom as csggeom
 from csg.core import CSG
 import numpy
 from shapely import geometry, affinity
@@ -16,8 +16,8 @@ import trimesh
 from trimesh.base import Trimesh
 from trimesh.path import segments
 from trimesh.path.path import Path
-from trimesh.scene.scene import Scene, append_scenes 
-from trimesh.visual.material import SimpleMaterial 
+from trimesh.scene.scene import Scene, append_scenes
+from trimesh.visual.material import SimpleMaterial
 import copy
 
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class D1D2D3():
-    
+
     @staticmethod
     def initialize_logging(debug=True):
         """
@@ -47,11 +47,11 @@ class D1D2D3():
             logging.basicConfig(format='%(message)s', level=default_level)
 
         logging.getLogger("trimesh").setLevel(logging.INFO)
-            
+
         logger.info("DDD logging initialized.")
         logger.debug("DDD debug logging enabled.")
 
-    
+
     @staticmethod
     def material(color):
         #material = SimpleMaterial(diffuse=color, )
@@ -60,19 +60,19 @@ class D1D2D3():
         return color
 
     @staticmethod
-    def point(coords):
+    def point(coords, name=None):
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
         geom = geometry.Point(coords)
-        return DDDObject2(geom=geom)
-    
+        return DDDObject2(geom=geom, name=name)
+
     @staticmethod
-    def line(points):
+    def line(points, name=None):
         '''
         Expects an array of coordinate tuples.
         '''
         geom = geometry.LineString(points)
-        return DDDObject2(geom=geom)
-    
+        return DDDObject2(geom=geom, name=name)
+
     @staticmethod
     def polygon(coords, name=None):
         geom = geometry.Polygon(coords)
@@ -85,7 +85,7 @@ class D1D2D3():
         """
         geom = shape(geometry)
         return DDDObject2(geom=geom, name=name)
-    
+
     @staticmethod
     def geometry(geometry):
         """
@@ -93,21 +93,21 @@ class D1D2D3():
         """
         geom = shape(geometry)
         return DDDObject2(geom=geom)
-    
+
     @staticmethod
     def rect(bounds, name=None):
         cmin, cmax = ((bounds[0], bounds[1]), (bounds[2], bounds[3]))
         geom = geometry.Polygon([(cmin[0], cmin[1], 0.0), (cmax[0], cmin[1], 0.0),
                                  (cmax[0], cmax[1], 0.0), (cmin[0], cmax[1], 0.0)])
         return DDDObject2(geom=geom, name=None)
-    
+
     @staticmethod
     def disc(center=None, r=None, resolution=8):
         if center is None: center = ddd.point([0, 0, 0])
         if r is None: r = 1.0
         geom = center.geom.buffer(r, resolution=resolution)
         return DDDObject2(geom=geom)
-    
+
     @staticmethod
     def sphere(center=None, r=None, subdivisions=2):
         if center is None: center = ddd.point([0, 0, 0])
@@ -115,33 +115,33 @@ class D1D2D3():
         mesh = primitives.Sphere(center=center.geom.coords[0], radius=r, subdivisions=subdivisions)
         mesh = Trimesh([[v[0], v[1], v[2]] for v in mesh.vertices], list(mesh.faces))
         return DDDObject3(mesh=mesh)
-    
+
     @staticmethod
     def cube(center=None, d=None):
         """
         Cube is sitting on the Z plane defined by the center position.
         D is the distance to the side, so cube side length will be twice that value.
         """
-        if center is not None: raise NotImplementedError()  # 
+        if center is not None: raise NotImplementedError()  #
         if center is None: center = ddd.point([0, 0, 0])
         if d is None: d = 1.0
         cube = D1D2D3.rect([-d, -d, d, d]).extrude(d * 2).translate([0, 0, 0])
         return cube
-    
+
     @staticmethod
     def grid2(bounds, detail=1.0):
         rects = []
         cmin, cmax = bounds[:2], bounds[2:]
         pointsx = list(numpy.linspace(cmin[0], cmax[0], 1 + int((cmax[0] - cmin[0]) / detail)))
         pointsy = list(numpy.linspace(cmin[1], cmax[1], 1 + int((cmax[1] - cmin[1]) / detail)))
-        
+
         for (idi, (i, ni)) in enumerate(zip(pointsx[:-1], pointsx[1:])):
             for (idj, (j, nj)) in enumerate(zip(pointsy[:-1], pointsy[1:])):
                 rect = ddd.rect([i, j, ni, nj])
                 rects.append(rect.geom)
         geom = geometry.MultiPolygon(rects)
         return DDDObject2(geom=geom)
-    
+
     @staticmethod
     def grid3(bounds2, detail=1.0):
         grid2 = D1D2D3.grid2(bounds2, detail)
@@ -159,12 +159,12 @@ class D1D2D3():
             gfs = [gf + len(vertices) for gf in gfs]
             faces.extend(gfs)
             vertices.extend(gvs)
-            
+
             hitmax = False
             for v in gvs:
                 if v[0] >= cmax[0] or v[1] >= cmax[1]:
                     hitmax = True
-            
+
             idi += 1
             if hitmax:
                 idi = 0
@@ -174,8 +174,8 @@ class D1D2D3():
         mesh = Trimesh(vertices, faces)
         #mesh.fix_normals()
         mesh.merge_vertices()
-        return DDDObject3(mesh=mesh)        
-    
+        return DDDObject3(mesh=mesh)
+
     @staticmethod
     def group(children, name=None):
         if not children:
@@ -186,24 +186,24 @@ class D1D2D3():
             result = DDDObject3(children=children, name=name)
         else:
             raise ValueError("Invalid object for ddd.group(): %s", children[0])
-        
+
         if any((c is None for c in children)):
             raise ValueError("Tried to add null to object children list.")
-        
+
         return result
-    
+
 
 class DDDObject():
-    
+
     def __init__(self, name=None, children=None, extra=None, material=None):
         self.name = name
         self.children = children if children is not None else []
         self.extra = extra if extra is not None else {}
         self.mat = material
-        
+
         self.geom = None
         self.mesh = None
-        
+
         for c in self.children:
             if not isinstance(c, self.__class__):
                 raise ValueError("Invalid children type (not %s): %s" % (self.__class__, c))
@@ -215,7 +215,7 @@ class DDDObject():
 
 
 class DDDObject2(DDDObject):
-    
+
     def __init__(self, name=None, children=None, geom=None, extra=None, material=None):
         super().__init__(name, children, extra, material)
         self.geom = geom
@@ -234,22 +234,22 @@ class DDDObject2(DDDObject):
         else:
             return len(self.geom.coords)
         return None
-    
+
     def copy(self):
         obj = DDDObject2(name=self.name, children=list(self.children), geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
         return obj
-    
+
     def material(self, material):
         obj = self.copy()
         obj.mat = material
         #mesh.visuals = visuals
         obj.children = [c.material(material) for c in obj.children]
         return obj
-    
+
     def end(self):
         coords = self.geom.coords[-1]
         return D1D2D3.point(coords)
-    
+
     def line_rel(self, coords):
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
         linecoords = [p for p in self.geom.coords]
@@ -258,7 +258,7 @@ class DDDObject2(DDDObject):
 
         geom = geometry.LineString(linecoords)
         return DDDObject2(geom=geom)
-    
+
     def line_to(self, coords):
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
         linecoords = [p for p in self.geom.coords]
@@ -266,11 +266,11 @@ class DDDObject2(DDDObject):
 
         geom = geometry.LineString(linecoords)
         return DDDObject2(geom=geom)
-    
+
     def buffer(self, distance, resolution=8, cap_style=1, join_style=1, mitre_limit=5.0):
         '''
-        Resolution is: 
-        
+        Resolution is:
+
         shapely.geometry.CAP_STYLE
             round    1
             flat    2
@@ -285,28 +285,32 @@ class DDDObject2(DDDObject):
                                        cap_style=cap_style, join_style=join_style,
                                        mitre_limit=5.0)
         return result
-    
+
     def subtract(self, other):
-        
+
         result = self.copy()
         if self.geom and other.geom:
             result.geom = result.geom.difference(other.geom)
         for c in other.children:
             result = result.subtract(c)
-        
+        #if self.geom:
+        #    union = other.union()
+        #    result.geom = result.geom.difference(union.geom)
+        #result.children = [c.subtract(other) for c in result.children]
+
         return result
-    
+
     def union(self, other=None):
         """
         Returns a copy of this object to which geometry from other object has been unioned.
         If the second object has children, they are also unioned recursively.
-        
-        If the second object is None, all children of this are unioned. 
+
+        If the second object is None, all children of this are unioned.
         """
         result = self.copy()
         result.children = []
-        
-        # If other has children, union them too            
+
+        # If other has children, union them too
         objs = self.children
         while len(objs) > 1:
             #print(objs[0], objs[1])
@@ -317,7 +321,7 @@ class DDDObject2(DDDObject):
                 result.geom = result.geom.union(objs[0].geom)
             else:
                 result.geom = objs[0].geom
-        
+
         if other:
             if result.geom:
                 result.geom = result.geom.union(other.union().geom)
@@ -346,24 +350,24 @@ class DDDObject2(DDDObject):
             #mesh = creation.extrude_triangulation(vertices=vertices, faces=faces, height=0.2)
             mesh.merge_vertices()
             result = DDDObject3(mesh=mesh, name=self.name)
-            
+
         return result
 
     def extrude(self, height):
-        
+
         #logger.debug("Extruding: %s", self)
-        
+
         # Extrude exterior line(s)
         '''
         coords = self.geom.exterior.coords
         segs = []
         for i in range(len(coords) - 1):
             segs.append([coords[i], coords[i + 1]])
-            
+
         v, f = segments.extrude(segs, abs(height), False)
         mesh = Trimesh(v, f)
         mesh.invert()  # mesh normals face polygon interior, invert it
-        
+
         # Triangulate polygon and create caps
         if caps:
             v, f = creation.triangulate_polygon(self.geom)
@@ -396,7 +400,7 @@ class DDDObject2(DDDObject):
                                                       height=abs(height))
                 mesh.merge_vertices()
                 result = DDDObject3(mesh=mesh)
-            
+
                 if height < 0:
                     result = result.translate([0, 0, height])
             else:
@@ -404,15 +408,15 @@ class DDDObject2(DDDObject):
                 result = DDDObject3()
         else:
             result = DDDObject3()
-        
+
         result.children.extend([c.extrude(height) for c in self.children])
-        
-        # Copy extra information from original object 
+
+        # Copy extra information from original object
         result.name = self.name
         result.extra = dict(self.extra)
-        result.extra['extruded_shape'] = self 
+        result.extra['extruded_shape'] = self
         result = result.material(self.mat)
-        
+
         return result
 
     def simplify(self, distance):
@@ -434,11 +438,37 @@ class DDDObject2(DDDObject):
 
     def distance(self, other):
         """
-        Returns the minimum distance from this object to other. 
+        Returns the minimum distance from this object to other.
         """
         if self.children: raise AssertionError()
         if other.children: raise AssertionError()
         return self.geom.distance(other.geom)
+
+    def interpolate_segment(self, d):
+        """
+        Interpolates along a LineString, returning:
+            coords_p, segment_idx, segment_coords_a, segment_coords_b
+        """
+        # Walk segment
+        l = 0.0
+        coords = self.geom.coords
+        #length = self.geom.length
+        for idx in range(len(coords) - 1):
+            p, pn = coords[idx:idx+2]
+            pl = math.sqrt((pn[0] - p[0]) ** 2 + (pn[1] - p[1]) ** 2)
+            l += pl
+            if l >= d:
+                return (self.geom.interpolate(d).coords[0], idx, p, pn)
+        return None
+
+    def closest_segment(self, other):
+        """
+        Closest segment in a LineString to other geometry.
+        """
+        #logger.debug("Closest: %s > %s", self.geom.type, other.geom.type)
+        logger.warn("FIXME: support children in self, and avoid looping coastines in areas")
+        d = self.geom.project(other.geom)
+        return self.interpolate_segment(d)
 
     def geom_recursive(self):
         geoms = []
@@ -448,23 +478,23 @@ class DDDObject2(DDDObject):
                 cgems = c.geom_recursive()
                 geoms.extend(cgems)
         return geoms
-    
+
     def save(self, path):
-        
+
         # $$('path').forEach(function(p) {console.log(p); p.setAttribute('stroke-width', 1.0)});
-        
+
         geoms = self.geom_recursive()
         with open(path, 'w') as f:
             geom = geometry.GeometryCollection(geoms)
             f.write(geom._repr_svg_())
 
-            
-class DDDObject3(DDDObject):            
+
+class DDDObject3(DDDObject):
 
     def __init__(self, name=None, children=None, mesh=None, extra=None, material=None):
         super().__init__(name, children, extra, material)
         self.mesh = mesh
-        
+
     def __repr__(self):
         return "<DDDObject3 (name=%s, faces=%d, children=%d)>" % (self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
 
@@ -478,7 +508,7 @@ class DDDObject3(DDDObject):
             obj.mesh.apply_translation(v)
         obj.children = [c.translate(v) for c in self.children]
         return obj
-    
+
     def rotate(self, v):
         obj = self.copy()
         if obj.mesh:
@@ -486,7 +516,7 @@ class DDDObject3(DDDObject):
             obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
         obj.children = [c.rotate(v) for c in self.children]
         return obj
-    
+
     def scale(self, v):
         obj = self.copy()
         if obj.mesh:
@@ -507,15 +537,15 @@ class DDDObject3(DDDObject):
         #mesh.visuals = visuals
         obj.children = [c.material(material) for c in obj.children]
         return obj
-    
+
     def elevation_func(self, func):
         obj = self.copy()
         for v in obj.mesh.vertices:
             dz = func(v[0], v[1])
             v[2] += dz
         obj.children = [c.elevation_func(func) for c in obj.children]
-        return obj 
-    
+        return obj
+
     def vertex_func(self, func):
         obj = self.copy()
         if obj.mesh:
@@ -528,15 +558,15 @@ class DDDObject3(DDDObject):
         return obj
 
     def _csg(self, other, operation):
-        
+
         if not other or not other.mesh:
             return self.copy()
 
         if not self.mesh and operation == 'union':
             return other.copy()
-        
+
         print("%s %s %s" % (self, operation, other))
-        
+
         pols1 = []
         for f in self.mesh.faces:
             verts = [self.mesh.vertices[f[0]], self.mesh.vertices[f[1]], self.mesh.vertices[f[2]]]
@@ -546,7 +576,7 @@ class DDDObject3(DDDObject):
         for f in other.mesh.faces:
             verts = [other.mesh.vertices[f[0]], other.mesh.vertices[f[1]], other.mesh.vertices[f[2]]]
             pols2.append(csggeom.Polygon([csggeom.Vertex(verts[0]), csggeom.Vertex(verts[1]), csggeom.Vertex(verts[2])]))
-        
+
         csg1 = CSG.fromPolygons(pols1)
         csg2 = CSG.fromPolygons(pols2)
 
@@ -556,23 +586,23 @@ class DDDObject3(DDDObject):
             pols = csg1.union(csg2).toPolygons()
         else:
             raise AssertionError()
-        
+
         #mesh = boolean.difference([self.mesh, other.mesh], 'blender')
         v = []
         f = []
         i = 0
         for p in pols:
             for vi in range(len(p.vertices) - 2):
-                v.extend([[p.vertices[0].pos[0], p.vertices[0].pos[1], p.vertices[0].pos[2]], 
-                          [p.vertices[vi + 1].pos[0], p.vertices[vi + 1].pos[1], p.vertices[vi + 1].pos[2]], 
+                v.extend([[p.vertices[0].pos[0], p.vertices[0].pos[1], p.vertices[0].pos[2]],
+                          [p.vertices[vi + 1].pos[0], p.vertices[vi + 1].pos[1], p.vertices[vi + 1].pos[2]],
                           [p.vertices[vi + 2].pos[0], p.vertices[vi + 2].pos[1], p.vertices[vi + 2].pos[2]]])
                 f.append([i, i+1, i+2])
                 i += 3
-        
+
         mesh = Trimesh(v, f)
         mesh.fix_normals()
         mesh.merge_vertices()
-        
+
         obj = DDDObject3(mesh=mesh, children=self.children, material=self.material)
         return obj
 
@@ -586,32 +616,32 @@ class DDDObject3(DDDObject):
     def _recurse_scene(self):
         cscenes = []
         if self.children:
-            cscenes = [c._recurse_scene() for c in self.children] 
+            cscenes = [c._recurse_scene() for c in self.children]
         #if self.mesh:
         scene = Scene()
         scene.add_geometry(geometry=self.mesh, node_name="node_%s_%s" % (id(self), self.mat.replace(" ", "_")))
         cscenes = [scene] + cscenes
-        
+
         scene = append_scenes(cscenes)
         return scene
     '''
     def _recurse_scene(self):
-        
+
         scene = Scene()
         auto_name = "node_%s_%s" % (id(self), str(self.mat))
         node_name = self.name if self.name else auto_name
         scene.add_geometry(geometry=self.mesh, node_name=node_name.replace(" ", "_"))
-        
+
         cscenes = []
         if self.children:
             for c in self.children:
                 cscene = c._recurse_scene()
-                cscenes.append(cscene) 
-        
+                cscenes.append(cscene)
+
         scene = append_scenes([scene] + cscenes)
-        
+
         return scene
-    
+
     def recurse_meshes(self):
         cmeshes = []
         if self.mesh:
@@ -620,7 +650,7 @@ class DDDObject3(DDDObject):
             for c in self.children:
                 cmeshes.extend(c.recurse_meshes())
         return cmeshes
-    
+
     def recurse_objects(self):
         cobjs = [self]
         for c in self.children:
@@ -636,7 +666,7 @@ class DDDObject3(DDDObject):
         #light = trimesh.scene.lighting.DirectionalLight()
         #light.intensity = 10
         #scene.lights = [light]
-        
+
         import pyrender
         #pr_scene = pyrender.Scene.from_trimesh_scene(rotated)
         meshes = self.recurse_meshes()
@@ -648,28 +678,27 @@ class DDDObject3(DDDObject):
 
     def save(self, path):
         logger.info("Saving to: %s (%s)", path, self)
-    
+
         if path.endswith('.obj'):
             # Exporting just first mesh
             logger.warning("NOTE: Exporting just first object to .obj.")
             meshes = self.recurse_meshes()
             data = trimesh.exchange.obj.export_obj(self.meshes[0])
-            
+
         elif path.endswith('.dae'):
             meshes = self.recurse_meshes()
             data = trimesh.exchange.dae.export_collada(meshes)
-        
+
         elif path.endswith('.glb'):
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
             scene = rotated._recurse_scene()
             data = trimesh.exchange.gltf.export_glb(scene)
-            
+
         else:
             raise ValueError()
-        
+
         #scene.export(path)
         with open(path, 'wb') as f:
             f.write(data)
-            
+
 ddd = D1D2D3
-    
