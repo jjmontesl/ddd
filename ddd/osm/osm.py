@@ -55,12 +55,9 @@ def project_coordinates(coords, transformer):
 
 class OSMBuilder():
 
-    mat_highlight = ddd.material(color='#ff00ff')
-
     # Golf
     mat_lane = ddd.material(color='#1db345')
     mat_border = ddd.material(color='#f0f0ff')
-
 
     # Ways
     mat_asphalt = ddd.material(color='#202020')
@@ -94,13 +91,16 @@ class OSMBuilder():
     mat_building_3 = ddd.material(color='#c49156')
     mat_roof_tile = ddd.material(color='#f25129')
 
-    def __init__(self, features=None, area=None, osm_proj=None, ddd_proj=None, config=None):
+    def __init__(self, features=None, area_filter=None, area_crop=None, osm_proj=None, ddd_proj=None, config=None):
 
         self.items = ItemsOSMBuilder(self)
         self.items2 = AreaItemsOSMBuilder(self)
         self.ways = WaysOSMBuilder(self)
         self.areas = AreasOSMBuilder(self)
         self.buildings = BuildingOSMBuilder(self)
+
+        self.area_filter = area_filter
+        self.area_crop = area_crop
 
         self.simplify_tolerance = 0.01
 
@@ -117,18 +117,22 @@ class OSMBuilder():
 
 
         self.features = features if features else []
-        self.area = area  # Polygon or shape for initial selectionof features (ie: city)
 
-        self.area_crop = ddd.rect([-500, -500, 500, 500]).geom # Alameda (1 km2)
-        #self.area_crop = ddd.rect([-1000, -1000, 0, 0]).geom # Castro (1 km2)
-        #self.area_crop = ddd.rect([-500, -750, 1000, 750]).geom # Elduayen-Torres GB (2.25 km2)
-        #self.area_crop = ddd.rect([-500, -750, 1500, 750]).geom # Elduayen-Nudo (3 km2)
-        #self.area_crop = ddd.rect([-1500, -1500, 500, 250]).geom # Independencia - Granvía
+        #self.area = area  # Polygon or shape for initial selectionof features (ie: city)
+        #self.area_filter = ddd.rect([-500, -500, 500, 500]).geom # Alameda + Centro + Sea (1 km2)
+        #self.area_filter= ddd.rect([-250, -250, 250, 250]).geom # Mini (0.25 km2)
+        #self.area_filter = ddd.rect([-1000, -1000, 0, 0]).geom # Castro (1 km2)
+        #self.area_filter = ddd.rect([-500, -750, 1000, 750]).geom # Elduayen-Torres GB (2.25 km2)
+        #self.area_filter = ddd.rect([-500, -750, 1500, 750]).geom # Elduayen-Nudo (3 km2)
+        #self.area_filter = ddd.rect([-1500, -1500, 500, 250]).geom # Independencia - Granvía
+        #self.area_filter = ddd.rect([-1500, -750, 1500, 750]).geom # Elduayen-Nudo (4.5 km2)
 
-        #self.area_crop = ddd.rect([-1000, -1000, 1000, 1000]).geom # 4km2 around
-        #self.area_crop = ddd.rect([-2000, -2000, 2000, 2000]).geom # 16km2 around
-        #self.area_crop = ddd.rect([-3000, -3000, 3000, 3000]).geom # 36km2 around
-        #self.area_crop = ddd.rect([-4000, -4000, 4000, 4000]).geom # 64km2 around
+        #self.area_filter = ddd.rect([-1000, -1000, 1000, 1000]).geom # 4km2 around
+        #self.area_filter = ddd.rect([-2000, -2000, 2000, 2000]).geom # 16km2 around
+        #self.area_filter = ddd.rect([-3000, -3000, 3000, 3000]).geom # 36km2 around
+        #self.area_filter = ddd.rect([-4000, -4000, 4000, 4000]).geom # 64km2 around
+
+        #self.area_crop = self.area_filter
 
         self.osm_proj = osm_proj
         self.ddd_proj = ddd_proj
@@ -148,7 +152,9 @@ class OSMBuilder():
         self.buildings_2d = None
         self.buildings_3d = None
 
+        self.water_2d = DDDObject3()
         self.water_3d = DDDObject3()
+
         self.ground_3d = DDDObject3()
 
         #self.sidewalks_3d_l1 = DDDObject3()
@@ -214,11 +220,11 @@ class OSMBuilder():
         filtered = []
         for f in features:
             geom = shape(f['geometry'])
-            #if self.area_crop.contains(geom.centroid):
-            if self.area_crop.intersects(geom):
+            #if self.area_filter.contains(geom.centroid):
+            if self.area_filter.intersects(geom):
                 filtered.append(f)
         features = filtered
-        logger.info("Using %d features after cropping to %s" % (len(features), self.area_crop.bounds))
+        logger.info("Using %d features after filtering to %s" % (len(features), self.area_filter.bounds))
 
         self.features = features
 
@@ -274,14 +280,26 @@ class OSMBuilder():
         # Associate features (amenities, etc) to 2D objects (buildings, etc)
         #self.buildings.associate_features()
 
-        self.areas.generate_coastline_3d(self.area_crop)  # must come before ground
-        self.areas.generate_ground_3d(self.area_crop) # separate in 2d + 3d, also subdivide (calculation is huge - core dump-)
+        self.areas.generate_coastline_3d(self.area_crop if self.area_crop else self.area_filter)  # must come before ground
+        self.areas.generate_ground_3d(self.area_crop if self.area_crop else self.area_filter) # separate in 2d + 3d, also subdivide (calculation is huge - core dump-)
 
         # Generates items defined as areas (area fountains, football fields...)
 
         # Road props (traffic lights, lampposts, fountains, football fields...) - needs. roads, areas, coastline, etc... and buildings
         self.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
         self.ways.generate_props_2d()  # Objects related to ways
+
+        # Crop if necessary
+        if self.area_crop:
+            logger.info("Cropping to: %s" % (self.area_crop.bounds, ))
+            crop = ddd.shape(self.area_crop)
+            self.areas_2d = self.areas_2d.intersect(crop)
+            self.ways_2d = {k: self.ways_2d[k].intersect(crop) for k in self.layer_indexes}
+
+            #self.items_1d = self.items_1d.intersect(crop)
+            self.items_1d = ddd.group([b for b in self.items_1d.children if self.area_crop.contains(b.geom.centroid)], empty=2)
+            self.items_2d = ddd.group([b for b in self.items_2d.children if self.area_crop.contains(b.geom.centroid)], empty=2)
+            self.buildings_2d = ddd.group([b for b in self.buildings_2d.children if self.area_crop.contains(b.geom.centroid)], empty=2)
 
         # 3D Build
 

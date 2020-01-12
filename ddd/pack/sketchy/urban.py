@@ -1,37 +1,63 @@
-'''
-'''
+# ddd - D1D2D3
+# Library for simple scene modelling.
+# Jose Juan Montes 2020
+
 import math
-from ddd.pack.sketchy import filters
+import random
 
-'''
-'''
-
+from csg import geom as csggeom
+from csg.core import CSG
+import noise
 from shapely import geometry
-from trimesh.path import segments
-from trimesh.scene.scene import Scene, append_scenes
-from trimesh.base import Trimesh
-from trimesh.path.path import Path
-from trimesh.visual.material import SimpleMaterial
 from trimesh import creation, primitives, boolean
 import trimesh
-from csg.core import CSG
-from csg import geom as csggeom
-import random
+from trimesh.base import Trimesh
+from trimesh.path import segments
+from trimesh.path.path import Path
+from trimesh.scene.scene import Scene, append_scenes
+from trimesh.visual.material import SimpleMaterial
+
 from ddd.ddd import ddd
-import noise
+from ddd.pack.sketchy import filters
 
 
-def post(height=2.00, r=0.05, top=None):
-    '''
+mat_paint_green = ddd.material('#265e13')
+mat_trafficlight_green = ddd.material('#00ff00')
+mat_trafficlight_orange = ddd.material('#ffff00')
+mat_trafficlight_red = ddd.material('#ff0000')
+
+
+def post(height=2.00, r=0.075, top=None):
+    """
     A round (or squared) post.
-    '''
-    col = ddd.point([0, 0]).buffer(r, resolution=1).extrude(height)
+    """
+    col = ddd.point([0, 0]).buffer(r, resolution=0).extrude(height)
     if top:
         top = top.translate([0, 0, height])
         col = ddd.group([col, top])
     return col
 
-def lamppost(height=2.80, base_r=0.15, top_r=0.30, sides=4):
+def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=None, arm_side='left'):
+    """
+    A curved post, sitting on the center of its vertical post, with an arm extending to
+    the defined side. Items are stacked centered on the arm front side.
+    """
+    side = -1 if arm_side == "left" else 1
+    line = ddd.point([0, 0]).line_to([0, height - corner_radius])
+    line = line.line_to([side * corner_radius, height])
+    line = line.line_to([side * arm_length, height])
+    post = line.buffer(r, cap_style=ddd.CAP_FLAT).extrude(r * 2, center=True)
+    post = post.rotate([math.pi / 2.0, 0, 0]).material(mat_paint_green)
+
+    items = []
+    for idx, item in enumerate(arm_items):
+        positem = item.translate([side * (arm_length - (idx + 1) * 0.4), -r, height])
+        items.append(positem)
+
+    post = ddd.group([post] + items)
+    return post
+
+def lamppost(height=2.80):
     lamp = ddd.sphere(r=0.25, subdivisions=1)
     col = post(height=height, top=lamp)
     #ped = pedestal(top=col)
@@ -43,11 +69,21 @@ def lamppost_arm(length, lamp_pos='over'):
 def lamppost_with_arms(height, arms=2, degrees=360):
     pass
 
-def curvedpost(height, arm_length, items_feedback=None):
-    pass
+def trafficlights_head(height=0.8, depth=0.3):
 
-def traffic_lights():
-    post = curvedpost()
+    head = ddd.rect([-0.15, 0, 0.15, height]).material(mat_paint_green).extrude(depth)
+    disc_green = ddd.disc(ddd.point([0, 0.2]), r=0.09).material(mat_trafficlight_green).extrude(0.05)
+    disc_orange = ddd.disc(ddd.point([0, 0.4]), r=0.09).material(mat_trafficlight_orange).extrude(0.05)
+    disc_red = ddd.disc(ddd.point([0, 0.6]), r=0.09).material(mat_trafficlight_red).extrude(0.05)
+
+    discs = ddd.group([disc_green, disc_orange, disc_red]).translate([0, 0, depth])  # Put discs over head
+    head = ddd.group([head, discs]).translate([0, -height / 2.0, 0])  # Center vertically
+    head = head.rotate([math.pi / 2.0, 0, 0])
+    return head
+
+def trafficlights():
+    head = trafficlights_head()
+    post = curvedpost(arm_items=[head])
     return post
 
 def trafficsign_sign():
@@ -99,12 +135,16 @@ def sign_pharmacy_side(size=1.0, depth=0.3, arm_length=1.0):
     sign = sign.translate([0, -(arm_length + size * 0.66), 0])
     return ddd.group([sign, arm], name="Pharmacy Side Sign with Arm")
 
-def panel(height=1.0, width=2.0, depth=0.3):
+def panel(height=1.0, width=2.0, depth=0.2):
     '''
     A panel, like what commerces have either sideways or sitting on the facade. Also
     road panels.
     '''
-    pass
+    panel = ddd.rect([-width / 2.0, -height / 2.0, width / 2.0, height / 2.0]).extrude(depth)
+    panel = panel.rotate([math.pi / 2.0, 0, 0])
+    panel = panel.material(ddd.material('#f0f0ff'))
+    panel.name = "Panel"
+    return panel
 
 def panel_texture(height=1.0, width=2.0, depth=0.3):
     '''
@@ -157,8 +197,10 @@ def fountain(r=1.5):
     fountain = fountain.translate([0, 0, 1.2])  # TODO: align
     #.subtract(base)
 
+    water = ddd.disc(r=r-0.2, resolution=2).triangulate().translate([0, 0, 1.1])
+
     # Fountain
-    item = ddd.group([base, fountain])
+    item = ddd.group([base, fountain, water])
     return item
 
 def religion_cross(width=1, height=1.5):

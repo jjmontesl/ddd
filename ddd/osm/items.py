@@ -66,9 +66,10 @@ class ItemsOSMBuilder():
         return item
 
     def generate_items_3d(self):
-        logger.info("Generating 3D items")
+        logger.info("Generating 3D items (from %d items_1d)", len(self.osm.items_1d.children))
 
         for item_2d in self.osm.items_1d.children:
+            #if item_2d.geom.empty: continue
             item_3d = self.generate_item_3d(item_2d)
             if item_3d:
                 item_3d.name = item_2d.name
@@ -95,6 +96,8 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_wayside_cross(item_2d)
         elif item_2d.extra.get('ddd_osm', None) == 'way_lamppost':
             item_3d = self.generate_item_3d_lamppost(item_2d)
+        elif item_2d.extra.get('ddd_osm', None) == 'way_trafficlights':
+            item_3d = self.generate_item_3d_trafficlights(item_2d)
 
         return item_3d
 
@@ -110,6 +113,9 @@ class ItemsOSMBuilder():
         coords = item_2d.geom.coords[0]
         item_3d = urban.fountain(r=1.75).translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Fountain: %s' % item_2d.name
+        item_3d.children[0] = item_3d.children[0].material(self.osm.mat_stone)  # mat_bronze
+        item_3d.children[1] = item_3d.children[1].material(self.osm.mat_stone)  # FIXME: do not access children by index, assign mat in lib anyway
+        item_3d.children[2] = item_3d.children[2].material(self.osm.mat_water)  # FIXME: do not access children by index, assign mat in lib anyway
         return item_3d
 
     def generate_item_3d_sculpture(self, item_2d):
@@ -141,4 +147,12 @@ class ItemsOSMBuilder():
         item_3d.name = 'Lampppost: %s' % item_2d.name
         #item_3d.material(self.osm.mat_highlight)
         return item_3d
+
+    def generate_item_3d_trafficlights(self, item_2d):
+        coords = item_2d.geom.coords[0]
+        item_3d = urban.trafficlights().rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+        item_3d.name = 'Traffic Lights %s' % item_2d.name
+        return item_3d
+
 

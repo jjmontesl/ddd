@@ -55,7 +55,7 @@ class BuildingOSMBuilder():
             if building_2d:
                 buildings.append(building_2d)
 
-        self.osm.buildings_2d = ddd.group(buildings, name="Buildings")  #translate([0, 0, 50])
+        self.osm.buildings_2d = ddd.group(buildings, name="Buildings", empty=2)  #translate([0, 0, 50])
 
     def generate_building_2d(self, feature):
         building_2d = ddd.shape(feature["geometry"], name="Building (%s)" % (feature['properties'].get("name", None)))
@@ -73,7 +73,7 @@ class BuildingOSMBuilder():
             if building_3d:
                 buildings.append(building_3d)
 
-        self.osm.buildings_3d = ddd.group(buildings)
+        self.osm.buildings_3d = ddd.group(buildings, empty=3)
 
     def generate_building_3d(self, building_2d):
 
@@ -120,12 +120,13 @@ class BuildingOSMBuilder():
             # Find closest building
             point = ddd.shape(feature['geometry'], name="Point: %s" % (feature['properties'].get('name', None)))
             point.extra['amenity'] = feature['properties'].get('amenity', None)
+            point.extra['shop'] = feature['properties'].get('shop', None)
             point.extra['name'] = feature['properties'].get('name', None)
 
             building, distance = self.closest_building(point)
             #logger.debug("Point: %s  Building: %s  Distance: %s", point, building, distance)
 
-            if point.extra['amenity']:
+            if point.extra['amenity'] or point.extra['shop']:
                 building.extra['amenities'].append(point)
                 #logger.debug("Amenity: %s" % point)
 
@@ -139,39 +140,37 @@ class BuildingOSMBuilder():
                 closest_distance = distance
         return closest_building, closest_distance
 
-    def closest_building_2d_segment(self, item, building_2d):
-
-        line = building_2d.geom.exterior
-        closest_distance_to_closest_point_in_exterior = line.project(item.geom.centroid)
-        closest_point = line.interpolate(closest_distance_to_closest_point_in_exterior)
-
-        closest_segment = None
-        for s1, s2 in zip(line.coords[:], line.coords[1:] + line.coords[:1]):
-            segment = LineString([s1, s2])
-            if segment.contains(closest_point):
-                closest_segment = segment
-
-        return closest_point, closest_segment
-
     def snap_to_building(self, item_3d, building_3d):
 
         # Find building segment to snap
         amenity = item_3d.extra['amenity']
         building_2d = building_3d.extra['building_2d']
 
-        closest_point, closest_segment = self.closest_building_2d_segment(amenity, building_2d)
-        vector = LineString([amenity.geom.centroid.coords[0], closest_point])
-        angle = math.atan2(vector.coords[1][1] - vector.coords[0][1],
-                           vector.coords[1][0] - vector.coords[0][0])
-        if not building_2d.geom.contains(amenity.geom):
-            angle = -angle
+        if building_2d.geom.type == "MultiPolygon":
+            logger.warn("Cannot snap to MultiPolygon building.")
+            return item_3d
+
+        line = building_2d.geom.exterior
+        closest_distance_to_closest_point_in_exterior = line.project(amenity.geom.centroid)
+        #closest_point, closest_segment = self.closest_building_2d_segment(amenity, building_2d)
+        #closest_point = line.interpolate(closest_distance_to_closest_point_in_exterior)
+        closest_point, segment_idx, segment_coords_a, segment_coords_b = DDDObject2(geom=line).interpolate_segment(closest_distance_to_closest_point_in_exterior)
+
+        dir_ver = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+        dir_ver_length = math.sqrt(dir_ver[0] ** 2 + dir_ver[1] ** 2)
+        dir_ver = (dir_ver[0] / dir_ver_length, dir_ver[1] / dir_ver_length)
+        angle = math.atan2(dir_ver[1], dir_ver[0])
+
+        #if not building_2d.geom.contains(amenity.geom):
+        #    angle = -angle
+
         #if not building_2d.geom.exterior.is_ccw:
         #    angle = -angle
         #logger.debug("Amenity: %s Closest point: %s Closest Segment: %s Angle: %s" % (amenity.geom.centroid, closest_point, closest_segment, angle))
 
         # Align rotation
-        item_3d = item_3d.rotate([0, 0, angle + math.pi / 2.0])
-        item_3d = item_3d.translate([closest_point.coords[0][0], closest_point.coords[0][1], 0])
+        item_3d = item_3d.rotate([0, 0, angle])  # + math.pi / 2.0
+        item_3d = item_3d.translate([closest_point[0], closest_point[1], 0])
 
         return item_3d
 
@@ -193,6 +192,28 @@ class BuildingOSMBuilder():
                 item.extra['amenity'] = amenity
                 item = self.snap_to_building(item, building_3d)
                 item = item.translate([0, 0, 3.0])  # no post
+                building_3d.children.append(item)
+
+            elif amenity.extra['amenity']:
+
+                # Except parking?
+
+                coords = amenity.geom.centroid.coords[0]
+                item = urban.panel(width=3.2, height=0.9)
+                item.extra['amenity'] = amenity
+                item = self.snap_to_building(item, building_3d)
+                item = item.translate([0, 0, 3.2])  # no post
+                building_3d.children.append(item)
+                #building_3d.show()
+
+            elif amenity.extra['shop']:
+                coords = amenity.geom.centroid.coords[0]
+                item = urban.panel(width=2.5, height=0.8)
+                item.extra['amenity'] = amenity
+                item = self.snap_to_building(item, building_3d)
+                item = item.translate([0, 0, 2.8])  # no post
+                color = random.choice(["#c41a7d", "#97c41a", "#f2ee0f", "#0f90f2"])
+                item = item.material(ddd.material(color))
                 building_3d.children.append(item)
 
             else:

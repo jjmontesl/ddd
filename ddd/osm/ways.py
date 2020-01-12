@@ -12,15 +12,13 @@ from csg import geom as csggeom
 from csg.core import CSG
 import geojson
 import noise
+import numpy
 import pyproj
 from shapely import geometry
 from shapely.geometry import shape
 from shapely.geometry.geo import shape
+from shapely.geometry.linestring import LineString
 from shapely.ops import transform
-
-from ddd.ddd import DDDObject2, DDDObject3
-from ddd.ddd import ddd
-from ddd.pack.sketchy import terrain, plants, urban
 from trimesh import creation, primitives, boolean
 import trimesh
 from trimesh.base import Trimesh
@@ -28,9 +26,11 @@ from trimesh.path import segments
 from trimesh.path.path import Path
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial
-from shapely.geometry.linestring import LineString
+
+from ddd.ddd import DDDObject2, DDDObject3
+from ddd.ddd import ddd
 from ddd.osm.buildings import BuildingOSMBuilder
-import numpy
+from ddd.pack.sketchy import terrain, plants, urban
 
 
 # Get instance of logger for this module
@@ -57,7 +57,7 @@ class WaysOSMBuilder():
                 way.extra['connections'] = []
                 ways.append(way)
 
-        self.osm.ways_1d = ddd.group(ways)
+        self.osm.ways_1d = ddd.group(ways, empty=2)
 
         # Find connections
         # TODO: this shall possibly come from OSM relations (or maybe not, or optional)
@@ -82,7 +82,7 @@ class WaysOSMBuilder():
             split = False
             for way in self.osm.ways_1d.children:
                 for other, way_idx, other_idx in way.extra['connections']:
-                    if other.extra['layer'] == way.extra['layer']: continue
+                    #if other.extra['layer'] == way.extra['layer']: continue
                     if (other_idx > 0 and other_idx != len(other.geom.coords) - 1):
                         #if not way.extra['layer_transition']: continue
                         #logger.info("Mid point connection: %s <-> %s", way, other)
@@ -243,11 +243,13 @@ class WaysOSMBuilder():
         historic = feature['properties'].get('historic', None)
         natural = feature['properties'].get('natural', None)
         man_made = feature['properties'].get('man_made', None)
+
         path = ddd.shape(feature['geometry'])
         #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
 
         width = None  # if not set will be discarded
         material = self.osm.mat_asphalt
+        name = "Way: %s" % (feature['properties'].get('name', None))
         extra_height = 0.0
         lanes = None
         lamps = False
@@ -274,7 +276,7 @@ class WaysOSMBuilder():
             lamps = True  # shall be only in city?
         elif highway in ("residential", "living_street"):
             #lanes = 1.0  # Using 1 lane for residential/living causes too small roads
-            extra_height = 0.1
+            #extra_height = 0.1
             lanes = 2.0
             width = (lanes * 3.30)
             lamps = True  # shall be only in city?
@@ -307,8 +309,10 @@ class WaysOSMBuilder():
 
         elif natural == "coastline":
             lanes = None
+            name = "Coastline"
             width = 0.5
-            material = self.osm.mat_sea
+            material = self.osm.mat_terrain
+            extra_height = 5.0  # FIXME: Things could cross othis, height shall reach sea precisely
 
         elif railway:
             lanes = None
@@ -360,12 +364,13 @@ class WaysOSMBuilder():
             width = (lanes * 3.30)
 
         path = path.material(material)
-        path.name = "Way: %s" % (feature['properties'].get('name', None))
+        path.name = name
+        path.extra['feature'] = feature
         path.extra['highway'] = highway
         path.extra['barrier'] = barrier
         path.extra['railway'] = railway
         path.extra['historic'] = historic
-        path.extra['feature'] = feature
+        path.extra['natural'] = natural
         path.extra['width'] = width
         path.extra['lanes'] = lanes
         path.extra['layer'] = feature['properties']['layer']
@@ -574,10 +579,15 @@ class WaysOSMBuilder():
 
         ways_3d = []
         for way_2d in ways_2d.children:
+
+            #if way_2d.extra['natural'] == "coastline": continue
+
             extra_height = way_2d.extra['extra_height']
             way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, layer_height + extra_height])
             way_3d = terrain.terrain_geotiff_elevation_apply(way_3d, self.osm.ddd_proj)
             way_3d.extra['way_2d'] = way_2d
+            if way_2d.extra['natural'] == "coastline":
+                way_3d = way_3d.translate([0, 0, -5])  # FIXME: hacks coastline wall with extra_height
             ways_3d.append(way_3d)
         ways_3d = ddd.group(ways_3d) if ways_3d else DDDObject3()
 
@@ -899,9 +909,10 @@ class WaysOSMBuilder():
 
         # Generate lamp posts
 
-        # Lamp every 50m
-        interval = 50.0
+        interval = 25.0
         numlamps = int(length / interval)
+        idx = 0
+        idx_offset = random.choice([0, 1])
 
         # Ignore if street is short
         if numlamps == 0: return
@@ -922,10 +933,17 @@ class WaysOSMBuilder():
             dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
             perpendicular_vec = (-dir_vec[1], dir_vec[0])
             lightlamp_dist = path.extra['width'] * 0.5 + 0.5
-            right = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
-            left = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
+            left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
+            right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 
-            for point in (left, right):
+            alternate_lampposts = True
+            if alternate_lampposts:
+                points = [left] if (idx + idx_offset) % 2 == 0 else [right]
+            else:
+                points = left, right
+
+            for point in points:
+                idx = idx + 1
                 item = ddd.point(point, name="LampPost %s" % way_2d.name)
 
                 #area = self.osm.areas_2d.intersect(item)
@@ -935,3 +953,26 @@ class WaysOSMBuilder():
                 item.extra['ddd_osm'] = 'way_lamppost'
                 self.osm.items_1d.children.append(item)
 
+        # Generate trafficlights
+        if not path.geom.length > 45.0: return
+
+        # End right
+        p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 10.0)
+        dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+        dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+        dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+        perpendicular_vec = (-dir_vec[1], dir_vec[0])
+        lightlamp_dist = path.extra['width'] * 0.5 + 0.5
+        left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
+        right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
+
+        item = ddd.point(right, name="Traffic Lights %s" % way_2d.name)
+
+        angle = math.atan2(dir_vec[1], dir_vec[0])
+
+        #area = self.osm.areas_2d.intersect(item)
+        # Check type of area point is on
+        item.extra['way_2d'] = way_2d
+        item.extra['ddd_osm'] = 'way_trafficlights'
+        item.extra['ddd_angle'] = angle
+        self.osm.items_1d.children.append(item)

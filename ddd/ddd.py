@@ -18,6 +18,7 @@ from trimesh.path import segments
 from trimesh.path.path import Path
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial
+from trimesh.scene.transforms import TransformForest
 import copy
 
 
@@ -26,6 +27,14 @@ logger = logging.getLogger(__name__)
 
 
 class D1D2D3():
+
+
+    CAP_ROUND = 1
+    CAP_FLAT = 2
+    CAP_SQUARE = 3
+    JOIN_ROUND = 1
+    JOIN_MITRE = 2
+    JOIN_BEVEL = 2
 
     @staticmethod
     def initialize_logging(debug=True):
@@ -177,9 +186,22 @@ class D1D2D3():
         return DDDObject3(mesh=mesh)
 
     @staticmethod
-    def group(children, name=None):
+    def group(children, name=None, empty=None):
+        """
+        """
+
         if not children:
-            result = DDDObject(name=name)
+            if empty is None:
+                raise ValueError("Tried to add empty collection to children group and no empty value is set.")
+            elif empty in (2, "2", "2d"):
+                result = DDDObject2(name=name)
+            elif empty in (3, "3", "3d"):
+                result = DDDObject3(name=name)
+            else:
+                raise ValueError("Tried to add empty collection to children group and passed invalid empty parameter: %s", empty)
+
+            #logger.debug("Tried to create empty group.")
+            #return None
         elif isinstance(children[0], DDDObject2):
             result = DDDObject2(children=children, name=name)
         elif isinstance(children[0], DDDObject3):
@@ -207,6 +229,9 @@ class DDDObject():
         for c in self.children:
             if not isinstance(c, self.__class__):
                 raise ValueError("Invalid children type (not %s): %s" % (self.__class__, c))
+
+    def __repr__(self):
+        return "<DDDObject (name=%s, children=%d)>" % (self.name, len(self.children) if self.children else 0)
 
     def dump(self, indent_level=0):
         print("  " * indent_level + str(self))
@@ -323,10 +348,25 @@ class DDDObject2(DDDObject):
                 result.geom = objs[0].geom
 
         if other:
-            if result.geom:
-                result.geom = result.geom.union(other.union().geom)
-            else:
+            union = other.union()
+            if result.geom and union.geom:
+                result.geom = result.geom.union(union.geom)
+            elif other.geom:
                 result.geom = other.geom
+
+        return result
+
+    def intersect(self, other):
+        """
+        Calculates the intersection of this object and children with
+        the other object (and children).
+        """
+        result = self.copy()
+        other = other.union()
+
+        if self.geom:
+            result.geom = self.geom.intersection(other.geom)
+        result.children = [c.intersect(other) for c in self.children]
 
         return result
 
@@ -353,7 +393,11 @@ class DDDObject2(DDDObject):
 
         return result
 
-    def extrude(self, height):
+    def extrude(self, height, center=False):
+        """
+        If height is negative, the object is aligned with is top face on the XY plane.
+        If center is true, the object is centered relative to the extruded height.
+        """
 
         #logger.debug("Extruding: %s", self)
 
@@ -401,7 +445,9 @@ class DDDObject2(DDDObject):
                 mesh.merge_vertices()
                 result = DDDObject3(mesh=mesh)
 
-                if height < 0:
+                if center:
+                    result = result.translate([0, 0, -height / 2])
+                elif height < 0:
                     result = result.translate([0, 0, height])
             else:
                 #logger.warn("Cannot extrude (empty polygon)")
@@ -415,7 +461,9 @@ class DDDObject2(DDDObject):
         result.name = self.name
         result.extra = dict(self.extra)
         result.extra['extruded_shape'] = self
-        result = result.material(self.mat)
+
+        if self.mat is not None:
+            result = result.material(self.mat)
 
         return result
 
@@ -442,12 +490,36 @@ class DDDObject2(DDDObject):
         """
         if self.children: raise AssertionError()
         if other.children: raise AssertionError()
+
         return self.geom.distance(other.geom)
+
+    def closest(self, other):
+        """
+        Returns distance and closest object from object and children to other object.
+        Does not support children in "other" geometry.
+        """
+        if other.children: raise AssertionError()
+
+        closest_o = None
+        closest_d = math.inf
+
+        if self.geom:
+            closest_o = self
+            closest_d = self.distance(other)
+
+        for c in self.children:
+            c_o, c_d = c.closest(other)
+            if c_d < closest_d:
+                closest_o, closest_d = c_o, c_d
+
+        return closest_o, closest_d
 
     def interpolate_segment(self, d):
         """
         Interpolates along a LineString, returning:
             coords_p, segment_idx, segment_coords_a, segment_coords_b
+
+        Note that returns coordinates, not DDD objects.
         """
         # Walk segment
         l = 0.0
@@ -464,11 +536,17 @@ class DDDObject2(DDDObject):
     def closest_segment(self, other):
         """
         Closest segment in a LineString to other geometry.
+
+        Does not support children in "other" geometry.
         """
-        #logger.debug("Closest: %s > %s", self.geom.type, other.geom.type)
-        logger.warn("FIXME: support children in self, and avoid looping coastines in areas")
-        d = self.geom.project(other.geom)
-        return self.interpolate_segment(d)
+        closest_self, closest_d = self.closest(other)
+        #logger.debug("Closest: %s  %s > %s", closest_d, closest_self, other)
+
+        d = closest_self.geom.project(other.geom)
+
+        result = closest_self.interpolate_segment(d)
+        #ddd.group([other.buffer(5.0),  ddd.point(result[2]).buffer(5.0).material(ddd.mat_highlight), ddd.line([result[2], result[3]]).buffer(2.0), ddd.point(result[0]).buffer(5.0), closest_self.buffer(0.2)]).show()
+        return result
 
     def geom_recursive(self):
         geoms = []
@@ -487,6 +565,9 @@ class DDDObject2(DDDObject):
         with open(path, 'w') as f:
             geom = geometry.GeometryCollection(geoms)
             f.write(geom._repr_svg_())
+
+    def show(self):
+        self.extrude(1.0).show()
 
 
 class DDDObject3(DDDObject):
@@ -533,8 +614,10 @@ class DDDObject3(DDDObject):
         obj.mat = material
         if obj.mesh and material is not None:
             obj.mesh.visual.face_colors = material
+
         #visuals = mesh.visuatrimesh.visual.ColorVisuals(mesh=mesh, face_colors=[material])  # , material=material
         #mesh.visuals = visuals
+
         obj.children = [c.material(material) for c in obj.children]
         return obj
 
@@ -565,7 +648,7 @@ class DDDObject3(DDDObject):
         if not self.mesh and operation == 'union':
             return other.copy()
 
-        print("%s %s %s" % (self, operation, other))
+        logger.debug("CSG operation: %s %s %s" % (self, operation, other))
 
         pols1 = []
         for f in self.mesh.faces:
@@ -612,19 +695,6 @@ class DDDObject3(DDDObject):
     def union(self, other):
         return self._csg(other, operation='union')
 
-    '''
-    def _recurse_scene(self):
-        cscenes = []
-        if self.children:
-            cscenes = [c._recurse_scene() for c in self.children]
-        #if self.mesh:
-        scene = Scene()
-        scene.add_geometry(geometry=self.mesh, node_name="node_%s_%s" % (id(self), self.mat.replace(" ", "_")))
-        cscenes = [scene] + cscenes
-
-        scene = append_scenes(cscenes)
-        return scene
-    '''
     def _recurse_scene(self):
 
         scene = Scene()
@@ -640,7 +710,89 @@ class DDDObject3(DDDObject):
 
         scene = append_scenes([scene] + cscenes)
 
+        """
+        # rotate the camera view transform
+        camera_old, _geometry = scene.graph[scene.camera.name]
+        camera_new = np.dot(camera_old, rotate)
+
+        # apply the new transform
+        scene.graph[scene.camera.name] = camera_new
+        """
+
         return scene
+
+    def _recurse_scene_ALT(self, base_frame=None, graph=None):
+
+        if graph is None:
+            graph = TransformForest()
+        if base_frame is None:
+            base_frame = "world"
+
+        scene = Scene(base_frame=base_frame, graph=None)
+
+        auto_name = "node_%s_%s" % (id(self), str(self.mat))
+        node_name = self.name + "_%s" % id(self) if self.name else auto_name
+        node_name = node_name.replace(" ", "_")
+        scene.add_geometry(geometry=self.mesh, node_name=node_name)
+
+        #tf = TransformForest()
+
+        cscenes = []
+        if self.children:
+            for c in self.children:
+                cscene = c._recurse_scene(node_name, graph)
+
+                sauto_name = "node_%s_%s" % (id(c), str(c.mat))
+                cscene_name = c.name + "_%s" % id(c) if c.name else sauto_name
+                cscene_name = cscene_name.replace(" ", "_")
+
+                scene.add_geometry(geometry=cscene, node_name=cscene_name)
+                cscenes.append(cscene)
+
+                #print(cscene.__dict__)
+                #changed = scene.graph.transforms.add_edge(node_name, cscene_name)
+
+        #matrix = numpy.eye(4)
+        #scene.graph.update(frame_from=new_base,
+        #                   frame_to=self.graph.base_frame,
+        #                   matrix=matrix)
+        #scene.graph.base_frame = new_base
+
+        #scene = append_scenes([scene] + cscenes)
+
+        """
+        # rotate the camera view transform
+        camera_old, _geometry = scene.graph[scene.camera.name]
+        camera_new = np.dot(camera_old, rotate)
+
+        # apply the new transform
+        scene.graph[scene.camera.name] = camera_new
+        """
+
+        return scene
+
+    def __rezero(self):
+        # From Trimesh as graph example
+        """
+        Move the current scene so that the AABB of the whole
+        scene is centered at the origin.
+        Does this by changing the base frame to a new, offset
+        base frame.
+        """
+        if self.is_empty or np.allclose(self.centroid, 0.0):
+            # early exit since what we want already exists
+            return
+
+        # the transformation to move the overall scene to AABB centroid
+        matrix = np.eye(4)
+        matrix[:3, 3] = -self.centroid
+
+        # we are going to change the base frame
+        new_base = str(self.graph.base_frame) + '_I'
+        self.graph.update(frame_from=new_base,
+                          frame_to=self.graph.base_frame,
+                          matrix=matrix)
+        self.graph.base_frame = new_base
 
     def recurse_meshes(self):
         cmeshes = []
@@ -701,4 +853,6 @@ class DDDObject3(DDDObject):
         with open(path, 'wb') as f:
             f.write(data)
 
+
 ddd = D1D2D3
+ddd.mat_highlight = D1D2D3.material(color='#ff00ff')

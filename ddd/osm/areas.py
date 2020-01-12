@@ -30,6 +30,7 @@ from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial
 from shapely.geometry.linestring import LineString
 from numpy import angle
+from shapely.geometry.polygon import LinearRing
 
 
 # Get instance of logger for this module
@@ -84,6 +85,8 @@ class AreasOSMBuilder():
 
         #union = union.buffer(0.5)
         #union = union.buffer(-0.5)
+        if not union.geom: return
+
         for c in union.geom:
             for interior in c.interiors:
                 area = ddd.polygon(interior.coords, name="Interways area")
@@ -144,7 +147,7 @@ class AreasOSMBuilder():
 
     def generate_coastline_3d(self, area_crop):
 
-        logger.info("Generating water and land areas according to coastline.")
+        logger.info("Generating water and land areas according to coastline: %s", (area_crop.bounds))
 
         #self.water_3d = terrain.terrain_grid(self.area_crop.bounds, height=0.1, detail=200.0).translate([0, 0, 1]).material(mat_sea)
 
@@ -152,11 +155,13 @@ class AreasOSMBuilder():
         coastlines = []
         coastlines_1d = []
         for way in self.osm.ways_1d.children:
-            if way.extra['feature']['properties'].get('natural', None) == 'coastline':
+            if way.extra['natural'] == 'coastline':
                 coastlines_1d.append(way)
                 coastlines.append(way.buffer(0.1))
 
+        logger.debug("Coastlines: %s", (coastlines_1d, ))
         if not coastlines:
+            logger.info("No coastlines in the feature set.")
             return
 
         coastlines = ddd.group(coastlines)
@@ -168,32 +173,24 @@ class AreasOSMBuilder():
 
         areas = []
         areas_2d = []
-        for water_area_geom in coastline_areas.geom.geoms:
+        geoms = coastline_areas.geom.geoms if coastline_areas.geom.type == 'MultiPolygon' else [coastline_areas.geom]
+        for water_area_geom in geoms:
             # Find closest point, closest segment, and angle to closest segment
             water_area_point = water_area_geom.representative_point()
-            for coastline in coastlines_1d.children[:1]:
-                p, segment_idx, segment_coords_a, segment_coords_b = coastline.closest_segment(ddd.shape(water_area_point))
+            p, segment_idx, segment_coords_a, segment_coords_b = coastlines_1d.closest_segment(ddd.shape(water_area_point))
+            pol = LinearRing([segment_coords_a, segment_coords_b, water_area_point.coords[0]])
 
-                coast_dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
-                coast_dir_vec_length = math.sqrt(coast_dir_vec[0] ** 2 + coast_dir_vec[1] ** 2)
-                coast_dir_vec = (coast_dir_vec[0] / coast_dir_vec_length, coast_dir_vec[1] / coast_dir_vec_length)
-
-                pc_vec = (p[0] - water_area_point.coords[0][0], p[1] - water_area_point.coords[0][1])
-                pc_vec_length = math.sqrt(pc_vec[0] ** 2 + pc_vec[1] ** 2)
-                pc_vec = (pc_vec[0] / pc_vec_length, pc_vec[1] / pc_vec_length)
-
-                angle = math.acos(coast_dir_vec[0] * pc_vec[0] + coast_dir_vec[1] * pc_vec[1])
-
-                print(angle)
-                if angle < math.pi / 2.0:
-                    area_2d = ddd.shape(water_area_geom)
-                    area_3d = area_2d.extrude(-0.2).material(self.osm.mat_sea)
-                    areas_2d.append(area_2d)
-                    areas.append(area_3d)
+            if not pol.is_ccw:
+                area_2d = ddd.shape(water_area_geom)
+                area_3d = area_2d.extrude(-0.2).material(self.osm.mat_sea)
+                areas_2d.append(area_2d)
+                areas.append(area_3d)
 
         if areas:
             self.osm.water_3d = ddd.group(areas)
             self.osm.water_2d = ddd.group(areas_2d)
+        else:
+            logger.warning("No coastline water areas generated!")
 
     def generate_ground_3d(self, area_crop):
 
@@ -207,9 +204,20 @@ class AreasOSMBuilder():
         terr = terr.subtract(self.osm.ways_2d['-1a'])
         terr = terr.subtract(self.osm.areas_2d)
         terr = terr.subtract(self.osm.water_2d)
+
+        # The buffer is fixing a core segment violation :/
+        #terr.save("/tmp/test.svg")
+        #terr.dump()
+        #terr.show()
+        #terr = ddd.group([DDDObject2(geom=s.buffer(0.5).buffer(-0.5)) for s in terr.geom.geoms if not s.is_empty])
+
         #terr.save("/tmp/test.svg")
         #terr = terr.triangulate()
-        terr = terr.extrude(0.3)
+        try:
+            terr = terr.extrude(0.3)
+        except ValueError as e:
+            logger.error("Cannot generate terrain (FIXME): %s", e)
+            return
         terr = terrain.terrain_geotiff_elevation_apply(terr, self.osm.ddd_proj)
         terr = terr.material(self.osm.mat_terrain)
 
