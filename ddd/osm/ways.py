@@ -32,6 +32,7 @@ from ddd.ddd import ddd
 from ddd.osm.buildings import BuildingOSMBuilder
 from ddd.pack.sketchy import terrain, plants, urban
 import copy
+from shapely.coords import CoordinateSequence
 
 
 # Get instance of logger for this module
@@ -42,9 +43,33 @@ WayConnection = namedtuple("WayConnection", "other self_idx other_idx")
 
 class WaysOSMBuilder():
 
+    config_ways = {
+        '_default': {'lanes': None, 'width': None,
+                     'material': None,
+                     'max_inclination': 15,
+                     'leveling_factor': 0.5,
+
+                     'allows_cars': True,
+                     'allows_trucks': True,
+                     'allows_pedestrians': True,
+
+                     'lamps_interval': 25,
+                     'lamps_alternate': True,
+                     'traffic_lights': True },
+
+        'highway': {},
+
+        'stairs': {'lanes': None, 'width': None, 'material': None},
+        'pedestrian': {'lanes': None, 'width': None, 'material': None},
+
+    }
+
     def __init__(self, osmbuilder):
 
         self.osm = osmbuilder
+
+    def layer_height(self, layer_idx):
+        return self.osm.layer_heights[layer_idx]
 
     def follow_way(self, way, depth=1, visited=None):
 
@@ -189,30 +214,33 @@ class WaysOSMBuilder():
             way.extra['layer_max'] = int(way.extra['layer'])
             #way.extra['layer_height'] = self.layer_height(str(way.extra['layer_min']))
 
-        '''
         # Search transitions between layers
         for way in self.osm.ways_1d.children:
             for other, way_idx, other_idx in way.extra['connections']:
                 way.extra['layer_min'] = min(way.extra['layer_min'], int(other.extra['layer_int']))
                 way.extra['layer_max'] = max(way.extra['layer_max'], int(other.extra['layer_int']))
 
+                '''
                 # Hack, we should follow paths and propagate heights
                 if other.extra['layer_int'] == way.extra['layer_max']:
                     way.extra['layer_dir_up'] = 1 if (way_idx == 0) else -1
                 else:
                     way.extra['layer_dir_up'] = -1 if (way_idx == 0) else 1
+                '''
 
+            # FIXME: This shall be done below possibly (when processing connections ?)
             if way.extra['layer_min'] != way.extra['layer_max'] and way.extra['layer_int'] == 0:
                 #logger.debug("Layer transition (%s <-> %s): %s <-> %s", way.extra['layer_min'],other.extra['layer_max'], way, other)
-                way.extra['layer_transition'] = True
+                #way.extra['layer_transition'] = True
                 way.extra['layer'] = str(way.extra['layer_min']) + "a"
 
         # Propagate height across connections for transitions
-        self.generate_ways_1d_heights()
-        '''
+        #self.generate_ways_1d_heights()
 
+        # Road 1D heights
         self.ways_1d_heights_initial()
-        self.ways_1d_propagate_heights()  # and_layers_and_transitions_etc
+        self.ways_1d_heights_connections()  # and_layers_and_transitions_etc
+        self.ways_1d_heights_propagate()
 
         # Propagate height beyond transition layers if gradient is too large?!
 
@@ -222,24 +250,154 @@ class WaysOSMBuilder():
         """
         Heights in 1D, regarding connections with bridges, tunnels...
         Road flatness is to be resolved afterwards in 2D.
+
+        We have several height concepts:
+        - relative height (relative to layer 0: 0)
+        - terrain and absolute height (when considering terrain)
+        TODO: these concepts still need to be pinpointed, when we resolve what
+
+        We need to define for each vertex / node / road:
+        # height, "nominal layer?", and transition=layers-affected
+        # tunnels cannot be transitions up  (actually, we should check if there are objects)
+        # bridges cannot be transitions down but can go a bit down if needed (actually, we should check if there are objects9
+        # all can go up or down depending on min/max limits (inside minor streets lower tunnels, highways have higher tunnels, etc)
+
         """
         for way in self.osm.ways_1d.children:
 
             height = 0.0
 
+            height = self.layer_height(way.extra['layer'])
+            way.extra['way_height'] = height
+            way.extra['way_height_start'] = height
+            way.extra['way_height_end'] = height
+
+            #way.extra['way_height_low_min'] = height - 1
+            #way.extra['way_height_low_max'] = height + 1
+            #way.extra['way_height_high_min'] = height - 1
+            #way.extra['way_height_high_max'] = height + 1
+            way.extra['way_height_min'] = height - 1
+            way.extra['way_height_max'] = height + 1
+            way.extra['way_height_weight'] = 1.0
+            #way.extra['way_height_start_min'] = height - 1
+            #way.extra['way_height_start_max'] = height + 1
+            #way.extra['way_height_end_min'] = height - 1
+            #way.extra['way_height_end_max'] = height + 1
+
             if way.extra['tunnel']:
                 print("TUNNEL")
+                way.extra['way_height_min'] = height - 3
+                way.extra['way_height_weight'] = 8.0
             elif way.extra['bridge']:
                 print("BRIDGE")
+                way.extra['way_height_min'] = height - 2
+                way.extra['way_height_max'] = height + 3
+                way.extra['way_height_weight'] = 10.0
+            elif way.extra['junction'] == "roundabout":
+                print("ROUNDABOUT")
+                #way.extra['way_leveling'] = height - 2
+                way.extra['way_height_min'] = height - 2
+                way.extra['way_height_max'] = height + 3
+                way.extra['way_height_weight'] = 20.0  # Actually height could move, but altogether
+                #way.extra['way_height_leveling'] = 0.9  # Actually height could move, but altogether
+            else:
+                way.extra['way_height_max'] = height + 5
+                way.extra['way_height_min'] = height - 5  # (take from settings / next layer)
 
-            height = self.layer_height(way.extra['layer'])
-            way.extra['ddd_osm_wayheight'] = height
+            #way.geom = LineString([(c[0], c[1], 0.0) for c in way.geom.coords])
 
-    def ways_1d_propagate_heights(self):
+
+    def ways_1d_heights_connections_way(self, way, visited_vertexes):
+        #logger.debug("Stepping: %s", way)
+
+        # At the end, examine gap with connections
+        end_vertex_idx = len(way.geom.coords) - 1
+
+        # For each vertex (start / end), evaluate the connection
+        connections_start = [c for c in way.extra['connections'] if c.self_idx == 0]
+        connections_end = [c for c in way.extra['connections'] if c.self_idx == end_vertex_idx]
+
+        self_idx = None
+        for cons in (connections_start, connections_end):
+            self_idx = 0 if self_idx is None else end_vertex_idx
+            if not cons: continue
+            vertex_coords = way.geom.coords[self_idx]
+            if vertex_coords in visited_vertexes: continue
+            visited_vertexes.add(vertex_coords)
+            #heights = [way.extra['way_height']] + [c.other.extra['way_height'] for c in cons]
+            heights_weighted = [way.extra['way_height'] * way.extra['way_height_weight']] + [c.other.extra['way_height'] * c.other.extra['way_height_weight'] for c in cons]
+            heights_span = [way.extra['way_height_weight']] + [c.other.extra['way_height_weight'] for c in cons]
+            heights_weighted_avg = sum(heights_weighted) / sum(heights_span)
+
+            #logger.debug("Connections at %s (height=%.5f, heights_avg=%.5f)", way, way.extra['way_height'], heights_weighted_avg)
+
+            if self_idx == 0:
+                way.extra['way_height_start'] = heights_weighted_avg
+            else:
+                way.extra['way_height_end'] = heights_weighted_avg
+
+            for con in cons:
+                if con.other_idx == 0:
+                    con.other.extra['way_height_start'] = heights_weighted_avg
+                else:
+                    con.other.extra['way_height_end'] = heights_weighted_avg
+
+    def ways_1d_heights_connections(self):
         """
         """
-        raise NotImplementedError()
+        """
+        Agent = namedtuple("Agent", "way direction")
 
+        remaining_ways = list(self.osm.ways_1d.children)
+        agents = []
+
+        agent = Agent(remaining_ways[0], 1)
+        agents.append(agent)
+
+        for a in agents:
+            self.ways_1d_propagate_heights_step(a)
+        """
+        visited = set()
+        for way in self.osm.ways_1d.children:
+            self.ways_1d_heights_connections_way(way, visited)
+
+    def ways_1d_heights_propagate(self):
+
+        for way in self.osm.ways_1d.children:
+
+            #if not way.extra['layer_transition']: continue
+
+            height_start = way.extra['way_height_start']
+            height_end = way.extra['way_height_end']
+
+            if way.extra['natural'] == "coastline": continue
+
+            #if height_start == height_end: continue
+
+            #logger.info("Transition from %s to %s", height_start, height_end)
+
+            coords = way.geom.coords
+
+            # Walk segment
+            # Interpolate path between lower and ground height
+            l = 0.0
+            ncoords = [ (coords[0][0], coords[0][1], height_start) ]
+            for idx in range(len(coords) - 1):
+                p, pn = coords[idx:idx+2]
+                #p, pn = coords[idx:idx+2]
+                pl = math.sqrt((pn[0] - p[0]) ** 2 + (pn[1] - p[1]) ** 2)
+                l += pl
+                h = height_start + (height_end - height_start) * (l / way.geom.length)
+                #logger.debug("  Distance: %.2f  Height: %.2f", l, h)
+                ncoords.append((pn[0], pn[1], h))
+
+            way.geom.coords = ncoords
+
+            #way.extra['height_start'] = height_start
+            #way.extra['height_end'] = height_end
+            #logger.debug("Heights [height_start=%.1f, height_end=%.1f]: %s", height_start, height_end, way)
+
+    '''
     def generate_ways_1d_heights(self):
 
         for way in self.osm.ways_1d.children:
@@ -274,12 +432,13 @@ class WaysOSMBuilder():
             way.extra['height_end'] = height_end
 
             logger.debug("Transition [height_start=%.1f, height_end=%.1f]: %s", height_start, height_end, way)
+    '''
 
     def get_height_apply_func(self, way):
         def height_apply_func(x, y, z, idx):
             # Find nearest point in path, and return its height
             path = way
-            closest_in_path = path.geom.coords[0]
+            closest_in_path = None  # path.geom.coords[0]
             closest_dist = math.inf
             for idx, p in enumerate(path.geom.coords):
                 pd = math.sqrt((x - p[0]) ** 2 + (y - p[1]) ** 2)
@@ -289,7 +448,7 @@ class WaysOSMBuilder():
                     closest_in_path = p
                     closest_dist = pd
             #logger.debug("Closest in path: %s", closest_in_path)
-            return (x, y, z + closest_in_path[2])
+            return (x, y, z + (closest_in_path[2] if way.extra['natural'] != "coastline" else 0.0))  #  if len(closest_in_path) > 2 else 0.0
         return height_apply_func
 
     '''
@@ -400,6 +559,7 @@ class WaysOSMBuilder():
         man_made = feature['properties'].get('man_made', None)
         tunnel = feature['properties'].get('tunnel', None)
         bridge = feature['properties'].get('bridge', None)
+        junction = feature['properties'].get('junction', None)
 
         path = ddd.shape(feature['geometry'])
         #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
@@ -531,6 +691,7 @@ class WaysOSMBuilder():
         path.extra['natural'] = natural
         path.extra['tunnel'] = tunnel
         path.extra['bridge'] = bridge
+        path.extra['junction'] = junction
         path.extra['width'] = width
         path.extra['lanes'] = lanes
         path.extra['layer'] = feature['properties']['layer']
@@ -617,7 +778,14 @@ class WaysOSMBuilder():
                 ways.append(wayminus)
             self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2")
 
-        self.osm.ways_2d["-1a"] = self.osm.ways_2d["-1a"].material(ddd.mat_highlight)
+
+        self.osm.ways_2d["-1a"].children[0] = self.osm.ways_2d["-1a"].children[0].material(ddd.mat_highlight)
+        self.osm.ways_2d["-1a"].children[0].dump()
+        print(self.osm.ways_2d["-1a"].children[0].extra)
+        #print(list(self.osm.ways_2d["-1a"].children[0].extra['way_1d'].geom.coords))
+        '''
+        sys.exit(0)
+        '''
         #self.osm.ways_2d["0a"] = self.osm.ways_2d["0a"].subtract(union_l0).subtract(union_l1)
         #self.osm.ways_2d["1a"] = self.osm.ways_2d["1a"].subtract(union_l1)
 
@@ -721,7 +889,7 @@ class WaysOSMBuilder():
 
         #print(feature['properties'].get("name", None))
         #road_2d.extra['feature'] = feature
-        road_2d.extra['path'] = path
+        #road_2d.extra['path'] = path
         road_2d.extra['way_1d'] = path
 
         road_2d.name = "Way: %s" % (feature['properties'].get('name', None))
@@ -748,9 +916,6 @@ class WaysOSMBuilder():
         self.generate_elevated_ways()
         '''
 
-    def layer_height(self, layer_idx):
-        return self.osm.layer_heights[layer_idx]
-
     def generate_ways_3d_layer(self, layer_idx):
         '''
         - Sorts ways (more important first),
@@ -770,16 +935,16 @@ class WaysOSMBuilder():
 
             try:
                 extra_height = way_2d.extra['extra_height']
-                way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, layer_height + extra_height])
+                way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
                 way_3d = terrain.terrain_geotiff_elevation_apply(way_3d, self.osm.ddd_proj)
                 way_3d.extra['way_2d'] = way_2d
-                if way_2d.extra['natural'] == "coastline":
-                    way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
+                if way_2d.extra['natural'] == "coastline": way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
+
                 ways_3d.append(way_3d)
             except ValueError as e:
                 logger.error("Could not generate 3D way: %s", e)
 
-        ways_3d = ddd.group(ways_3d) if ways_3d else DDDObject3()
+        ways_3d = ddd.group(ways_3d, empty=3)
 
         #ways_3d = ways_2d.extrude(-(0.2)).translate([0, 0, layer_height])
         #ways_3d = terrain.terrain_geotiff_elevation_apply(ways_3d, self.osm.ddd_proj)
@@ -787,14 +952,16 @@ class WaysOSMBuilder():
         #if layer_idx.endswith('a'):
         #    ways_3d = ways_3d.material(mat_highlight)
 
+        nways = []
         for way in ways_3d.children:
-            if way.extra['layer_transition']:
-                #logger.debug("3D layer transition: %s", way)
-                path = way.extra['way_2d'].extra['way_1d']
-                vertex_func = self.get_height_apply_func(path)
-                way.mesh = way.vertex_func(vertex_func).mesh
+            #logger.debug("3D layer transition: %s", way)
+            #if way.extra['layer_transition']:
+            path = way.extra['way_2d'].extra['way_1d']
+            vertex_func = self.get_height_apply_func(path)
+            nway = way.vertex_func(vertex_func)
+            nways.append(nway)
 
-        self.osm.ways_3d[layer_idx] = ways_3d
+        self.osm.ways_3d[layer_idx] = ddd.group(nways, empty=3)
 
     def generate_subways(self):
         """

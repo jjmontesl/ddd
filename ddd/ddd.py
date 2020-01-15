@@ -435,7 +435,7 @@ class DDDObject2(DDDObject):
                         logger.error("Could not extrude Polygon in MultiPolygon: %s", e)
                     except IndexError as e:
                         logger.error("Could not extrude Polygon in MultiPolygon: %s", e)
-                result = DDDObject3(children=meshes, name=self.name)
+                result = DDDObject3(children=meshes, name="%s (split extr)" % self.name)
             elif not self.geom.is_empty and not self.geom.type == 'LineString':
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)
@@ -461,7 +461,7 @@ class DDDObject2(DDDObject):
         result.children.extend([c.extrude(height) for c in self.children])
 
         # Copy extra information from original object
-        result.name = self.name
+        result.name = self.name if result.name is None else result.name
         result.extra = dict(self.extra)
         result.extra['extruded_shape'] = self
 
