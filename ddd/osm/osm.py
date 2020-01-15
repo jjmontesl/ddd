@@ -102,7 +102,7 @@ class OSMBuilder():
         self.area_filter = area_filter
         self.area_crop = area_crop
 
-        self.simplify_tolerance = 0.01
+        #self.simplify_tolerance = 0.01
 
         self.layer_indexes = ('-2', '-1', '0', '1', '2', '-2a', '-1a', '0a', '1a')
 
@@ -117,22 +117,6 @@ class OSMBuilder():
 
 
         self.features = features if features else []
-
-        #self.area = area  # Polygon or shape for initial selectionof features (ie: city)
-        #self.area_filter = ddd.rect([-500, -500, 500, 500]).geom # Alameda + Centro + Sea (1 km2)
-        #self.area_filter= ddd.rect([-250, -250, 250, 250]).geom # Mini (0.25 km2)
-        #self.area_filter = ddd.rect([-1000, -1000, 0, 0]).geom # Castro (1 km2)
-        #self.area_filter = ddd.rect([-500, -750, 1000, 750]).geom # Elduayen-Torres GB (2.25 km2)
-        #self.area_filter = ddd.rect([-500, -750, 1500, 750]).geom # Elduayen-Nudo (3 km2)
-        #self.area_filter = ddd.rect([-1500, -1500, 500, 250]).geom # Independencia - Granvía
-        #self.area_filter = ddd.rect([-1500, -750, 1500, 750]).geom # Elduayen-Nudo (4.5 km2)
-
-        #self.area_filter = ddd.rect([-1000, -1000, 1000, 1000]).geom # 4km2 around
-        #self.area_filter = ddd.rect([-2000, -2000, 2000, 2000]).geom # 16km2 around
-        #self.area_filter = ddd.rect([-3000, -3000, 3000, 3000]).geom # 36km2 around
-        #self.area_filter = ddd.rect([-4000, -4000, 4000, 4000]).geom # 64km2 around
-
-        #self.area_crop = self.area_filter
 
         self.osm_proj = osm_proj
         self.ddd_proj = ddd_proj
@@ -245,6 +229,8 @@ class OSMBuilder():
 
     def generate(self):
 
+        logger.info("Generating geometry (area_filter=%s, area_crop=%s)", self.area_filter, self.area_crop)
+
         self.preprocess_features()
 
         # Generate items for point features
@@ -252,6 +238,23 @@ class OSMBuilder():
 
         # Roads sorted + intersections + metadata
         self.ways.generate_ways_1d()
+
+        # Test: get a way and walk connections
+        #ways = [w for w in self.ways_1d.children if 'de Ceta' in w.name or 'way/165386383' in w.name or 'way/666643707' in w.name or 'way/700343244' in w.name]
+        '''
+        ways = [w for w in self.ways_1d.children if 'de Ceta' in w.name]
+        ddd.group(ways).save("/tmp/test.svg")  #group(see).show()
+
+        #for way in ways:
+        ways[-1] = ways[-1].material(ddd.mat_highlight)
+        way = ways[-1]
+        for d in range(15):  #range():
+            dumped = self.ways.dump_way(way, depth=d)
+            #ddd.group(dumped).save("/tmp/test%02d.svg" % d)  #group(see).show()
+            ddd.group(dumped).buffer(1).show()
+        sys.exit(1)
+        '''
+
         self.ways.generate_ways_2d()
 
         #self.roads_2d_lm1 = self.generate_roads_2d(-1)
@@ -286,8 +289,8 @@ class OSMBuilder():
         # Generates items defined as areas (area fountains, football fields...)
 
         # Road props (traffic lights, lampposts, fountains, football fields...) - needs. roads, areas, coastline, etc... and buildings
-        self.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
-        self.ways.generate_props_2d()  # Objects related to ways
+        #self.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
+        #self.ways.generate_props_2d()  # Objects related to ways
 
         # Crop if necessary
         if self.area_crop:
@@ -313,8 +316,8 @@ class OSMBuilder():
         # Walls and fences(!) (2D?)
 
         # Urban decoration (trees, fountains, etc)
-        self.items.generate_items_3d()
-        self.items2.generate_items_3d()
+        #self.items.generate_items_3d()
+        #self.items2.generate_items_3d()
 
         # Trees, parks, gardens...
 

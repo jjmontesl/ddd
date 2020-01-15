@@ -207,7 +207,7 @@ class D1D2D3():
         elif isinstance(children[0], DDDObject3):
             result = DDDObject3(children=children, name=name)
         else:
-            raise ValueError("Invalid object for ddd.group(): %s", children[0])
+            raise ValueError("Invalid object for ddd.group(): %s" % children[0])
 
         if any((c is None for c in children)):
             raise ValueError("Tried to add null to object children list.")
@@ -223,8 +223,8 @@ class DDDObject():
         self.extra = extra if extra is not None else {}
         self.mat = material
 
-        self.geom = None
-        self.mesh = None
+        #self.geom = None
+        #self.mesh = None
 
         for c in self.children:
             if not isinstance(c, self.__class__):
@@ -246,7 +246,7 @@ class DDDObject2(DDDObject):
         self.geom = geom
 
     def __repr__(self):
-        return "<DDDObject2 (name=%s, geom=%s (%s verts), children=%d)>" % (self.name, self.geom.type if self.geom else None, self.vertex_count(), len(self.children) if self.children else 0)
+        return "<DDDObject2 (name=%s, geom=%s (%s verts), children=%d, id=%s)>" % (self.name, self.geom.type if self.geom else None, self.vertex_count(), len(self.children) if self.children else 0, id(self))
 
     def vertex_count(self):
         if not self.geom:
@@ -261,7 +261,7 @@ class DDDObject2(DDDObject):
         return None
 
     def copy(self):
-        obj = DDDObject2(name=self.name, children=list(self.children), geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
+        obj = DDDObject2(name=self.name, children=[c.copy() for c in self.children], geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
         return obj
 
     def material(self, material):
@@ -292,7 +292,7 @@ class DDDObject2(DDDObject):
         geom = geometry.LineString(linecoords)
         return DDDObject2(geom=geom)
 
-    def buffer(self, distance, resolution=8, cap_style=1, join_style=1, mitre_limit=5.0):
+    def buffer(self, distance, resolution=8, cap_style=2, join_style=2, mitre_limit=5.0):
         '''
         Resolution is:
 
@@ -306,9 +306,12 @@ class DDDObject2(DDDObject):
             bevel    3
         '''
         result = self.copy()
-        result.geom = self.geom.buffer(distance, resolution=resolution,
-                                       cap_style=cap_style, join_style=join_style,
-                                       mitre_limit=5.0)
+        if self.geom:
+            result.geom = self.geom.buffer(distance, resolution=resolution,
+                                           cap_style=cap_style, join_style=join_style,
+                                           mitre_limit=5.0)
+        result.children = [c.buffer(distance, resolution, cap_style, join_style, mitre_limit) for c in self.children]
+
         return result
 
     def subtract(self, other):
@@ -321,7 +324,7 @@ class DDDObject2(DDDObject):
         #if self.geom:
         #    union = other.union()
         #    result.geom = result.geom.difference(union.geom)
-        #result.children = [c.subtract(other) for c in result.children]
+        result.children = [c.subtract(other) for c in result.children]
 
         return result
 
@@ -577,7 +580,7 @@ class DDDObject3(DDDObject):
         self.mesh = mesh
 
     def __repr__(self):
-        return "<DDDObject3 (name=%s, faces=%d, children=%d)>" % (self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
+        return "<DDDObject3 (name=%s, faces=%d, children=%d, id=%s)>" % (self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0, id(self))
 
     def copy(self):
         obj = DDDObject3(name=self.name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))

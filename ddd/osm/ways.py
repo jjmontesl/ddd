@@ -31,6 +31,7 @@ from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.osm.buildings import BuildingOSMBuilder
 from ddd.pack.sketchy import terrain, plants, urban
+import copy
 
 
 # Get instance of logger for this module
@@ -44,6 +45,26 @@ class WaysOSMBuilder():
     def __init__(self, osmbuilder):
 
         self.osm = osmbuilder
+
+    def follow_way(self, way, depth=1, visited=None):
+
+        if depth < 0: return []
+
+        if visited is None:
+            visited = set()
+
+        # FIXME: Requires tagging the depth to account for nodes visited multiuple times through different ways
+        #if way in visited: return []
+
+        #logger.debug("Way: %s (connections: %s)", way, len(way.extra['connections']))
+        for other, way_idx, other_idx in way.extra['connections']:
+            #if other in visited: continue
+            #logger.debug(indent_string + "  from %d/%d to %d/%d:", way_idx, len(way.geom.coords), other_idx, len(other.geom.coords))
+            self.follow_way(other, depth - 1, visited)
+
+        visited.add(way)
+
+        return list(visited)
 
     def generate_ways_1d(self):
 
@@ -59,25 +80,90 @@ class WaysOSMBuilder():
 
         self.osm.ways_1d = ddd.group(ways, empty=2)
 
-        # Find connections
-        # TODO: this shall possibly come from OSM relations (or maybe not, or optional)
-        logger.info("Resolving connections between ways (%d ways).", len(ways))
+        # Splitting
+        logger.info("Ways before splitting mid connections: %d", len(self.osm.ways_1d.children))
+
+        '''
+        # Split all
         vertex_cache = defaultdict(list)
         for way in self.osm.ways_1d.children:
             #start = way.geom.coords[0]
             #end = way.geom.coords[-1]
             for way_idx, c in enumerate(way.geom.coords):
-                if c in vertex_cache:
-                    for other in vertex_cache[c]:
-                        if other == way: continue
-                        self.connect_ways_1d(way, other)  #, way_idx)
+                vertex_cache[c].append(way)
 
-                if way not in vertex_cache[c]:
-                    vertex_cache[c].append(way)
+        split = True
+        while split:
+            split = False
+            for c, ways in vertex_cache.items():
+                if len(ways) > 1:
+                    for w in ways:
+                        #if w.extra['natural'] == 'coastline': continue
+                        split1, split2 = self.split_way_1d_vertex(w, c)
+                        if split1 and split2:
+                            for way_coords in w.geom.coords:
+                                vertex_cache[way_coords].remove(w)
+                            for way_coords in split1.geom.coords:
+                                vertex_cache[way_coords].append(split1)
+                            for way_coords in split2.geom.coords:
+                                vertex_cache[way_coords].append(split2)
+                            split = True
+                        if split: break
+                if split: break
+        vertex_cache = None
+        '''
+
+        # Split first and last only
+        vertex_cache = defaultdict(list)
+        for way in self.osm.ways_1d.children:
+            start = way.geom.coords[0]
+            end = way.geom.coords[-1]
+            for c in (start, end):
+                vertex_cache[c].append(way)
+
+        split = True
+        while split:
+            split = False
+            for way in self.osm.ways_1d.children:
+                for way_idx, c in enumerate(way.geom.coords[1:-1]):
+                    if c in vertex_cache:
+                        #if w.extra['natural'] == 'coastline': continue
+                        split1, split2 = self.split_way_1d_vertex(way, c)
+                        if split1 and split2:
+                            for way_coords in (way.geom.coords[0], way.geom.coords[-1]):
+                                vertex_cache[way_coords].remove(way)
+                            for way_coords in (split1.geom.coords[0], split1.geom.coords[-1]):
+                                vertex_cache[way_coords].append(split1)
+                            for way_coords in (split2.geom.coords[0], split2.geom.coords[-1]):
+                                vertex_cache[way_coords].append(split2)
+                            split = True
+                        if split: break
+                if split: break
+        vertex_cache = None
+
+        logger.debug("Ways after splitting mid connections: %d", len(self.osm.ways_1d.children))
+
+        # Find connections
+        # TODO: this shall possibly come from OSM relations (or maybe not, or optional)
+        logger.info("Resolving connections between ways (%d ways).", len(self.osm.ways_1d.children))
+        vertex_cache = defaultdict(list)
+        for way in self.osm.ways_1d.children:
+            #start = way.geom.coords[0]
+            #end = way.geom.coords[-1]
+            for way_idx, c in enumerate(way.geom.coords):
+                #cidx = "%.0f,%.0f" % (c[0], c[1])
+                cidx = c
+                vertex_cache[cidx].append(way)
+                for other in vertex_cache[cidx]:
+                    if other == way: continue
+                    #way.extra['connections'].append(WayConnection(other, way_idx, 0))
+                    self.connect_ways_1d(way, other)  #, way_idx)
+        vertex_cache = None
 
         # Divide end-to-middle connections
+        '''
         logger.info("Ways before splitting mid connections: %d", len(self.osm.ways_1d.children))
-        split = True
+        split = False
         while split:
             split = False
             for way in self.osm.ways_1d.children:
@@ -89,9 +175,11 @@ class WaysOSMBuilder():
                         self.split_way_1d(other, other_idx)
                         # Restart after each split
                         split = True
-                    if split: break
+                        break
                 if split: break
+
         logger.debug("Ways after splitting mid connections: %d", len(self.osm.ways_1d.children))
+        '''
 
         # Find transitions between more than one layer (ie tunnel to bridge) and split
         for way in self.osm.ways_1d.children:
@@ -101,6 +189,7 @@ class WaysOSMBuilder():
             way.extra['layer_max'] = int(way.extra['layer'])
             #way.extra['layer_height'] = self.layer_height(str(way.extra['layer_min']))
 
+        '''
         # Search transitions between layers
         for way in self.osm.ways_1d.children:
             for other, way_idx, other_idx in way.extra['connections']:
@@ -120,10 +209,36 @@ class WaysOSMBuilder():
 
         # Propagate height across connections for transitions
         self.generate_ways_1d_heights()
+        '''
+
+        self.ways_1d_heights_initial()
+        self.ways_1d_propagate_heights()  # and_layers_and_transitions_etc
 
         # Propagate height beyond transition layers if gradient is too large?!
 
         # Soften / subdivide roads if height angle is larger than X (try as alternative to massive subdivision of roads?)
+
+    def ways_1d_heights_initial(self):
+        """
+        Heights in 1D, regarding connections with bridges, tunnels...
+        Road flatness is to be resolved afterwards in 2D.
+        """
+        for way in self.osm.ways_1d.children:
+
+            height = 0.0
+
+            if way.extra['tunnel']:
+                print("TUNNEL")
+            elif way.extra['bridge']:
+                print("BRIDGE")
+
+            height = self.layer_height(way.extra['layer'])
+            way.extra['ddd_osm_wayheight'] = height
+
+    def ways_1d_propagate_heights(self):
+        """
+        """
+        raise NotImplementedError()
 
     def generate_ways_1d_heights(self):
 
@@ -158,6 +273,8 @@ class WaysOSMBuilder():
             way.extra['height_start'] = height_start
             way.extra['height_end'] = height_end
 
+            logger.debug("Transition [height_start=%.1f, height_end=%.1f]: %s", height_start, height_end, way)
+
     def get_height_apply_func(self, way):
         def height_apply_func(x, y, z, idx):
             # Find nearest point in path, and return its height
@@ -175,8 +292,10 @@ class WaysOSMBuilder():
             return (x, y, z + closest_in_path[2])
         return height_apply_func
 
+    '''
     def split_way_1d(self, way, coord_idx):
-        if coord_idx == 0 or coord_idx >= len(way.geom.coords):
+        logger.debug("Splitting %s at %d", way, coord_idx)
+        if coord_idx == 0 or coord_idx >= len(way.geom.coords) - 1:
             raise ValueError("Cannot split a path (%s) by the first or last index (%s)." % (way, coord_idx))
         part1 = way.copy()
         part1.geom = LineString(way.geom.coords[:coord_idx + 1])
@@ -200,28 +319,64 @@ class WaysOSMBuilder():
         # Update ways
         self.osm.ways_1d.children.remove(way)
         self.osm.ways_1d.children.extend([part1, part2])
+    '''
+
+    def split_way_1d_vertex(self, way, v):
+
+        coord_idx = None
+        for idx, c in enumerate(way.geom.coords):
+            if v == c:
+                coord_idx = idx
+                break
+
+        if coord_idx is None:
+            logger.debug("Coordinates: %s", list(way.geom.coords))
+            raise ValueError("Coordinate not found (%s) to split a path (%s) by coordinates." % (v, way))
+        if coord_idx == 0 or coord_idx >= len(way.geom.coords) - 1:
+            #raise ValueError("Cannot split a path (%s) by the first or last index (%s)." % (way, coord_idx))
+            return None, None
+
+        #logger.debug("Splitting %s at %d (%s)", way, coord_idx, v)
+
+        part1 = way.copy()
+        part1.geom = LineString(way.geom.coords[:coord_idx + 1])
+        part1.extra['connections'] = []
+        part2 = way.copy()
+        part2.geom = LineString(way.geom.coords[coord_idx:])
+        part2.extra['connections'] = []
+        '''
+        part1 = DDDObject2(name=way.name + "/1", geom=LineString(way.geom.coords[:coord_idx + 1]), extra=copy.deepcopy(way.extra))
+        part1.extra['connections'] = []
+        part2 = DDDObject2(name=way.name + "/2", geom=LineString(way.geom.coords[coord_idx:]), extra=copy.deepcopy(way.extra))
+        part2.extra['connections'] = []
+        '''
+
+        self.osm.ways_1d.children.remove(way)
+        self.osm.ways_1d.children.extend([part1, part2])
+
+        return part1, part2
 
     def connect_ways_1d(self, way, other):
         #other_idx = 0 if r_start in (start, end) else -1
-        if other in way.extra['connections'] or way in other.extra['connections']: return
-
         #other_idx = list(other.geom.coords).index(way.geom.coords[way_idx])
         found = False
         for way_idx, wc in enumerate(way.geom.coords):
             for other_idx, oc in enumerate(other.geom.coords):
                 if wc == oc:
                     found = True
-                    break
+                    other_con = WayConnection(other, way_idx, other_idx)
+                    if other_con not in way.extra['connections']:
+                        way.extra['connections'].append(other_con)
+                    way_con = WayConnection(way, other_idx, way_idx)
+                    if way_con not in other.extra['connections']:
+                        other.extra['connections'].append(way_con)
+                if found: break
             if found: break
 
         if not found:
             raise ValueError("Cannot find vertex index by which two paths are connected.")
 
         #logger.debug("Way connection: %s (idx: %d) <-> %s (idx: %d)", way, way_idx, other, other_idx)
-        if not other in way.extra['connections']:
-            way.extra['connections'].append(WayConnection(other, way_idx, other_idx))
-        if not way in other.extra['connections']:
-            other.extra['connections'].append(WayConnection(way, other_idx, way_idx))
 
         '''
         for r in self.ways_1d.children:
@@ -243,16 +398,19 @@ class WaysOSMBuilder():
         historic = feature['properties'].get('historic', None)
         natural = feature['properties'].get('natural', None)
         man_made = feature['properties'].get('man_made', None)
+        tunnel = feature['properties'].get('tunnel', None)
+        bridge = feature['properties'].get('bridge', None)
 
         path = ddd.shape(feature['geometry'])
         #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
 
+        name = "Way: %s" % (feature['properties'].get('name', feature['properties'].get('id')))
         width = None  # if not set will be discarded
         material = self.osm.mat_asphalt
-        name = "Way: %s" % (feature['properties'].get('name', None))
         extra_height = 0.0
         lanes = None
         lamps = False
+
         if highway == "motorway":
             lanes = 2.4
             width = (lanes * 3.30)
@@ -371,6 +529,8 @@ class WaysOSMBuilder():
         path.extra['railway'] = railway
         path.extra['historic'] = historic
         path.extra['natural'] = natural
+        path.extra['tunnel'] = tunnel
+        path.extra['bridge'] = bridge
         path.extra['width'] = width
         path.extra['lanes'] = lanes
         path.extra['layer'] = feature['properties']['layer']
@@ -431,9 +591,35 @@ class WaysOSMBuilder():
 
         return weight
 
+    def get_way_2d(self, way_1d):
+        for l in self.osm.ways_2d.values():
+            for way_2d in l.children:
+                if way_2d.extra['way_1d'] == way_1d:
+                    return way_2d
+        raise ValueError("Tried to get way 2D for not existing way 1D: %s" % way_1d)
+
     def generate_ways_2d(self):
         for layer_idx in self.osm.layer_indexes:
             self.generate_ways_2d_layer(layer_idx)
+
+        # Subtract connected ways
+        #TODO: This shall be possibly done when creating ways not after
+        #union_lm1 = self.osm.ways_2d["-1"].union()
+        #union_l0 = self.osm.ways_2d["0"].union()
+        #union_l1 = self.osm.ways_2d["1"].union()
+        for layer_idx in ["-1a", "0a", "1a"]:
+            ways = []
+            for way in self.osm.ways_2d[layer_idx].children:
+                connected = self.follow_way(way.extra['way_1d'], 1)
+                connected.remove(way.extra['way_1d'])
+                connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
+                wayminus = way.subtract(connected_2d).buffer(0.001)
+                ways.append(wayminus)
+            self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2")
+
+        self.osm.ways_2d["-1a"] = self.osm.ways_2d["-1a"].material(ddd.mat_highlight)
+        #self.osm.ways_2d["0a"] = self.osm.ways_2d["0a"].subtract(union_l0).subtract(union_l1)
+        #self.osm.ways_2d["1a"] = self.osm.ways_2d["1a"].subtract(union_l1)
 
     def generate_ways_2d_layer(self, layer_idx):
         '''
@@ -582,13 +768,17 @@ class WaysOSMBuilder():
 
             #if way_2d.extra['natural'] == "coastline": continue
 
-            extra_height = way_2d.extra['extra_height']
-            way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, layer_height + extra_height])
-            way_3d = terrain.terrain_geotiff_elevation_apply(way_3d, self.osm.ddd_proj)
-            way_3d.extra['way_2d'] = way_2d
-            if way_2d.extra['natural'] == "coastline":
-                way_3d = way_3d.translate([0, 0, -5])  # FIXME: hacks coastline wall with extra_height
-            ways_3d.append(way_3d)
+            try:
+                extra_height = way_2d.extra['extra_height']
+                way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, layer_height + extra_height])
+                way_3d = terrain.terrain_geotiff_elevation_apply(way_3d, self.osm.ddd_proj)
+                way_3d.extra['way_2d'] = way_2d
+                if way_2d.extra['natural'] == "coastline":
+                    way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
+                ways_3d.append(way_3d)
+            except ValueError as e:
+                logger.error("Could not generate 3D way: %s", e)
+
         ways_3d = ddd.group(ways_3d) if ways_3d else DDDObject3()
 
         #ways_3d = ways_2d.extrude(-(0.2)).translate([0, 0, layer_height])

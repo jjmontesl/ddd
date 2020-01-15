@@ -88,6 +88,9 @@ class AreasOSMBuilder():
         if not union.geom: return
 
         for c in union.geom:
+            if c.type == "LineString":
+                logger.warning("Interways areas union resulted in LineString geometry. Skipping.")
+                continue
             for interior in c.interiors:
                 area = ddd.polygon(interior.coords, name="Interways area")
                 if area:
