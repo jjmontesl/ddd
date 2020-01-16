@@ -920,9 +920,9 @@ class WaysOSMBuilder():
         self.generate_transitions_lm1_l0()
         self.generate_transitions_l0_l1()
 
-        self.generate_elevated_ways()
         '''
-        self.generate_subways()
+        self.generate_ways_3d_subways()
+        self.generate_ways_3d_elevated()
 
     def generate_ways_3d_layer(self, layer_idx):
         '''
@@ -973,7 +973,7 @@ class WaysOSMBuilder():
 
         self.osm.ways_3d[layer_idx] = ddd.group(nways, empty=3)
 
-    def generate_subways(self):
+    def generate_ways_3d_subways(self):
         """
         Generates boxing for sub ways.
         """
@@ -1001,250 +1001,51 @@ class WaysOSMBuilder():
         subway = ddd.group([sidewalks_3d, walls_3d], empty=3).translate([0, 0, -0.2])
         self.osm.other_3d.children.append(subway)
 
-    def generate_elevated_ways(self):
+    def generate_ways_3d_elevated(self):
 
         logger.info("Generating elevated ways.")
         logger.warn("IMPLEMENT 2D/3D separation for this, as it needs to be cropped")
 
-        # Take roads
-        union = self.roads_2d_l1.children[0]
-        for r in self.roads_2d_l1.children[1:]:
-            union = union.union(r)
+        elevated = []
 
-        # Find transit roads
-        roads_2d_transition_l1_l0 = [r for r in self.roads_2d_l0.children if r.extra.get('transition_l1', False) is True and r.extra.get('transition_lm1', False) is False]
+        # Walk roads
+        ways = [w for w in self.osm.ways_2d["1"].children] + [w for w in self.osm.ways_2d["0a"].children]
+        ways_union = ddd.group(ways).union()
 
-        transitions = DDDObject2()
-        for r in roads_2d_transition_l1_l0:
-            transitions = transitions.union(r)
+        for way in ways:
+            way_longer = way.buffer(0.3, cap_style=1, join_style=2)
 
-        union_with_transitions = union.union(transitions)
+            sidewalk_2d = way.buffer(0.3, cap_style=2, join_style=2).subtract(way).material(self.osm.mat_sidewalk)
+            wall_2d = sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).subtract(sidewalk_2d).subtract(ways_union).buffer(0.001).material(self.osm.mat_cement)
 
-        union_sidewalks = union.buffer(0.3, cap_style=2, join_style=2)
+            sidewalk_2d.extra['way_2d'] = way
+            wall_2d.extra['way_2d'] = way
 
-        self.sidewalks_2d_l1 = union_sidewalks.subtract(union_with_transitions)
+            elevated.append((sidewalk_2d, wall_2d))
 
-        # Create elevated walls (need to remove start and end caps.
-        union_l0 = DDDObject2().union(self.roads_2d_l0).buffer(0.5, cap_style=2, join_style=2)
-        self.walls_2d_l1 = union_sidewalks.buffer(0.2, cap_style=2, join_style=2).subtract(union_sidewalks).subtract(union_with_transitions)
+        elevated_3d = []
+        for item in elevated:
+            sidewalk_2d, wall_2d = item
+            sidewalk_3d = sidewalk_2d.extrude(-0.3)
+            wall_3d = wall_2d.extrude(0.5)
+            #extra_height = way_2d.extra['extra_height']
+            #way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
 
-        self.sidewalks_3d_l1 = self.sidewalks_2d_l1.extrude(0.3).translate([0, 0, 6]).material(mat_sidewalk)
+            elevated_3d.append(sidewalk_3d)
+            elevated_3d.append(wall_3d)
 
-        self.walls_3d_l1 = self.walls_2d_l1.extrude(0.85).translate([0, 0, 6])
+        nitems = []
+        for item in elevated_3d:
 
-        self.floor_3d_l1 = union.buffer(0.3 + 0.2).extrude(0.3).translate([0, 0, 6 - 0.3 - 0.2]).material(mat_sidewalk)
+            print(item.extra)
+            path = item.extra['way_1d']
+            vertex_func = self.get_height_apply_func(path)
+            nitem = item.vertex_func(vertex_func)
+            nitems.append(nitem)
 
-        #self.walls_3d_l1 = self._apply_path_height(self.walls_3d_l1)
-
-        # Hack floor
-        #floor_3d_hack_ground = transitions.extrude(0.3).material(mat_terrain)
-        #self.floor_3d_l1 = ddd.group([self.floor_3d_l1, floor_3d_hack_ground])
-
-        self.sidewalks_3d_l1  = terrain.terrain_geotiff_elevation_apply(self.sidewalks_3d_l1, self.ddd_proj)
-        self.walls_3d_l1  = terrain.terrain_geotiff_elevation_apply(self.walls_3d_l1, self.ddd_proj)
-        self.floor_3d_l1  = terrain.terrain_geotiff_elevation_apply(self.floor_3d_l1, self.ddd_proj)
-
-
-    '''
-    def generate_transitions_lm1_l0(self):
-
-        logger.info("Processing road layer connections (tunnels to ground).")
-        # FIXME: this shall be done in preprocessing and account for shared nodes inside geoms
-        # (not only start/finish)
-
-
-        # Transitions from tunnel to ground
-        for r in self.roads_2d_lm1.children:
-            #print(r.extra['feature'])
-            connecteds = self.find_connected_ways(r, ddd.group(self.roads_2d_l0.children + self.roads_2d_l1.children))
-            if connecteds:
-
-                hstart = -5.0
-                hend = 0.0
-
-                for connected, road_con_idx, link_con_idx in connecteds:
-
-                    for subcon, _, _ in self.find_connected_ways(connected, self.roads_2d_l1):
-                        # Check if there is a bridge (connects layer-1 with layer1)
-                        f = subcon.extra['feature']
-                        if int(f['properties'].get('layer', 0)) == 1:
-                            logger.info("Found tunnel to bridge link: %s", connected)
-                            hend = 6.0
-
-                    path = connected.extra['path']
-                    logger.debug("Processing tunnel to ground transitions (%.2f m): %s -> %s", path.geom.length, r, connected)
-
-                    # Tag (FIXME: shall be done in preprocessing?)
-                    connected.extra['transition_lm1'] = True
-
-                    # Reverse coordinates depending on
-                    coords = path.geom.coords
-                    if link_con_idx != 0:
-                        coords = list(reversed(coords))
-
-                    # Walk segment
-                    # Interpolate path between lower and ground height
-                    l = 0.0
-                    ncoords = [ (coords[0][0], coords[0][1], hstart) ]
-                    for idx in range(len(coords) - 1):
-                        p, pn = coords[idx:idx+2]
-                        pl = math.sqrt((pn[0] - p[0]) ** 2 + (pn[1] - p[1]) ** 2)
-                        l += pl
-                        h = hstart + (hend - hstart) * (l / path.geom.length)
-                        #logger.debug("  Distance: %.2f  Height: %.2f", l, h)
-                        ncoords.append((pn[0], pn[1], h))
-
-                    path.geom.coords = ncoords
-
-                    # TODO: Update path and shape vertexes
-
-                    # Find closest vertexes to path and adjust their height accordingly
-
-                    # Find corresponding 3d meshes
-                    for r3 in self.roads_3d_l0.children + self.roads_3d_l1.children:
-                        if r3.extra['feature'] == connected.extra['feature']:
-                            logger.debug("Found road corresponding 3D mesh: %s", r3)
-
-                            def road_layer_link_height(x, y, z, idx):
-                                # Find nearest point in path, and return its height
-                                closest_in_path = path.geom.coords[0]
-                                closest_dist = math.inf
-                                for idx, p in enumerate(path.geom.coords):
-                                    pd = math.sqrt((x - p[0]) ** 2 + (y - p[1]) ** 2)
-                                    if idx == 0: pd = pd - 20.0
-                                    if idx == len(path.geom.coords) - 1: pd = pd - 20.0
-                                    if pd < closest_dist:
-                                        closest_in_path = p
-                                        closest_dist = pd
-                                #logger.debug("Closest in path: %s", closest_in_path)
-                                return (x, y, z + closest_in_path[2])
-
-                            r3.mesh = r3.vertex_func(road_layer_link_height).mesh
-
-
-                #hole = connected.extrude(100).translate([0, 0, -50])
-                #ddd.group([hole, self.ground_3d]).show()
-                #connected.save("/tmp/fail.svg")
-                #self.ground_3d = self.ground_3d.subtract(hole)
-                #print(hole)
-
-            # Walk L0 feature top to bottom
-
-    def generate_transitions_l0_l1(self):
-
-        logger.info("Processing road layer connections (ground to elevations).")
-        # FIXME: this shall be done in preprocessing and account for shared nodes inside geoms
-        # (not only start/finish)
-
-        # Transitions from tunnel to ground
-        for r in self.roads_2d_l1.children:
-            #print(r.extra['feature'])
-            connecteds = self.find_connected_ways(r, ddd.group(self.roads_2d_l0.children))
-            if connecteds:
-
-                hstart = 6.0
-                hend = 0.0
-
-                for connected, road_con_idx, link_con_idx in connecteds:
-
-                    skip = False
-                    for subcon, _, _ in self.find_connected_ways(connected, self.roads_2d_l1):
-                        # Check if there is a bridge (connects layer-1 with layer1)
-                        f = subcon.extra['feature']
-                        if int(f['properties'].get('layer', 0)) == -1:
-                            logger.info("Found tunnel to bridge link: %s (skipping, already processed by lm1-l1)", connected)
-                            skip = True
-
-                    if skip: continue
-
-                    path = connected.extra['path']
-                    logger.debug("Processing bridge to ground transitions (%.2f m): %s -> %s", path.geom.length, r, connected)
-
-                    # Tag (FIXME: shall be done in preprocessing?)
-                    connected.extra['transition_l1'] = True
-
-                    # Reverse coordinates depending on
-                    coords = path.geom.coords
-                    if link_con_idx != 0:
-                        coords = list(reversed(coords))
-
-                    # Walk segment
-                    # Interpolate path between lower and ground height
-                    l = 0.0
-                    ncoords = [ (coords[0][0], coords[0][1], hstart) ]
-                    for idx in range(len(coords) - 1):
-                        p, pn = coords[idx:idx+2]
-                        pl = math.sqrt((pn[0] - p[0]) ** 2 + (pn[1] - p[1]) ** 2)
-                        l += pl
-                        h = hstart + (hend - hstart) * (l / path.geom.length)
-                        #logger.debug("  Distance: %.2f  Height: %.2f", l, h)
-                        ncoords.append((pn[0], pn[1], h))
-
-                    path.geom.coords = ncoords
-
-                    # TODO: Update path and shape vertexes
-
-                    # Find closest vertexes to path and adjust their height accordingly
-
-                    # Find corresponding 3d meshes
-                    for r3 in self.roads_3d_l0.children + self.roads_3d_l1.children:
-                        if r3.extra['feature'] == connected.extra['feature']:
-                            logger.debug("Found road corresponding 3D mesh: %s", r3)
-
-                            def road_layer_link_height(x, y, z, idx):
-                                # Find nearest point in path, and return its height
-                                closest_in_path = path.geom.coords[0]
-                                closest_dist = math.inf
-                                for idx, p in enumerate(path.geom.coords):
-                                    pd = math.sqrt((x - p[0]) ** 2 + (y - p[1]) ** 2)
-                                    if idx == 0: pd = pd - 20.0
-                                    if idx == len(path.geom.coords) - 1: pd = pd - 20.0
-                                    if pd < closest_dist:
-                                        closest_in_path = p
-                                        closest_dist = pd
-                                #logger.debug("Closest in path: %s", closest_in_path)
-                                return (x, y, z + closest_in_path[2])
-
-                            r3.mesh = r3.vertex_func(road_layer_link_height).mesh
-
-                #hole = connected.extrude(100).translate([0, 0, -50])
-                #ddd.group([hole, self.ground_3d]).show()
-                #connected.save("/tmp/fail.svg")
-                #self.ground_3d = self.ground_3d.subtract(hole)
-                #print(hole)
-
-            # Walk L0 feature top to bottom
-
-    def _apply_path_height(self, obj):
-        """
-        Receives 3D objects and looks for their path, applying path Z to vertexes.
-        """
-
-        path = obj.extra.get('path', None)
-        print(path)
-
-        def road_layer_link_height(x, y, z, idx):
-            # Find nearest point in path, and return its height
-            closest_in_path = path.geom.coords[0]
-            closest_dist = math.inf
-            for idx, p in enumerate(path.geom.coords):
-                pd = math.sqrt((x - p[0]) ** 2 + (y - p[1]) ** 2)
-                if idx == 0: pd = pd - 20.0
-                if idx == len(path.geom.coords) - 1: pd = pd - 20.0
-                if pd < closest_dist:
-                    closest_in_path = p
-                    closest_dist = pd
-            #logger.debug("Closest in path: %s", closest_in_path)
-            return (x, y, z + closest_in_path[2])
-
-        if obj.mesh and path:
-            logger.info("Applying path height to: %s", obj)
-            obj = obj.vertex_func(road_layer_link_height)
-        else:
-            obj.children = [self._apply_path_height(c) for c in obj.children]
-
-        return obj
-    '''
+        result = ddd.group(nitems, empty=3)
+        result = terrain.terrain_geotiff_elevation_apply(result, self.osm.ddd_proj)
+        self.osm.other_3d.children.append(result)
 
     def generate_props_2d(self):
         """
@@ -1313,7 +1114,7 @@ class WaysOSMBuilder():
                     self.osm.items_1d.children.append(item)
 
         # Generate trafficlights
-        if path.geom.length > 45.0 and path.extra['ddd-trafficlights']:
+        if path.geom.length > 45.0 and path.extra['ddd_trafficlights']:
 
             # End right
             p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 10.0)

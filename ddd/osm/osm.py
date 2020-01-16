@@ -80,6 +80,7 @@ class OSMBuilder():
     mat_bronze = ddd.material(color='#f0cb11')
     mat_steel = ddd.material(color='#78839c')
     mat_stone = ddd.material(color='#9c9378')
+    mat_cement = ddd.material(color='#b8b8a0')
     mat_brick = ddd.material(color='#d49156')
     mat_forgery = ddd.material(color='#1e1118')
     mat_wood = ddd.material(color='#efae85')
