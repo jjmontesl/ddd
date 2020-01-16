@@ -141,6 +141,8 @@ class OSMBuilder():
 
         self.ground_3d = DDDObject3()
 
+        self.other_3d = DDDObject3()
+
         #self.sidewalks_3d_l1 = DDDObject3()
         #self.walls_3d_l1 = DDDObject3()
         #self.floor_3d_l1 = DDDObject3()
@@ -221,11 +223,10 @@ class OSMBuilder():
         for f in self.features:
             if f.properties.get('tunnel', None) == 'yes' and f.properties.get('layer', None) is None:
                 f.properties['layer'] = "-1"
+            if f.properties.get('brige', None) == 'yes' and f.properties.get('layer', None) is None:
+                f.properties['layer'] = "1"
             if f.properties.get('layer', None) is None:
                 f.properties['layer'] = "0"
-
-    def layer_height(self, layer_idx):
-        return self.layer_heights[layer_idx]
 
     def generate(self):
 
@@ -257,10 +258,6 @@ class OSMBuilder():
 
         self.ways.generate_ways_2d()
 
-        #self.roads_2d_lm1 = self.generate_roads_2d(-1)
-        #self.roads_2d_l0 = self.generate_roads_2d(0)
-        #self.roads_2d_l1 = self.generate_roads_2d(1)
-
         # Regions
         # - fill (order) + correct types if interesect or marker: (park, forest, etc...)
         # - ground (fill rest of space)
@@ -287,10 +284,10 @@ class OSMBuilder():
         self.areas.generate_ground_3d(self.area_crop if self.area_crop else self.area_filter) # separate in 2d + 3d, also subdivide (calculation is huge - core dump-)
 
         # Generates items defined as areas (area fountains, football fields...)
+        self.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
 
         # Road props (traffic lights, lampposts, fountains, football fields...) - needs. roads, areas, coastline, etc... and buildings
-        #self.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
-        #self.ways.generate_props_2d()  # Objects related to ways
+        self.ways.generate_props_2d()  # Objects related to ways
 
         # Crop if necessary
         if self.area_crop:
@@ -316,15 +313,16 @@ class OSMBuilder():
         # Walls and fences(!) (2D?)
 
         # Urban decoration (trees, fountains, etc)
-        #self.items.generate_items_3d()
-        #self.items2.generate_items_3d()
+        self.items.generate_items_3d()
+        self.items2.generate_items_3d()
 
         # Trees, parks, gardens...
 
         scene = [self.areas_3d, self.ground_3d, self.water_3d,
                  #self.sidewalks_3d_lm1, self.walls_3d_lm1, self.ceiling_3d_lm1,
                  #self.sidewalks_3d_l1, self.walls_3d_l1, self.floor_3d_l1,
-                 self.buildings_3d, self.items_3d]
+                 self.buildings_3d, self.items_3d,
+                 self.other_3d]
 
         scene = ddd.group(scene + list(self.ways_3d.values()))
 

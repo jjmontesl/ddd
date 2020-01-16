@@ -292,7 +292,7 @@ class DDDObject2(DDDObject):
         geom = geometry.LineString(linecoords)
         return DDDObject2(geom=geom)
 
-    def buffer(self, distance, resolution=8, cap_style=2, join_style=2, mitre_limit=5.0):
+    def buffer(self, distance, resolution=8, cap_style=3, join_style=3, mitre_limit=5.0):
         '''
         Resolution is:
 

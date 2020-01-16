@@ -31,7 +31,7 @@ def post(height=2.00, r=0.075, top=None):
     """
     A round (or squared) post.
     """
-    col = ddd.point([0, 0]).buffer(r, resolution=0).extrude(height)
+    col = ddd.point([0, 0]).buffer(r, resolution=1, cap_style=ddd.CAP_ROUND).extrude(height)
     if top:
         top = top.translate([0, 0, height])
         col = ddd.group([col, top])

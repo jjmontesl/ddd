@@ -2,6 +2,8 @@
 
 from ddd.pack.sketchy import urban
 
-#trafficlight = urban.curvedpost()
 trafficlight = urban.trafficlights()
 trafficlight.show()
+
+lamppost = urban.lamppost()
+lamppost.show()

@@ -267,7 +267,14 @@ class WaysOSMBuilder():
 
             height = 0.0
 
+            '''
+            if way.extra['tunnel']:
+                height = -5
+            elif way.extra['bridge']:
+                height = 6
+            '''
             height = self.layer_height(way.extra['layer'])
+
             way.extra['way_height'] = height
             way.extra['way_height_start'] = height
             way.extra['way_height_end'] = height
@@ -278,27 +285,24 @@ class WaysOSMBuilder():
             #way.extra['way_height_high_max'] = height + 1
             way.extra['way_height_min'] = height - 1
             way.extra['way_height_max'] = height + 1
-            way.extra['way_height_weight'] = 1.0
+            way.extra['way_height_weight'] = 0.001  # do not affect height
             #way.extra['way_height_start_min'] = height - 1
             #way.extra['way_height_start_max'] = height + 1
             #way.extra['way_height_end_min'] = height - 1
             #way.extra['way_height_end_max'] = height + 1
 
             if way.extra['tunnel']:
-                print("TUNNEL")
                 way.extra['way_height_min'] = height - 3
-                way.extra['way_height_weight'] = 8.0
+                way.extra['way_height_weight'] = 1.0
             elif way.extra['bridge']:
-                print("BRIDGE")
                 way.extra['way_height_min'] = height - 2
                 way.extra['way_height_max'] = height + 3
-                way.extra['way_height_weight'] = 10.0
+                way.extra['way_height_weight'] = 1.0
             elif way.extra['junction'] == "roundabout":
-                print("ROUNDABOUT")
                 #way.extra['way_leveling'] = height - 2
                 way.extra['way_height_min'] = height - 2
                 way.extra['way_height_max'] = height + 3
-                way.extra['way_height_weight'] = 20.0  # Actually height could move, but altogether
+                way.extra['way_height_weight'] = 0.001 # Actually height could move, but altogether
                 #way.extra['way_height_leveling'] = 0.9  # Actually height could move, but altogether
             else:
                 way.extra['way_height_max'] = height + 5
@@ -327,7 +331,7 @@ class WaysOSMBuilder():
             #heights = [way.extra['way_height']] + [c.other.extra['way_height'] for c in cons]
             heights_weighted = [way.extra['way_height'] * way.extra['way_height_weight']] + [c.other.extra['way_height'] * c.other.extra['way_height_weight'] for c in cons]
             heights_span = [way.extra['way_height_weight']] + [c.other.extra['way_height_weight'] for c in cons]
-            heights_weighted_avg = sum(heights_weighted) / sum(heights_span)
+            heights_weighted_avg = (sum(heights_weighted) / sum(heights_span)) if sum(heights_span) > 0 else way.extra['way_height']
 
             #logger.debug("Connections at %s (height=%.5f, heights_avg=%.5f)", way, way.extra['way_height'], heights_weighted_avg)
 
@@ -570,6 +574,7 @@ class WaysOSMBuilder():
         extra_height = 0.0
         lanes = None
         lamps = False
+        trafficlights = False
 
         if highway == "motorway":
             lanes = 2.4
@@ -584,10 +589,12 @@ class WaysOSMBuilder():
             lanes = 2.1
             width = (lanes * 3.30)
             lamps = True
+            trafficlights = True
         elif highway == "tertiary":
             lanes = 2.0
             width = (lanes * 3.30)
             lamps = True  # shall be only in city?
+            trafficlights = True
         elif highway == "service":
             lanes = 1.0
             width = (lanes * 3.30)
@@ -598,6 +605,7 @@ class WaysOSMBuilder():
             lanes = 2.0
             width = (lanes * 3.30)
             lamps = True  # shall be only in city?
+            trafficlights = True
         elif highway in ("footway", "path"):
             lanes = 0.6
             material = self.osm.mat_dirt
@@ -697,6 +705,7 @@ class WaysOSMBuilder():
         path.extra['layer'] = feature['properties']['layer']
         path.extra['extra_height'] = extra_height
         path.extra['ddd_lamps'] = lamps
+        path.extra['ddd_trafficlights'] = trafficlights
         #print(feature['properties'].get("name", None))
 
         return path
@@ -779,13 +788,12 @@ class WaysOSMBuilder():
             self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2")
 
 
-        self.osm.ways_2d["-1a"].children[0] = self.osm.ways_2d["-1a"].children[0].material(ddd.mat_highlight)
-        self.osm.ways_2d["-1a"].children[0].dump()
-        print(self.osm.ways_2d["-1a"].children[0].extra)
+        self.osm.ways_2d["-1a"] = self.osm.ways_2d["-1a"].material(ddd.mat_highlight)
+        #self.osm.ways_2d["-1a"].children[0].dump()
+        #print(self.osm.ways_2d["-1a"].children[0].extra)
         #print(list(self.osm.ways_2d["-1a"].children[0].extra['way_1d'].geom.coords))
-        '''
-        sys.exit(0)
-        '''
+        #sys.exit(0)
+
         #self.osm.ways_2d["0a"] = self.osm.ways_2d["0a"].subtract(union_l0).subtract(union_l1)
         #self.osm.ways_2d["1a"] = self.osm.ways_2d["1a"].subtract(union_l1)
 
@@ -912,9 +920,9 @@ class WaysOSMBuilder():
         self.generate_transitions_lm1_l0()
         self.generate_transitions_l0_l1()
 
-        self.generate_subways()
         self.generate_elevated_ways()
         '''
+        self.generate_subways()
 
     def generate_ways_3d_layer(self, layer_idx):
         '''
@@ -943,6 +951,8 @@ class WaysOSMBuilder():
                 ways_3d.append(way_3d)
             except ValueError as e:
                 logger.error("Could not generate 3D way: %s", e)
+            except IndexError as e:
+                logger.error("Could not generate 3D way: %s", e)
 
         ways_3d = ddd.group(ways_3d, empty=3)
 
@@ -968,39 +978,33 @@ class WaysOSMBuilder():
         Generates boxing for sub ways.
         """
         logger.info("Generating subways.")
+        logger.warn("IMPLEMENT 2D/3D separation for this, as it needs to be cropped")
 
         # Take roads
-        union = self.roads_2d_lm1.children[0]
-        for r in self.roads_2d_lm1.children[1:]:
-            union = union.union(r)
+        ways = [w for w in self.osm.ways_2d["-1a"].children] + [w for w in self.osm.ways_2d["-1"].children]
 
-        # Find transit roads
-        roads_2d_transition_lm1_l0 = [r for r in self.roads_2d_l0.children if r.extra.get('transition_lm1', False) is True]
-        roads_2d_transition_lm1_l1 = [r for r in self.roads_2d_l1.children if r.extra.get('transition_lm1', False) is True]
-
-
-        transitions = DDDObject2()
-        for r in roads_2d_transition_lm1_l0 + roads_2d_transition_lm1_l1:
-            transitions = transitions.union(r)
-
-        union_with_transitions = union.union(transitions)
-
+        union = self.osm.ways_2d["-1"].union()
+        union_with_transitions = ddd.group(ways, empty="2").union()
         union_sidewalks = union_with_transitions.buffer(0.6, cap_style=2, join_style=2)
 
-        self.sidewalks_2d_lm1 = union_sidewalks.subtract(union)
-        self.walls_2d_lm1 = self.sidewalks_2d_lm1.buffer(0.5, cap_style=2, join_style=2).subtract(union_sidewalks)
+        sidewalks_2d = union_sidewalks.subtract(union)
+        walls_2d = sidewalks_2d.buffer(0.5, cap_style=2, join_style=2).subtract(union_sidewalks)
 
-        self.sidewalks_3d_lm1 = self.sidewalks_2d_lm1.extrude(0.3).translate([0, 0, -5]).material(mat_sidewalk)
-        self.walls_3d_lm1 = self.walls_2d_lm1.extrude(5).translate([0, 0, -5])
-        self.ceiling_3d_lm1 = union.buffer(0.6 + 0.5).extrude(0.3).subtract(transitions).translate([0, 0, -0.3]).material(mat_sidewalk)
+        sidewalks_3d = sidewalks_2d.extrude(0.3).translate([0, 0, -5]).material(self.osm.mat_sidewalk)
+        walls_3d = walls_2d.extrude(5).translate([0, 0, -5])
+        #self.ceiling_3d_lm1 = union.buffer(0.6 + 0.5)subtract(transitions)..extrude(0.3).translate([0, 0, -0.3]).material(mat_sidewalk)
 
-        self.sidewalks_3d_lm1  = terrain.terrain_geotiff_elevation_apply(self.sidewalks_3d_lm1, self.ddd_proj)
-        self.walls_3d_lm1  = terrain.terrain_geotiff_elevation_apply(self.walls_3d_lm1, self.ddd_proj)
-        self.ceiling_3d_lm1 = terrain.terrain_geotiff_elevation_apply(self.ceiling_3d_lm1, self.ddd_proj)
+        sidewalks_3d  = terrain.terrain_geotiff_elevation_apply(sidewalks_3d, self.osm.ddd_proj)
+        walls_3d = terrain.terrain_geotiff_elevation_apply(walls_3d, self.osm.ddd_proj)
+        #self.ceiling_3d_lm1 = terrain.terrain_geotiff_elevation_apply(self.ceiling_3d_lm1, self.ddd_proj)
+
+        subway = ddd.group([sidewalks_3d, walls_3d], empty=3).translate([0, 0, -0.2])
+        self.osm.other_3d.children.append(subway)
 
     def generate_elevated_ways(self):
 
         logger.info("Generating elevated ways.")
+        logger.warn("IMPLEMENT 2D/3D separation for this, as it needs to be cropped")
 
         # Take roads
         union = self.roads_2d_l1.children[0]
@@ -1261,30 +1265,58 @@ class WaysOSMBuilder():
         length = path.geom.length
 
         # Check if to generate
-        if not path.extra['ddd_lamps']:
-            return
+        if path.extra['ddd_lamps']:
 
-        # Generate lamp posts
+            # Generate lamp posts
+            interval = 25.0
+            numlamps = int(length / interval)
+            idx = 0
+            idx_offset = random.choice([0, 1])
 
-        interval = 25.0
-        numlamps = int(length / interval)
-        idx = 0
-        idx_offset = random.choice([0, 1])
+            # Ignore if street is short
+            if numlamps == 0: return
 
-        # Ignore if street is short
-        if numlamps == 0: return
+            logger.debug("Props for way (length=%s, num=%d, way=%s)", length, numlamps, way_2d)
+            for d in numpy.linspace(0.0, length, numlamps, endpoint=False):
+                if d == 0.0: continue
 
-        logger.debug("Props for way (length=%s, num=%d, way=%s)", length, numlamps, way_2d)
-        for d in numpy.linspace(0.0, length, numlamps, endpoint=False):
-            if d == 0.0: continue
+                # Calculate left and right perpendicular intersections with sidewalk, park, land...
+                #point = path.geom.interpolate(d)
+                p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(d)
+                #logger.error("Could not generate props for way %s: %s", way_2d, e)
+                #print(d, p, segment_idx, segment_coords_a, segment_coords_b)
 
-            # Calculate left and right perpendicular intersections with sidewalk, park, land...
-            #point = path.geom.interpolate(d)
-            p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(d)
-            #logger.error("Could not generate props for way %s: %s", way_2d, e)
-            #print(d, p, segment_idx, segment_coords_a, segment_coords_b)
+                #segment = ddd.line([segment_coords_a, segment_coords_b])
+                dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+                dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+                dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+                perpendicular_vec = (-dir_vec[1], dir_vec[0])
+                lightlamp_dist = path.extra['width'] * 0.5 + 0.5
+                left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
+                right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 
-            #segment = ddd.line([segment_coords_a, segment_coords_b])
+                alternate_lampposts = True
+                if alternate_lampposts:
+                    points = [left] if (idx + idx_offset) % 2 == 0 else [right]
+                else:
+                    points = left, right
+
+                for point in points:
+                    idx = idx + 1
+                    item = ddd.point(point, name="LampPost %s" % way_2d.name)
+
+                    #area = self.osm.areas_2d.intersect(item)
+                    # Check type of area point is on
+
+                    item.extra['way_2d'] = way_2d
+                    item.extra['ddd_osm'] = 'way_lamppost'
+                    self.osm.items_1d.children.append(item)
+
+        # Generate trafficlights
+        if path.geom.length > 45.0 and path.extra['ddd-trafficlights']:
+
+            # End right
+            p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 10.0)
             dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
             dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
             dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
@@ -1293,43 +1325,13 @@ class WaysOSMBuilder():
             left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
             right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 
-            alternate_lampposts = True
-            if alternate_lampposts:
-                points = [left] if (idx + idx_offset) % 2 == 0 else [right]
-            else:
-                points = left, right
+            item = ddd.point(right, name="Traffic Lights %s" % way_2d.name)
 
-            for point in points:
-                idx = idx + 1
-                item = ddd.point(point, name="LampPost %s" % way_2d.name)
+            angle = math.atan2(dir_vec[1], dir_vec[0])
 
-                #area = self.osm.areas_2d.intersect(item)
-                # Check type of area point is on
-
-                item.extra['way_2d'] = way_2d
-                item.extra['ddd_osm'] = 'way_lamppost'
-                self.osm.items_1d.children.append(item)
-
-        # Generate trafficlights
-        if not path.geom.length > 45.0: return
-
-        # End right
-        p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 10.0)
-        dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
-        dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
-        dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
-        perpendicular_vec = (-dir_vec[1], dir_vec[0])
-        lightlamp_dist = path.extra['width'] * 0.5 + 0.5
-        left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
-        right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
-
-        item = ddd.point(right, name="Traffic Lights %s" % way_2d.name)
-
-        angle = math.atan2(dir_vec[1], dir_vec[0])
-
-        #area = self.osm.areas_2d.intersect(item)
-        # Check type of area point is on
-        item.extra['way_2d'] = way_2d
-        item.extra['ddd_osm'] = 'way_trafficlights'
-        item.extra['ddd_angle'] = angle
-        self.osm.items_1d.children.append(item)
+            #area = self.osm.areas_2d.intersect(item)
+            # Check type of area point is on
+            item.extra['way_2d'] = way_2d
+            item.extra['ddd_osm'] = 'way_trafficlights'
+            item.extra['ddd_angle'] = angle
+            self.osm.items_1d.children.append(item)
