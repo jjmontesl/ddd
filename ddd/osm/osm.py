@@ -137,7 +137,7 @@ class OSMBuilder():
         self.buildings_2d = None
         self.buildings_3d = None
 
-        self.water_2d = DDDObject3()
+        self.water_2d = DDDObject2()
         self.water_3d = DDDObject3()
 
         self.ground_3d = DDDObject3()

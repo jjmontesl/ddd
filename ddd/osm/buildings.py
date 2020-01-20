@@ -126,6 +126,9 @@ class BuildingOSMBuilder():
             building, distance = self.closest_building(point)
             #logger.debug("Point: %s  Building: %s  Distance: %s", point, building, distance)
 
+            if not building:
+                continue
+
             if point.extra['amenity'] or point.extra['shop']:
                 building.extra['amenities'].append(point)
                 #logger.debug("Amenity: %s" % point)

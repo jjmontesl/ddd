@@ -564,6 +564,7 @@ class WaysOSMBuilder():
         tunnel = feature['properties'].get('tunnel', None)
         bridge = feature['properties'].get('bridge', None)
         junction = feature['properties'].get('junction', None)
+        waterway = feature['properties'].get('waterway', None)
 
         path = ddd.shape(feature['geometry'])
         #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
@@ -639,6 +640,11 @@ class WaysOSMBuilder():
             width = 0.5
             material = self.osm.mat_terrain
             extra_height = 5.0  # FIXME: Things could cross othis, height shall reach sea precisely
+        elif waterway == "river":
+            lanes = None
+            name = "River %s" % name
+            width = 6.0
+            material = self.osm.mat_sea
 
         elif railway:
             lanes = None
@@ -700,6 +706,7 @@ class WaysOSMBuilder():
         path.extra['tunnel'] = tunnel
         path.extra['bridge'] = bridge
         path.extra['junction'] = junction
+        path.extra['waterway'] = waterway
         path.extra['width'] = width
         path.extra['lanes'] = lanes
         path.extra['layer'] = feature['properties']['layer']
@@ -788,7 +795,7 @@ class WaysOSMBuilder():
             self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2")
 
 
-        self.osm.ways_2d["-1a"] = self.osm.ways_2d["-1a"].material(ddd.mat_highlight)
+        #self.osm.ways_2d["-1a"] = self.osm.ways_2d["-1a"].material(ddd.mat_highlight)
         #self.osm.ways_2d["-1a"].children[0].dump()
         #print(self.osm.ways_2d["-1a"].children[0].extra)
         #print(list(self.osm.ways_2d["-1a"].children[0].extra['way_1d'].geom.coords))
@@ -990,6 +997,11 @@ class WaysOSMBuilder():
         sidewalks_2d = union_sidewalks.subtract(union)
         walls_2d = sidewalks_2d.buffer(0.5, cap_style=2, join_style=2).subtract(union_sidewalks)
 
+        # FIXME: Move cropping to generic site, use itermediate osm.something for storage
+        crop = ddd.shape(self.osm.area_crop)
+        sidewalks_2d = sidewalks_2d.intersect(crop)
+        walls_2d = walls_2d.intersect(crop)
+
         sidewalks_3d = sidewalks_2d.extrude(0.3).translate([0, 0, -5]).material(self.osm.mat_sidewalk)
         walls_3d = walls_2d.extrude(5).translate([0, 0, -5])
         #self.ceiling_3d_lm1 = union.buffer(0.6 + 0.5)subtract(transitions)..extrude(0.3).translate([0, 0, -0.3]).material(mat_sidewalk)
@@ -1005,39 +1017,108 @@ class WaysOSMBuilder():
 
         logger.info("Generating elevated ways.")
         logger.warn("IMPLEMENT 2D/3D separation for this, as it needs to be cropped")
+        logger.warn("TODO: Merge correctly, subtract others as in ways")
 
         elevated = []
 
         # Walk roads
-        ways = [w for w in self.osm.ways_2d["1"].children] + [w for w in self.osm.ways_2d["0a"].children]
-        ways_union = ddd.group(ways).union()
+        ways = ([w for w in self.osm.ways_2d["1"].children] +
+                [w for w in self.osm.ways_2d["0a"].children] +
+                [w for w in self.osm.ways_2d["-1a"].children])
+        #ways_union = ddd.group(ways).union()
 
         for way in ways:
-            way_longer = way.buffer(0.3, cap_style=1, join_style=2)
+            #way_longer = way.buffer(0.3, cap_style=1, join_style=2)
 
-            sidewalk_2d = way.buffer(0.3, cap_style=2, join_style=2).subtract(way).material(self.osm.mat_sidewalk)
-            wall_2d = sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).subtract(sidewalk_2d).subtract(ways_union).buffer(0.001).material(self.osm.mat_cement)
+            way_with_sidewalk_2d = way.buffer(0.4, cap_style=2, join_style=2)
+            sidewalk_2d = way_with_sidewalk_2d.subtract(way).material(self.osm.mat_sidewalk)
+            wall_2d = way_with_sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).subtract(way_with_sidewalk_2d).buffer(0.001, cap_style=2, join_style=2).material(self.osm.mat_cement)
+            floor_2d = way_with_sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).buffer(0.001, cap_style=2, join_style=2).material(self.osm.mat_cement)
 
             sidewalk_2d.extra['way_2d'] = way
             wall_2d.extra['way_2d'] = way
+            floor_2d.extra['way_2d'] = way
 
-            elevated.append((sidewalk_2d, wall_2d))
+            # Get connected ways
+            connected = self.follow_way(way.extra['way_1d'], 1)
+            connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
+            #print(connected)
+            #print(connected_2d)
+
+            sidewalk_2d = sidewalk_2d.subtract(connected_2d).buffer(0.001)
+            wall_2d = wall_2d.subtract(connected_2d).buffer(0.001)
+            # TODO: Subtract floors from connected or resolve intersections
+
+            # FIXME: Move cropping to generic site, use itermediate osm.something for storage
+            crop = ddd.shape(self.osm.area_crop)
+            sidewalk_2d = sidewalk_2d.intersect(crop)
+            wall_2d = wall_2d.intersect(crop)
+            floor_2d = floor_2d.intersect(crop)
+
+            #ddd.group((sidewalk_2d, wall_2d)).show()
+            elevated.append((sidewalk_2d, wall_2d, floor_2d))
+
+            # Bridge piers
+            path = way.extra['way_1d']
+            if path.geom.length > 15.0:  #and path.extra['ddd:bridge:posts']:
+                # Generate posts
+                interval = 35.0
+                length = path.geom.length
+                numposts = int(length / interval)
+                idx = 0
+
+                logger.debug("Piers for bridge (length=%s, num=%d, way=%s)", length, numposts, way)
+                for d in numpy.linspace(0.0, length, numposts, endpoint=False):
+                    if d == 0.0: continue
+
+                    # Calculate left and right perpendicular intersections with sidewalk, park, land...
+                    p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(d)
+
+                    # FIXME: Use items and crop in a generic way (same for subways) (so ignore below in common etc)
+                    if not self.osm.area_crop.contains(ddd.point(p).geom):
+                        continue
+
+                    dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+                    dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+                    dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+                    angle = math.atan2(dir_vec[1], dir_vec[0])
+
+                    idx = idx + 1
+
+                    if len(p) < 3:
+                        logger.error("Bridge path with less than 3 components when building bridge piers.")
+                        continue
+
+                    if p[2] > 1.0:  # If no height, no pilar, but should be a margin and also corrected by base_height
+                        item = ddd.rect([-way.extra['width'] * 0.3, -0.5, way.extra['width'] * 0.3, 0.5], name="Bridge Post %s" % way.name)
+                        item = item.extrude(- (math.fabs(p[2]) - 0.5)).material(self.osm.mat_cement)
+                        item = item.rotate([0, 0, angle - math.pi / 2]).translate([p[0], p[1], 0])
+                        vertex_func = self.get_height_apply_func(path)
+                        item = item.vertex_func(vertex_func)
+                        item = terrain.terrain_geotiff_elevation_apply(item, self.osm.ddd_proj)
+                        item = item.translate([0, 0, -0.8])
+                        item.extra['way_2d'] = way
+                        item.extra['ddd:bridge:post'] = True
+                        self.osm.other_3d.children.append(item)
+
 
         elevated_3d = []
         for item in elevated:
-            sidewalk_2d, wall_2d = item
-            sidewalk_3d = sidewalk_2d.extrude(-0.3)
+            sidewalk_2d, wall_2d, floor_2d = item
+            sidewalk_3d = sidewalk_2d.extrude(0.2)
             wall_3d = wall_2d.extrude(0.5)
+            floor_3d = floor_2d.extrude(-0.5).translate([0, 0, -0.2])
             #extra_height = way_2d.extra['extra_height']
             #way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
 
             elevated_3d.append(sidewalk_3d)
             elevated_3d.append(wall_3d)
+            elevated_3d.append(floor_3d)
 
+        # Raise items to their way height position
         nitems = []
         for item in elevated_3d:
-
-            print(item.extra)
+            #print(item.extra)
             path = item.extra['way_1d']
             vertex_func = self.get_height_apply_func(path)
             nitem = item.vertex_func(vertex_func)
@@ -1112,6 +1193,44 @@ class WaysOSMBuilder():
                     item.extra['way_2d'] = way_2d
                     item.extra['ddd_osm'] = 'way_lamppost'
                     self.osm.items_1d.children.append(item)
+
+        '''
+        # Check if to generate bridge posts
+        if path.geom.length > 15.0 and path.extra['ddd:bridge:posts']:
+
+            # Generate lamp posts
+            interval = 20.0
+            numposts = int(length / interval)
+            idx = 0
+
+            # Ignore if street is short
+            #if numposts == 0: return
+
+            logger.debug("Posts for bridge (length=%s, num=%d, way=%s)", length, numlamps, way_2d)
+            for d in numpy.linspace(0.0, length, numlamps, endpoint=False):
+                if d == 0.0: continue
+
+                # Calculate left and right perpendicular intersections with sidewalk, park, land...
+                p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(d)
+
+                dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+                dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+                dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+
+                #perpendicular_vec = (-dir_vec[1], dir_vec[0])
+                #lightlamp_dist = path.extra['width'] * 0.5 + 0.5
+                #left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
+                #right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
+
+                idx = idx + 1
+                item = ddd.point(p, name="Bridge Post %s" % way_2d.name)
+                #area = self.osm.areas_2d.intersect(item)
+                # Check type of area point is on
+
+                item.extra['way_2d'] = way_2d
+                item.extra['ddd:bridge:post'] = True
+                self.osm.items_1d.children.append(item)
+        '''
 
         # Generate trafficlights
         if path.geom.length > 45.0 and path.extra['ddd_trafficlights']:

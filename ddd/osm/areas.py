@@ -31,6 +31,7 @@ from trimesh.visual.material import SimpleMaterial
 from shapely.geometry.linestring import LineString
 from numpy import angle
 from shapely.geometry.polygon import LinearRing
+from shapely.errors import TopologicalError
 
 
 # Get instance of logger for this module
@@ -81,13 +82,24 @@ class AreasOSMBuilder():
 
         logger.info("Generating 2D areas between ways")
 
-        union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], self.osm.areas_2d]).union()
+        #self.osm.ways_2d['0'].dump()
+        #self.osm.ways_2d['-1a'].dump()
+        #self.osm.areas_2d.dump()
+        try:
+            union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], self.osm.areas_2d]).union()
+        except TopologicalError as e:
+            logger.error("Error calculating interways: %s", e)
+            a = self.osm.ways_2d['0'].union()
+            b = self.osm.ways_2d['-1a'].union()
+            c = self.osm.areas_2d.union()
+            union = ddd.group([c, b, a]).union()
+            #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], self.osm.areas_2d]).union()
 
         #union = union.buffer(0.5)
         #union = union.buffer(-0.5)
         if not union.geom: return
 
-        for c in union.geom:
+        for c in ([union.geom] if union.geom.type == "Polygon" else union.geom):
             if c.type == "LineString":
                 logger.warning("Interways areas union resulted in LineString geometry. Skipping.")
                 continue
@@ -185,7 +197,9 @@ class AreasOSMBuilder():
 
             if not pol.is_ccw:
                 area_2d = ddd.shape(water_area_geom)
-                area_3d = area_2d.extrude(-0.2).material(self.osm.mat_sea)
+                #area_3d = area_2d.extrude(-0.2)
+                area_3d = area_2d.triangulate()
+                area_3d = area_3d.material(self.osm.mat_sea)
                 areas_2d.append(area_2d)
                 areas.append(area_3d)
 

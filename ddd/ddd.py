@@ -9,7 +9,7 @@ import random
 from csg import geom as csggeom
 from csg.core import CSG
 import numpy
-from shapely import geometry, affinity
+from shapely import geometry, affinity, ops
 from shapely.geometry import shape
 from trimesh import creation, primitives, boolean, transformations
 import trimesh
@@ -292,6 +292,15 @@ class DDDObject2(DDDObject):
         geom = geometry.LineString(linecoords)
         return DDDObject2(geom=geom)
 
+    def translate(self, coords):
+        if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
+        result = self.copy()
+        if self.geom:
+            trans_func = lambda x, y, z=0.0: (x + coords[0], y + coords[1], z + coords[2])
+            result.geom = ops.transform(trans_func, self.geom)
+        result.children = [c.translate(coords) for c in self.children]
+        return result
+
     def buffer(self, distance, resolution=8, cap_style=3, join_style=3, mitre_limit=5.0):
         '''
         Resolution is:
@@ -377,22 +386,35 @@ class DDDObject2(DDDObject):
         """
         Returns a triangulated mesh (3D) from this 2D shape.
         """
-        if self.geom.type == 'MultiPolygon':
-            meshes = []
-            for geom in self.geom.geoms:
-                pol = DDDObject2(geom=geom)
-                mesh = pol.triangulate()
-                meshes.append(mesh)
-            result = ddd.group(children=meshes, name=self.name)
+        if self.geom:
+            if self.geom.type == 'MultiPolygon':
+                meshes = []
+                for geom in self.geom.geoms:
+                    pol = DDDObject2(geom=geom)
+                    mesh = pol.triangulate()
+                    meshes.append(mesh)
+                result = ddd.group(children=meshes, name=self.name)
+            else:
+                # Triangulation mode is critical for the resulting quality and triangle count.
+                #mesh = creation.extrude_polygon(self.geom, height)
+                #vertices, faces = creation.triangulate_polygon(self.geom)  # , min_angle=math.pi / 180.0)
+                vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
+                mesh = Trimesh([(v[0], v[1], 0.0) for v in vertices], faces)
+                #mesh = creation.extrude_triangulation(vertices=vertices, faces=faces, height=0.2)
+                mesh.merge_vertices()
+                result = DDDObject3(mesh=mesh, name=self.name)
         else:
-            # Triangulation mode is critical for the resulting quality and triangle count.
-            #mesh = creation.extrude_polygon(self.geom, height)
-            #vertices, faces = creation.triangulate_polygon(self.geom)  # , min_angle=math.pi / 180.0)
-            vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
-            mesh = Trimesh([(v[0], v[1], 0.0) for v in vertices], faces)
-            #mesh = creation.extrude_triangulation(vertices=vertices, faces=faces, height=0.2)
-            mesh.merge_vertices()
-            result = DDDObject3(mesh=mesh, name=self.name)
+            result = DDDObject3()
+
+        result.children.extend([c.triangulate() for c in self.children])
+
+        # Copy extra information from original object
+        result.name = self.name if result.name is None else result.name
+        result.extra = dict(self.extra)
+        result.extra['extruded_shape'] = self
+
+        if self.mat is not None:
+            result = result.material(self.mat)
 
         return result
 
@@ -570,7 +592,8 @@ class DDDObject2(DDDObject):
             f.write(geom._repr_svg_())
 
     def show(self):
-        self.extrude(1.0).show()
+        #self.extrude(1.0).show()
+        self.triangulate().show()
 
 
 class DDDObject3(DDDObject):

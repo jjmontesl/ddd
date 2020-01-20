@@ -41,6 +41,10 @@ setup(
         "pycsg >= 0.3.3",
         "Shapely >= 1.6.4.post2",
         "trimesh >= 3.5.0",
+
+        'svgpath2mpl >= 0.2.1',
+        'svgpathtools >= 1.3.3',
+
     ],
 
     entry_points={'console_scripts': ['sit=sitetool.core.bootstrap:main']},
