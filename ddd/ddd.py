@@ -20,6 +20,8 @@ from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial
 from trimesh.scene.transforms import TransformForest
 import copy
+from trimesh.visual.texture import TextureVisuals
+from matplotlib import colors
 
 
 # Get instance of logger for this module
@@ -213,6 +215,15 @@ class D1D2D3():
             raise ValueError("Tried to add null to object children list.")
 
         return result
+
+
+'''
+class DDDMaterial():
+
+    def __init__(self, color=None):
+        self.color = color
+        self.hexcolor = None
+'''
 
 
 class DDDObject():
@@ -726,6 +737,23 @@ class DDDObject3(DDDObject):
         scene = Scene()
         auto_name = "node_%s_%s" % (id(self), str(self.mat))
         node_name = self.name if self.name else auto_name
+
+        # UV coords test
+        if self.mesh:
+            if self.extra.get('uv', None):
+                uvs = self.extra['uv']
+            else:
+                uvs = [(v[0], v[2]) for v in self.mesh.vertices]
+
+            if len(uvs) != len(self.mesh.vertices):
+                raise AssertionError("Invalid number of UV coordinates.")
+            #if self.mesh.visual is None:
+            #    self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
+            #else:
+            #    self.mesh.visual.uv = uvs
+            mat = SimpleMaterial(diffuse=self.mat)
+            self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
+
         scene.add_geometry(geometry=self.mesh, node_name=node_name.replace(" ", "_"))
 
         cscenes = []

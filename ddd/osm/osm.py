@@ -66,6 +66,7 @@ class OSMBuilder():
     mat_sidewalk = ddd.material(color='#e0d0d0')
     mat_pavement = ddd.material(color='#c0c0b0')
     mat_pathwalk = ddd.material(color='#78281e')
+    mat_roadline = ddd.material(color='#e8e8e8')
 
     # Areas
     mat_park = ddd.material(color='#1db345')
@@ -129,6 +130,9 @@ class OSMBuilder():
         self.ways_1d = None
         self.ways_2d = defaultdict(DDDObject2)
         self.ways_3d = defaultdict(DDDObject3)
+
+        self.roadlines_2d = DDDObject2()
+        self.roadlines_3d = DDDObject3()
 
         self.areas_2d = DDDObject2()
         self.areas_2d_objects = DDDObject2()
@@ -323,7 +327,7 @@ class OSMBuilder():
                  #self.sidewalks_3d_lm1, self.walls_3d_lm1, self.ceiling_3d_lm1,
                  #self.sidewalks_3d_l1, self.walls_3d_l1, self.floor_3d_l1,
                  self.buildings_3d, self.items_3d,
-                 self.other_3d]
+                 self.other_3d, self.roadlines_3d]
 
         scene = ddd.group(scene + list(self.ways_3d.values()))
 

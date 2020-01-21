@@ -33,6 +33,7 @@ from ddd.osm.buildings import BuildingOSMBuilder
 from ddd.pack.sketchy import terrain, plants, urban
 import copy
 from shapely.coords import CoordinateSequence
+from ddd.core import uvmapping
 
 
 # Get instance of logger for this module
@@ -1146,7 +1147,21 @@ class WaysOSMBuilder():
         #if path.geom.type != "LineString": return
         length = path.geom.length
 
-        # Check if to generate
+        # Generate lines
+        if True:
+
+            # Create line
+            line = path.buffer(0.1).material(self.osm.mat_roadline)
+            line.extra['way_1d'] = path
+            uvmapping.map_2d_path(line, path)
+
+            line_3d = line.triangulate().translate([0, 0, 0.01])
+            line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
+            uvmapping.map_3d_from_2d(line_3d, line)
+
+            self.osm.roadlines_3d.children.append(line_3d)
+
+        # Check if to generate lamps
         if path.extra['ddd_lamps']:
 
             # Generate lamp posts
