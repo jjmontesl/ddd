@@ -29,6 +29,7 @@ from trimesh.path.path import Path
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial
 from shapely.geometry.linestring import LineString
+from ddd.text import fonts
 
 
 # Get instance of logger for this module
@@ -72,7 +73,7 @@ class ItemsOSMBuilder():
             #if item_2d.geom.empty: continue
             item_3d = self.generate_item_3d(item_2d)
             if item_3d:
-                item_3d.name = item_2d.name
+                item_3d.name = item_3d.name if item_3d.name else item_2d.name
                 logger.debug("Generated item: %s", item_3d)
                 self.osm.items_3d.children.append(item_3d)
 
@@ -105,6 +106,8 @@ class ItemsOSMBuilder():
         #print("Tree")
         coords = item_2d.geom.coords[0]
         item_3d = plants.plant().translate([coords[0], coords[1], 0.0])
+        #for i in item_3d.select(".foliage"):
+        #    i.extra['ddd:collider'] = False  # TODO: generation details shall be optional
         item_3d.name = 'Tree: %s' % item_2d.name
         return item_3d
 
@@ -128,7 +131,11 @@ class ItemsOSMBuilder():
     def generate_item_3d_monument(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
-        item_3d = urban.sculpture(2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(self.osm.mat_bronze)  # mat_bronze
+        item_name = item_2d.extra['feature']['properties'].get('name', None)
+        if item_name:
+            item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(self.osm.mat_bronze)
+        else:
+            item_3d = urban.sculpture(2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(self.osm.mat_bronze)
         item_3d.name = 'Monument: %s' % item_2d.name
         return item_3d
 

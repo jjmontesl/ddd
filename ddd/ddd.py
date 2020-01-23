@@ -22,6 +22,8 @@ from trimesh.scene.transforms import TransformForest
 import copy
 from trimesh.visual.texture import TextureVisuals
 from matplotlib import colors
+import json
+import base64
 
 
 # Get instance of logger for this module
@@ -30,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 class D1D2D3():
 
+    BASE_DIR = "../"
 
     CAP_ROUND = 1
     CAP_FLAT = 2
@@ -312,6 +315,15 @@ class DDDObject2(DDDObject):
         result.children = [c.translate(coords) for c in self.children]
         return result
 
+    def scale(self, coords):
+        if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
+        result = self.copy()
+        if self.geom:
+            trans_func = lambda x, y, z=0.0: (x * coords[0], y * coords[1], z * coords[2])
+            result.geom = ops.transform(trans_func, self.geom)
+        result.children = [c.scale(coords) for c in self.children]
+        return result
+
     def buffer(self, distance, resolution=8, cap_style=3, join_style=3, mitre_limit=5.0):
         '''
         Resolution is:
@@ -392,6 +404,30 @@ class DDDObject2(DDDObject):
         result.children = [c.intersect(other) for c in self.children]
 
         return result
+
+    def intersects(self, other):
+        """
+        Calculates if this object and children intersects with any of
+        the other object (and children).
+        """
+        other = other.union()
+        if self.geom:
+            if self.geom.intersects(other.geom):
+                return True
+        for c in self.children:
+            if c.intersects(other):
+                return True
+        return False
+
+    def contains(self, other):
+        other = other.union()
+        if self.geom:
+            if self.geom.contains(other.geom):
+                return True
+        for c in self.children:
+            if c.contains(other):
+                return True
+        return False
 
     def triangulate(self):
         """
@@ -505,7 +541,8 @@ class DDDObject2(DDDObject):
 
     def simplify(self, distance):
         result = self.copy()
-        result.geom = self.geom.simplify(distance, preserve_topology=True)
+        if self.geom:
+            result.geom = self.geom.simplify(distance, preserve_topology=True)
         result.children = [c.simplify(distance) for c in self.children]
         return result
 
@@ -737,6 +774,16 @@ class DDDObject3(DDDObject):
         scene = Scene()
         auto_name = "node_%s_%s" % (id(self), str(self.mat))
         node_name = self.name if self.name else auto_name
+
+
+        # Add metadata to name
+        if True:
+            ignore_keys = ('uv', 'feature', 'connections')
+            metadata = self.extra
+            metadata = json.loads(json.dumps(metadata, default=lambda x: None))
+            metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
+            serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
+            node_name = node_name + "_" + str(serialized_metadata)
 
         # UV coords test
         if self.mesh:

@@ -577,30 +577,37 @@ class WaysOSMBuilder():
         lanes = None
         lamps = False
         trafficlights = False
+        roadlines = False
 
         if highway == "motorway":
             lanes = 2.4
             width = (lanes * 3.30)
+            roadlines = True
         elif highway == "primary":
             lanes = 2.2
             width = (lanes * 3.30)
+            roadlines = True
         elif highway == "primary_link":
             lanes = 2.0
             width = (lanes * 3.30)
+            roadlines = True
         elif highway == "secondary":
             lanes = 2.1
             width = (lanes * 3.30)
             lamps = True
             trafficlights = True
+            roadlines = True
         elif highway == "tertiary":
             lanes = 2.0
             width = (lanes * 3.30)
             lamps = True  # shall be only in city?
             trafficlights = True
+            roadlines = True
         elif highway == "service":
             lanes = 1.0
             width = (lanes * 3.30)
             lamps = True  # shall be only in city?
+            roadlines = True
         elif highway in ("residential", "living_street"):
             #lanes = 1.0  # Using 1 lane for residential/living causes too small roads
             #extra_height = 0.1
@@ -608,6 +615,7 @@ class WaysOSMBuilder():
             width = (lanes * 3.30)
             lamps = True  # shall be only in city?
             trafficlights = True
+            roadlines = True
         elif highway in ("footway", "path"):
             lanes = 0.6
             material = self.osm.mat_dirt
@@ -714,6 +722,7 @@ class WaysOSMBuilder():
         path.extra['extra_height'] = extra_height
         path.extra['ddd_lamps'] = lamps
         path.extra['ddd_trafficlights'] = trafficlights
+        path.extra['ddd:roadlines'] = roadlines
         #print(feature['properties'].get("name", None))
 
         return path
@@ -1028,6 +1037,7 @@ class WaysOSMBuilder():
                 [w for w in self.osm.ways_2d["-1a"].children])
         #ways_union = ddd.group(ways).union()
 
+        elevated_union = DDDObject2()
         for way in ways:
             #way_longer = way.buffer(0.3, cap_style=1, join_style=2)
 
@@ -1049,15 +1059,17 @@ class WaysOSMBuilder():
             sidewalk_2d = sidewalk_2d.subtract(connected_2d).buffer(0.001)
             wall_2d = wall_2d.subtract(connected_2d).buffer(0.001)
             # TODO: Subtract floors from connected or resolve intersections
+            wall_2d = wall_2d.subtract(elevated_union)
 
             # FIXME: Move cropping to generic site, use itermediate osm.something for storage
             crop = ddd.shape(self.osm.area_crop)
-            sidewalk_2d = sidewalk_2d.intersect(crop)
-            wall_2d = wall_2d.intersect(crop)
-            floor_2d = floor_2d.intersect(crop)
+            sidewalk_2d = sidewalk_2d.intersect(crop.buffer(-0.003))
+            wall_2d = wall_2d.intersect(crop.buffer(-0.003))
+            floor_2d = floor_2d.intersect(crop.buffer(-0.003))
 
             #ddd.group((sidewalk_2d, wall_2d)).show()
             elevated.append((sidewalk_2d, wall_2d, floor_2d))
+            elevated_union = elevated_union.union(ddd.group([sidewalk_2d, wall_2d, floor_2d]))
 
             # Bridge piers
             path = way.extra['way_1d']
@@ -1106,8 +1118,8 @@ class WaysOSMBuilder():
         elevated_3d = []
         for item in elevated:
             sidewalk_2d, wall_2d, floor_2d = item
-            sidewalk_3d = sidewalk_2d.extrude(0.2)
-            wall_3d = wall_2d.extrude(0.5)
+            sidewalk_3d = sidewalk_2d.extrude(0.2).translate([0, 0, -0.2])
+            wall_3d = wall_2d.extrude(0.6)
             floor_3d = floor_2d.extrude(-0.5).translate([0, 0, -0.2])
             #extra_height = way_2d.extra['extra_height']
             #way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
@@ -1148,18 +1160,23 @@ class WaysOSMBuilder():
         length = path.geom.length
 
         # Generate lines
-        if True:
+        if path.extra['ddd:roadlines']:
 
             # Create line
-            line = path.buffer(0.1).material(self.osm.mat_roadline)
+            line = path.buffer(0.15).material(self.osm.mat_roadline)
             line.extra['way_1d'] = path
             uvmapping.map_2d_path(line, path)
 
-            line_3d = line.triangulate().translate([0, 0, 0.01])
-            line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
-            uvmapping.map_3d_from_2d(line_3d, line)
+            # FIXME: Move cropping to generic site, use itermediate osm.something for storage
+            crop = ddd.shape(self.osm.area_crop)
+            line = line.intersect(crop)
 
-            self.osm.roadlines_3d.children.append(line_3d)
+            if not line.geom.is_empty:
+                line_3d = line.triangulate().translate([0, 0, 0.01])
+                line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
+                uvmapping.map_3d_from_2d(line_3d, line)
+
+                self.osm.roadlines_3d.children.append(line_3d)
 
         # Check if to generate lamps
         if path.extra['ddd_lamps']:

@@ -33,9 +33,8 @@ def map_2d_path(obj, path):
 
         dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
         dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
-        if dir_vec_length > 0:
-            dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
-            angle = math.atan2(dir_vec[1], dir_vec[0])
+        dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+        angle = math.atan2(dir_vec[1], dir_vec[0])
 
         return (0.1 * random.choice([-1, 1]), d)
 
@@ -62,7 +61,7 @@ def map_3d_from_2d(obj_3d, obj_2d):
     #print(obj_2d.extra)
     path = obj_2d.extra['way_1d']
 
-    def uv_apply_func(x, y, z, idx):
+    def height_apply_func(x, y, z, idx):
         # Find nearest point in path, and return its height
         d = path.geom.project(ddd.point([x, y, z]).geom)
         closest_segment = path.interpolate_segment(d)
@@ -70,8 +69,7 @@ def map_3d_from_2d(obj_3d, obj_2d):
         return (0.1 * random.choice([-1, 1]), d / 10.0)
 
     result = obj_3d
-    if obj_3d.mesh:
-        result.extra['uv'] = [uv_apply_func(v[0], v[1], v[2], idx) for idx, v in enumerate(obj_3d.mesh.vertices)]
+    result.extra['uv'] = [height_apply_func(v[0], v[1], v[2], idx) for idx, v in enumerate(obj_3d.mesh.vertices)]
     result.children = [map_3d_from_2d(c, obj_2d) for c in result.children]
     return result
 

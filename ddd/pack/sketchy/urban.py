@@ -3,24 +3,17 @@
 # Jose Juan Montes 2020
 
 import math
-import random
-
-from csg import geom as csggeom
-from csg.core import CSG
-import noise
-from shapely import geometry
-from trimesh import creation, primitives, boolean
-import trimesh
-from trimesh.base import Trimesh
-from trimesh.path import segments
-from trimesh.path.path import Path
-from trimesh.scene.scene import Scene, append_scenes
-from trimesh.visual.material import SimpleMaterial
 
 from ddd.ddd import ddd
 from ddd.pack.sketchy import filters
+import logging
+from ddd.text import fonts
 
 
+# Get instance of logger for this module
+logger = logging.getLogger(__name__)
+
+mat_bronze = ddd.material(color='#f0cb11')
 mat_paint_green = ddd.material('#265e13')
 mat_trafficlight_green = ddd.material('#00ff00')
 mat_trafficlight_orange = ddd.material('#ffff00')
@@ -187,6 +180,28 @@ def sculpture(d=1.0, height=4.0):
     item = ddd.group([pedestal, item], name="Urban sculpture")
 
     return item
+
+def sculpture_text(text, d=1.0, height=4.0):
+    """
+    An urban sculpture, sitting centered on the XY plane.
+    """
+    pedestal = ddd.cube(d=d / 2.0)
+
+    logger.debug("Generating text for: %s", text)
+    item = fonts.text(text)
+    item = item.extrude(0.5).material(mat_bronze)
+    item = item.rotate([math.pi / 2.0, 0, 0])
+
+    item = filters.noise_random(item, scale=0.03)
+
+    item = item.translate([-0.25, 0.25, 0.0])
+    item = item.scale([d, d, height - d])
+    item = item.translate([0, 0, height / 2 + d])
+
+    item = ddd.group([pedestal, item], name="Urban sculpture")
+
+    return item
+
 
 def fountain(r=1.5):
 

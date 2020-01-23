@@ -5,6 +5,9 @@ from ddd.ddd import ddd
 
 items = []
 
+sculpture_text = urban.sculpture_text("Test")
+sculpture_text.show()
+
 trafficlight = urban.trafficlights()
 items.append(trafficlight)
 trafficlight.show()

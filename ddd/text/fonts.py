@@ -10,6 +10,7 @@ from trimesh.base import Trimesh
 from trimesh.path.path import Path
 from trimesh.visual.material import SimpleMaterial
 from trimesh import creation, primitives, boolean
+from shapely.geometry import Polygon, LineString
 import trimesh
 from csg.core import CSG
 from csg import geom as csggeom
@@ -32,10 +33,11 @@ class DDDFont():
 def text(text):
     chars = []
     for idx, c in enumerate(text):
-        spacing = 2000
-        char_2d = char(c)
-        char_2d = char_2d.translate([idx * spacing, 0, 0])
-        chars.append(char_2d)
+        spacing = 1
+        if c != " ":
+            char_2d = char(c)
+            char_2d = char_2d.translate([idx * spacing, 0, 0])
+            chars.append(char_2d)
     return ddd.group(chars)
 
 def char(ch):
@@ -45,11 +47,11 @@ def char(ch):
 
     from freetype import Face
     #face = Face('/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf')
-    face = Face('data/fonts/OpenSansEmoji.ttf')
-    face.set_char_size(48 * 64)
+    face = Face(ddd.BASE_DIR + '/data/fonts/OpenSansEmoji.ttf')
+    face.set_char_size(48*64)
     face.load_char(ch)
 
-    #kerning = face.get_kerning(ch, 'x')
+    #kerning = face.get_kerning(ch, 'x')  # or from previous, actually?
     #print(kerning)
 
     outline = face.glyph.outline
@@ -105,16 +107,35 @@ def char(ch):
     #svgpath = 'M10 10 C 20 20, 40 20, 50 10Z'
     mpl_path = parse_path(path_d)
     coords = mpl_path.to_polygons()
-    from shapely.geometry import Polygon, LineString
-    result = ddd.group([ddd.polygon(c) for c in coords])
+
+    # Add or subtract
+    char_2d = ddd.polygon(coords[0])
+    for c in coords[1:]:
+        ng = ddd.polygon(c)
+        #print (ng.geom.is_valid)
+        if not ng.geom.is_valid: continue
+        if char_2d.contains(ng):
+            char_2d = char_2d.subtract(ng)
+        else:
+            char_2d = char_2d.union(ng)
+
+    #result = ddd.group([ddd.polygon(c) for c in coords], empty=2)
+    result = char_2d
+    result = result.scale([1.0 / (48 * 64), -1.0 / (48 * 64)])
+
+    result = result.simplify(0.005)  #
 
     return result
 
-#result = char("🌟")
-#result = char("Ñ")
-result = text("En_un_lugar-🌟")
 
-print(result)
-result.extrude(0.2).show()
+if __name__ == "__main__":
 
+    #ddd.disc(r=5).subtract(ddd.disc(r=3)).extrude(0.2).show()
+
+    #result = char("🌟")
+    #result = char("Ñ")
+    result = text("Filarmónica 🌟 😀 🎩 🐲 - iüáí¿?¡!")
+    print(result)
+    result.extrude(0.2).show()
+    #result.simplify(0.005).extrude(0.2).show()
 
