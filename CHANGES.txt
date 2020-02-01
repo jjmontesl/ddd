@@ -1,5 +1,15 @@
+[0.4.1]
+
+  *
+
+[0.4.0]
+
+  * Added basic font generation.
+  * Added OSM generation support.
+  * Added UV support.
+
 [0.3.0]
 
   * Using logging API.
-  * Added (corrected) setup.py. 
+  * Added (corrected) setup.py.
   * Refactored ddd_osm into object oriented.

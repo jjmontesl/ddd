@@ -24,6 +24,7 @@ from trimesh.visual.texture import TextureVisuals
 from matplotlib import colors
 import json
 import base64
+from shapely.geometry.polygon import orient
 
 
 # Get instance of logger for this module
@@ -152,8 +153,12 @@ class D1D2D3():
         for (idi, (i, ni)) in enumerate(zip(pointsx[:-1], pointsx[1:])):
             for (idj, (j, nj)) in enumerate(zip(pointsy[:-1], pointsy[1:])):
                 rect = ddd.rect([i, j, ni, nj])
+                rect.geom = orient(rect.geom, 1)
                 rects.append(rect.geom)
         geom = geometry.MultiPolygon(rects)
+        #DDDObject2(geom=geom).show()
+        #geom = geom.buffer(0.0)  # Sanitize, but this destroys the grid
+        #DDDObject2(geom=geom).show()
         return DDDObject2(geom=geom)
 
     @staticmethod
@@ -251,6 +256,24 @@ class DDDObject():
         print("  " * indent_level + str(self))
         for c in self.children:
             c.dump(indent_level=indent_level + 1)
+
+    def filter(self, func):
+        result = []
+        if func(self):
+            result.append(self)
+
+        for c in self.children:
+            cr = c.filter(func)
+            if cr: result.extend(cr.children)
+
+        if isinstance(self, DDDObject2):
+            return ddd.group(result, empty=2)
+        elif isinstance(self, DDDObject3):
+            return ddd.group(result, empty=3)
+        else:
+            return ddd.group(result)
+
+
 
 
 class DDDObject2(DDDObject):
@@ -411,6 +434,10 @@ class DDDObject2(DDDObject):
         the other object (and children).
         """
         other = other.union()
+
+        if not other.geom or other.geom.empty:
+            return False
+
         if self.geom:
             if self.geom.intersects(other.geom):
                 return True

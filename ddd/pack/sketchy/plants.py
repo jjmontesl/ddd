@@ -8,14 +8,14 @@ from ddd.pack.sketchy import filters
 
 from shapely import geometry
 from trimesh.path import segments
-from trimesh.scene.scene import Scene, append_scenes 
+from trimesh.scene.scene import Scene, append_scenes
 from trimesh.base import Trimesh
 from trimesh.path.path import Path
-from trimesh.visual.material import SimpleMaterial 
+from trimesh.visual.material import SimpleMaterial
 from trimesh import creation, primitives, boolean
 import trimesh
 from csg.core import CSG
-from csg import geom as csggeom 
+from csg import geom as csggeom
 import random
 from ddd.ddd import ddd
 import noise
@@ -30,24 +30,24 @@ def trunk(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_s
     # Create trunk part
     section = ddd.point([0, 0, 0]).buffer(r, resolution=2).extrude(height * fork_height_ratio)
     if material is not None: section = section.material(material)
-    
+
     branches = []
-    
+
     if fork_iters > 0:
         azimuth = 0
         num_items = fork_spawn + random.randint(-1, +1)
-        
+
         if fork_level > 0:
             stop_prob = 0.1
             if random.uniform(0.0, 1.0) < stop_prob: num_items = 0
 
         # Only 1 leave in last iter
         if fork_iters == 1: num_items = 1
-        
+
         for i in range(num_items):
             azimuth = (360.0 / fork_spawn) * i + (360.0 / fork_spawn) * random.uniform(-0.15, 0.15)
             if fork_iters > 1:
-                ssection = trunk(height=height * fork_height_ratio * random.uniform(0.8, 1.2), r=r * fork_r_scale, fork_height_ratio=fork_height_ratio * random.uniform(0.8, 1.2), fork_r_scale=fork_r_scale, 
+                ssection = trunk(height=height * fork_height_ratio * random.uniform(0.8, 1.2), r=r * fork_r_scale, fork_height_ratio=fork_height_ratio * random.uniform(0.8, 1.2), fork_r_scale=fork_r_scale,
                                  fork_iters=fork_iters - 1, fork_level=fork_level + 1, leave_callback=leave_callback, material=material)
             elif leave_callback:
                 ssection = leave_callback()
@@ -55,36 +55,37 @@ def trunk(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_s
             ssection = ssection.rotate([0.0, 0.0, azimuth / 180.0 * math.pi])
             ssection = ssection.translate([0, 0, height * fork_height_ratio])
             branches.append(ssection)
-            
+
     #else:
-    
+
     # Optionally increase fork_spawn each iteration (golden ratio)
     # Optionally randomize number of branches (fork_spawn)  each iteration
 
     branches = [section] + branches
-    
+
     return ddd.group(branches)
 
 def treetop(r=1.75, flatness=0.3, subdivisions=1):
     treetop = ddd.sphere(center=ddd.point([random.uniform(-r * 0.2, r * 0.2), random.uniform(-r * 0.2, r * 0.2), 0]), r=r, subdivisions=subdivisions)
     treetop = treetop.scale([1.0, 1.0, (1.0 - flatness) * random.uniform(0.85, 1.15)])
     treetop = filters.noise_random(treetop, scale=0.25)
+    treetop.extra['foliage'] = True
     return treetop
 
 def plant(height=3.5, r=0.40, fork_iters=3):
     # Create roots
-    
+
     mat_leaves = ddd.material(color='#1da345')
     mat_wood = ddd.material(color='#f6721e')
-    
+
     # Create trunk
     def leave_callback():
         tt = treetop(r=2.5, subdivisions=0).material(mat_leaves)
         return tt
-    
-    obj = trunk(height=height, r=r, leave_callback=leave_callback, 
+
+    obj = trunk(height=height, r=r, leave_callback=leave_callback,
                 fork_iters=fork_iters, fork_height_ratio=0.7, material=mat_wood)
-    
+
     # Booleans and grouping (cut trunk?, merge all)
     '''
     objs = [p for p in ptrunk.recurse_objects() if p.mesh]
@@ -95,12 +96,12 @@ def plant(height=3.5, r=0.40, fork_iters=3):
     obj = objs[0]
     obj = obj.material(mat_leaves)
     '''
-    
+
     return obj
 
 def bush(height=0.8):
     pass
-    
+
 def log(length=0.6):
     pass
 

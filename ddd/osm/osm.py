@@ -34,6 +34,7 @@ from ddd.osm.ways import WaysOSMBuilder
 from ddd.osm.areas import AreasOSMBuilder
 from ddd.osm.items import ItemsOSMBuilder
 from ddd.osm.areaitems import AreaItemsOSMBuilder
+from ddd.osm.custom import CustomsOSMBuilder
 
 
 # Get instance of logger for this module
@@ -100,6 +101,7 @@ class OSMBuilder():
         self.ways = WaysOSMBuilder(self)
         self.areas = AreasOSMBuilder(self)
         self.buildings = BuildingOSMBuilder(self)
+        self.customs = CustomsOSMBuilder(self)
 
         self.area_filter = area_filter
         self.area_crop = area_crop
@@ -113,6 +115,7 @@ class OSMBuilder():
                               '0': 0.0,
                               '1': 6.0,
                               '2': 12.0,
+                              '3': 18.0,
                               #'-2a': -9.0, '-1a': -2.5, '0a': 3.0, '1a': 9.0}
                               #'-2a': -12.0, '-1a': -5.0, '0a': 0.0, '1a': 6.0}
                               '-2a': 0.0, '-1a': 0.0, '0a': 0.0, '1a': 0.0}
@@ -148,6 +151,9 @@ class OSMBuilder():
 
         self.other_3d = DDDObject3()
 
+        self.customs_1d = DDDObject2()
+        self.customs_3d = DDDObject3()
+
         #self.sidewalks_3d_l1 = DDDObject3()
         #self.walls_3d_l1 = DDDObject3()
         #self.floor_3d_l1 = DDDObject3()
@@ -177,8 +183,15 @@ class OSMBuilder():
 
         seen = set()
         dedup = []
+        features_custom = []
         for f in features:
             #oid = hash(str(f))  # f['properties']['osm_id']
+
+            # TODO: better way to distinguish custom features
+            if 'id' not in f:
+                features_custom.append(f)
+                continue
+
             oid = f['id']
             if oid not in seen:
                 seen.add(oid)
@@ -187,27 +200,12 @@ class OSMBuilder():
         logger.info("Loaded %d features (%d unique)" % (len(features), len(dedup)))
         features = dedup
 
-        # Filter features
-        '''
-        filtered = []
-        for f in features:
-            geom = shape(f['geometry'])
-            try:
-                if self.area.contains(geom):
-                    filtered.append(f)
-            except Exception as e:
-                logger.warn("Ignored geometry: %s" % e)
-        features = filtered
-        logger.info("Using %d features after filtering" % (len(features)))
-        '''
-
         # Project to local
         transformer = pyproj.Transformer.from_proj(self.osm_proj, self.ddd_proj)
         for f in features:
             f['geometry']['coordinates'] = project_coordinates(f['geometry']['coordinates'], transformer)
 
-        # Crop
-        # FIXME: this shall be done later or twice, to allow for external objects, slice some, etc...
+        # Filter "supertile"
         filtered = []
         for f in features:
             geom = shape(f['geometry'])
@@ -218,6 +216,9 @@ class OSMBuilder():
         logger.info("Using %d features after filtering to %s" % (len(features), self.area_filter.bounds))
 
         self.features = features
+        self.features_custom = features_custom
+
+        #logger.debug("Custom features: %s", self.custom)
 
     def preprocess_features(self):
         """
@@ -270,6 +271,7 @@ class OSMBuilder():
 
         self.areas.generate_areas_2d()
         self.areas.generate_areas_2d_interways()  # and assign types
+
         #self.generate_unbounded_squares_2d() # this is current cropped ground, replace with this, assign types
         #self.assign_area_types() #
 
@@ -320,6 +322,9 @@ class OSMBuilder():
         # Urban decoration (trees, fountains, etc)
         self.items.generate_items_3d()
         self.items2.generate_items_3d()
+
+        # Generate custom items
+        self.customs.generate_customs()
 
         # Trees, parks, gardens...
 

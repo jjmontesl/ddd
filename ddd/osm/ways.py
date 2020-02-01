@@ -45,7 +45,8 @@ WayConnection = namedtuple("WayConnection", "other self_idx other_idx")
 class WaysOSMBuilder():
 
     config_ways = {
-        '_default': {'lanes': None, 'width': None,
+        '_default': {'lanes': None,
+                     'width': None,
                      'material': None,
                      'max_inclination': 15,
                      'leveling_factor': 0.5,
@@ -566,6 +567,9 @@ class WaysOSMBuilder():
         bridge = feature['properties'].get('bridge', None)
         junction = feature['properties'].get('junction', None)
         waterway = feature['properties'].get('waterway', None)
+        oneway = feature['properties'].get('oneway', None)
+        ref = feature['properties'].get('ref', None)
+        maxspeed = feature['properties'].get('maxspeed', None)
 
         path = ddd.shape(feature['geometry'])
         #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
@@ -580,9 +584,22 @@ class WaysOSMBuilder():
         roadlines = False
 
         if highway == "motorway":
+            lanes = 2.6
+            width = (lanes * 3.30)
+            roadlines = True
+        elif highway == "motorway_link":
+            lanes = 1.5
+            width = (lanes * 3.30)
+            roadlines = True
+        elif highway == "trunk":
             lanes = 2.4
             width = (lanes * 3.30)
             roadlines = True
+        elif highway == "trunk_link":
+            lanes = 1.5
+            width = (lanes * 3.30)
+            roadlines = True
+
         elif highway == "primary":
             lanes = 2.2
             width = (lanes * 3.30)
@@ -616,7 +633,7 @@ class WaysOSMBuilder():
             lamps = True  # shall be only in city?
             trafficlights = True
             roadlines = True
-        elif highway in ("footway", "path"):
+        elif highway in ("footway", "path", "track"):
             lanes = 0.6
             material = self.osm.mat_dirt
             extra_height = 0.2
@@ -642,6 +659,12 @@ class WaysOSMBuilder():
             material = self.osm.mat_dirt
             #extra_height = 0.2
             width = (lanes * 3.30)
+
+        elif highway == "raceway":
+            lanes = 1
+            material = self.osm.mat_dirt
+            #extra_height = 0.2
+            width = 10.0  #(lanes * 3.30)
 
         elif natural == "coastline":
             lanes = None
@@ -701,8 +724,11 @@ class WaysOSMBuilder():
 
         flanes = feature['properties'].get('lanes', None)
         if flanes:
-            lanes = float(flanes)
+            lanes = int(float(flanes))
             width = (lanes * 3.30)
+
+        if lanes is None or lanes <= 1:
+            roadlines = False
 
         path = path.material(material)
         path.name = name
@@ -716,8 +742,11 @@ class WaysOSMBuilder():
         path.extra['bridge'] = bridge
         path.extra['junction'] = junction
         path.extra['waterway'] = waterway
+        path.extra['ref'] = ref
+        path.extra['maxspeed'] = maxspeed
         path.extra['width'] = width
         path.extra['lanes'] = lanes
+        path.extra['oneway'] = oneway
         path.extra['layer'] = feature['properties']['layer']
         path.extra['extra_height'] = extra_height
         path.extra['ddd_lamps'] = lamps
@@ -760,8 +789,9 @@ class WaysOSMBuilder():
         highway = feature['properties'].get('highway', None)
         junction = feature['properties'].get('junction', None)
 
-        weight = 2
+        weight = 99
         if highway == "motorway": weight = 5
+        elif highway == "trunk": weight = 10
         elif highway == "primary": weight = 11
         elif highway == "secondary": weight = 12
         elif highway == "tertiary": weight = 13
@@ -772,7 +802,6 @@ class WaysOSMBuilder():
         elif highway == "pedestrian": weight = 32
         elif highway == "footway": weight = 33
         elif highway == "path": weight = 34
-        else: weight = 99
 
         if junction == "roundabout": weight = 1
 
@@ -783,7 +812,9 @@ class WaysOSMBuilder():
             for way_2d in l.children:
                 if way_2d.extra['way_1d'] == way_1d:
                     return way_2d
-        raise ValueError("Tried to get way 2D for not existing way 1D: %s" % way_1d)
+        logger.warn("Tried to get way 2D for not existing way 1D: %s", way_1d)
+        #raise ValueError("Tried to get way 2D for not existing way 1D: %s" % way_1d)
+        return DDDObject2()
 
     def generate_ways_2d(self):
         for layer_idx in self.osm.layer_indexes:
@@ -995,7 +1026,7 @@ class WaysOSMBuilder():
         Generates boxing for sub ways.
         """
         logger.info("Generating subways.")
-        logger.warn("IMPLEMENT 2D/3D separation for this, as it needs to be cropped")
+        logger.warn("IMPLEMENT 2D/3D separation for this, as it needs to be cropped, and it's being already cropped earlier")
 
         # Take roads
         ways = [w for w in self.osm.ways_2d["-1a"].children] + [w for w in self.osm.ways_2d["-1"].children]
@@ -1004,23 +1035,27 @@ class WaysOSMBuilder():
         union_with_transitions = ddd.group(ways, empty="2").union()
         union_sidewalks = union_with_transitions.buffer(0.6, cap_style=2, join_style=2)
 
-        sidewalks_2d = union_sidewalks.subtract(union)
+        sidewalks_2d = union_sidewalks.subtract(union_with_transitions)  # we include transitions
         walls_2d = sidewalks_2d.buffer(0.5, cap_style=2, join_style=2).subtract(union_sidewalks)
+        floors_2d = union_sidewalks.copy()
 
         # FIXME: Move cropping to generic site, use itermediate osm.something for storage
         crop = ddd.shape(self.osm.area_crop)
         sidewalks_2d = sidewalks_2d.intersect(crop)
         walls_2d = walls_2d.intersect(crop)
+        floors_2d = floors_2d.intersect(crop)
 
         sidewalks_3d = sidewalks_2d.extrude(0.3).translate([0, 0, -5]).material(self.osm.mat_sidewalk)
         walls_3d = walls_2d.extrude(5).translate([0, 0, -5])
+        floors_3d = floors_2d.extrude(-0.3).translate([0, 0, -5]).material(self.osm.mat_sidewalk)
         #self.ceiling_3d_lm1 = union.buffer(0.6 + 0.5)subtract(transitions)..extrude(0.3).translate([0, 0, -0.3]).material(mat_sidewalk)
 
         sidewalks_3d  = terrain.terrain_geotiff_elevation_apply(sidewalks_3d, self.osm.ddd_proj)
         walls_3d = terrain.terrain_geotiff_elevation_apply(walls_3d, self.osm.ddd_proj)
+        floors_3d = terrain.terrain_geotiff_elevation_apply(floors_3d, self.osm.ddd_proj)
         #self.ceiling_3d_lm1 = terrain.terrain_geotiff_elevation_apply(self.ceiling_3d_lm1, self.ddd_proj)
 
-        subway = ddd.group([sidewalks_3d, walls_3d], empty=3).translate([0, 0, -0.2])
+        subway = ddd.group([sidewalks_3d, walls_3d, floors_3d], empty=3).translate([0, 0, -0.2])
         self.osm.other_3d.children.append(subway)
 
     def generate_ways_3d_elevated(self):
@@ -1146,10 +1181,15 @@ class WaysOSMBuilder():
         Road props (traffic lights, lampposts...).
         Need roads, areas, coastline, etc... and buildings
         """
-        logger.info("Generating props linked to ways (%d ways)", len(self.osm.ways_2d["0"].children))
-        ways_2d = self.osm.ways_2d["0"]
 
-        for way_2d in ways_2d.children:
+        ways = []
+        for wg in self.osm.ways_2d.values():
+            ways.extend(wg.children)
+        #ways = self.osm.ways_2d["0"].children
+
+        logger.info("Generating props linked to ways (%d ways)", len(ways))
+
+        for way_2d in ways:
             self.generate_props_2d_way(way_2d)
 
     def generate_props_2d_way(self, way_2d):
@@ -1173,13 +1213,16 @@ class WaysOSMBuilder():
 
             if not line.geom.is_empty:
                 line_3d = line.triangulate().translate([0, 0, 0.01])
+                vertex_func = self.get_height_apply_func(path)
+                line_3d = line_3d.vertex_func(vertex_func)
                 line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
+                line_3d.extra['ddd:collider'] = False
                 uvmapping.map_3d_from_2d(line_3d, line)
 
                 self.osm.roadlines_3d.children.append(line_3d)
 
         # Check if to generate lamps
-        if path.extra['ddd_lamps']:
+        if path.extra['ddd_lamps'] and path.extra['layer'] == "0":
 
             # Generate lamp posts
             interval = 25.0
@@ -1265,7 +1308,7 @@ class WaysOSMBuilder():
         '''
 
         # Generate trafficlights
-        if path.geom.length > 45.0 and path.extra['ddd_trafficlights']:
+        if path.geom.length > 45.0 and path.extra['ddd_trafficlights'] and path.extra['layer'] == "0":
 
             # End right
             p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 10.0)

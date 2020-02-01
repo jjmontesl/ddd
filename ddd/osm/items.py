@@ -105,10 +105,11 @@ class ItemsOSMBuilder():
     def generate_item_3d_tree(self, item_2d):
         #print("Tree")
         coords = item_2d.geom.coords[0]
-        item_3d = plants.plant().translate([coords[0], coords[1], 0.0])
-        #for i in item_3d.select(".foliage"):
-        #    i.extra['ddd:collider'] = False  # TODO: generation details shall be optional
+        item_3d = plants.plant(height=random.uniform(3.0, 5.5)).translate([coords[0], coords[1], 0.0])
+        for i in item_3d.filter(lambda o: o.extra.get('foliage', None)).children:
+            i.extra['ddd:collider'] = False  # TODO: generation details shall be optional
         item_3d.name = 'Tree: %s' % item_2d.name
+        item_3d.extra['ddd:instance'] = 'tree_1'
         return item_3d
 
     def generate_item_3d_fountain(self, item_2d):

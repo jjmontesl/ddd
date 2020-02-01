@@ -89,10 +89,11 @@ class AreasOSMBuilder():
             union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], self.osm.areas_2d]).union()
         except TopologicalError as e:
             logger.error("Error calculating interways: %s", e)
-            a = self.osm.ways_2d['0'].union()
-            b = self.osm.ways_2d['-1a'].union()
+            l0 = self.osm.ways_2d['0'].union()
+            lm1a = self.osm.ways_2d['-1a'].union()
+            #l0a = self.osm.ways_2d['0a'].union()  # shall be trimmed  # added to avoid height conflicts but leaves holes
             c = self.osm.areas_2d.union()
-            union = ddd.group([c, b, a]).union()
+            union = ddd.group([c, l0, lm1a]).union()
             #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], self.osm.areas_2d]).union()
 
         #union = union.buffer(0.5)
@@ -115,6 +116,26 @@ class AreasOSMBuilder():
     def generate_area_2d_park(self, feature):
         area = ddd.shape(feature["geometry"], name="Park: %s" % feature['properties'].get('name', None))
         area = area.material(self.osm.mat_park)
+
+        # Add trees if necesary
+        # FIXME: should not check for None in intersects, filter shall not return None (empty group)
+        trees = self.osm.items_1d.filter(lambda o: o.extra.get('natural') == 'tree')
+        has_trees = area.intersects(trees)
+        add_trees = not has_trees and area.geom.area > 100
+
+        if add_trees:
+            tree_density_m2 = 0.0025
+            num_trees = int((area.geom.area * tree_density_m2) + 1)
+            num_trees = min(num_trees, 20)
+            logger.debug("Adding %d trees to %s", num_trees, area)
+            logger.warning("Should be adding items_1d or items_2d, not 3D directly")
+            for p in area.random_points(num_points=num_trees):
+                #plant = plants.plant().translate([p[0], p[1], 0.0])
+                #self.osm.items_3d.children.append(plant)
+                tree = ddd.point(p, name="Tree")
+                tree.extra['natural'] = 'tree'
+                self.osm.items_1d.children.append(tree)
+
         return area
 
     def generate_area_2d_railway(self, feature):
@@ -216,9 +237,12 @@ class AreasOSMBuilder():
         #terr = terrain.terrain_grid(distance=500.0, height=1.0, detail=25.0).translate([0, 0, -0.5]).material(mat_terrain)
         #terr = terrain.terrain_geotiff(area_crop.bounds, detail=10.0, ddd_proj=self.osm.ddd_proj).material(mat_terrain)
         #terr2 = terrain.terrain_grid(distance=60.0, height=10.0, detail=5).translate([0, 0, -20]).material(mat_terrain)
+        #terr = ddd.grid2(area_crop.bounds, detail=10.0).buffer(0.0)  # useless, shapely does not keep triangles when operating
         terr = ddd.rect(area_crop.bounds, name="Ground")
+
         terr = terr.subtract(self.osm.ways_2d['0'])
         terr = terr.subtract(self.osm.ways_2d['-1a'])
+        #terr = terr.subtract(self.osm.ways_2d['0a'])  # added to avoid floor, but shall be done better, by layers spawn and base_height,e tc
         terr = terr.subtract(self.osm.areas_2d)
         terr = terr.subtract(self.osm.water_2d)
 
@@ -231,10 +255,10 @@ class AreasOSMBuilder():
         #terr.save("/tmp/test.svg")
         #terr = terr.triangulate()
         try:
-            terr = terr.extrude(0.3)
+            terr = terr.buffer(0.001).extrude(0.3)
         except ValueError as e:
             logger.error("Cannot generate terrain (FIXME): %s", e)
-            return
+            raise
         terr = terrain.terrain_geotiff_elevation_apply(terr, self.osm.ddd_proj)
         terr = terr.material(self.osm.mat_terrain)
 
