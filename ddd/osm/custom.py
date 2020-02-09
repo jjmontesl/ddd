@@ -102,5 +102,5 @@ class CustomsOSMBuilder():
         return custom_3d
 
     def generate_custom_3d_checkpoint(self, custom_2d):
-
+        pass
 

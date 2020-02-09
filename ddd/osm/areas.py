@@ -125,10 +125,11 @@ class AreasOSMBuilder():
 
         if add_trees:
             tree_density_m2 = 0.0025
-            num_trees = int((area.geom.area * tree_density_m2) + 1)
+            num_trees = int((area.geom.area * tree_density_m2))
+            if num_trees == 0 and random.uniform(0, 1) < 0.5: num_trees = 1
             num_trees = min(num_trees, 20)
             logger.debug("Adding %d trees to %s", num_trees, area)
-            logger.warning("Should be adding items_1d or items_2d, not 3D directly")
+            #logger.warning("Should be adding items_1d or items_2d, not 3D directly")
             for p in area.random_points(num_points=num_trees):
                 #plant = plants.plant().translate([p[0], p[1], 0.0])
                 #self.osm.items_3d.children.append(plant)
