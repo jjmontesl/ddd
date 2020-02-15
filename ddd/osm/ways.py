@@ -699,6 +699,15 @@ class WaysOSMBuilder():
             material = self.osm.mat_leaves
             extra_height = 1.2
 
+        elif barrier == 'fence':
+            width = 0.1
+            material = self.osm.mat_forgery
+            extra_height = 1.2
+
+        elif barrier == 'kerb':
+            logger.debug("Ignoring kerb")
+            return None
+
         elif man_made == 'pier':
             width = 1.8
             material = self.osm.mat_wood

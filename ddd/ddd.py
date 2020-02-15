@@ -138,9 +138,9 @@ class D1D2D3():
         D is the distance to the side, so cube side length will be twice that value.
         """
         if center is not None: raise NotImplementedError()  #
-        if center is None: center = ddd.point([0, 0, 0])
+        #if center is None: center = ddd.point([0, 0, 0])
         if d is None: d = 1.0
-        cube = D1D2D3.rect([-d, -d, d, d]).extrude(d * 2).translate([0, 0, 0])
+        cube = D1D2D3.rect([-d, -d, d, d]).extrude(d * 2)  #.translate([0, 0, 0])
         return cube
 
     @staticmethod
@@ -257,7 +257,7 @@ class DDDObject():
         for c in self.children:
             c.dump(indent_level=indent_level + 1)
 
-    def filter(self, func):
+    def select(self, func):
         result = []
         if func(self):
             result.append(self)
@@ -273,6 +273,8 @@ class DDDObject():
         else:
             return ddd.group(result)
 
+    def filter(self, func):
+        return self.select(func)
 
 
 
@@ -532,7 +534,7 @@ class DDDObject2(DDDObject):
                     except IndexError as e:
                         logger.error("Could not extrude Polygon in MultiPolygon: %s", e)
                 result = DDDObject3(children=meshes, name="%s (split extr)" % self.name)
-            elif not self.geom.is_empty and not self.geom.type == 'LineString':
+            elif not self.geom.is_empty and not self.geom.type == 'LineString' and not self.geom.type == 'Point':
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)
                 #vertices, faces = creation.triangulate_polygon(self.geom, engine="meshpy")  # , min_angle=math.pi / 180.0)
@@ -682,6 +684,11 @@ class DDDObject3(DDDObject):
 
     def copy(self):
         obj = DDDObject3(name=self.name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
+        return obj
+
+    def instance(self):
+        obj = D1D2D3.cube(d=1.0)  #[0, 0, 0], 1)
+        obj.extra['ddd:instance'] = self
         return obj
 
     def translate(self, v):

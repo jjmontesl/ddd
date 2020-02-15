@@ -40,6 +40,13 @@ class ItemsOSMBuilder():
     def __init__(self, osmbuilder):
         self.osm = osmbuilder
 
+        #logger.info("Generating item pools")
+        self.pool = {}
+        #self.pool['tree'] = [self.generate_item_3d_tree(ddd.point([0, 0, 0])) for i in range(8)]
+
+        self.tree_decimate = 3
+        self.tree_decimate_idx = 0
+
     def generate_items_1d(self):
         logger.info("Generating 1D items")
 
@@ -82,11 +89,20 @@ class ItemsOSMBuilder():
         #self.osm.items_3d = self.osm.items_3d.translate([0, 0, -0.20])  # temporary fix snapping
 
     def generate_item_3d(self, item_2d):
+
         item_3d = None
         if item_2d.extra.get('amenity', None) == 'fountain':
             item_3d = self.generate_item_3d_fountain(item_2d)
+
         elif item_2d.extra.get('natural', None) == 'tree':
-            item_3d = self.generate_item_3d_tree(item_2d)
+            self.tree_decimate_idx += 1
+            if self.tree_decimate > 1 and self.tree_decimate_idx % self.tree_decimate == 0:
+                #item_3d = random.choice(self.pool['tree']).instance()
+                #coords = item_2d.geom.coords[0]
+                #item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+
+                item_3d = self.generate_item_3d_tree(item_2d)
+
         elif item_2d.extra.get('tourism', None) == 'artwork' and item_2d.extra.get('artwork_type', None) == 'sculpture':
             item_3d = self.generate_item_3d_sculpture(item_2d)
         elif item_2d.extra.get('historic', None) == 'monument':  # Monumento grande
@@ -109,7 +125,7 @@ class ItemsOSMBuilder():
         for i in item_3d.filter(lambda o: o.extra.get('foliage', None)).children:
             i.extra['ddd:collider'] = False  # TODO: generation details shall be optional
         item_3d.name = 'Tree: %s' % item_2d.name
-        item_3d.extra['ddd:instance'] = 'tree_1'
+        #item_3d.extra['ddd:instance'] = 'tree_1'
         return item_3d
 
     def generate_item_3d_fountain(self, item_2d):

@@ -61,15 +61,23 @@ class ElevationChunk(object):
         x, y = (point[0], point[1])
 
         # Transform to raster point coordinates
-        raster_x = int(round((x - self.geotransform[0]) / self.geotransform[1]))
-        raster_y = int(round((y - self.geotransform[3]) / self.geotransform[5]))
-
-        coords_x = (raster_x * self.geotransform[1]) + self.geotransform[0]
-        coords_y = (raster_y * self.geotransform[5]) + self.geotransform[3]
-
-        # Pixel offset, centerted on 0, from the point to the pixel center
-        offset_x = - (coords_x - x) / self.geotransform[1]
-        offset_y = - (coords_y - y) / self.geotransform[5]
+        pixel_is_area = True
+        if pixel_is_area:
+            raster_x = int(round((x - self.geotransform[0]) / self.geotransform[1]))
+            raster_y = int(round((y - self.geotransform[3]) / self.geotransform[5]))
+            coords_x = ((raster_x * self.geotransform[1])) + self.geotransform[0]
+            coords_y = ((raster_y * self.geotransform[5])) + self.geotransform[3]
+            # Pixel offset, centerted on 0, from the point to the pixel center
+            offset_x = - (coords_x - x) / self.geotransform[1]
+            offset_y = - (coords_y - y) / self.geotransform[5]
+        else:
+            raster_x = int(round((x - self.geotransform[0]) / self.geotransform[1]))
+            raster_y = int(round((y - self.geotransform[3]) / self.geotransform[5]))
+            coords_x = (((0.5 + raster_x) * self.geotransform[1])) + self.geotransform[0]
+            coords_y = (((0.5 + raster_y) * self.geotransform[5])) + self.geotransform[3]
+            # Pixel offset, centerted on 0, from the point to the pixel center
+            offset_x = - (coords_x - x) / self.geotransform[1]
+            offset_y = - (coords_y - y) / self.geotransform[5]
 
         try:
             height_matrix = self.layer.GetRasterBand(1).ReadAsArray(raster_x - 1, raster_y - 1, 3, 3)
