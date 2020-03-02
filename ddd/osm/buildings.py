@@ -106,8 +106,8 @@ class BuildingOSMBuilder():
 
         self.generate_building_3d_amenities(building_3d)
 
-        building_3d = terrain.terrain_geotiff_elevation_apply(building_3d, self.osm.ddd_proj)
-        building_3d = building_3d.translate([0, 0, -0.20])  # temporary fix snapping
+        building_3d = terrain.terrain_geotiff_min_elevation_apply(building_3d, self.osm.ddd_proj)
+        building_3d = building_3d.translate([0, 0, -0.20])  # temporary hack floor snapping
 
         return building_3d
 
@@ -204,6 +204,8 @@ class BuildingOSMBuilder():
                 coords = amenity.geom.centroid.coords[0]
                 item = urban.panel(width=3.2, height=0.9)
                 item.extra['amenity'] = amenity
+                item.extra['text'] = amenity.extra['name']
+                item.name = "Panel: %s" % amenity.extra['name']
                 item = self.snap_to_building(item, building_3d)
                 item = item.translate([0, 0, 3.2])  # no post
                 building_3d.children.append(item)
@@ -213,6 +215,8 @@ class BuildingOSMBuilder():
                 coords = amenity.geom.centroid.coords[0]
                 item = urban.panel(width=2.5, height=0.8)
                 item.extra['amenity'] = amenity
+                item.extra['text'] = amenity.extra['shop'] + (("<br>" + amenity.extra['name']) if amenity.extra['name'] else "")
+                item.name = "Panel: %s %s" % (amenity.extra['shop'], amenity.extra['name'])
                 item = self.snap_to_building(item, building_3d)
                 item = item.translate([0, 0, 2.8])  # no post
                 color = random.choice(["#c41a7d", "#97c41a", "#f2ee0f", "#0f90f2"])

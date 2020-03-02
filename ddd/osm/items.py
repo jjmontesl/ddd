@@ -82,10 +82,11 @@ class ItemsOSMBuilder():
             if item_3d:
                 item_3d.name = item_3d.name if item_3d.name else item_2d.name
                 logger.debug("Generated item: %s", item_3d)
+                item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
                 self.osm.items_3d.children.append(item_3d)
 
         # FIXME: Do not alter every vertex, move the entire object instead
-        self.osm.items_3d = terrain.terrain_geotiff_elevation_apply(self.osm.items_3d, self.osm.ddd_proj)
+        #self.osm.items_3d = terrain.terrain_geotiff_elevation_apply(self.osm.items_3d, self.osm.ddd_proj)
         #self.osm.items_3d = self.osm.items_3d.translate([0, 0, -0.20])  # temporary fix snapping
 
     def generate_item_3d(self, item_2d):
@@ -164,7 +165,7 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_lamppost(self, item_2d):
         coords = item_2d.geom.coords[0]
-        item_3d = urban.lamppost(height=3.3).translate([coords[0], coords[1], 0.0])
+        item_3d = urban.lamppost(height=5.5).translate([coords[0], coords[1], 0.0])
         item_3d.children[0] = item_3d.children[0].material(self.osm.mat_forgery)  # mat_bronze
         item_3d.children[1] = item_3d.children[1].material(self.osm.mat_lightbulb)  # FIXME: do not access children by index, assign mat in lib anyway
 

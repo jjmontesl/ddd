@@ -748,6 +748,12 @@ class DDDObject3(DDDObject):
         obj.children = [c.vertex_func(func) for c in self.children]
         return obj
 
+    def vertex_iterator(self):
+        meshes = self.recurse_meshes()
+        for m in meshes:
+            for idx, v in enumerate(m.vertices):
+                yield (v[0], v[1], v[2], idx)
+
     def _csg(self, other, operation):
 
         if not other or not other.mesh:
@@ -803,21 +809,21 @@ class DDDObject3(DDDObject):
     def union(self, other):
         return self._csg(other, operation='union')
 
-    def _recurse_scene(self):
+    def _recurse_scene(self, path_prefix=""):
 
         scene = Scene()
         auto_name = "node_%s_%s" % (id(self), str(self.mat))
-        node_name = self.name if self.name else auto_name
-
+        node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
 
         # Add metadata to name
         if True:
             ignore_keys = ('uv', 'feature', 'connections')
-            metadata = self.extra
+            metadata = dict(self.extra)
+            metadata['path'] = path_prefix + node_name
             metadata = json.loads(json.dumps(metadata, default=lambda x: None))
             metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
             serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
-            node_name = node_name + "_" + str(serialized_metadata)
+            encoded_node_name = node_name + "_" + str(serialized_metadata)
 
         # UV coords test
         if self.mesh:
@@ -835,12 +841,12 @@ class DDDObject3(DDDObject):
             mat = SimpleMaterial(diffuse=self.mat)
             self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
 
-        scene.add_geometry(geometry=self.mesh, node_name=node_name.replace(" ", "_"))
+        scene.add_geometry(geometry=self.mesh, node_name=encoded_node_name.replace(" ", "_"))
 
         cscenes = []
         if self.children:
             for c in self.children:
-                cscene = c._recurse_scene()
+                cscene = c._recurse_scene(path_prefix=path_prefix + node_name + "/")
                 cscenes.append(cscene)
 
         scene = append_scenes([scene] + cscenes)

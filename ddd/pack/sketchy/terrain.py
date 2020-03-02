@@ -3,14 +3,14 @@
 
 from shapely import geometry
 from trimesh.path import segments
-from trimesh.scene.scene import Scene, append_scenes 
+from trimesh.scene.scene import Scene, append_scenes
 from trimesh.base import Trimesh
 from trimesh.path.path import Path
-from trimesh.visual.material import SimpleMaterial 
+from trimesh.visual.material import SimpleMaterial
 from trimesh import creation, primitives, boolean
 import trimesh
 from csg.core import CSG
-from csg import geom as csggeom 
+from csg import geom as csggeom
 import random
 from ddd.ddd import ddd
 import noise
@@ -20,15 +20,15 @@ import pyproj
 
 def terrain_grid(bounds, detail=1.0, height=1.0, scale=0.025):
     '''
-    If bounds is a single number, it's used as L1 distance. 
+    If bounds is a single number, it's used as L1 distance.
     '''
-    
+
     if isinstance(bounds, float):
         distance = bounds
         bounds = [-distance, -distance, distance, distance]
-    
+
     mesh = ddd.grid3(bounds, detail=detail)
-    
+
     #func = lambda x, y: 2.0 * noise.pnoise2(x, y, octaves=3, persistence=0.5, lacunarity=2.0, repeatx=1024, repeaty=1024)
     def func(x, y):
         val = height * noise.pnoise2(x * scale, y * scale, octaves=2, persistence=0.5, lacunarity=2.0, repeatx=1024, repeaty=1024, base=0)
@@ -36,10 +36,10 @@ def terrain_grid(bounds, detail=1.0, height=1.0, scale=0.025):
         return val
     #func = lambda x, y: random.uniform(0, 2)
     mesh = mesh.elevation_func(func)
-    
+
     return mesh
-    
-'''    
+
+'''
 def _cr(p):
     offset_x = -8.723
     offset_y = 42.238
@@ -75,4 +75,19 @@ def terrain_geotiff_elevation_apply(obj, ddd_proj):
     obj = obj.vertex_func(func)
     #mesh.mesh.invert()
     return obj
-    
+
+def terrain_geotiff_min_elevation_apply(obj, ddd_proj):
+    elevation = ElevationChunk.load('/home/jjmontes/git/ddd-baseline/data/elevation/eudem/eudem_dem_5deg_n40w010.tif')
+
+    min_h = None
+    for v in obj.vertex_iterator():
+        v_h = elevation.value(transform_ddd_to_geo(ddd_proj, [v[0], v[1]]))
+        if min_h is None:
+            min_h = v_h
+        if v_h < min_h:
+            min_h = v_h
+
+    func = lambda x, y, z, i: [x, y, z + min_h]
+    obj = obj.vertex_func(func)
+    #mesh.mesh.invert()
+    return obj
