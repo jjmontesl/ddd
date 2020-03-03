@@ -128,7 +128,7 @@ def sign_pharmacy_side(size=1.0, depth=0.3, arm_length=1.0):
     sign = sign.translate([0, -(arm_length + size * 0.66), 0])
     return ddd.group([sign, arm], name="Pharmacy Side Sign with Arm")
 
-def panel(height=1.0, width=2.0, depth=0.2):
+def panel(height=1.0, width=2.0, depth=0.2, text=None, texture=None):
     '''
     A panel, like what commerces have either sideways or sitting on the facade. Also
     road panels.
@@ -137,21 +137,16 @@ def panel(height=1.0, width=2.0, depth=0.2):
     panel = panel.rotate([math.pi / 2.0, 0, 0])
     panel = panel.material(ddd.material('#f0f0ff'))
     panel.name = "Panel"
+
+    if text:
+        textobj = ddd.box(name="Panel Text Marker").translate([0, - depth - 0.02, 0])
+        textobj.extra['ddd:text'] = text
+        textobj.extra['ddd:collider'] = False
+        #textobj.extra['ddd:layer'] = "Texts"
+
+    panel = ddd.group([panel, textobj]) if text else panel
+
     return panel
-
-def panel_texture(height=1.0, width=2.0, depth=0.3):
-    '''
-    A panel, like what commerces have either sideways or sitting on the facade. Also
-    road panels.
-    '''
-    pass
-
-def panel_texture_text(text, height=1.0, width=2.0, depth=0.3):
-    pass
-
-
-
-
 
 def busstop_small():
     pass

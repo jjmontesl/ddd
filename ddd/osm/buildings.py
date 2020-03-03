@@ -198,24 +198,25 @@ class BuildingOSMBuilder():
                 building_3d.children.append(item)
 
             elif amenity.extra['amenity']:
-
                 # Except parking?
 
-                coords = amenity.geom.centroid.coords[0]
-                item = urban.panel(width=3.2, height=0.9)
+                #coords = amenity.geom.centroid.coords[0]
+                panel_text = amenity.extra['name'] if amenity.extra['name'] else None
+                item = urban.panel(width=3.2, height=0.9, text=panel_text)
                 item.extra['amenity'] = amenity
-                item.extra['text'] = amenity.extra['name']
-                item.name = "Panel: %s" % amenity.extra['name']
+                item.extra['text'] = panel_text
+                item.name = "Panel: %s %s" % (amenity.extra['amenity'], amenity.extra['name'])
                 item = self.snap_to_building(item, building_3d)
                 item = item.translate([0, 0, 3.2])  # no post
                 building_3d.children.append(item)
                 #building_3d.show()
 
             elif amenity.extra['shop']:
-                coords = amenity.geom.centroid.coords[0]
-                item = urban.panel(width=2.5, height=0.8)
+                #coords = amenity.geom.centroid.coords[0]
+                panel_text = amenity.extra['shop'] + (("<br>" + amenity.extra['name']) if amenity.extra['name'] else "")
+                item = urban.panel(width=2.5, height=0.8, text=panel_text)
                 item.extra['amenity'] = amenity
-                item.extra['text'] = amenity.extra['shop'] + (("<br>" + amenity.extra['name']) if amenity.extra['name'] else "")
+                item.extra['text'] = panel_text
                 item.name = "Panel: %s %s" % (amenity.extra['shop'], amenity.extra['name'])
                 item = self.snap_to_building(item, building_3d)
                 item = item.translate([0, 0, 2.8])  # no post

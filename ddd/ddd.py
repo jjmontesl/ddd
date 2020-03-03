@@ -114,7 +114,7 @@ class D1D2D3():
         cmin, cmax = ((bounds[0], bounds[1]), (bounds[2], bounds[3]))
         geom = geometry.Polygon([(cmin[0], cmin[1], 0.0), (cmax[0], cmin[1], 0.0),
                                  (cmax[0], cmax[1], 0.0), (cmin[0], cmax[1], 0.0)])
-        return DDDObject2(geom=geom, name=None)
+        return DDDObject2(geom=geom, name=name)
 
     @staticmethod
     def disc(center=None, r=None, resolution=8):
@@ -135,13 +135,31 @@ class D1D2D3():
     def cube(center=None, d=None):
         """
         Cube is sitting on the Z plane defined by the center position.
-        D is the distance to the side, so cube side length will be twice that value.
+        `d` is the distance to the side, so cube side length will be twice that value.
         """
-        if center is not None: raise NotImplementedError()  #
-        #if center is None: center = ddd.point([0, 0, 0])
+        #if center is not None: raise NotImplementedError()  #
+        if center is None: center = [0, 0, 0]
         if d is None: d = 1.0
-        cube = D1D2D3.rect([-d, -d, d, d]).extrude(d * 2)  #.translate([0, 0, 0])
+        cube = D1D2D3.rect([-d, -d, d, d]).extrude(d * 2).translate(center)
         return cube
+
+    @staticmethod
+    def box(bounds=None, name=None):
+        """
+        """
+        if bounds is None:
+            bounds = [0, 0, 0, 1, 1, 1]
+        cube = D1D2D3.rect([bounds[0], bounds[1], bounds[3], bounds[4]], name=name)
+        cube = cube.extrude(bounds[5] - bounds[2]).translate([0, 0, bounds[2]])
+        return cube
+
+    @staticmethod
+    def ddd2(*args, **kwargs):
+        return DDDObject2(*args, **kwargs)
+
+    @staticmethod
+    def ddd3(*args, **kwargs):
+        return DDDObject3(*args, **kwargs)
 
     @staticmethod
     def grid2(bounds, detail=1.0):
