@@ -14,10 +14,10 @@ from ddd.text import fonts
 logger = logging.getLogger(__name__)
 
 mat_bronze = ddd.material(color='#f0cb11')
-mat_paint_green = ddd.material('#265e13')
-mat_trafficlight_green = ddd.material('#00ff00')
-mat_trafficlight_orange = ddd.material('#ffff00')
-mat_trafficlight_red = ddd.material('#ff0000')
+mat_paint_green = ddd.material(color='#265e13')
+mat_trafficlight_green = ddd.material(color='#00ff00')
+mat_trafficlight_orange = ddd.material(color='#ffff00')
+mat_trafficlight_red = ddd.material(color='#ff0000')
 
 
 def post(height=2.00, r=0.075, top=None):

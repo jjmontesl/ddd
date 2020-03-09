@@ -221,7 +221,7 @@ class BuildingOSMBuilder():
                 item = self.snap_to_building(item, building_3d)
                 item = item.translate([0, 0, 2.8])  # no post
                 color = random.choice(["#c41a7d", "#97c41a", "#f2ee0f", "#0f90f2"])
-                item = item.material(ddd.material(color))
+                item = item.material(ddd.material(color=color))
                 building_3d.children.append(item)
 
             else:

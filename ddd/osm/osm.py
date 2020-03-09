@@ -57,36 +57,41 @@ def project_coordinates(coords, transformer):
 class OSMBuilder():
 
     # Golf
-    mat_lane = ddd.material(color='#1db345')
-    mat_border = ddd.material(color='#f0f0ff')
+    #mat_lane = ddd.material(color='#1db345')
+    #mat_border = ddd.material(color='#f0f0ff')
 
     # Ways
-    mat_asphalt = ddd.material(color='#202020')
+    mat_asphalt = ddd.material(name="Asphalt", color='#202020')
     mat_dirt = ddd.material(color="#b58800")
     mat_railway = ddd.material(color="#47443e")
-    mat_sidewalk = ddd.material(color='#e0d0d0')
-    mat_pavement = ddd.material(color='#c0c0b0')
-    mat_pathwalk = ddd.material(color='#78281e')
-    mat_roadline = ddd.material(color='#e8e8e8')
+    mat_sidewalk = ddd.material(name="Sidewalk", color='#e0d0d0')
+    mat_pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
+    mat_pathwalk = ddd.material(name="WayPedestrian", color='#78281e')
+
+    mat_roadline = ddd.material(name="Roadline", color='#e8e8e8')
 
     # Areas
-    mat_park = ddd.material(color='#1db345')
+    mat_park = ddd.material(name="Park", color='#1db345')
     mat_pitch = ddd.material(color='#196118')
-    mat_sea = ddd.material(color='#3d43b5')
-    mat_terrain = ddd.material(color='#e6821e')
+    mat_sea = ddd.material(name="Water4Advanced", color='#3d43b5')
+    mat_terrain = ddd.material(name="Ground", color='#e6821e')
 
-    # Materials
-    mat_leaves = ddd.material(color='#1da345')
-    mat_lightbulb = ddd.material(color='e8e0e4')
-
+    # Structural / building materials
     mat_bronze = ddd.material(color='#f0cb11')
     mat_steel = ddd.material(color='#78839c')
     mat_stone = ddd.material(color='#9c9378')
-    mat_cement = ddd.material(color='#b8b8a0')
+    mat_cement = ddd.material(name="Concrete", color='#b8b8a0')
     mat_brick = ddd.material(color='#d49156')
     mat_forgery = ddd.material(color='#1e1118')
     mat_wood = ddd.material(color='#efae85')
-    mat_water = ddd.material(color='#4d53c5')
+    mat_water = ddd.material(name="WaterBasicDaytime", color='#4d53c5')
+
+    # Trees
+    mat_bark = ddd.material(color='#df9e75')
+    mat_leaves = ddd.material(color='#1da345')
+
+    # Urban props materials
+    mat_lightbulb = ddd.material(color='e8e0e4')
 
     # Buildings
     mat_building_1 = ddd.material(color='#f7f0be')

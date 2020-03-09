@@ -61,7 +61,7 @@ class ElevationChunk(object):
         x, y = (point[0], point[1])
 
         # Transform to raster point coordinates
-        pixel_is_area = True
+        pixel_is_area = True  # in Vigo, True seems more accurate
         if pixel_is_area:
             raster_x = int(round((x - self.geotransform[0]) / self.geotransform[1]))
             raster_y = int(round((y - self.geotransform[3]) / self.geotransform[5]))

@@ -66,13 +66,12 @@ class D1D2D3():
         logger.info("DDD logging initialized.")
         logger.debug("DDD debug logging enabled.")
 
-
     @staticmethod
-    def material(color):
+    def material(name=None, color=None):
         #material = SimpleMaterial(diffuse=color, )
         #return (0.3, 0.9, 0.3)
-        color = trimesh.visual.color.hex_to_rgba(color)
-        return color
+        material = DDDMaterial(name=name, color=color)
+        return material
 
     @staticmethod
     def point(coords, name=None):
@@ -243,13 +242,21 @@ class D1D2D3():
         return result
 
 
-'''
 class DDDMaterial():
 
-    def __init__(self, color=None):
+    def __init__(self, name=None, color=None):
+        """
+        Color is hex color.
+        """
+        self.name = name
         self.color = color
-        self.hexcolor = None
-'''
+        self.color_rgba = None
+
+        if self.color:
+            self.color_rgba = trimesh.visual.color.hex_to_rgba(self.color)
+
+    def __repr__(self):
+        return "DDDMaterial(name=%s, color=%s)" % (self.name, self.color)
 
 
 class DDDObject():
@@ -818,7 +825,7 @@ class DDDObject3(DDDObject):
         mesh.fix_normals()
         mesh.merge_vertices()
 
-        obj = DDDObject3(mesh=mesh, children=self.children, material=self.material)
+        obj = DDDObject3(mesh=mesh, children=self.children, material=self.mat)
         return obj
 
     def subtract(self, other):
@@ -830,7 +837,7 @@ class DDDObject3(DDDObject):
     def _recurse_scene(self, path_prefix=""):
 
         scene = Scene()
-        auto_name = "node_%s_%s" % (id(self), str(self.mat))
+        auto_name = "node_%s" % (id(self))
         node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
 
         # Add metadata to name
@@ -838,6 +845,11 @@ class DDDObject3(DDDObject):
             ignore_keys = ('uv', 'feature', 'connections')
             metadata = dict(self.extra)
             metadata['path'] = path_prefix + node_name
+            if self.mat and self.mat.name:
+                metadata['ddd:material'] = self.mat.name
+            if self.mat and self.mat.color:
+                metadata['ddd:material:color'] = self.mat.color  # hex
+
             metadata = json.loads(json.dumps(metadata, default=lambda x: None))
             metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
             serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
@@ -856,8 +868,12 @@ class DDDObject3(DDDObject):
             #    self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
             #else:
             #    self.mesh.visual.uv = uvs
-            mat = SimpleMaterial(diffuse=self.mat)
-            self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
+
+            if self.mat:
+                mat = SimpleMaterial(diffuse=self.mat.color_rgba)
+                self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
+            else:
+                logger.warn("No material set for mesh: %s", self)
 
         scene.add_geometry(geometry=self.mesh, node_name=encoded_node_name.replace(" ", "_"))
 
@@ -889,7 +905,7 @@ class DDDObject3(DDDObject):
 
         scene = Scene(base_frame=base_frame, graph=None)
 
-        auto_name = "node_%s_%s" % (id(self), str(self.mat))
+        auto_name = "node_%s" % (id(self))
         node_name = self.name + "_%s" % id(self) if self.name else auto_name
         node_name = node_name.replace(" ", "_")
         scene.add_geometry(geometry=self.mesh, node_name=node_name)
@@ -901,7 +917,7 @@ class DDDObject3(DDDObject):
             for c in self.children:
                 cscene = c._recurse_scene(node_name, graph)
 
-                sauto_name = "node_%s_%s" % (id(c), str(c.mat))
+                sauto_name = "node_%s" % (id(c))
                 cscene_name = c.name + "_%s" % id(c) if c.name else sauto_name
                 cscene_name = cscene_name.replace(" ", "_")
 
