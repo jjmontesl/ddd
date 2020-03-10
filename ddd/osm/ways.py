@@ -3,6 +3,7 @@
 # Jose Juan Montes 2020
 
 from collections import defaultdict, namedtuple
+import copy
 import logging
 import math
 import random
@@ -15,9 +16,11 @@ import noise
 import numpy
 import pyproj
 from shapely import geometry
+from shapely.coords import CoordinateSequence
 from shapely.geometry import shape
 from shapely.geometry.geo import shape
 from shapely.geometry.linestring import LineString
+from shapely.geometry.polygon import LinearRing
 from shapely.ops import transform
 from trimesh import creation, primitives, boolean
 import trimesh
@@ -27,13 +30,11 @@ from trimesh.path.path import Path
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial
 
+from ddd.core import uvmapping
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.osm.buildings import BuildingOSMBuilder
 from ddd.pack.sketchy import terrain, plants, urban
-import copy
-from shapely.coords import CoordinateSequence
-from ddd.core import uvmapping
 
 
 # Get instance of logger for this module
@@ -1214,19 +1215,23 @@ class WaysOSMBuilder():
             # Create line
             line = path.buffer(0.15).material(self.osm.mat_roadline)
             line.extra['way_1d'] = path
-            uvmapping.map_2d_path(line, path)
 
             # FIXME: Move cropping to generic site, use itermediate osm.something for storage
+            # Also, cropping shall interpolate UVs
             crop = ddd.shape(self.osm.area_crop)
             line = line.intersect(crop)
+            line = line.individualize()
 
-            if not line.geom.is_empty:
-                line_3d = line.triangulate().translate([0, 0, 0.01])
+            if line.geom and not line.geom.is_empty:
+                uvmapping.map_2d_path(line, path)
+                line_3d = line.triangulate().translate([0, 0, 0.02])
                 vertex_func = self.get_height_apply_func(path)
                 line_3d = line_3d.vertex_func(vertex_func)
                 line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
                 line_3d.extra['ddd:collider'] = False
+                line_3d.extra['ddd:shadows'] = False
                 uvmapping.map_3d_from_2d(line_3d, line)
+                #uvmapping.map_2d_path(line_3d, path)
 
                 self.osm.roadlines_3d.children.append(line_3d)
 

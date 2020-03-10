@@ -50,8 +50,8 @@ def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=
     post = ddd.group([post] + items)
     return post
 
-def lamppost(height=2.80):
-    lamp = ddd.sphere(r=0.25, subdivisions=1)
+def lamppost(height=2.80, r=0.25):
+    lamp = ddd.sphere(r=r, subdivisions=1).scale([1.0, 1.0, 1.2])
     col = post(height=height, top=lamp)
     #ped = pedestal(top=col)
     return col

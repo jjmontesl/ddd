@@ -1,6 +1,9 @@
 [0.4.1]
 
+  * Exporting OSM amenity and other texts as metadata.
   * Exporting materials as metadata.
+
+  * Fixed road line UV coordinates (left-right crossing issue).
 
 [0.4.0]
 

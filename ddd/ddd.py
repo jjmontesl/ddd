@@ -483,6 +483,38 @@ class DDDObject2(DDDObject):
                 return True
         return False
 
+    def individualize(self):
+        """
+        Return a group of multiple DDD2Objects if the object is a GeometryCollection.
+        """
+        #result = self.copy()
+        #result.children = [c.individualize() for c in self.children]
+
+        if self.children:
+            raise NotImplementedError()
+
+        if self.geom and self.geom.type == 'GeometryCollection':
+            expanded = []
+            for partialgeom in self.geom.geoms:
+                newobj = self.copy()
+                newobj.geom = partialgeom
+                expanded.append(newobj)
+            result = ddd.group(expanded, empty=2)
+
+            return result
+
+        elif self.geom and self.geom.type == 'MultiPolygon':
+            expanded = []
+            for partialgeom in self.geom.geoms:
+                newobj = self.copy()
+                newobj.geom = partialgeom
+                expanded.append(newobj)
+            result = ddd.group(expanded, empty=2)
+            return result
+
+        else:
+            return self.copy()
+
     def triangulate(self):
         """
         Returns a triangulated mesh (3D) from this 2D shape.
@@ -873,7 +905,8 @@ class DDDObject3(DDDObject):
                 mat = SimpleMaterial(diffuse=self.mat.color_rgba)
                 self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
             else:
-                logger.warn("No material set for mesh: %s", self)
+                #logger.debug("No material set for mesh: %s", self)
+                pass
 
         scene.add_geometry(geometry=self.mesh, node_name=encoded_node_name.replace(" ", "_"))
 

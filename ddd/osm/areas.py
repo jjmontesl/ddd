@@ -12,15 +12,15 @@ from csg import geom as csggeom
 from csg.core import CSG
 import geojson
 import noise
+from numpy import angle
 import pyproj
 from shapely import geometry
+from shapely.errors import TopologicalError
 from shapely.geometry import shape
 from shapely.geometry.geo import shape
+from shapely.geometry.linestring import LineString
+from shapely.geometry.polygon import LinearRing
 from shapely.ops import transform
-
-from ddd.ddd import DDDObject2, DDDObject3
-from ddd.ddd import ddd
-from ddd.pack.sketchy import terrain, plants, urban
 from trimesh import creation, primitives, boolean
 import trimesh
 from trimesh.base import Trimesh
@@ -28,10 +28,10 @@ from trimesh.path import segments
 from trimesh.path.path import Path
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial
-from shapely.geometry.linestring import LineString
-from numpy import angle
-from shapely.geometry.polygon import LinearRing
-from shapely.errors import TopologicalError
+
+from ddd.ddd import DDDObject2, DDDObject3
+from ddd.ddd import ddd
+from ddd.pack.sketchy import terrain, plants, urban
 
 
 # Get instance of logger for this module
@@ -124,7 +124,7 @@ class AreasOSMBuilder():
         add_trees = not has_trees and area.geom.area > 100
 
         if add_trees:
-            tree_density_m2 = 0.0025
+            tree_density_m2 = 0.0025  # decimation would affect after
             num_trees = int((area.geom.area * tree_density_m2))
             if num_trees == 0 and random.uniform(0, 1) < 0.5: num_trees = 1
             num_trees = min(num_trees, 20)

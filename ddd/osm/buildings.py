@@ -201,7 +201,8 @@ class BuildingOSMBuilder():
                 # Except parking?
 
                 #coords = amenity.geom.centroid.coords[0]
-                panel_text = amenity.extra['name'] if amenity.extra['name'] else None
+                #panel_text = amenity.extra['amenity'] if amenity.extra['amenity'] else None
+                panel_text = amenity.extra['name'] if amenity.extra['name'] else (amenity.extra['amenity'] if amenity.extra['amenity'] else None)
                 item = urban.panel(width=3.2, height=0.9, text=panel_text)
                 item.extra['amenity'] = amenity
                 item.extra['text'] = panel_text
@@ -213,7 +214,7 @@ class BuildingOSMBuilder():
 
             elif amenity.extra['shop']:
                 #coords = amenity.geom.centroid.coords[0]
-                panel_text = amenity.extra['shop'] + (("<br>" + amenity.extra['name']) if amenity.extra['name'] else "")
+                panel_text = ((amenity.extra['name']  + "<br>") if amenity.extra['name'] else amenity.extra['shop'])
                 item = urban.panel(width=2.5, height=0.8, text=panel_text)
                 item.extra['amenity'] = amenity
                 item.extra['text'] = panel_text
