@@ -1,5 +1,8 @@
 [0.4.1]
 
+  * Added some basic objects: benches, lighthouses, bus stops.
+  * Added more road lines (sides and lanes).
+  * Added intersections calculation (draft).
   * Exporting OSM amenity and other texts as metadata.
   * Exporting materials as metadata.
 

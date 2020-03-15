@@ -116,6 +116,8 @@ class AreasOSMBuilder():
     def generate_area_2d_park(self, feature):
         area = ddd.shape(feature["geometry"], name="Park: %s" % feature['properties'].get('name', None))
         area = area.material(self.osm.mat_park)
+        area.extra['feature'] = feature
+        area.extra['ddd:area'] = 'park'
 
         # Add trees if necesary
         # FIXME: should not check for None in intersects, filter shall not return None (empty group)
@@ -166,8 +168,20 @@ class AreasOSMBuilder():
                 logger.warn("Could not generate area %s: %s", area_2d, e)
 
     def generate_area_3d(self, area_2d):
-        area_3d = area_2d.extrude(-0.5).translate([0, 0, 0.3])
+
+        if area_2d.extra.get('ddd:area', None) == 'park':
+            #area_3d = area_2d.extrude_step()
+            #area_3d = area_3d.extrude_step(d=0.1, geom=area_2d.buffer(-1.0))
+            #area_3d = area_3d.extrude_step(d=0.1, geom=area_2d.buffer(-2.0))
+            area_3d = ddd.group([area_2d.triangulate().translate([0, 0, 0.0]),
+                                 area_2d.buffer(-1.0).triangulate().translate([0, 0, 0.2]),
+                                 area_2d.buffer(-3.0).triangulate().translate([0, 0, 0.3])])
+            area_3d = area_3d.translate([0, 0, 0.3])
+        else:
+            area_3d = area_2d.extrude(-0.5).translate([0, 0, 0.2])
+
         area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
+
         return area_3d
 
     '''

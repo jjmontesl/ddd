@@ -23,7 +23,7 @@ from ddd.ddd import ddd
 from ddd.georaster import ElevationChunk
 
 
-def map_2d_path(obj, path):
+def map_2d_path(obj, path, line_x_offset=0.0):
     """
     Assigns UV coordinates to a shape for a line along a path.
     This method does not create a copy of objects, affecting the hierarchy.
@@ -35,7 +35,7 @@ def map_2d_path(obj, path):
         #print(x, y, z, idx, d, path)
         p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(d)
         pol = LinearRing([segment_coords_a, segment_coords_b, [x, y, z]])
-        return (0.1 * (-1 if pol.is_ccw else 1), d)
+        return (line_x_offset + (0.1 * (-1 if pol.is_ccw else 1)), d)
 
     result = obj
     if obj.geom:

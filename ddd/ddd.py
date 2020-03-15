@@ -283,6 +283,9 @@ class DDDObject():
             c.dump(indent_level=indent_level + 1)
 
     def select(self, func):
+        """
+        """
+
         result = []
         if func(self):
             result.append(self)
@@ -324,8 +327,8 @@ class DDDObject2(DDDObject):
             return len(self.geom.coords)
         return None
 
-    def copy(self):
-        obj = DDDObject2(name=self.name, children=[c.copy() for c in self.children], geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
+    def copy(self, name=None):
+        obj = DDDObject2(name=name if name else self.name, children=[c.copy() for c in self.children], geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
         return obj
 
     def material(self, material):
@@ -372,6 +375,14 @@ class DDDObject2(DDDObject):
             trans_func = lambda x, y, z=0.0: (x * coords[0], y * coords[1], z * coords[2])
             result.geom = ops.transform(trans_func, self.geom)
         result.children = [c.scale(coords) for c in self.children]
+        return result
+
+    def clean(self):
+        result = self.copy()
+        if result.geom and not result.geom.is_valid:
+            logger.debug("Removed invalid geometry from: %s", result)
+            result.geom = None
+        result.children = [c.clean() for c in self.children]
         return result
 
     def buffer(self, distance, resolution=8, cap_style=3, join_style=3, mitre_limit=5.0):
@@ -449,7 +460,7 @@ class DDDObject2(DDDObject):
         result = self.copy()
         other = other.union()
 
-        if self.geom:
+        if self.geom and other.geom:
             result.geom = self.geom.intersection(other.geom)
         result.children = [c.intersect(other) for c in self.children]
 
@@ -482,6 +493,11 @@ class DDDObject2(DDDObject):
             if c.contains(other):
                 return True
         return False
+
+    def convex_hull(self):
+        result = self.copy().union()
+        result.geom = result.geom.convex_hull
+        return result
 
     def individualize(self):
         """
@@ -520,14 +536,14 @@ class DDDObject2(DDDObject):
         Returns a triangulated mesh (3D) from this 2D shape.
         """
         if self.geom:
-            if self.geom.type == 'MultiPolygon':
+            if self.geom.type == 'MultiPolygon' or self.geom.type == 'GeometryCollection':
                 meshes = []
                 for geom in self.geom.geoms:
                     pol = DDDObject2(geom=geom)
                     mesh = pol.triangulate()
                     meshes.append(mesh)
                 result = ddd.group(children=meshes, name=self.name)
-            else:
+            elif not self.geom.is_empty and not self.geom.type == 'LineString' and not self.geom.type == 'Point':
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)
                 #vertices, faces = creation.triangulate_polygon(self.geom)  # , min_angle=math.pi / 180.0)
@@ -536,6 +552,8 @@ class DDDObject2(DDDObject):
                 #mesh = creation.extrude_triangulation(vertices=vertices, faces=faces, height=0.2)
                 mesh.merge_vertices()
                 result = DDDObject3(mesh=mesh, name=self.name)
+            else:
+                result = DDDObject3()
         else:
             result = DDDObject3()
 

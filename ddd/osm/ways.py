@@ -35,12 +35,14 @@ from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.osm.buildings import BuildingOSMBuilder
 from ddd.pack.sketchy import terrain, plants, urban
+from shapely.geometry.multipoint import MultiPoint
 
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
 WayConnection = namedtuple("WayConnection", "other self_idx other_idx")
+JoinConnection = namedtuple("JoinConnection", "way way_idx")
 
 
 class WaysOSMBuilder():
@@ -240,6 +242,9 @@ class WaysOSMBuilder():
         # Propagate height across connections for transitions
         #self.generate_ways_1d_heights()
 
+        # Generate interesections
+        self.ways_1d_intersections()
+
         # Road 1D heights
         self.ways_1d_heights_initial()
         self.ways_1d_heights_connections()  # and_layers_and_transitions_etc
@@ -248,6 +253,49 @@ class WaysOSMBuilder():
         # Propagate height beyond transition layers if gradient is too large?!
 
         # Soften / subdivide roads if height angle is larger than X (try as alternative to massive subdivision of roads?)
+
+    def ways_1d_intersections(self):
+        """
+        Intersections are just data structures, they are not geometries.
+        """
+
+        logger.info("Generating intersections form %d ways.", len(self.osm.ways_1d.children))
+
+        intersections = []
+        intersections_cache = defaultdict(default=list)
+
+        def get_create_intersection(joins):
+            if not joins or len(joins) < 2:
+                return None
+
+            for j in joins:
+                if j in intersections_cache.keys():
+                    return intersections_cache[j]
+
+            #if len(joins) == 2:
+            #    logger.debug("Intersection of only 2 ways.")
+            intersection = [j for j in joins]
+            intersections.append(intersection)
+            for j in joins: intersections_cache[j] = intersection
+
+            return intersection
+
+        # FIXME: Seems connectios in the middle of path are incorrectly handled, split is bad, or...? (Alameda paths)
+        logger.warn("FIXME: Seems connectios in the middle of path are incorrectly handled, split is bad, or...? (Alameda paths)")
+        for way in self.osm.ways_1d.children:
+
+            # For each vertex (start / end), evaluate the connection
+            connections_start = [c for c in way.extra['connections'] if c.self_idx == 0]
+            connections_end = [c for c in way.extra['connections'] if c.self_idx == len(way.geom.coords) - 1]
+
+            joins_start = [JoinConnection(way, 0)] + [JoinConnection(c.other, c.other_idx) for c in connections_start]
+            joins_end = [JoinConnection(way, len(way.geom.coords) - 1)] + [JoinConnection(c.other, c.other_idx) for c in connections_end]
+
+            way.extra['intersection_start'] = get_create_intersection(joins_start)
+            way.extra['intersection_end'] = get_create_intersection(joins_end)
+
+        self.osm.intersections = intersections
+        logger.info("Generated %d intersections", len(self.osm.intersections))
 
     def ways_1d_heights_initial(self):
         """
@@ -576,6 +624,7 @@ class WaysOSMBuilder():
         #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
 
         name = "Way: %s" % (feature['properties'].get('name', feature['properties'].get('id')))
+        name = name.replace("/", "-")
         width = None  # if not set will be discarded
         material = self.osm.mat_asphalt
         extra_height = 0.0
@@ -737,8 +786,10 @@ class WaysOSMBuilder():
             lanes = int(float(flanes))
             width = (lanes * 3.30)
 
-        if lanes is None or lanes <= 1:
+        if lanes is None or lanes < 1:
             roadlines = False
+
+        lanes = int(lanes) if lanes is not None else None
 
         path = path.material(material)
         path.name = name
@@ -762,6 +813,7 @@ class WaysOSMBuilder():
         path.extra['ddd_lamps'] = lamps
         path.extra['ddd_trafficlights'] = trafficlights
         path.extra['ddd:roadlines'] = roadlines
+        path.extra['ddd:way:weight'] = self.road_weight(feature)
         #print(feature['properties'].get("name", None))
 
         return path
@@ -820,21 +872,149 @@ class WaysOSMBuilder():
     def get_way_2d(self, way_1d):
         for l in self.osm.ways_2d.values():
             for way_2d in l.children:
-                if way_2d.extra['way_1d'] == way_1d:
+                if 'way_1d' in way_2d.extra and way_2d.extra['way_1d'] == way_1d:
                     return way_2d
         logger.warn("Tried to get way 2D for not existing way 1D: %s", way_1d)
         #raise ValueError("Tried to get way 2D for not existing way 1D: %s" % way_1d)
         return DDDObject2()
 
     def generate_ways_2d(self):
+
+        # Generate layers
         for layer_idx in self.osm.layer_indexes:
             self.generate_ways_2d_layer(layer_idx)
+
+        # Generate intersections (crossroads)
+        intersections_2d = []
+        for intersection in self.osm.intersections:
+
+            # Discard intersections if they include the same way twice
+            for i in range(1, len(intersection)):
+                for j in range(0, i):
+                    if intersection[i].way == intersection[j].way:
+                        logger.warn("Discarding intersection (way contained multiple times)")
+                        continue
+
+            join_ways = ddd.group([self.get_way_2d(j.way) for j in intersection])
+
+            #print(join_ways.children)
+            join_geoms = join_ways.geom_recursive()
+            join_points = []
+            join_shapes = []
+            # Calculate intersection points as lines
+            for i in range(len(join_ways.children)):
+                for j in range(i + 1, len(join_ways.children)):
+                    shape1 = join_ways.children[i]
+                    shape2 = join_ways.children[j]
+                    #points = shape1.exterior.intersection(shape2.exterior)
+                    #join_points.extend(points)
+                    shape = shape1.intersect(shape2).buffer(0.001)
+                    join_shapes.append(shape)
+            #intersection_shape = MultiPoint(join_points).convex_hull
+            intersection_shape = ddd.group(join_shapes, empty=2).union().convex_hull()
+
+            #print(intersection_shape)
+            if intersection_shape.geom and intersection_shape.geom.type in ('Polygon', 'MultiPolygon') and not intersection_shape.geom.is_empty:
+
+                # Createintersection from highest way value from joins
+                highest_way = None
+                for join in intersection:
+                    if highest_way is None or join.way.extra['ddd:way:weight'] < highest_way.extra['ddd:way:weight'] :
+                        highest_way = join.way
+
+                intersection_2d = highest_way.copy(name="Intersection (%s)" % highest_way.name)
+                """
+                if ('666643710' in intersection_2d.name):
+                    print(intersection_2d.extra)
+                    sys.exit(1)
+                """
+
+                intersection_2d.extra['connections'] = []
+                if len(intersection) > 3:  # 2
+                    intersection_2d.extra['ddd_lamps'] = False
+                    intersection_2d.extra['ddd_trafficlights'] = False
+                    intersection_2d.extra['ddd:roadlines'] = False
+
+                intersection_2d.geom = intersection_shape.geom# ddd.shape(intersection_shape, name="Intersection")
+                intersection_2d.extra['intersection'] = intersection
+                for join in intersection:
+                    if join.way.extra['intersection_start'] == intersection:
+                        join.way.extra['intersection_start_2d'] = intersection_2d
+                    if join.way.extra['intersection_end'] == intersection:
+                        join.way.extra['intersection_end_2d'] = intersection_2d
+
+                intersections_2d.append(intersection_2d)
+
+        intersections_2d = ddd.group(intersections_2d, name="Intersections")
+        self.osm.intersections_2d = intersections_2d
+
+        # Add intersections to respective layers
+        for int_2d in intersections_2d.children:
+            #print(int_2d.extra)
+            self.osm.ways_2d[int_2d.extra['layer']].children.append(int_2d)
+
+        # Subtract intersections from ways
+        for layer_idx in self.osm.ways_2d.keys():  # ["-1a", "0a", "1a"]
+            ways = []
+            for way in self.osm.ways_2d[layer_idx].children:
+
+                if 'intersection' in way.extra:
+                    ways.append(way)
+                    continue
+                #logger.debug("Way: %s  Way 1D: %s  Intersections: %s", way, way.extra['way_1d'], way.extra['way_1d'].extra)
+                if 'intersection_start_2d' in way.extra['way_1d'].extra:
+                    way = way.subtract(way.extra['way_1d'].extra['intersection_start_2d'])
+                if 'intersection_end_2d' in way.extra['way_1d'].extra:
+                    way = way.subtract(way.extra['way_1d'].extra['intersection_end_2d'])
+                '''
+                connected = self.follow_way(way.extra['way_1d'], 1)
+                connected.remove(way.extra['way_1d'])
+                connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
+                wayminus = way.subtract(connected_2d).buffer(0.001)
+                '''
+                way = way.buffer(0.001)
+                if True or (way.geom and way.geom.is_valid):
+
+                    #print(way)
+                    #print(way.geom.type)
+                    '''
+                    if way.geom.type == "Polygon":
+                        #way.geom = way.geom.buffer(0.0)
+                        if way.geom.exterior == None:
+                            way = None
+                        else:
+                            #print(list(way.geom.exterior.coords))
+                            pass
+                        if way.geom.interiors:
+                            #print("INTERIORS:")
+                            #print([list(i.coords) for i in way.geom.interiors])
+                            #print([i.is_valid for i in way.geom.interiors])
+                            pass
+
+                    #elif way.geom.type == "MultiPolygon":
+                    #    print([list(p.exterior.coords) for p in way.geom])
+                    #else:
+                    #    print(list(way.geom.coords))
+                    '''
+
+                    if way:
+                        way.extrude(1.0)
+                        ways.append(way)
+                        #try:
+                        #except Exception as e:
+                        #    logger.warn("Could not generate way due to exception in extrude check: %s", way )
+
+            self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2", name="Ways 2D %s" % layer_idx)
+
+        logger.debug("Saving intersections 2D.")
+        ddd.group([self.osm.ways_2d["0"].extrude(1.0), self.osm.intersections_2d.material(ddd.mat_highlight).extrude(1.5)]).save("/tmp/ddd-intersections.glb")
 
         # Subtract connected ways
         #TODO: This shall be possibly done when creating ways not after
         #union_lm1 = self.osm.ways_2d["-1"].union()
         #union_l0 = self.osm.ways_2d["0"].union()
         #union_l1 = self.osm.ways_2d["1"].union()
+        '''
         for layer_idx in ["-1a", "0a", "1a"]:
             ways = []
             for way in self.osm.ways_2d[layer_idx].children:
@@ -844,6 +1024,8 @@ class WaysOSMBuilder():
                 wayminus = way.subtract(connected_2d).buffer(0.001)
                 ways.append(wayminus)
             self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2")
+        '''
+
 
 
         #self.osm.ways_2d["-1a"] = self.osm.ways_2d["-1a"].material(ddd.mat_highlight)
@@ -866,7 +1048,7 @@ class WaysOSMBuilder():
         ways_1d = [w for w in self.osm.ways_1d.children if w.extra['layer'] == layer_idx]
         logger.info("Generating 2D ways for layer %s (%d ways)", layer_idx, len(ways_1d))
 
-        ways_1d.sort(key=lambda w: self.road_weight(w.extra['feature']))
+        ways_1d.sort(key=lambda w: w.extra['ddd:way:weight'])
 
         ways_2d = defaultdict(list)
         for w in ways_1d:
@@ -876,6 +1058,7 @@ class WaysOSMBuilder():
             if way_2d:
                 ways_2d[weight].append(way_2d)
 
+        '''
         # Trim roads
         accum_roads = DDDObject2()
         for weight in sorted(ways_2d.keys()):
@@ -887,11 +1070,13 @@ class WaysOSMBuilder():
                 accum_roads = accum_roads.union(r)
                 new_weight_roads.append(new_road)
             ways_2d[weight] = new_weight_roads
+        '''
 
         roads = sum(ways_2d.values(), [])
         if roads:
             roads = ddd.group(roads, name="Ways (layer: %s)" % layer_idx)  #translate([0, 0, 50])
             self.osm.ways_2d[layer_idx] = roads
+
 
     '''
     def generate_roads_2d(self, layer_idx):
@@ -982,6 +1167,9 @@ class WaysOSMBuilder():
         self.generate_ways_3d_subways()
         self.generate_ways_3d_elevated()
 
+    def generate_ways_3d_intersections(self):
+        pass
+
     def generate_ways_3d_layer(self, layer_idx):
         '''
         - Sorts ways (more important first),
@@ -1001,7 +1189,10 @@ class WaysOSMBuilder():
 
             try:
                 extra_height = way_2d.extra['extra_height']
-                way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
+                if extra_height:
+                    way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
+                else:
+                    way_3d = way_2d.triangulate()  # + layer_height
                 way_3d = terrain.terrain_geotiff_elevation_apply(way_3d, self.osm.ddd_proj)
                 way_3d.extra['way_2d'] = way_2d
                 if way_2d.extra['natural'] == "coastline": way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
@@ -1024,12 +1215,15 @@ class WaysOSMBuilder():
         for way in ways_3d.children:
             #logger.debug("3D layer transition: %s", way)
             #if way.extra['layer_transition']:
-            path = way.extra['way_2d'].extra['way_1d']
-            vertex_func = self.get_height_apply_func(path)
-            nway = way.vertex_func(vertex_func)
+            if 'way_1d' in way.extra['way_2d'].extra:
+                path = way.extra['way_2d'].extra['way_1d']
+                vertex_func = self.get_height_apply_func(path)
+                nway = way.vertex_func(vertex_func)
+            else:
+                nway = way.translate([0, 0, self.layer_height(way.extra['layer'])])
             nways.append(nway)
 
-        self.osm.ways_3d[layer_idx] = ddd.group(nways, empty=3)
+        self.osm.ways_3d[layer_idx] = ddd.group(nways, empty=3, name="Ways (%s)" % layer_idx)
 
     def generate_ways_3d_subways(self):
         """
@@ -1085,6 +1279,8 @@ class WaysOSMBuilder():
         elevated_union = DDDObject2()
         for way in ways:
             #way_longer = way.buffer(0.3, cap_style=1, join_style=2)
+
+            if 'way_1d' not in way.extra: continue
 
             way_with_sidewalk_2d = way.buffer(0.4, cap_style=2, join_style=2)
             sidewalk_2d = way_with_sidewalk_2d.subtract(way).material(self.osm.mat_sidewalk)
@@ -1204,7 +1400,12 @@ class WaysOSMBuilder():
 
     def generate_props_2d_way(self, way_2d):
 
+        if 'way_1d' not in way_2d.extra:
+            # May be an intersection, should generate roadlines too
+            return
+
         path = way_2d.extra['way_1d']
+
         #print(path.geom.type)
         #if path.geom.type != "LineString": return
         length = path.geom.length
@@ -1212,28 +1413,48 @@ class WaysOSMBuilder():
         # Generate lines
         if path.extra['ddd:roadlines']:
 
-            # Create line
-            line = path.buffer(0.15).material(self.osm.mat_roadline)
-            line.extra['way_1d'] = path
+            numlines = path.extra['lanes'] - 1 + 2
+            for lineind in range(numlines):
 
-            # FIXME: Move cropping to generic site, use itermediate osm.something for storage
-            # Also, cropping shall interpolate UVs
-            crop = ddd.shape(self.osm.area_crop)
-            line = line.intersect(crop)
-            line = line.individualize()
+                lanes = path.extra['lanes']
+                width = path.extra['width']
+                sidewidth = 0.25
+                lanes_width = width - sidewidth * 2
+                lane_width = lanes_width / lanes
 
-            if line.geom and not line.geom.is_empty:
-                uvmapping.map_2d_path(line, path)
-                line_3d = line.triangulate().translate([0, 0, 0.05])  # Temporary hack until fitting lines properly
-                vertex_func = self.get_height_apply_func(path)
-                line_3d = line_3d.vertex_func(vertex_func)
-                line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
-                line_3d.extra['ddd:collider'] = False
-                line_3d.extra['ddd:shadows'] = False
-                uvmapping.map_3d_from_2d(line_3d, line)
-                #uvmapping.map_2d_path(line_3d, path)
+                line_continuous = False
+                if lineind in [0, numlines - 1]: line_continuous = True
+                if lanes > 2 and lineind == int(numlines / 2) + 1: line_continuous = True
+                line_x_offset = 0.076171875 if line_continuous else 0.5
 
-                self.osm.roadlines_3d.children.append(line_3d)
+                line_0_distance = -lanes_width / 2
+                line_distance = line_0_distance + lane_width * lineind
+
+                # Create line
+                pathline = path.copy()
+                pathline.geom = pathline.geom.parallel_offset(line_distance, "left")
+                line = pathline.buffer(0.15).material(self.osm.mat_roadline)
+                line.extra['way_1d'] = pathline
+
+                # FIXME: Move cropping to generic site, use itermediate osm.something for storage
+                # Also, cropping shall interpolate UVs
+                crop = ddd.shape(self.osm.area_crop)
+                line = line.intersect(crop)
+                line = line.intersect(way_2d)
+                line = line.individualize()
+
+                if line.geom and not line.geom.is_empty:
+                    uvmapping.map_2d_path(line, pathline, line_x_offset / 0.05)
+                    line_3d = line.triangulate().translate([0, 0, 0.05])  # Temporary hack until fitting lines properly
+                    vertex_func = self.get_height_apply_func(path)
+                    line_3d = line_3d.vertex_func(vertex_func)
+                    line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
+                    line_3d.extra['ddd:collider'] = False
+                    line_3d.extra['ddd:shadows'] = False
+                    uvmapping.map_3d_from_2d(line_3d, line)
+                    #uvmapping.map_2d_path(line_3d, path)
+
+                    self.osm.roadlines_3d.children.append(line_3d)
 
         # Check if to generate lamps
         if path.extra['ddd_lamps'] and path.extra['layer'] == "0":

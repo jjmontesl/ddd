@@ -20,7 +20,7 @@ from shapely.ops import transform
 
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
-from ddd.pack.sketchy import terrain, plants, urban
+from ddd.pack.sketchy import terrain, plants, urban, landscape
 from trimesh import creation, primitives, boolean
 import trimesh
 from trimesh.base import Trimesh
@@ -62,14 +62,16 @@ class ItemsOSMBuilder():
                 pass
 
     def generate_item_1d(self, feature):
-        item = ddd.shape(feature['geometry'], name="Item: %s" % feature['properties'].get('name', None))
+        item = ddd.shape(feature['geometry'], name="Item: %s" % feature['properties'].get('name', feature['properties'].get('id', None)))
         item.extra['feature'] = feature
         item.extra['name'] = feature['properties'].get('name', None)
         item.extra['amenity'] = feature['properties'].get('amenity', None)
         item.extra['natural'] = feature['properties'].get('natural', None)
         item.extra['tourism'] = feature['properties'].get('tourism', None)
+        item.extra['highway'] = feature['properties'].get('highway', None)
         item.extra['historic'] = feature['properties'].get('historic', None)
         item.extra['artwork_type'] = feature['properties'].get('artwork_type', None)
+        item.extra['man_made'] = feature['properties'].get('man_made', None)
 
         return item
 
@@ -94,6 +96,8 @@ class ItemsOSMBuilder():
         item_3d = None
         if item_2d.extra.get('amenity', None) == 'fountain':
             item_3d = self.generate_item_3d_fountain(item_2d)
+        if item_2d.extra.get('amenity', None) == 'bench':
+            item_3d = self.generate_item_3d_bench(item_2d)
 
         elif item_2d.extra.get('natural', None) == 'tree':
             self.tree_decimate_idx += 1
@@ -112,10 +116,19 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_monument(item_2d)
         elif item_2d.extra.get('historic', None) == 'wayside_cross':
             item_3d = self.generate_item_3d_wayside_cross(item_2d)
+        elif item_2d.extra.get('man_made', None) == 'lighthouse':
+            item_3d = self.generate_item_3d_lighthouse(item_2d)
+
+        elif item_2d.extra.get('highway', None) == 'bus_stop':
+            item_3d = self.generate_item_3d_bus_stop(item_2d)
+
         elif item_2d.extra.get('ddd_osm', None) == 'way_lamppost':
             item_3d = self.generate_item_3d_lamppost(item_2d)
         elif item_2d.extra.get('ddd_osm', None) == 'way_trafficlights':
             item_3d = self.generate_item_3d_trafficlights(item_2d)
+
+        else:
+            logger.debug("Unknown item: %s", item_2d.extra)
 
         return item_3d
 
@@ -144,6 +157,15 @@ class ItemsOSMBuilder():
         item_3d.children[2] = item_3d.children[2].material(self.osm.mat_water)  # FIXME: do not access children by index, assign mat in lib anyway
         return item_3d
 
+    def generate_item_3d_bench(self, item_2d):
+        # Todo: Use fountain shape if available, instead of centroid
+        coords = item_2d.geom.coords[0]
+        item_3d = urban.bench(length=2.0).translate([coords[0], coords[1], 0.0])
+        #item_3d = urban.trafficlights().rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
+        item_3d.name = 'Bench: %s' % item_2d.name
+        item_3d.material(self.osm.mat_stone)
+        return item_3d
+
     def generate_item_3d_sculpture(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
@@ -166,6 +188,20 @@ class ItemsOSMBuilder():
         coords = item_2d.geom.coords[0]
         item_3d = urban.wayside_cross().translate([coords[0], coords[1], 0.0]).material(self.osm.mat_stone)  # mat_bronze
         item_3d.name = 'Wayside Cross: %s' % item_2d.name
+        return item_3d
+
+    def generate_item_3d_lighthouse(self, item_2d):
+        coords = item_2d.geom.coords[0]
+        item_3d = landscape.lighthouse().translate([coords[0], coords[1], 0.0])
+        item_3d = item_3d.material(self.osm.mat_stone)  # mat_bronze
+        item_3d.name = 'Lighthouse: %s' % item_2d.name
+        return item_3d
+
+    def generate_item_3d_bus_stop(self, item_2d):
+        coords = item_2d.geom.coords[0]
+        text = item_2d.extra.get("name", None)
+        item_3d = urban.busstop_small(text=text).translate([coords[0], coords[1], 0.0])
+        item_3d.name = 'Bus Stop: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_lamppost(self, item_2d):

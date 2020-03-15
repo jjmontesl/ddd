@@ -131,33 +131,33 @@ class OSMBuilder():
         self.osm_proj = osm_proj
         self.ddd_proj = ddd_proj
 
-        self.items_1d = DDDObject2()  # Point items
-        self.items_2d = DDDObject2()  # Area items
-        self.items_3d = DDDObject3()
+        self.items_1d = DDDObject2(name="Items 1D")  # Point items
+        self.items_2d = DDDObject2(name="Items 2D")  # Area items
+        self.items_3d = DDDObject3(name="Items")
 
         self.ways_1d = None
         self.ways_2d = defaultdict(DDDObject2)
         self.ways_3d = defaultdict(DDDObject3)
 
-        self.roadlines_2d = DDDObject2()
-        self.roadlines_3d = DDDObject3()
+        self.roadlines_2d = DDDObject2(name="Roadlines 2D")
+        self.roadlines_3d = DDDObject3(name="Roadlines")
 
-        self.areas_2d = DDDObject2()
-        self.areas_2d_objects = DDDObject2()
-        self.areas_3d = DDDObject3()
+        self.areas_2d = DDDObject2("Areas 2D")
+        self.areas_2d_objects = DDDObject2(name="Areas 2D Objects")
+        self.areas_3d = DDDObject3(name="Areas")
 
         self.buildings_2d = None
         self.buildings_3d = None
 
-        self.water_2d = DDDObject2()
-        self.water_3d = DDDObject3()
+        self.water_2d = DDDObject2(name="Water 2D")
+        self.water_3d = DDDObject3(name="Water")
 
-        self.ground_3d = DDDObject3()
+        self.ground_3d = DDDObject3(name="Ground")
 
-        self.other_3d = DDDObject3()
+        self.other_3d = DDDObject3(name="Other")
 
-        self.customs_1d = DDDObject2()
-        self.customs_3d = DDDObject3()
+        self.customs_1d = DDDObject2(name="Customs 1D")
+        self.customs_3d = DDDObject3(name="Customs")
 
         #self.sidewalks_3d_l1 = DDDObject3()
         #self.walls_3d_l1 = DDDObject3()
@@ -317,6 +317,7 @@ class OSMBuilder():
 
         # Ways 3D
         self.ways.generate_ways_3d()
+        self.ways.generate_ways_3d_intersections()
         # Areas 3D
         self.areas.generate_areas_3d()
         # Buildings 3D
@@ -339,7 +340,7 @@ class OSMBuilder():
                  self.buildings_3d, self.items_3d,
                  self.other_3d, self.roadlines_3d]
 
-        scene = ddd.group(scene + list(self.ways_3d.values()))
+        scene = ddd.group(scene + list(self.ways_3d.values()), name="Scene")
 
         return scene
 

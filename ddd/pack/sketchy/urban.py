@@ -148,8 +148,12 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, texture=None):
 
     return panel
 
-def busstop_small():
-    pass
+
+def busstop_small(height=2.30, panel_height=1.2, panel_width=0.4, text=None):
+    obj_post = post(height=height).material(mat_paint_green)
+    obj_panel = panel(height=panel_height, width=panel_width, depth=0.05, text=text).translate([panel_width / 2, 0, height - 0.20 - panel_height / 2])
+    obj = ddd.group([obj_post, obj_panel])
+    return obj
 
 def busstop_covered():
     pass
@@ -276,9 +280,26 @@ def gardener(length=2.0):
     pass
 
 
-def bench(length=1.40, height=1.00, seat_height=0.40,
+def bench(length=1.40, height=1.00, width=0.8, seat_height=0.50,
           legs=2, hangout=0.20):
-    pass
+
+    seat_thick = 0.10
+    leg_thick = 0.2
+    leg_padding = 0.3
+    leg_width = width - leg_padding
+    leg_height = seat_height - seat_thick
+
+    seat = ddd.rect([-length/ 2.0, -width / 2.0, length / 2.0, width / 2.0]).extrude(-seat_thick).translate([0, 0, seat_height])
+    legs_objs = []
+    leg_spacing = (length - leg_padding * 2) / (legs - 1)
+    for leg_idx in range(legs):
+        leg = ddd.rect([-leg_thick / 2, -leg_width / 2.0, leg_thick / 2, leg_width / 2]).extrude(leg_height)
+        leg = leg.translate([-(length / 2) + leg_padding + leg_spacing * leg_idx, 0, 0])
+        legs_objs.append(leg)
+
+    bench = ddd.group([seat] + legs_objs)
+    bench.name = "Bench"
+    return bench
 
 def bank(length=1.40, height=1.00, seat_height=0.40,
           legs=2, hangout=0.20, angle=100.0, arms=0):
