@@ -75,8 +75,9 @@ class AreasOSMBuilder():
             if area:
                 logger.debug("Area: %s", area)
                 area = area.subtract(union)
-                #union = union.union(area)
+
                 self.osm.areas_2d.children.append(area)
+                #self.osm.areas_2d.children.extend(area.individualize().children)
 
     def generate_areas_2d_interways(self):
 
@@ -169,14 +170,27 @@ class AreasOSMBuilder():
 
     def generate_area_3d(self, area_2d):
 
+        if area_2d.geom.type in ('GeometryCollection', 'MultiPolygon'):
+            logger.debug("Generating area 3d as separate areas as it is a GeometryCollection: %s", area_2d)
+            # FIXME: We might do this in extrude_step, like we do in triangulate and extrude, but difficult as it is in steps.
+            # But also, we should have an individualize that work, correct iterators, and a generic cleanup/flatten method
+            # to flatten areas, which might solve this.
+            areas_3d = []
+            for a in area_2d.individualize().children:
+                areas_3d.append(self.generate_area_3d(a))
+            return ddd.group(areas_3d, empty=3)
+
         if area_2d.extra.get('ddd:area', None) == 'park':
-            #area_3d = area_2d.extrude_step()
-            #area_3d = area_3d.extrude_step(d=0.1, geom=area_2d.buffer(-1.0))
-            #area_3d = area_3d.extrude_step(d=0.1, geom=area_2d.buffer(-2.0))
-            area_3d = ddd.group([area_2d.triangulate().translate([0, 0, 0.0]),
-                                 area_2d.buffer(-1.0).triangulate().translate([0, 0, 0.2]),
-                                 area_2d.buffer(-3.0).triangulate().translate([0, 0, 0.3])])
-            area_3d = area_3d.translate([0, 0, 0.3])
+
+            area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, cap=False)
+            area_3d = area_3d.extrude_step(area_2d.buffer(-2.0), 0.1)
+
+            #area_3d = ddd.group([area_2d.triangulate().translate([0, 0, 0.0]),
+            #                     area_2d.buffer(-1.0).triangulate().translate([0, 0, 0.2]),
+            #                     area_2d.buffer(-3.0).triangulate().translate([0, 0, 0.3])])
+
+            area_3d = area_3d.translate([0, 0, 0])
+
         else:
             area_3d = area_2d.extrude(-0.5).translate([0, 0, 0.2])
 
@@ -236,6 +250,8 @@ class AreasOSMBuilder():
                 #area_3d = area_2d.extrude(-0.2)
                 area_3d = area_2d.triangulate()
                 area_3d = area_3d.material(self.osm.mat_sea)
+                area_3d.extra['ddd:collider'] = False
+                area_3d.extra['ddd:shadows'] = False
                 areas_2d.append(area_2d)
                 areas.append(area_3d)
 

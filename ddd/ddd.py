@@ -25,6 +25,7 @@ from matplotlib import colors
 import json
 import base64
 from shapely.geometry.polygon import orient
+from ddd.ops import extrusion
 
 
 # Get instance of logger for this module
@@ -38,6 +39,7 @@ class D1D2D3():
     CAP_ROUND = 1
     CAP_FLAT = 2
     CAP_SQUARE = 3
+
     JOIN_ROUND = 1
     JOIN_MITRE = 2
     JOIN_BEVEL = 2
@@ -368,6 +370,13 @@ class DDDObject2(DDDObject):
         result.children = [c.translate(coords) for c in self.children]
         return result
 
+    def rotate(self, angle, origin='centroid'):
+        result = self.copy()
+        if self.geom:
+            result.geom = affinity.rotate(self.geom, angle / (math.pi / 180), origin=origin)
+        result.children = [c.rotate(angle, origin) for c in self.children]
+        return result
+
     def scale(self, coords):
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
         result = self.copy()
@@ -643,6 +652,26 @@ class DDDObject2(DDDObject):
 
         return result
 
+    def extrude_step(self, obj_2d, offset, cap=True):
+        # Triangulate and store info for 3D extrude_step
+
+        if cap:
+            result = self.triangulate()
+            if result.mesh:
+                result.mesh.faces = numpy.fliplr(result.mesh.faces)
+        else:
+            # TODO: unify in copy2d->3d method
+            result = DDDObject3()
+            # Copy extra information from original object
+            result.name = self.name if result.name is None else result.name
+            result.extra = dict(self.extra)
+            if self.mat is not None:
+                result = result.material(self.mat)
+
+        result.extra['_extrusion_last_shape'] = self
+        result = result.extrude_step(obj_2d, offset)
+        return result
+
     def simplify(self, distance):
         result = self.copy()
         if self.geom:
@@ -884,6 +913,11 @@ class DDDObject3(DDDObject):
     def union(self, other):
         return self._csg(other, operation='union')
 
+    def extrude_step(self, obj_2d, offset, cap=True):
+        result = self.copy()
+        result = extrusion.extrude_step(result, obj_2d, offset, cap=cap)
+        return result
+
     def _recurse_scene(self, path_prefix=""):
 
         scene = Scene()
@@ -907,24 +941,7 @@ class DDDObject3(DDDObject):
 
         # UV coords test
         if self.mesh:
-            if self.extra.get('uv', None):
-                uvs = self.extra['uv']
-            else:
-                uvs = [(v[0], v[2]) for v in self.mesh.vertices]
-
-            if len(uvs) != len(self.mesh.vertices):
-                raise AssertionError("Invalid number of UV coordinates.")
-            #if self.mesh.visual is None:
-            #    self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
-            #else:
-            #    self.mesh.visual.uv = uvs
-
-            if self.mat:
-                mat = SimpleMaterial(diffuse=self.mat.color_rgba)
-                self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
-            else:
-                #logger.debug("No material set for mesh: %s", self)
-                pass
+            self.mesh = self._process_mesh()
 
         scene.add_geometry(geometry=self.mesh, node_name=encoded_node_name.replace(" ", "_"))
 
@@ -946,6 +963,28 @@ class DDDObject3(DDDObject):
         """
 
         return scene
+
+    def _process_mesh(self):
+        if self.extra.get('uv', None):
+            uvs = self.extra['uv']
+        else:
+            uvs = [(v[0], v[2]) for v in self.mesh.vertices]
+
+        if len(uvs) != len(self.mesh.vertices):
+            raise AssertionError("Invalid number of UV coordinates.")
+        #if self.mesh.visual is None:
+        #    self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
+        #else:
+        #    self.mesh.visual.uv = uvs
+
+        if self.mat:
+            mat = SimpleMaterial(diffuse=self.mat.color_rgba)
+            self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
+        else:
+            #logger.debug("No material set for mesh: %s", self)
+            pass
+
+        return self.mesh
 
     def _recurse_scene_ALT(self, base_frame=None, graph=None):
 
@@ -1023,7 +1062,8 @@ class DDDObject3(DDDObject):
     def recurse_meshes(self):
         cmeshes = []
         if self.mesh:
-            cmeshes = [self.mesh]
+            mesh = self._process_mesh()
+            cmeshes = [mesh]
         if self.children:
             for c in self.children:
                 cmeshes.extend(c.recurse_meshes())
@@ -1047,12 +1087,14 @@ class DDDObject3(DDDObject):
 
         import pyrender
         #pr_scene = pyrender.Scene.from_trimesh_scene(rotated)
-        meshes = self.recurse_meshes()
+        meshes = self.recurse_meshes()  # rotated
         pr_scene = pyrender.Scene()
         for m in meshes:
             prm = pyrender.Mesh.from_trimesh(m, smooth=False) #, wireframe=True)
             pr_scene.add(prm)
+
         pyrender.Viewer(pr_scene, lighting="direct")  #, viewport_size=resolution)
+        #pyrender.Viewer(scene, lighting="direct")  #, viewport_size=resolution)
 
     def save(self, path):
         logger.info("Saving to: %s (%s)", path, self)

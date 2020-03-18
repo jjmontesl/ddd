@@ -72,6 +72,7 @@ class ItemsOSMBuilder():
         item.extra['historic'] = feature['properties'].get('historic', None)
         item.extra['artwork_type'] = feature['properties'].get('artwork_type', None)
         item.extra['man_made'] = feature['properties'].get('man_made', None)
+        item.extra['power'] = feature['properties'].get('power', None)
 
         return item
 
@@ -96,8 +97,10 @@ class ItemsOSMBuilder():
         item_3d = None
         if item_2d.extra.get('amenity', None) == 'fountain':
             item_3d = self.generate_item_3d_fountain(item_2d)
-        if item_2d.extra.get('amenity', None) == 'bench':
+        elif item_2d.extra.get('amenity', None) == 'bench':
             item_3d = self.generate_item_3d_bench(item_2d)
+        elif item_2d.extra.get('amenity', None) == 'post_box':
+            item_3d = self.generate_item_3d_post_box(item_2d)
 
         elif item_2d.extra.get('natural', None) == 'tree':
             self.tree_decimate_idx += 1
@@ -121,6 +124,9 @@ class ItemsOSMBuilder():
 
         elif item_2d.extra.get('highway', None) == 'bus_stop':
             item_3d = self.generate_item_3d_bus_stop(item_2d)
+
+        elif item_2d.extra.get('power', None) == 'tower':
+            item_3d = self.generate_item_3d_powertower(item_2d)
 
         elif item_2d.extra.get('ddd_osm', None) == 'way_lamppost':
             item_3d = self.generate_item_3d_lamppost(item_2d)
@@ -166,6 +172,16 @@ class ItemsOSMBuilder():
         item_3d.material(self.osm.mat_stone)
         return item_3d
 
+    def generate_item_3d_post_box(self, item_2d):
+        # Todo: Use fountain shape if available, instead of centroid
+        coords = item_2d.geom.coords[0]
+        item_3d = urban.post_box().translate([coords[0], coords[1], 0.0])
+        #item_3d = urban.trafficlights().rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
+        operator = item_2d.extra['feature'].get('operator')
+        item_3d.name = 'Postbox (%s): %s' % (operator, item_2d.name)
+        item_3d.material(self.osm.mat_stone)
+        return item_3d
+
     def generate_item_3d_sculpture(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
@@ -202,6 +218,12 @@ class ItemsOSMBuilder():
         text = item_2d.extra.get("name", None)
         item_3d = urban.busstop_small(text=text).translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Bus Stop: %s' % item_2d.name
+        return item_3d
+
+    def generate_item_3d_powertower(self, item_2d):
+        coords = item_2d.geom.coords[0]
+        item_3d = landscape.powertower(18).translate([coords[0], coords[1], 0.0])
+        item_3d.name = 'Power Tower: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_lamppost(self, item_2d):

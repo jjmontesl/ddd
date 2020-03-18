@@ -3,8 +3,8 @@ import ddd
 
 setup(
 
-    name = 'ddd',
-    package = 'ddd',
+    name = 'ddd123',
+    package = 'ddd123',
     version = ddd.APP_VERSION,
 
     author = 'Jose Juan Montes',
@@ -47,6 +47,6 @@ setup(
 
     ],
 
-    entry_points={'console_scripts': ['sit=sitetool.core.bootstrap:main']},
+    entry_points={'console_scripts': ['ddd=ddd.core.cli:main']},
 )
 

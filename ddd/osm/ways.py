@@ -619,6 +619,7 @@ class WaysOSMBuilder():
         oneway = feature['properties'].get('oneway', None)
         ref = feature['properties'].get('ref', None)
         maxspeed = feature['properties'].get('maxspeed', None)
+        power = feature['properties'].get('power', None)
 
         path = ddd.shape(feature['geometry'])
         #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
@@ -632,6 +633,8 @@ class WaysOSMBuilder():
         lamps = False
         trafficlights = False
         roadlines = False
+
+        layer = None
 
         if highway == "motorway":
             lanes = 2.6
@@ -772,6 +775,11 @@ class WaysOSMBuilder():
             material = self.osm.mat_brick
             extra_height = 1.8
 
+        #elif power == 'line':
+        #    width = 0.1
+        #    material = self.osm.mat_forgery
+        #    layer = "3"
+
         else:
             if highway and width is None:
                 logger.warn("Unknown highway type: %s (%s)", highway, feature['properties'])
@@ -805,10 +813,12 @@ class WaysOSMBuilder():
         path.extra['waterway'] = waterway
         path.extra['ref'] = ref
         path.extra['maxspeed'] = maxspeed
+        path.extra['man_made'] = man_made
+        path.extra['power'] = power
         path.extra['width'] = width
         path.extra['lanes'] = lanes
         path.extra['oneway'] = oneway
-        path.extra['layer'] = feature['properties']['layer']
+        path.extra['layer'] = layer if layer is not None else feature['properties']['layer']
         path.extra['extra_height'] = extra_height
         path.extra['ddd_lamps'] = lamps
         path.extra['ddd_trafficlights'] = trafficlights
@@ -916,11 +926,20 @@ class WaysOSMBuilder():
             #print(intersection_shape)
             if intersection_shape.geom and intersection_shape.geom.type in ('Polygon', 'MultiPolygon') and not intersection_shape.geom.is_empty:
 
+                # Get intersection way type by vote
+                votes = defaultdict(list)
+                for join in intersection:
+                    votes[join.way.extra['ddd:way:weight']].append(join.way)
+                max_voted_ways_weight = list(reversed(sorted(votes.items(), key=lambda w: len(w[1]))))[0][0]
+                highest_way = votes[max_voted_ways_weight][0]
+
+                '''
                 # Createintersection from highest way value from joins
                 highest_way = None
                 for join in intersection:
                     if highest_way is None or join.way.extra['ddd:way:weight'] < highest_way.extra['ddd:way:weight'] :
                         highest_way = join.way
+                '''
 
                 intersection_2d = highest_way.copy(name="Intersection (%s)" % highest_way.name)
                 """
@@ -945,7 +964,7 @@ class WaysOSMBuilder():
 
                 intersections_2d.append(intersection_2d)
 
-        intersections_2d = ddd.group(intersections_2d, name="Intersections")
+        intersections_2d = ddd.group(intersections_2d, empty="2", name="Intersections")
         self.osm.intersections_2d = intersections_2d
 
         # Add intersections to respective layers
@@ -1006,8 +1025,8 @@ class WaysOSMBuilder():
 
             self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2", name="Ways 2D %s" % layer_idx)
 
-        logger.debug("Saving intersections 2D.")
-        ddd.group([self.osm.ways_2d["0"].extrude(1.0), self.osm.intersections_2d.material(ddd.mat_highlight).extrude(1.5)]).save("/tmp/ddd-intersections.glb")
+        #logger.debug("Saving intersections 2D.")
+        #ddd.group([self.osm.ways_2d["0"].extrude(1.0), self.osm.intersections_2d.material(ddd.mat_highlight).extrude(1.5)]).save("/tmp/ddd-intersections.glb")
 
         # Subtract connected ways
         #TODO: This shall be possibly done when creating ways not after
@@ -1266,7 +1285,6 @@ class WaysOSMBuilder():
 
         logger.info("Generating elevated ways.")
         logger.warn("IMPLEMENT 2D/3D separation for this, as it needs to be cropped")
-        logger.warn("TODO: Merge correctly, subtract others as in ways")
 
         elevated = []
 
@@ -1276,13 +1294,15 @@ class WaysOSMBuilder():
                 [w for w in self.osm.ways_2d["-1a"].children])
         #ways_union = ddd.group(ways).union()
 
+        sidewalk_width = 0.4
+
         elevated_union = DDDObject2()
         for way in ways:
             #way_longer = way.buffer(0.3, cap_style=1, join_style=2)
 
-            if 'way_1d' not in way.extra: continue
+            if 'intersection' in way.extra: continue
 
-            way_with_sidewalk_2d = way.buffer(0.4, cap_style=2, join_style=2)
+            way_with_sidewalk_2d = way.buffer(sidewalk_width, cap_style=2, join_style=2)
             sidewalk_2d = way_with_sidewalk_2d.subtract(way).material(self.osm.mat_sidewalk)
             wall_2d = way_with_sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).subtract(way_with_sidewalk_2d).buffer(0.001, cap_style=2, join_style=2).material(self.osm.mat_cement)
             floor_2d = way_with_sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).buffer(0.001, cap_style=2, join_style=2).material(self.osm.mat_cement)
@@ -1294,11 +1314,15 @@ class WaysOSMBuilder():
             # Get connected ways
             connected = self.follow_way(way.extra['way_1d'], 1)
             connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
-            #print(connected)
-            #print(connected_2d)
+            if 'intersection_start_2d' in way.extra['way_1d'].extra:
+                connected_2d.children.append(way.extra['way_1d'].extra['intersection_start_2d'])
+            if 'intersection_end_2d' in way.extra['way_1d'].extra:
+                connected_2d.children.append(way.extra['way_1d'].extra['intersection_end_2d'])
+            print(connected)
+            print(connected_2d)
 
             sidewalk_2d = sidewalk_2d.subtract(connected_2d).buffer(0.001)
-            wall_2d = wall_2d.subtract(connected_2d).buffer(0.001)
+            wall_2d = wall_2d.subtract(connected_2d).buffer(sidewalk_width)
             # TODO: Subtract floors from connected or resolve intersections
             wall_2d = wall_2d.subtract(elevated_union)
 
@@ -1424,7 +1448,7 @@ class WaysOSMBuilder():
 
                 line_continuous = False
                 if lineind in [0, numlines - 1]: line_continuous = True
-                if lanes > 2 and lineind == int(numlines / 2) + 1: line_continuous = True
+                if lanes > 2 and lineind == int(numlines / 2): line_continuous = True
                 line_x_offset = 0.076171875 if line_continuous else 0.5
 
                 line_0_distance = -lanes_width / 2

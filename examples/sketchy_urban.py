@@ -5,6 +5,12 @@ from ddd.ddd import ddd
 
 items = []
 
+powertower = landscape.powertower()
+powertower.show()
+
+post_box = urban.post_box()
+post_box.show()
+
 busstop_small = urban.busstop_small(text="15")
 busstop_small.show()
 
@@ -26,5 +32,5 @@ items.append(lamppost)
 lamppost.show()
 
 items = ddd.group(items)
-#items = items.align_distribute([1, 1])
+#items = ddd.align.distribute(items)
 items.show()

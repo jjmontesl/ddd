@@ -113,7 +113,7 @@ class OSMBuilder():
 
         #self.simplify_tolerance = 0.01
 
-        self.layer_indexes = ('-2', '-1', '0', '1', '2', '-2a', '-1a', '0a', '1a')
+        self.layer_indexes = ('-2', '-1', '0', '1', '2', '3', '-2a', '-1a', '0a', '1a')
 
         self.layer_heights = {'-2': -12.0,
                               '-1': -5.0,

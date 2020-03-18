@@ -52,7 +52,7 @@ def cave(terrain):
     raise NotImplementedError()
 
 
-def lighthouse(height=4.5, r=1.5):
+def lighthouse(height=8.5, r=1.5):
     obj = ddd.point([0, 0]).buffer(r, resolution=4, cap_style=ddd.CAP_ROUND).extrude(height)
     obj.name = "Lighthouse"
     return obj
@@ -60,4 +60,13 @@ def lighthouse(height=4.5, r=1.5):
 # TODO: Move to industrial
 def crane():
     raise NotImplementedError()
+
+
+def powertower(height=14.0):
+    obj_pole = ddd.rect([-0.5, -0.5, 0.5, 0.5]).extrude(height)
+    obj_horz1 = ddd.rect([-2.5, -0.3, 2.5, 0.3]).extrude(0.6).translate([0, 0, height - 2])
+    obj_horz2 = ddd.rect([-3, -0.3, 3, 0.3]).extrude(0.6).translate([0, 0, height - 4])
+    obj = ddd.group([obj_pole, obj_horz1, obj_horz2])
+    return obj
+
 

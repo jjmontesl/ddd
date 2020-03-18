@@ -202,7 +202,7 @@ class BuildingOSMBuilder():
 
                 #coords = amenity.geom.centroid.coords[0]
                 #panel_text = amenity.extra['amenity'] if amenity.extra['amenity'] else None
-                panel_text = amenity.extra['name'] if amenity.extra['name'] else (amenity.extra['amenity'] if amenity.extra['amenity'] else None)
+                panel_text = amenity.extra['name'] if amenity.extra['name'] else (amenity.extra['amenity'].upper() if amenity.extra['amenity'] else None)
                 item = urban.panel(width=3.2, height=0.9, text=panel_text)
                 item.extra['amenity'] = amenity
                 item.extra['text'] = panel_text

@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 mat_bronze = ddd.material(color='#f0cb11')
 mat_paint_green = ddd.material(color='#265e13')
+mat_paint_yellow = ddd.material(color='#edda05')
 mat_trafficlight_green = ddd.material(color='#00ff00')
 mat_trafficlight_orange = ddd.material(color='#ffff00')
 mat_trafficlight_red = ddd.material(color='#ff0000')
@@ -158,8 +159,11 @@ def busstop_small(height=2.30, panel_height=1.2, panel_width=0.4, text=None):
 def busstop_covered():
     pass
 
-def mailbox():
-    pass
+def post_box(height=1.10, r=0.35):
+    obj = ddd.point([0, 0]).buffer(r, resolution=3, cap_style=ddd.CAP_ROUND).extrude(height)
+    obj = obj.material(mat_paint_yellow)
+    obj.name = "Post Box"
+    return obj
 
 
 def statue():
