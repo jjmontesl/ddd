@@ -17,7 +17,7 @@ from trimesh.base import Trimesh
 from trimesh.path import segments
 from trimesh.path.path import Path
 from trimesh.scene.scene import Scene, append_scenes
-from trimesh.visual.material import SimpleMaterial
+from trimesh.visual.material import SimpleMaterial, PBRMaterial
 from trimesh.scene.transforms import TransformForest
 import copy
 from trimesh.visual.texture import TextureVisuals
@@ -26,6 +26,7 @@ import json
 import base64
 from shapely.geometry.polygon import orient
 from ddd.ops import extrusion
+from ddd.ops.distribute import DDDDistribute
 
 
 # Get instance of logger for this module
@@ -76,8 +77,11 @@ class D1D2D3():
         return material
 
     @staticmethod
-    def point(coords, name=None):
-        if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
+    def point(coords=None, name=None):
+        if coords is None:
+            coords = [0, 0, 0]
+        elif len(coords) == 2:
+            coords = [coords[0], coords[1], 0.0]
         geom = geometry.Point(coords)
         return DDDObject2(geom=geom, name=name)
 
@@ -215,9 +219,20 @@ class D1D2D3():
         return DDDObject3(mesh=mesh)
 
     @staticmethod
-    def group(children, name=None, empty=None):
+    def group2(children=None, name=None, empty=None):
+        return D1D2D3.group(children, name, empty=2)
+
+    @staticmethod
+    def group3(children=None, name=None, empty=None):
+        return D1D2D3.group(children, name, empty=3)
+
+    @staticmethod
+    def group(children=None, name=None, empty=None):
         """
         """
+
+        if children is None:
+            children = []
 
         if not children:
             if empty is None:
@@ -306,6 +321,9 @@ class DDDObject():
     def filter(self, func):
         return self.select(func)
 
+    def append(self, obj):
+        self.children.append(obj)
+        return self
 
 
 class DDDObject2(DDDObject):
@@ -378,7 +396,8 @@ class DDDObject2(DDDObject):
         return result
 
     def scale(self, coords):
-        if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
+        if isinstance(coords, float): coords = [coords, coords, 1.0]
+        if len(coords) == 2: coords = [coords[0], coords[1], 1.0]
         result = self.copy()
         if self.geom:
             trans_func = lambda x, y, z=0.0: (x * coords[0], y * coords[1], z * coords[2])
@@ -652,10 +671,10 @@ class DDDObject2(DDDObject):
 
         return result
 
-    def extrude_step(self, obj_2d, offset, cap=True):
+    def extrude_step(self, obj_2d, offset, cap=True, base=True):
         # Triangulate and store info for 3D extrude_step
 
-        if cap:
+        if base:
             result = self.triangulate()
             if result.mesh:
                 result.mesh.faces = numpy.fliplr(result.mesh.faces)
@@ -669,7 +688,7 @@ class DDDObject2(DDDObject):
                 result = result.material(self.mat)
 
         result.extra['_extrusion_last_shape'] = self
-        result = result.extrude_step(obj_2d, offset)
+        result = result.extrude_step(obj_2d, offset, cap)
         return result
 
     def simplify(self, distance):
@@ -980,6 +999,8 @@ class DDDObject3(DDDObject):
         if self.mat:
             mat = SimpleMaterial(diffuse=self.mat.color_rgba)
             self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
+            #mat = PBRMaterial(doubleSided=True)  # , emissiveFactor= [0.5 for v in self.mesh.vertices])
+            #self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
         else:
             #logger.debug("No material set for mesh: %s", self)
             pass
@@ -1124,3 +1145,8 @@ class DDDObject3(DDDObject):
 
 ddd = D1D2D3
 ddd.mat_highlight = D1D2D3.material(color='#ff00ff')
+
+#align = DDDAlign()
+ddd.distribute = DDDDistribute()
+from ddd.ops.helper import DDDHelper
+ddd.helper = DDDHelper()

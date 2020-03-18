@@ -14,18 +14,24 @@ from ddd.text import fonts
 logger = logging.getLogger(__name__)
 
 mat_bronze = ddd.material(color='#f0cb11')
-mat_paint_green = ddd.material(color='#265e13')
-mat_paint_yellow = ddd.material(color='#edda05')
+mat_railing = ddd.material(color='#181010')
+
+mat_paint_red = ddd.material("PaintRed", color='#d01010')
+mat_paint_green = ddd.material("PaintGreen", color='#265e13')
+mat_paint_yellow = ddd.material("PaintYellow", color='#ebe015')
+
+mat_lightbulb = ddd.material(color='e8e0e4')
 mat_trafficlight_green = ddd.material(color='#00ff00')
 mat_trafficlight_orange = ddd.material(color='#ffff00')
 mat_trafficlight_red = ddd.material(color='#ff0000')
 
 
-def post(height=2.00, r=0.075, top=None):
+def post(height=2.00, r=0.075, top=None, mat_post=None):
     """
     A round (or squared) post.
     """
     col = ddd.point([0, 0]).buffer(r, resolution=0, cap_style=ddd.CAP_SQUARE).extrude(height)
+    if mat_post: col = col.material(mat_post)
     if top:
         top = top.translate([0, 0, height])
         col = ddd.group([col, top])
@@ -51,11 +57,23 @@ def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=
     post = ddd.group([post] + items)
     return post
 
-def lamppost(height=2.80, r=0.25):
-    lamp = ddd.sphere(r=r, subdivisions=1).scale([1.0, 1.0, 1.2])
-    col = post(height=height, top=lamp)
-    #ped = pedestal(top=col)
+def lamppost(height=2.80, r=0.25, lamp=None, mat_post=None):
+    if lamp is None:
+        #lamp = ddd.sphere(r=r, subdivisions=1).scale([1.0, 1.0, 1.2]).material(self.osm.mat_lightbulb)
+        lamp = lamp_case(r=r)
+    col = post(height=height, top=lamp, mat_post=mat_post or mat_paint_green)
+    col.name = "Lamppost"
     return col
+
+def lamp_case(height=0.5, r=0.25):
+    lamp_shape = ddd.point(name="Lamp Case").buffer(r - 0.10, resolution=1)
+    lamp = lamp_shape.extrude_step(lamp_shape.buffer(0.10, cap_style=ddd.CAP_SQUARE, join_style=ddd.JOIN_BEVEL), height)
+    lamp = lamp.extrude_step(lamp_shape.buffer(-0.10), 0.1).material(mat_lightbulb)
+    return lamp
+
+def lamp_ball(r=0.25):
+    lamp = ddd.sphere(r=r, subdivisions=1)  # .scale([1.0, 1.0, 1.2])
+    return lamp
 
 def lamppost_arm(length, lamp_pos='over'):
     pass
@@ -160,9 +178,16 @@ def busstop_covered():
     pass
 
 def post_box(height=1.10, r=0.35):
-    obj = ddd.point([0, 0]).buffer(r, resolution=3, cap_style=ddd.CAP_ROUND).extrude(height)
+    circle = ddd.point([0, 0]).buffer(r, resolution=3, cap_style=ddd.CAP_ROUND)
+    obj = circle.extrude_step(circle, 0.35)
+    obj = obj.extrude_step(circle.scale([0.9, 0.9, 1]), 0.02)
+    obj = obj.extrude_step(circle.scale([0.9, 0.9, 1]), height - 0.4)
+    obj = obj.extrude_step(circle.scale([1.0, 1.0, 1]), 0.05)
+    obj = obj.extrude_step(circle.scale([1.0, 1.0, 1]), 0.10)
+    obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), 0.05)
     obj = obj.material(mat_paint_yellow)
     obj.name = "Post Box"
+    logger.warn("Post Box collider should be a cylinder.")
     return obj
 
 

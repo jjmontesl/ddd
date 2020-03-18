@@ -179,7 +179,7 @@ class ItemsOSMBuilder():
         #item_3d = urban.trafficlights().rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
         operator = item_2d.extra['feature'].get('operator')
         item_3d.name = 'Postbox (%s): %s' % (operator, item_2d.name)
-        item_3d.material(self.osm.mat_stone)
+        item_3d.material(self.osm.mat_paint_yellow)
         return item_3d
 
     def generate_item_3d_sculpture(self, item_2d):
@@ -229,9 +229,6 @@ class ItemsOSMBuilder():
     def generate_item_3d_lamppost(self, item_2d):
         coords = item_2d.geom.coords[0]
         item_3d = urban.lamppost(height=5.5, r=0.35).translate([coords[0], coords[1], 0.0])
-        item_3d.children[0] = item_3d.children[0].material(self.osm.mat_forgery)  # mat_bronze
-        item_3d.children[1] = item_3d.children[1].material(self.osm.mat_lightbulb)  # FIXME: do not access children by index, assign mat in lib anyway
-
         item_3d.name = 'Lampppost: %s' % item_2d.name
         #item_3d.material(self.osm.mat_highlight)
         return item_3d

@@ -87,11 +87,12 @@ class OSMBuilder():
     mat_water = ddd.material(name="WaterBasicDaytime", color='#4d53c5')
 
     # Trees
-    mat_bark = ddd.material(color='#df9e75')
+    mat_bark = ddd.material(name="Bark", color='#df9e75')
     mat_leaves = ddd.material(color='#1da345')
 
     # Urban props materials
     mat_lightbulb = ddd.material(color='e8e0e4')
+    mat_railing = ddd.material(color='282024')
 
     # Buildings
     mat_building_1 = ddd.material(color='#f7f0be')

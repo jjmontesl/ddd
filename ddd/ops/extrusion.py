@@ -49,7 +49,13 @@ def extrude_step(obj, shape, offset, cap=True):
     result = obj.copy()
 
     if geom_a.is_empty or geom_b.is_empty:
+        #logger.debug("Extruding empty geometry.")
         return result
+
+    if geom_b.type in ('MultiPolygon', 'GeometryCollection'):
+        logger.warn("Cannot extrude a step to a 'MultiPolygon' or 'GeometryCollection'.")
+        return result
+
 
     mesh = extrude_between_geoms(geom_a, geom_b, offset, obj.extra.get('_extrusion_last_offset', 0) )
 
@@ -59,8 +65,15 @@ def extrude_step(obj, shape, offset, cap=True):
     vertices = list(result.mesh.vertices) if result.mesh else []
     faces = list(result.mesh.faces) if result.mesh else []
 
+    # Remove previous last cap before extruding.
+    last_cap_idx = result.extra.get('_extrusion_last_cap_idx', None)
+    if last_cap_idx is not None:
+        faces = faces[:last_cap_idx]
+
     faces =  faces + [[f[0] + len(vertices), f[1] + len(vertices), f[2] + len(vertices)] for f in mesh.faces]
     vertices = vertices + list(mesh.vertices)
+
+    result.extra['_extrusion_last_cap_idx'] = len(faces)
 
     if cap:
         logger.warn("FIXME: remove intermediate caps, at least optionally.")
