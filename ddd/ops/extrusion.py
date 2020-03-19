@@ -48,19 +48,10 @@ def extrude_step(obj, shape, offset, cap=True):
 
     result = obj.copy()
 
-    if geom_a.is_empty or geom_b.is_empty:
-        #logger.debug("Extruding empty geometry.")
+    if geom_a.is_empty:
+        # Previous step was empty, avoid destroy the object
+        # TODO: this can be improved, previous could be point or line
         return result
-
-    if geom_b.type in ('MultiPolygon', 'GeometryCollection'):
-        logger.warn("Cannot extrude a step to a 'MultiPolygon' or 'GeometryCollection'.")
-        return result
-
-
-    mesh = extrude_between_geoms(geom_a, geom_b, offset, obj.extra.get('_extrusion_last_offset', 0) )
-
-    result.extra['_extrusion_last_shape'] = shape
-    result.extra['_extrusion_last_offset'] = obj.extra.get('_extrusion_last_offset', 0) + offset
 
     vertices = list(result.mesh.vertices) if result.mesh else []
     faces = list(result.mesh.faces) if result.mesh else []
@@ -70,19 +61,36 @@ def extrude_step(obj, shape, offset, cap=True):
     if last_cap_idx is not None:
         faces = faces[:last_cap_idx]
 
-    faces =  faces + [[f[0] + len(vertices), f[1] + len(vertices), f[2] + len(vertices)] for f in mesh.faces]
-    vertices = vertices + list(mesh.vertices)
+    result.extra['_extrusion_last_shape'] = shape
+    result.extra['_extrusion_last_offset'] = obj.extra.get('_extrusion_last_offset', 0) + offset
+
+    if not (geom_a.is_empty or geom_b.is_empty):
+
+        if geom_b.type in ('MultiPolygon', 'GeometryCollection'):
+            logger.warn("Cannot extrude a step to a 'MultiPolygon' or 'GeometryCollection'.")
+
+        else:
+            mesh = extrude_between_geoms(geom_a, geom_b, offset, obj.extra.get('_extrusion_last_offset', 0) )
+            faces =  faces + [[f[0] + len(vertices), f[1] + len(vertices), f[2] + len(vertices)] for f in mesh.faces]
+            vertices = vertices + list(mesh.vertices)
 
     result.extra['_extrusion_last_cap_idx'] = len(faces)
 
     if cap:
-        logger.warn("FIXME: remove intermediate caps, at least optionally.")
         cap_mesh = shape.triangulate().translate([0, 0, result.extra['_extrusion_last_offset']])
-        faces = faces + [[f[0] + len(vertices), f[1] + len(vertices), f[2] + len(vertices)] for f in cap_mesh.mesh.faces]
-        vertices = vertices + list(cap_mesh.mesh.vertices)
+        if cap_mesh.mesh:
+            faces = faces + [[f[0] + len(vertices), f[1] + len(vertices), f[2] + len(vertices)] for f in cap_mesh.mesh.faces]
+            vertices = vertices + list(cap_mesh.mesh.vertices)
+        else:
+            logger.warn("Should be extruding to point or line, ignoring and capping.")
+            result.extra['_extrusion_last_offset']= result.extra['_extrusion_last_offset'] - offset
+            cap_mesh = last_shape.triangulate().translate([0, 0, result.extra['_extrusion_last_offset']])
+            faces = faces + [[f[0] + len(vertices), f[1] + len(vertices), f[2] + len(vertices)] for f in cap_mesh.mesh.faces]
+            vertices = vertices + list(cap_mesh.mesh.vertices)
 
     # Merge
     mesh = Trimesh(vertices, faces)
+    #mesh.fix_normals()
     mesh.merge_vertices()
     result.mesh = mesh
 

@@ -10,7 +10,7 @@ from csg import geom as csggeom
 from csg.core import CSG
 import numpy
 from shapely import geometry, affinity, ops
-from shapely.geometry import shape
+from shapely.geometry import shape, polygon
 from trimesh import creation, primitives, boolean, transformations
 import trimesh
 from trimesh.base import Trimesh
@@ -27,6 +27,7 @@ import base64
 from shapely.geometry.polygon import orient
 from ddd.ops import extrusion
 from ddd.ops.distribute import DDDDistribute
+from ddd.materials.materials import MaterialsCollection
 
 
 # Get instance of logger for this module
@@ -119,6 +120,7 @@ class D1D2D3():
         cmin, cmax = ((bounds[0], bounds[1]), (bounds[2], bounds[3]))
         geom = geometry.Polygon([(cmin[0], cmin[1], 0.0), (cmax[0], cmin[1], 0.0),
                                  (cmax[0], cmax[1], 0.0), (cmin[0], cmax[1], 0.0)])
+        geom = polygon.orient(geom, -1)
         return DDDObject2(geom=geom, name=name)
 
     @staticmethod
@@ -1144,7 +1146,9 @@ class DDDObject3(DDDObject):
 
 
 ddd = D1D2D3
-ddd.mat_highlight = D1D2D3.material(color='#ff00ff')
+
+ddd.mats = MaterialsCollection()
+ddd.mats.mat_highlight = D1D2D3.material(color='#ff00ff')
 
 #align = DDDAlign()
 ddd.distribute = DDDDistribute()

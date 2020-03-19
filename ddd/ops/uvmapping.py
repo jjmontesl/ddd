@@ -2,25 +2,11 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
-import math
 import random
 
-from csg import geom as csggeom
-from csg.core import CSG
-import noise
-import pyproj
-from shapely import geometry
 from shapely.geometry.polygon import LinearRing
-from trimesh import creation, primitives, boolean
-import trimesh
-from trimesh.base import Trimesh
-from trimesh.path import segments
-from trimesh.path.path import Path
-from trimesh.scene.scene import Scene, append_scenes
-from trimesh.visual.material import SimpleMaterial
 
 from ddd.ddd import ddd
-from ddd.georaster import ElevationChunk
 
 
 def map_2d_path(obj, path, line_x_offset=0.0):

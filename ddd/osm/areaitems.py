@@ -20,7 +20,7 @@ from shapely.ops import transform
 
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
-from ddd.pack.sketchy import terrain, plants, urban
+from ddd.pack.sketchy import plants, urban
 from trimesh import creation, primitives, boolean
 import trimesh
 from trimesh.base import Trimesh
@@ -29,6 +29,7 @@ from trimesh.path.path import Path
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial
 from shapely.geometry.linestring import LineString
+from ddd.geo import terrain
 
 
 # Get instance of logger for this module

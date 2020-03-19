@@ -14,7 +14,7 @@ from csg import geom as csggeom
 import random
 from ddd.ddd import ddd
 import noise
-from ddd.georaster import ElevationChunk
+from ddd.geo.georaster import ElevationChunk
 import pyproj
 
 

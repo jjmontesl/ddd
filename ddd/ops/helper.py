@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 class DDDHelper():
 
-    def all(self, size=20.0, plane_xy=True, grid_yz=True, grid_xz=True, grid_space=1.0, around_center=True):
+    def all(self, size=20.0, plane_xy=True, grid_yz=True, grid_xz=True, grid_space=2.0, center=None, around_center=False):
 
         objs = ddd.group3()
 
@@ -44,8 +44,13 @@ class DDDHelper():
         if grid_xz:
             objs.append(self.grid_xz(size, grid_space))
 
+        if center is None:
+            center = [0, 0, 0]
+
+        objs = objs.translate([-center[0], -center[1], -center[2]])
+
         if around_center:
-            objs = objs.translate([-size/2, -size/2, 0])
+            objs = objs.translate([-size / 2, -size / 2, 0])
 
         return objs
 
@@ -56,10 +61,10 @@ class DDDHelper():
     def grid_yz(self, size=10.0, grid_space=1.0):
         gw = 0.05
         grid = ddd.group3()
-        for i in range(int(size)):
+        for i in range(int(size / grid_space) + 1):
             line1 = ddd.box([0, i * grid_space, 0, 0 + gw, i * grid_space + gw, size])
             grid.append(line1)
-        for j in range(int(size)):
+        for j in range(int(size / grid_space) + 1):
             line2 = ddd.box([0, 0, j * grid_space, 0 + gw, size, j * grid_space + gw])
             grid.append(line2)
         return grid
@@ -67,10 +72,10 @@ class DDDHelper():
     def grid_xz(self, size=10.0, grid_space=1.0):
         gw = 0.05
         grid = ddd.group3()
-        for i in range(int(size)):
+        for i in range(int(size / grid_space) + 1):
             line1 = ddd.box([i * grid_space, 0, 0, i * grid_space + gw, 0 + gw, size])
             grid.append(line1)
-        for j in range(int(size)):
+        for j in range(int(size / grid_space) + 1):
             line2 = ddd.box([0, 0, j * grid_space, size, 0 + gw, j * grid_space + gw])
             grid.append(line2)
         return grid

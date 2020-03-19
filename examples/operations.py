@@ -6,6 +6,11 @@ import math
 
 items = []
 
+# Extrusion to line (empty geometry)
+fig1 = ddd.rect([-4, -2, 4, 2])
+fig = fig1.extrude_step(fig1.buffer(-2.5), 1.0)
+fig.show()
+
 # Extrusion
 fig = ddd.point([0, 0]).buffer(1.0, cap_style=ddd.CAP_ROUND).extrude(5.0).material(ddd.material(color='#00ff00'))
 items.append(fig)
@@ -43,7 +48,7 @@ items.append(fig)
 fig1 = ddd.rect([-4, -2, 4, 2])
 fig2 = ddd.rect([-3, -1, -1, 1])
 figh = fig1.subtract(fig2)
-fig = figh.extrude_step(figh, 1.0, cap=False)
+fig = figh.extrude_step(figh, 1.0, base=False)
 fig = fig.extrude_step(figh.scale([0.8, 0.8, 0.8]), 1.0)
 fig.show()
 
@@ -51,3 +56,5 @@ fig.show()
 items = ddd.group(items)
 #items = ddd.align.distribute(items)
 #items.show()
+
+

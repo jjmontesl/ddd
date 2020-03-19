@@ -4,27 +4,9 @@
 
 from collections import defaultdict, namedtuple
 import logging
-import math
-import random
-import sys
 
-from csg import geom as csggeom
-from csg.core import CSG
 import geojson
-import noise
 import pyproj
-from shapely import geometry
-from shapely.geometry import shape
-from shapely.geometry.geo import shape
-from shapely.geometry.linestring import LineString
-from shapely.ops import transform
-from trimesh import creation, primitives, boolean
-import trimesh
-from trimesh.base import Trimesh
-from trimesh.path import segments
-from trimesh.path.path import Path
-from trimesh.scene.scene import Scene, append_scenes
-from trimesh.visual.material import SimpleMaterial
 
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
@@ -34,7 +16,7 @@ from ddd.osm.buildings import BuildingOSMBuilder
 from ddd.osm.custom import CustomsOSMBuilder
 from ddd.osm.items import ItemsOSMBuilder
 from ddd.osm.ways import WaysOSMBuilder
-from ddd.pack.sketchy import terrain, plants, urban
+from shapely.geometry.geo import shape
 
 
 # Get instance of logger for this module

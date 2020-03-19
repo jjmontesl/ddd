@@ -31,7 +31,8 @@ from trimesh.visual.material import SimpleMaterial
 
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
-from ddd.pack.sketchy import terrain, plants, urban
+from ddd.pack.sketchy import plants, urban
+from ddd.geo import terrain
 
 
 # Get instance of logger for this module
