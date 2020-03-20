@@ -17,6 +17,7 @@ from ddd.osm.custom import CustomsOSMBuilder
 from ddd.osm.items import ItemsOSMBuilder
 from ddd.osm.ways import WaysOSMBuilder
 from shapely.geometry.geo import shape
+from ddd.prefab.catalog import PrefabCatalog
 
 
 # Get instance of logger for this module
@@ -85,6 +86,8 @@ class OSMBuilder():
     '''
 
     def __init__(self, features=None, area_filter=None, area_crop=None, osm_proj=None, ddd_proj=None, config=None):
+
+        self.catalog = PrefabCatalog()
 
         self.items = ItemsOSMBuilder(self)
         self.items2 = AreaItemsOSMBuilder(self)

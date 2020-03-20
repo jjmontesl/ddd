@@ -27,6 +27,7 @@ import base64
 from shapely.geometry.polygon import orient
 from ddd.ops import extrusion
 from ddd.ops.distribute import DDDDistribute
+from trimesh.transformations import quaternion_from_euler
 
 
 # Get instance of logger for this module
@@ -249,7 +250,7 @@ class D1D2D3():
             #return None
         elif isinstance(children[0], DDDObject2):
             result = DDDObject2(children=children, name=name)
-        elif isinstance(children[0], DDDObject3):
+        elif isinstance(children[0], DDDObject3) or isinstance(children[0], DDDInstance):
             result = DDDObject3(children=children, name=name)
         else:
             raise ValueError("Invalid object for ddd.group(): %s" % children[0])
@@ -258,6 +259,11 @@ class D1D2D3():
             raise ValueError("Tried to add null to object children list.")
 
         return result
+
+    @staticmethod
+    def instance(obj, name=None):
+        obj = DDDInstance(obj, name)
+        return obj
 
 
 class DDDMaterial():
@@ -289,7 +295,7 @@ class DDDObject():
         #self.mesh = None
 
         for c in self.children:
-            if not isinstance(c, self.__class__):
+            if not isinstance(c, self.__class__) and not (isinstance(c, DDDInstance) and isinstance(self, DDDObject3)):
                 raise ValueError("Invalid children type (not %s): %s" % (self.__class__, c))
 
     def __repr__(self):
@@ -795,6 +801,84 @@ class DDDObject2(DDDObject):
     def show(self):
         #self.extrude(1.0).show()
         self.triangulate().show()
+
+
+class DDDInstance(DDDObject):
+
+    def __init__(self, ref, name=None, extra=None, material=None):
+        super().__init__(name, None, extra, material)
+        self.ref = ref
+        self.transform = DDDTransform()
+
+    def __repr__(self):
+        return "<DDDInstance (name=%s, ref=%s, id=%s)>" % (self.name, self.ref, id(self))
+
+    def copy(self):
+        raise NotImplementedError()
+        #obj = DDDObject3(name=self.name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
+        #return obj
+
+    def vertex_iterator(self):
+        for v in self.ref.vertex_iterator():
+            vtransformed = [v[0] + self.transform.position[0], v[1] + self.transform.position[1], v[2] + self.transform.position[2], v[3]]
+            # FIXME: TODO: apply full transform via numpy
+            yield vtransformed
+
+    def translate(self, v):
+        self.transform.position = [self.transform.position[0] + v[0], self.transform.position[1] + v[1], self.transform.position[2] + v[2]]
+        return self
+
+    def rotate(self, v):
+        rot = quaternion_from_euler(v[0], v[1], v[2], "rxyz")
+        self.transform.rotation = self.transform.rotation * rot
+        return self
+
+    def _recurse_scene(self, path_prefix=""):
+
+        scene = Scene()
+        auto_name = "node_%s" % (id(self))
+        node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
+
+        # Add metadata to name
+        if True:
+            ignore_keys = ('uv', 'feature', 'connections')
+            metadata = dict(self.extra)
+            metadata['path'] = path_prefix + node_name
+            if self.mat and self.mat.name:
+                metadata['ddd:material'] = self.mat.name
+            if self.mat and self.mat.color:
+                metadata['ddd:material:color'] = self.mat.color  # hex
+
+            metadata = json.loads(json.dumps(metadata, default=lambda x: None))
+            metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
+            serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
+            encoded_node_name = node_name + "_" + str(serialized_metadata)
+
+        # UV coords test
+        mesh = None
+        if self.ref.mesh:
+            mesh = self.ref._process_mesh()
+
+        scene.add_geometry(geometry=mesh, node_name=encoded_node_name.replace(" ", "_"))
+
+        '''
+        cscenes = []
+        if self.children:
+            for c in self.children:
+                cscene = c._recurse_scene(path_prefix=path_prefix + node_name + "/")
+                cscenes.append(cscene)
+
+        scene = append_scenes([scene] + cscenes)
+        '''
+
+        return scene
+
+class DDDTransform():
+
+    def __init__(self):
+        self.position = [0, 0, 0]
+        self.rotation = quaternion_from_euler(0, 0, 0, "rxyz")
+        self.scale = [1, 1, 1]
 
 
 class DDDObject3(DDDObject):

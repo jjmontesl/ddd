@@ -3,6 +3,7 @@
 # Jose Juan Montes 2020
 
 import logging
+from ddd.ddd import ddd
 
 
 # Get instance of logger for this module
@@ -24,9 +25,22 @@ class PrefabCatalog():
     - Inheritance: a catalog can extend or be based on another one.
     """
 
-    def put(self, key, obj):
-        return None
+    def __init__(self):
+        self._cache = {}
 
-    def get(self, key):
-        return None
+    def show(self):
+        ddd.distribute.grid(ddd.group(self._cache.values())).show()
+
+    def add(self, key, obj):
+        if key in self._cache:
+            raise ValueError("Object already exists in catalog: %s", key)
+        obj.extra['ddd:catalog:key'] = key
+        self._cache[key] = obj
+        return obj
+
+    def instance(self, key):
+        obj = self._cache.get(key, None)
+        if obj:
+            obj = ddd.instance(obj)
+        return obj
 
