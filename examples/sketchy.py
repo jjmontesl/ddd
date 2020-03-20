@@ -30,6 +30,9 @@ items.append(item)
 item = urban.trafficlights()
 items.append(item)
 
+item = urban.fountain()
+items.append(item)
+
 items = ddd.distribute.grid(items)
 items.append(ddd.helper.all())
 items.show()

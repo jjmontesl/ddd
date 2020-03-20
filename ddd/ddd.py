@@ -27,7 +27,6 @@ import base64
 from shapely.geometry.polygon import orient
 from ddd.ops import extrusion
 from ddd.ops.distribute import DDDDistribute
-from ddd.materials.materials import MaterialsCollection
 
 
 # Get instance of logger for this module
@@ -1147,10 +1146,16 @@ class DDDObject3(DDDObject):
 
 ddd = D1D2D3
 
+from ddd.materials.materials import MaterialsCollection
+from ddd.pack.mats.defaultmats import DefaultMaterials
 ddd.mats = MaterialsCollection()
 ddd.mats.mat_highlight = D1D2D3.material(color='#ff00ff')
+ddd.mats.load_from(DefaultMaterials())
 
 #align = DDDAlign()
 ddd.distribute = DDDDistribute()
+
 from ddd.ops.helper import DDDHelper
 ddd.helper = DDDHelper()
+
+

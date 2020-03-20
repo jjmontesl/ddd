@@ -135,12 +135,16 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_fountain(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
+
+        key = "fountain-default-01"
+        item_3d = self.osm.catalog.instance(key)
+        if not item_3d:
+            item_3d = urban.fountain(r=1.75)
+            item_3d = self.osm.catalog.add(key, item_3d)
+
         coords = item_2d.geom.coords[0]
-        item_3d = urban.fountain(r=1.75).translate([coords[0], coords[1], 0.0])
+        item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Fountain: %s' % item_2d.name
-        item_3d.children[0] = item_3d.children[0].material(self.osm.mat_stone)  # mat_bronze
-        item_3d.children[1] = item_3d.children[1].material(self.osm.mat_stone)  # FIXME: do not access children by index, assign mat in lib anyway
-        item_3d.children[2] = item_3d.children[2].material(self.osm.mat_water)  # FIXME: do not access children by index, assign mat in lib anyway
         return item_3d
 
     def generate_item_3d_bench(self, item_2d):
@@ -149,7 +153,7 @@ class ItemsOSMBuilder():
         item_3d = urban.bench(length=2.0).translate([coords[0], coords[1], 0.0])
         #item_3d = urban.trafficlights().rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
         item_3d.name = 'Bench: %s' % item_2d.name
-        item_3d.material(self.osm.mat_stone)
+        item_3d.material(ddd.mats.stone)
         return item_3d
 
     def generate_item_3d_post_box(self, item_2d):
@@ -159,13 +163,12 @@ class ItemsOSMBuilder():
         #item_3d = urban.trafficlights().rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
         operator = item_2d.extra['feature'].get('operator')
         item_3d.name = 'Postbox (%s): %s' % (operator, item_2d.name)
-        item_3d.material(self.osm.mat_paint_yellow)
         return item_3d
 
     def generate_item_3d_sculpture(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
-        item_3d = urban.sculpture(1.5).translate([coords[0], coords[1], 0.0]).material(self.osm.mat_steel)  # mat_bronze
+        item_3d = urban.sculpture(1.5).translate([coords[0], coords[1], 0.0]).material(ddd.mats.steel)  # mat_bronze
         item_3d.name = 'Sculpture: %s' % item_2d.name
         return item_3d
 
@@ -174,22 +177,22 @@ class ItemsOSMBuilder():
         coords = item_2d.geom.coords[0]
         item_name = item_2d.extra['feature']['properties'].get('name', None)
         if item_name:
-            item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(self.osm.mat_bronze)
+            item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
         else:
-            item_3d = urban.sculpture(2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(self.osm.mat_bronze)
+            item_3d = urban.sculpture(2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
         item_3d.name = 'Monument: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_wayside_cross(self, item_2d):
         coords = item_2d.geom.coords[0]
-        item_3d = urban.wayside_cross().translate([coords[0], coords[1], 0.0]).material(self.osm.mat_stone)  # mat_bronze
+        item_3d = urban.wayside_cross().translate([coords[0], coords[1], 0.0]).material(ddd.mats.stone)  # mat_bronze
         item_3d.name = 'Wayside Cross: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_lighthouse(self, item_2d):
         coords = item_2d.geom.coords[0]
         item_3d = landscape.lighthouse().translate([coords[0], coords[1], 0.0])
-        item_3d = item_3d.material(self.osm.mat_stone)  # mat_bronze
+        item_3d = item_3d.material(ddd.mats.stone)  # mat_bronze
         item_3d.name = 'Lighthouse: %s' % item_2d.name
         return item_3d
 
@@ -210,7 +213,7 @@ class ItemsOSMBuilder():
         coords = item_2d.geom.coords[0]
         item_3d = urban.lamppost(height=5.5, r=0.35).translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Lampppost: %s' % item_2d.name
-        #item_3d.material(self.osm.mat_highlight)
+        #item_3d.material(ddd.mats.highlight)
         return item_3d
 
     def generate_item_3d_trafficlights(self, item_2d):

@@ -42,6 +42,7 @@ class OSMBuilder():
     #mat_lane = ddd.material(color='#1db345')
     #mat_border = ddd.material(color='#f0f0ff')
 
+    '''
     # Ways
     mat_asphalt = ddd.material(name="Asphalt", color='#202020')
     mat_dirt = ddd.material(color="#b58800")
@@ -81,6 +82,7 @@ class OSMBuilder():
     mat_building_2 = ddd.material(color='#bdb9a0')
     mat_building_3 = ddd.material(color='#c49156')
     mat_roof_tile = ddd.material(color='#f25129')
+    '''
 
     def __init__(self, features=None, area_filter=None, area_crop=None, osm_proj=None, ddd_proj=None, config=None):
 
@@ -215,6 +217,7 @@ class OSMBuilder():
 
         # Correct layers
         for f in self.features:
+            f.properties['id'] = f.properties['id'].replace("/", "-")
             if f.properties.get('tunnel', None) == 'yes' and f.properties.get('layer', None) is None:
                 f.properties['layer'] = "-1"
             if f.properties.get('brige', None) == 'yes' and f.properties.get('layer', None) is None:

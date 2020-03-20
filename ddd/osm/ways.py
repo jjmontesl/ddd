@@ -603,9 +603,8 @@ class WaysOSMBuilder():
         #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
 
         name = "Way: %s" % (feature['properties'].get('name', feature['properties'].get('id')))
-        name = name.replace("/", "-")
         width = None  # if not set will be discarded
-        material = self.osm.mat_asphalt
+        material = ddd.mats.asphalt
         extra_height = 0.0
         lanes = None
         lamps = False
@@ -666,34 +665,34 @@ class WaysOSMBuilder():
             roadlines = True
         elif highway in ("footway", "path", "track"):
             lanes = 0.6
-            material = self.osm.mat_dirt
+            material = ddd.mats.dirt
             extra_height = 0.2
             width = (lanes * 3.30)
         elif highway in ("steps", "stairs"):
             lanes = 0.6
-            material = self.osm.mat_pathwalk
+            material = ddd.mats.pathwalk
             extra_height = 0.2
             width = (lanes * 3.30)
         elif highway == "pedestrian":
             lanes = 2.0
-            material = self.osm.mat_pathwalk
+            material = ddd.mats.pathwalk
             extra_height = 0.2
             width = (lanes * 3.30)
             lamps = True  # shall be only in city?
         elif highway == "cycleway":
             lanes = 0.6
-            material = self.osm.mat_sidewalk
+            material = ddd.mats.sidewalk
             extra_height = 0.2
             width = (lanes * 3.30)
         elif highway == "unclassified":
             lanes = 1.2
-            material = self.osm.mat_dirt
+            material = ddd.mats.dirt
             #extra_height = 0.2
             width = (lanes * 3.30)
 
         elif highway == "raceway":
             lanes = 1
-            material = self.osm.mat_dirt
+            material = ddd.mats.dirt
             #extra_height = 0.2
             width = 10.0  #(lanes * 3.30)
 
@@ -701,38 +700,38 @@ class WaysOSMBuilder():
             lanes = None
             name = "Coastline"
             width = 0.5
-            material = self.osm.mat_terrain
+            material = ddd.mats.terrain
             extra_height = 5.0  # FIXME: Things could cross othis, height shall reach sea precisely
         elif waterway == "river":
             lanes = None
             name = "River %s" % name
             width = 6.0
-            material = self.osm.mat_sea
+            material = ddd.mats.sea
 
         elif railway:
             lanes = None
             width = 0.6
-            material = self.osm.mat_railway
+            material = ddd.mats.railway
             extra_height = 0.5
 
         elif barrier == 'city_wall':
             width = 1.0
-            material = self.osm.mat_stone
+            material = ddd.mats.stone
             extra_height = 2.0
         elif historic == 'castle_wall':
             width = 3.0
-            material = self.osm.mat_stone
+            material = ddd.mats.stone
             extra_height = 3.5
 
         # Fixme: do a proper hedge, do not use ways/areas for everything
         elif barrier == 'hedge':
             width = 0.6
-            material = self.osm.mat_leaves
+            material = ddd.mats.leaves
             extra_height = 1.2
 
         elif barrier == 'fence':
             width = 0.1
-            material = self.osm.mat_forgery
+            material = ddd.mats.railing
             extra_height = 1.2
 
         elif barrier == 'kerb':
@@ -741,21 +740,21 @@ class WaysOSMBuilder():
 
         elif man_made == 'pier':
             width = 1.8
-            material = self.osm.mat_wood
+            material = ddd.mats.wood
 
         elif barrier == 'retaining_wall':
             width = 1.0
-            material = self.osm.mat_stone
+            material = ddd.mats.stone
             extra_height = 1.5
         elif barrier == 'wall':
             # TODO: Get height and material from metadata
             width = 0.4
-            material = self.osm.mat_brick
+            material = ddd.mats.brick
             extra_height = 1.8
 
         #elif power == 'line':
         #    width = 0.1
-        #    material = self.osm.mat_forgery
+        #    material = ddd.mats.forgery
         #    layer = "3"
 
         else:
@@ -1246,9 +1245,9 @@ class WaysOSMBuilder():
         walls_2d = walls_2d.intersect(crop)
         floors_2d = floors_2d.intersect(crop)
 
-        sidewalks_3d = sidewalks_2d.extrude(0.3).translate([0, 0, -5]).material(self.osm.mat_sidewalk)
+        sidewalks_3d = sidewalks_2d.extrude(0.3).translate([0, 0, -5]).material(ddd.mats.sidewalk)
         walls_3d = walls_2d.extrude(5).translate([0, 0, -5])
-        floors_3d = floors_2d.extrude(-0.3).translate([0, 0, -5]).material(self.osm.mat_sidewalk)
+        floors_3d = floors_2d.extrude(-0.3).translate([0, 0, -5]).material(ddd.mats.sidewalk)
         #self.ceiling_3d_lm1 = union.buffer(0.6 + 0.5)subtract(transitions)..extrude(0.3).translate([0, 0, -0.3]).material(mat_sidewalk)
 
         sidewalks_3d  = terrain.terrain_geotiff_elevation_apply(sidewalks_3d, self.osm.ddd_proj)
@@ -1281,9 +1280,9 @@ class WaysOSMBuilder():
             if 'intersection' in way.extra: continue
 
             way_with_sidewalk_2d = way.buffer(sidewalk_width, cap_style=2, join_style=2)
-            sidewalk_2d = way_with_sidewalk_2d.subtract(way).material(self.osm.mat_sidewalk)
-            wall_2d = way_with_sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).subtract(way_with_sidewalk_2d).buffer(0.001, cap_style=2, join_style=2).material(self.osm.mat_cement)
-            floor_2d = way_with_sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).buffer(0.001, cap_style=2, join_style=2).material(self.osm.mat_cement)
+            sidewalk_2d = way_with_sidewalk_2d.subtract(way).material(ddd.mats.sidewalk)
+            wall_2d = way_with_sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).subtract(way_with_sidewalk_2d).buffer(0.001, cap_style=2, join_style=2).material(ddd.mats.cement)
+            floor_2d = way_with_sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).buffer(0.001, cap_style=2, join_style=2).material(ddd.mats.cement)
 
             sidewalk_2d.extra['way_2d'] = way
             wall_2d.extra['way_2d'] = way
@@ -1347,7 +1346,7 @@ class WaysOSMBuilder():
 
                     if p[2] > 1.0:  # If no height, no pilar, but should be a margin and also corrected by base_height
                         item = ddd.rect([-way.extra['width'] * 0.3, -0.5, way.extra['width'] * 0.3, 0.5], name="Bridge Post %s" % way.name)
-                        item = item.extrude(- (math.fabs(p[2]) - 0.5)).material(self.osm.mat_cement)
+                        item = item.extrude(- (math.fabs(p[2]) - 0.5)).material(ddd.mats.cement)
                         item = item.rotate([0, 0, angle - math.pi / 2]).translate([p[0], p[1], 0])
                         vertex_func = self.get_height_apply_func(path)
                         item = item.vertex_func(vertex_func)
@@ -1435,7 +1434,7 @@ class WaysOSMBuilder():
                 # Create line
                 pathline = path.copy()
                 pathline.geom = pathline.geom.parallel_offset(line_distance, "left")
-                line = pathline.buffer(0.15).material(self.osm.mat_roadline)
+                line = pathline.buffer(0.15).material(ddd.mats.roadline)
                 line.extra['way_1d'] = pathline
 
                 # FIXME: Move cropping to generic site, use itermediate osm.something for storage

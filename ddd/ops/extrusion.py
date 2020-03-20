@@ -49,9 +49,16 @@ def extrude_step(obj, shape, offset, cap=True):
     result = obj.copy()
 
     if geom_a.is_empty:
+        logger.warn("Should be extruding from point or line, ignoring and returning argument.")
         # Previous step was empty, avoid destroy the object
         # TODO: this can be improved, previous could be point or line
         return result
+    if geom_a.type in ('MultiPolygon', 'GeometryCollection'):
+        logger.warn("Cannot extrude a step from a 'MultiPolygon' or 'GeometryCollection'.")
+        return result
+    if geom_b.is_empty:
+        logger.warn("Extruding to point (should be using line too).")
+        geom_b = geom_a.centroid
 
     vertices = list(result.mesh.vertices) if result.mesh else []
     faces = list(result.mesh.faces) if result.mesh else []
@@ -82,7 +89,6 @@ def extrude_step(obj, shape, offset, cap=True):
             faces = faces + [[f[0] + len(vertices), f[1] + len(vertices), f[2] + len(vertices)] for f in cap_mesh.mesh.faces]
             vertices = vertices + list(cap_mesh.mesh.vertices)
         else:
-            logger.warn("Should be extruding to point or line, ignoring and capping.")
             result.extra['_extrusion_last_offset']= result.extra['_extrusion_last_offset'] - offset
             cap_mesh = last_shape.triangulate().translate([0, 0, result.extra['_extrusion_last_offset']])
             faces = faces + [[f[0] + len(vertices), f[1] + len(vertices), f[2] + len(vertices)] for f in cap_mesh.mesh.faces]
@@ -90,8 +96,8 @@ def extrude_step(obj, shape, offset, cap=True):
 
     # Merge
     mesh = Trimesh(vertices, faces)
-    #mesh.fix_normals()
     mesh.merge_vertices()
+    #mesh.fix_normals()
     result.mesh = mesh
 
     return result
@@ -99,16 +105,19 @@ def extrude_step(obj, shape, offset, cap=True):
 
 def extrude_between_geoms(geom_a, geom_b, offset, _base_height):
 
+    coords_a = geom_a.coords if geom_a.type == 'Point' else geom_a.exterior.coords
+    coords_b = geom_b.coords if geom_b.type == 'Point' else geom_b.exterior.coords
+
     vertices = []
-    vertices.extend([(x, y, _base_height) for x, y, *z in geom_a.exterior.coords])
+    vertices.extend([(x, y, _base_height) for x, y, *z in coords_a])
     vertices_b_idx = len(vertices)
-    vertices.extend([(x, y, _base_height + offset) for x, y, *z in geom_b.exterior.coords])
+    vertices.extend([(x, y, _base_height + offset) for x, y, *z in coords_b])
 
     shape_a_idx = 0
     shape_b_idx = 0
 
-    def va(shape_a_idx): return vertices[shape_a_idx % len(geom_a.exterior.coords)]
-    def vb(shape_b_idx): return vertices[(shape_b_idx % len(geom_b.exterior.coords)) + vertices_b_idx]
+    def va(shape_a_idx): return vertices[shape_a_idx % len(coords_a)]
+    def vb(shape_b_idx): return vertices[(shape_b_idx % len(coords_b)) + vertices_b_idx]
     def ang(v): return (math.atan2(v[1], v[0]) + (math.pi * 2)) % (math.pi * 2)
     def diff(va, vb): return  [va[0] - vb[0], va[1] - vb[1], va[2] - vb[2]]
     def distsqr(v): return v[0] * v[0] + v[1] * v[1] + v[2] * v[2]
@@ -132,10 +141,10 @@ def extrude_between_geoms(geom_a, geom_b, offset, _base_height):
             advance_b = lb < la
 
         if advance_b:
-            ntri = [shape_a_idx, shape_b_idx + vertices_b_idx, (shape_b_idx + 1) % len(geom_b.exterior.coords) + vertices_b_idx]
+            ntri = [shape_a_idx, shape_b_idx + vertices_b_idx, (shape_b_idx + 1) % len(coords_b) + vertices_b_idx]
             if not finished_b: shape_b_idx +=1
         else:
-            ntri = [shape_a_idx, shape_b_idx + vertices_b_idx, (shape_a_idx + 1) % len(geom_a.exterior.coords)]
+            ntri = [shape_a_idx, shape_b_idx + vertices_b_idx, (shape_a_idx + 1) % len(coords_a)]
             if not finished_a: shape_a_idx +=1
 
         if last_tri == ntri: break
@@ -144,10 +153,10 @@ def extrude_between_geoms(geom_a, geom_b, offset, _base_height):
         last_tri = ntri
         #print(ntri)
 
-        if shape_a_idx >= len(geom_a.exterior.coords):
+        if shape_a_idx >= len(coords_a):
             shape_a_idx = 0
             finished_a = True
-        if shape_b_idx >= len(geom_b.exterior.coords):
+        if shape_b_idx >= len(coords_b):
             shape_b_idx = 0
             finished_b = True
 

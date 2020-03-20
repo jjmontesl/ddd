@@ -3,6 +3,7 @@
 # Jose Juan Montes 2020
 
 import logging
+from ddd.ddd import DDDMaterial
 
 
 # Get instance of logger for this module
@@ -10,4 +11,20 @@ logger = logging.getLogger(__name__)
 
 
 class MaterialsCollection():
-    pass
+    """
+    A convenience list of materials that can be used by packs, in order to attempt to
+    unify material usage.
+
+    Materials can be added by modules.
+    """
+
+    def load_from(self, collection):
+
+        count = 0
+        for name, value in collection.__dict__.items():
+            if isinstance(value, DDDMaterial):
+                count += 1
+                self.__dict__[name] = value
+
+        logger.info("Loaded %d materials.", count)
+        print("Loaded %d materials." % count)

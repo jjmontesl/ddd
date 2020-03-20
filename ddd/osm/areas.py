@@ -60,7 +60,7 @@ class AreasOSMBuilder():
             if feature['properties'].get('leisure', None) in ('park', 'garden'):
                 area = self.generate_area_2d_park(feature)
             if feature['properties'].get('leisure', None) in ('pitch', ):  # Cancha
-                area = self.generate_area_2d_park(feature).material(self.osm.mat_pitch)
+                area = self.generate_area_2d_park(feature).material(ddd.mats.pitch)
             elif feature['properties'].get('landuse', None) in ('grass', ):
                 area = self.generate_area_2d_park(feature)
             elif feature['properties'].get('landuse', None) in ('railway', ):
@@ -110,14 +110,14 @@ class AreasOSMBuilder():
                 area = ddd.polygon(interior.coords, name="Interways area")
                 if area:
                     area = area.subtract(union)
-                    area = area.material(self.osm.mat_pavement)
+                    area = area.material(ddd.mats.pavement)
                     self.osm.areas_2d.children.append(area)
                 else:
                     logger.warn("Invalid square.")
 
     def generate_area_2d_park(self, feature):
         area = ddd.shape(feature["geometry"], name="Park: %s" % feature['properties'].get('name', None))
-        area = area.material(self.osm.mat_park)
+        area = area.material(ddd.mats.park)
         area.extra['feature'] = feature
         area.extra['ddd:area'] = 'park'
 
@@ -145,17 +145,17 @@ class AreasOSMBuilder():
 
     def generate_area_2d_railway(self, feature):
         area = ddd.shape(feature["geometry"], name="Railway area: %s" % feature['properties'].get('name', None))
-        area = area.material(self.osm.mat_dirt)
+        area = area.material(ddd.mats.dirt)
         return area
 
     def generate_area_2d_school(self, feature):
         area = ddd.shape(feature["geometry"], name="School: %s" % feature['properties'].get('name', None))
-        area = area.material(self.osm.mat_dirt)
+        area = area.material(ddd.mats.dirt)
         return area
 
     def generate_area_2d_unused(self, feature):
         area = ddd.shape(feature["geometry"], name="Unused: %s" % feature['properties'].get('name', None))
-        area = area.material(self.osm.mat_dirt)
+        area = area.material(ddd.mats.dirt)
         return area
 
     def generate_areas_3d(self):
@@ -183,7 +183,7 @@ class AreasOSMBuilder():
 
         if area_2d.extra.get('ddd:area', None) == 'park':
 
-            area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, cap=False)
+            area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, base=False)
             area_3d = area_3d.extrude_step(area_2d.buffer(-2.0), 0.1)
 
             #area_3d = ddd.group([area_2d.triangulate().translate([0, 0, 0.0]),
@@ -205,7 +205,7 @@ class AreasOSMBuilder():
         logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
 
         #terr = terrain.terrain_grid(distance=500.0, height=1.0, detail=25.0).translate([0, 0, -0.5]).material(mat_terrain)
-        terr = terrain.terrain_geotiff(area_crop.bounds, detail=10.0, ddd_proj=self.osm.ddd_proj).material(self.osm.mat_terrain)
+        terr = terrain.terrain_geotiff(area_crop.bounds, detail=10.0, ddd_proj=self.osm.ddd_proj).material(ddd.mats.terrain)
         #terr2 = terrain.terrain_grid(distance=60.0, height=10.0, detail=5).translate([0, 0, -20]).material(mat_terrain)
 
         self.osm.ground_3d = terr
@@ -250,7 +250,7 @@ class AreasOSMBuilder():
                 area_2d = ddd.shape(water_area_geom)
                 #area_3d = area_2d.extrude(-0.2)
                 area_3d = area_2d.triangulate()
-                area_3d = area_3d.material(self.osm.mat_sea)
+                area_3d = area_3d.material(ddd.mats.sea)
                 area_3d.extra['ddd:collider'] = False
                 area_3d.extra['ddd:shadows'] = False
                 areas_2d.append(area_2d)
@@ -292,7 +292,7 @@ class AreasOSMBuilder():
             logger.error("Cannot generate terrain (FIXME): %s", e)
             raise
         terr = terrain.terrain_geotiff_elevation_apply(terr, self.osm.ddd_proj)
-        terr = terr.material(self.osm.mat_terrain)
+        terr = terr.material(ddd.mats.terrain)
 
         self.osm.ground_3d = terr
 

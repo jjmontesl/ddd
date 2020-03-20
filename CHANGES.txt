@@ -1,5 +1,7 @@
 [0.4.2]
 
+  * Added align helper and grid/axis helper.
+  * Introducing refactors, object catalog, unified materials.
   * Added extrude_step (across geometries, with optional caps).
 
 [0.4.1]

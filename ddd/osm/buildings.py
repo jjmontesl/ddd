@@ -71,13 +71,26 @@ class BuildingOSMBuilder():
 
             # Generate building procedurally (use library)
             building_3d = building_2d.extrude(floors * 3.00)
-            building_3d = building_3d.material(random.choice([self.osm.mat_building_1, self.osm.mat_building_2, self.osm.mat_building_3]))
+            building_3d = building_3d.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3]))
             if random.uniform(0, 1) < 0.2:
                 base = building_2d.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
-                base = base.material(random.choice([self.osm.mat_building_1, self.osm.mat_building_2, self.osm.mat_building_3, self.osm.mat_roof_tile]))
+                base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.roof_tile]))
                 building_3d.children.append(base)
             if random.uniform(0, 1) < 0.4:
-                roof = building_2d.buffer(random.uniform(0.5, 1.5), cap_style=2, join_style=2).extrude(0.75).translate([0, 0, floors * 3.00]).material(self.osm.mat_roof_tile)
+                roof_type = random.choice([1, 2, 3])
+                roof_buffer = random.uniform(0.5, 1.5) if random.uniform(0, 1) < 0.5 else 0.0
+                if roof_type == 1:
+                    # Flat
+                    roof = building_2d.buffer(roof_buffer, cap_style=2, join_style=2).extrude(0.75).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tile)
+                elif roof_type == 2:
+                    # Pointy
+                    height = floors * 0.2 + random.uniform(2.0, 5.0)
+                    roof = building_2d.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(building_2d.buffer(-10), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tile)
+                elif roof_type == 3:
+                    # Attic
+                    height = random.uniform(3.0, 4.0)
+                    roof = building_2d.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(building_2d.buffer(-2), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tile)
+
                 building_3d.children.append(roof)
 
         except ValueError as e:

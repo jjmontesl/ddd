@@ -2,6 +2,19 @@
 
 DDD is a library for procedural generation of 2D and 3D geometries.
 
+
+## Features
+
+- Scenegraph approach (not yet there, in refactoring)
+- Export 2D to SVG
+- Export 3D to GLTF, FBX or OBJ
+- Builtin viewer based on Trimesh/...?
+- Procedurally generate and alter 2D and 3D geometry
+- TTF based generation of text geometry
+
+- Procedural objects library
+
+
 ## Introduction
 
 (TODO)
@@ -15,6 +28,7 @@ Solve Anastutia Minigolf minigame needs and possibly others (snake 3D, tanks, bo
 Based on Shapely and Trimesh
 
 (Screenshots)
+
 
 ## Initial wishlist of features (to be removed from this readme, or added to Features)
 
@@ -34,15 +48,6 @@ Based on Shapely and Trimesh
 - Some minimium animation standards (as properties maybe?) for using in Unity
 
 
-## Features
-
-- Export 2D to SVG
-- Export 3D to GLTF, FBX or OBJ
-- Builtin viewer based on Trimesh/...?
-- Procedurally generate and alter 2D and 3D geometry
-- TTF based generation of text geometry
-
-
 ## Installation
 
 (TODO)
@@ -60,3 +65,7 @@ export C_INCLUDE_PATH=/usr/include/gdal/
 ## Documentation
 
 ## License
+
+
+
+

@@ -13,18 +13,6 @@ from ddd.text import fonts
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-mat_bronze = ddd.material(color='#f0cb11')
-mat_railing = ddd.material(color='#181010')
-
-mat_paint_red = ddd.material("PaintRed", color='#d01010')
-mat_paint_green = ddd.material("PaintGreen", color='#265e13')
-mat_paint_yellow = ddd.material("PaintYellow", color='#ebe015')
-
-mat_lightbulb = ddd.material(color='e8e0e4')
-mat_trafficlight_green = ddd.material(color='#00ff00')
-mat_trafficlight_orange = ddd.material(color='#ffff00')
-mat_trafficlight_red = ddd.material(color='#ff0000')
-
 
 def post(height=2.00, r=0.075, top=None, mat_post=None):
     """
@@ -47,7 +35,7 @@ def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=
     line = line.line_to([side * corner_radius, height])
     line = line.line_to([side * arm_length, height])
     post = line.buffer(r, cap_style=ddd.CAP_FLAT).extrude(r * 2, center=True)
-    post = post.rotate([math.pi / 2.0, 0, 0]).material(mat_paint_green)
+    post = post.rotate([math.pi / 2.0, 0, 0]).material(ddd.mats.metal_paint_green)
 
     items = []
     for idx, item in enumerate(arm_items):
@@ -60,15 +48,16 @@ def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=
 def lamppost(height=2.80, r=0.25, lamp=None, mat_post=None):
     if lamp is None:
         #lamp = ddd.sphere(r=r, subdivisions=1).scale([1.0, 1.0, 1.2]).material(self.osm.mat_lightbulb)
-        lamp = lamp_case(r=r)
-    col = post(height=height, top=lamp, mat_post=mat_post or mat_paint_green)
+        lamp = lamp_case(height=0.8, r=r)
+    col = post(height=height, top=lamp, mat_post=mat_post or ddd.mats.metal_paint_green)
     col.name = "Lamppost"
     return col
 
 def lamp_case(height=0.5, r=0.25):
     lamp_shape = ddd.point(name="Lamp Case").buffer(r - 0.10, resolution=1)
-    lamp = lamp_shape.extrude_step(lamp_shape.buffer(0.10, cap_style=ddd.CAP_SQUARE, join_style=ddd.JOIN_BEVEL), height)
-    lamp = lamp.extrude_step(lamp_shape.buffer(-0.10), 0.1).material(mat_lightbulb)
+    lamp = lamp_shape.extrude_step(lamp_shape.buffer(0.10, cap_style=ddd.CAP_SQUARE, join_style=ddd.JOIN_BEVEL), height * 0.8)
+    lamp = lamp.extrude_step(lamp_shape.buffer(-0.10), height * 0.2)
+    lamp = lamp.material(ddd.mats.lightbulb)
     return lamp
 
 def lamp_ball(r=0.25):
@@ -83,10 +72,10 @@ def lamppost_with_arms(height, arms=2, degrees=360):
 
 def trafficlights_head(height=0.8, depth=0.3):
 
-    head = ddd.rect([-0.15, 0, 0.15, height]).material(mat_paint_green).extrude(depth)
-    disc_green = ddd.disc(ddd.point([0, 0.2]), r=0.09).material(mat_trafficlight_green).extrude(0.05)
-    disc_orange = ddd.disc(ddd.point([0, 0.4]), r=0.09).material(mat_trafficlight_orange).extrude(0.05)
-    disc_red = ddd.disc(ddd.point([0, 0.6]), r=0.09).material(mat_trafficlight_red).extrude(0.05)
+    head = ddd.rect([-0.15, 0, 0.15, height]).material(ddd.mats.metal_paint_green).extrude(depth)
+    disc_green = ddd.disc(ddd.point([0, 0.2]), r=0.09).material(ddd.mats.light_green).extrude(0.05)
+    disc_orange = ddd.disc(ddd.point([0, 0.4]), r=0.09).material(ddd.mats.light_orange).extrude(0.05)
+    disc_red = ddd.disc(ddd.point([0, 0.6]), r=0.09).material(ddd.mats.light_red).extrude(0.05)
 
     discs = ddd.group([disc_green, disc_orange, disc_red]).translate([0, 0, depth])  # Put discs over head
     head = ddd.group([head, discs]).translate([0, -height / 2.0, 0])  # Center vertically
@@ -168,8 +157,8 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, texture=None):
     return panel
 
 
-def busstop_small(height=2.30, panel_height=1.2, panel_width=0.4, text=None):
-    obj_post = post(height=height).material(mat_paint_green)
+def busstop_small(height=2.50, panel_height=1.4, panel_width=0.45, text=None):
+    obj_post = post(height=height).material(ddd.mats.metal_paint_green)
     obj_panel = panel(height=panel_height, width=panel_width, depth=0.05, text=text).translate([panel_width / 2, 0, height - 0.20 - panel_height / 2])
     obj = ddd.group([obj_post, obj_panel])
     return obj
@@ -185,7 +174,7 @@ def post_box(height=1.10, r=0.35):
     obj = obj.extrude_step(circle.scale([1.0, 1.0, 1]), 0.05)
     obj = obj.extrude_step(circle.scale([1.0, 1.0, 1]), 0.10)
     obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), 0.05)
-    obj = obj.material(mat_paint_yellow)
+    obj = obj.material(ddd.mats.metal_paint_yellow)
     obj.name = "Post Box"
     logger.warn("Post Box collider should be a cylinder.")
     return obj
@@ -217,7 +206,7 @@ def sculpture_text(text, d=1.0, height=4.0):
 
     logger.debug("Generating text for: %s", text)
     item = fonts.text(text)
-    item = item.extrude(0.5).material(mat_bronze)
+    item = item.extrude(0.5).material(ddd.mats.bronze)
     item = item.rotate([math.pi / 2.0, 0, 0])
 
     item = filters.noise_random(item, scale=0.03)
@@ -232,15 +221,14 @@ def sculpture_text(text, d=1.0, height=4.0):
 
 
 def fountain(r=1.5):
-
     # Base
     base = ddd.disc(r=r, resolution=2).extrude(0.30)
-
     fountain = ddd.sphere(r=r, subdivisions=1).subtract(ddd.cube(d=r * 1.2)).subtract(ddd.sphere(r=r - 0.2, subdivisions=1))
     fountain = fountain.translate([0, 0, 1.2])  # TODO: align
+    fountain = fountain.material(ddd.mats.stone)
     #.subtract(base)
 
-    water = ddd.disc(r=r-0.2, resolution=2).triangulate().translate([0, 0, 1.1])
+    water = ddd.disc(r=r-0.2, resolution=2).triangulate().translate([0, 0, 1.1]).material(ddd.mats.water)
 
     # Fountain
     item = ddd.group([base, fountain, water])
