@@ -139,7 +139,7 @@ class ItemsOSMBuilder():
         key = "fountain-default-01"
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
-            item_3d = urban.fountain(r=1.75)
+            item_3d = urban.fountain(r=1.85)
             item_3d = self.osm.catalog.add(key, item_3d)
 
         coords = item_2d.geom.coords[0]

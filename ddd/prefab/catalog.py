@@ -32,10 +32,15 @@ class PrefabCatalog():
         ddd.distribute.grid(ddd.group(self._cache.values())).show()
 
     def add(self, key, obj):
+        """
+        This method returns an instance of the added object, like 'instance' does,
+        so the result can be directly used as if it was retrieved from the catalog.
+        """
         if key in self._cache:
             raise ValueError("Object already exists in catalog: %s", key)
         obj.extra['ddd:catalog:key'] = key
         self._cache[key] = obj
+        obj = ddd.instance(obj)
         return obj
 
     def instance(self, key):

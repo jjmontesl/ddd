@@ -147,7 +147,7 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, texture=None):
     panel.name = "Panel"
 
     if text:
-        textobj = ddd.box(name="Panel Text Marker").translate([0, - depth - 0.02, 0])
+        textobj = ddd.marker(name="Panel Text Marker").translate([0, - depth - 0.02, 0])
         textobj.extra['ddd:text'] = text
         textobj.extra['ddd:collider'] = False
         #textobj.extra['ddd:layer'] = "Texts"

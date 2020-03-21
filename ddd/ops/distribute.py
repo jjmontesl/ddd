@@ -45,8 +45,6 @@ class DDDDistribute():
             result.append(c.translate(pos))
             col += 1
 
-
-
         obj.children = result
 
         return obj

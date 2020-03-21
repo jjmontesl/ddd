@@ -59,7 +59,7 @@ class DefaultMaterials(MaterialsCollection):
         self.light_red = ddd.material(color='#ff0000')
 
         # Trees
-        self.bark = ddd.material(name="Bark", color='#df9e75')
+        self.bark = ddd.material(color='#df9e75')
         self.leaves = ddd.material(color='#1da345')
 
         # Urban props materials
@@ -70,5 +70,5 @@ class DefaultMaterials(MaterialsCollection):
         self.building_1 = ddd.material(color='#f7f0be')
         self.building_2 = ddd.material(color='#bdb9a0')
         self.building_3 = ddd.material(color='#c49156')
-        self.roof_tile = ddd.material(color='#f25129')
+        self.roof_tiles = ddd.material("RoofTiles", color='#f25129')
 

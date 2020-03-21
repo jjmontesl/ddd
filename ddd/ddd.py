@@ -8,7 +8,7 @@ import random
 
 from csg import geom as csggeom
 from csg.core import CSG
-import numpy
+import numpy as np
 from shapely import geometry, affinity, ops
 from shapely.geometry import shape, polygon
 from trimesh import creation, primitives, boolean, transformations
@@ -161,6 +161,12 @@ class D1D2D3():
         return cube
 
     @staticmethod
+    def marker(name=None):
+        marker = D1D2D3.box(name=name)
+        marker.extra['ddd:marker'] = True
+        return marker
+
+    @staticmethod
     def ddd2(*args, **kwargs):
         return DDDObject2(*args, **kwargs)
 
@@ -172,8 +178,8 @@ class D1D2D3():
     def grid2(bounds, detail=1.0):
         rects = []
         cmin, cmax = bounds[:2], bounds[2:]
-        pointsx = list(numpy.linspace(cmin[0], cmax[0], 1 + int((cmax[0] - cmin[0]) / detail)))
-        pointsy = list(numpy.linspace(cmin[1], cmax[1], 1 + int((cmax[1] - cmin[1]) / detail)))
+        pointsx = list(np.linspace(cmin[0], cmax[0], 1 + int((cmax[0] - cmin[0]) / detail)))
+        pointsy = list(np.linspace(cmin[1], cmax[1], 1 + int((cmax[1] - cmin[1]) / detail)))
 
         for (idi, (i, ni)) in enumerate(zip(pointsx[:-1], pointsx[1:])):
             for (idj, (j, nj)) in enumerate(zip(pointsy[:-1], pointsy[1:])):
@@ -199,7 +205,7 @@ class D1D2D3():
             flip = ((idi % 2) + (idj % 2)) % 2
             gvs, gfs = creation.triangulate_polygon(geom)
             if flip:
-                gfs = numpy.array([[3, 0, 2], [1, 2, 0]])  # Alternate faces
+                gfs = np.array([[3, 0, 2], [1, 2, 0]])  # Alternate faces
             gfs = [gf + len(vertices) for gf in gfs]
             faces.extend(gfs)
             vertices.extend(gvs)
@@ -684,7 +690,7 @@ class DDDObject2(DDDObject):
         if base:
             result = self.triangulate()
             if result.mesh:
-                result.mesh.faces = numpy.fliplr(result.mesh.faces)
+                result.mesh.faces = np.fliplr(result.mesh.faces)
         else:
             # TODO: unify in copy2d->3d method
             result = DDDObject3()
@@ -814,28 +820,33 @@ class DDDInstance(DDDObject):
         return "<DDDInstance (name=%s, ref=%s, id=%s)>" % (self.name, self.ref, id(self))
 
     def copy(self):
-        raise NotImplementedError()
-        #obj = DDDObject3(name=self.name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
-        #return obj
+        obj = DDDInstance(ref=self.ref, name=self.name, extra=dict(self.extra))
+        obj.transform = self.transform.copy()
+        return obj
 
     def vertex_iterator(self):
+        rotation_matrix = transformations.quaternion_matrix(self.transform.rotation)
         for v in self.ref.vertex_iterator():
-            vtransformed = [v[0] + self.transform.position[0], v[1] + self.transform.position[1], v[2] + self.transform.position[2], v[3]]
+            vtransformed = np.dot(rotation_matrix, v)
+            vtransformed = [vtransformed[0] + self.transform.position[0], vtransformed[1] + self.transform.position[1], vtransformed[2] + self.transform.position[2], v[3]]
             # FIXME: TODO: apply full transform via numpy
             yield vtransformed
 
     def translate(self, v):
-        self.transform.position = [self.transform.position[0] + v[0], self.transform.position[1] + v[1], self.transform.position[2] + v[2]]
-        return self
+        obj = self.copy()
+        obj.transform.position = [self.transform.position[0] + v[0], self.transform.position[1] + v[1], self.transform.position[2] + v[2]]
+        return obj
 
     def rotate(self, v):
-        rot = quaternion_from_euler(v[0], v[1], v[2], "rxyz")
-        self.transform.rotation = self.transform.rotation * rot
-        return self
+        obj = self.copy()
+        rot = quaternion_from_euler(v[0], v[1], v[2], "sxyz")
+        rotation_matrix = transformations.quaternion_matrix(rot)
+        obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]  # Hack: use matrices
+        obj.transform.rotation = transformations.quaternion_multiply(obj.transform.rotation, rot)
+        return obj
 
     def _recurse_scene(self, path_prefix=""):
 
-        scene = Scene()
         auto_name = "node_%s" % (id(self))
         node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
 
@@ -854,12 +865,22 @@ class DDDInstance(DDDObject):
             serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
             encoded_node_name = node_name + "_" + str(serialized_metadata)
 
-        # UV coords test
-        mesh = None
-        if self.ref.mesh:
-            mesh = self.ref._process_mesh()
+        scene = Scene()
+        if self.ref:
 
-        scene.add_geometry(geometry=mesh, node_name=encoded_node_name.replace(" ", "_"))
+            generate_marker = False
+            generate_mesh = True
+
+            ref = self.ref.copy()
+            if generate_mesh:
+                ref = ref.scale(self.transform.scale)
+                ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+                ref = ref.translate(self.transform.position)
+                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/")
+                scene = refscene
+
+        else:
+            raise ValueError("Instance should reference a mesh.")
 
         '''
         cscenes = []
@@ -873,12 +894,36 @@ class DDDInstance(DDDObject):
 
         return scene
 
+    def recurse_meshes(self):
+
+        ref = self.ref.copy()
+        ref = ref.scale(self.transform.scale)
+        ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+        ref = ref.translate(self.transform.position)
+
+        cmeshes = []
+        if ref.mesh:
+            mesh = ref._process_mesh()
+            cmeshes = [mesh]
+        if ref.children:
+            for c in ref.children:
+                cmeshes.extend(c.recurse_meshes())
+        return cmeshes
+
+
 class DDDTransform():
 
     def __init__(self):
         self.position = [0, 0, 0]
-        self.rotation = quaternion_from_euler(0, 0, 0, "rxyz")
+        self.rotation = quaternion_from_euler(0, 0, 0, "sxyz")
         self.scale = [1, 1, 1]
+
+    def copy(self):
+        result = DDDTransform()
+        result.position = list(self.position)
+        result.rotation = list(self.rotation)
+        result.scale = list(self.scale)
+        return result
 
 
 class DDDObject3(DDDObject):
@@ -909,18 +954,18 @@ class DDDObject3(DDDObject):
     def rotate(self, v):
         obj = self.copy()
         if obj.mesh:
-            rot = transformations.euler_matrix(v[0], v[1], v[2], 'rxyz')
+            rot = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
             obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
-        obj.children = [c.rotate(v) for c in self.children]
+        obj.children = [c.rotate(v) for c in obj.children]
         return obj
 
     def scale(self, v):
         obj = self.copy()
         if obj.mesh:
-            sca = numpy.array([[v[0], 0.0, 0.0, 0.0],
-                               [0.0, v[1], 0.0, 0.0],
-                               [0.0, 0.0, v[2], 0.0],
-                               [0.0, 0.0, 0.0, 1.0]])
+            sca = np.array([[v[0], 0.0, 0.0, 0.0],
+                            [0.0, v[1], 0.0, 0.0],
+                            [0.0, 0.0, v[2], 0.0],
+                            [0.0, 0.0, 0.0, 1.0]])
             obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, sca)
         obj.children = [c.scale(v) for c in self.children]
         return obj
@@ -1123,7 +1168,7 @@ class DDDObject3(DDDObject):
                 #print(cscene.__dict__)
                 #changed = scene.graph.transforms.add_edge(node_name, cscene_name)
 
-        #matrix = numpy.eye(4)
+        #matrix = np.eye(4)
         #scene.graph.update(frame_from=new_base,
         #                   frame_to=self.graph.base_frame,
         #                   matrix=matrix)
@@ -1182,8 +1227,9 @@ class DDDObject3(DDDObject):
         return cobjs
 
     def show(self):
-        rotated = self.rotate([-math.pi / 2.0, 0, 0])
-        scene = rotated._recurse_scene()
+
+        #rotated = self.rotate([-math.pi / 2.0, 0, 0])
+        #scene = rotated._recurse_scene()
         #scene.show('gl')
 
         # Example code light
@@ -1193,6 +1239,8 @@ class DDDObject3(DDDObject):
 
         import pyrender
         #pr_scene = pyrender.Scene.from_trimesh_scene(rotated)
+
+        # Scene not rotated, as pyrender seems to use Z for vertical.
         meshes = self.recurse_meshes()  # rotated
         pr_scene = pyrender.Scene()
         for m in meshes:
