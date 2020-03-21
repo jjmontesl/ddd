@@ -40,12 +40,14 @@ class PrefabCatalog():
             raise ValueError("Object already exists in catalog: %s", key)
         obj.extra['ddd:catalog:key'] = key
         self._cache[key] = obj
-        obj = ddd.instance(obj)
+
+        obj = self.instance(key)
         return obj
 
     def instance(self, key):
         obj = self._cache.get(key, None)
         if obj:
             obj = ddd.instance(obj)
+            obj.extra['ddd:instance:key'] = key
         return obj
 

@@ -105,8 +105,8 @@ def extrude_step(obj, shape, offset, cap=True):
 
 def extrude_between_geoms(geom_a, geom_b, offset, _base_height):
 
-    coords_a = geom_a.coords if geom_a.type == 'Point' else geom_a.exterior.coords
-    coords_b = geom_b.coords if geom_b.type == 'Point' else geom_b.exterior.coords
+    coords_a = geom_a.coords if geom_a.type == 'Point' else geom_a.exterior.coords[:-1]  # Linearrings repeat first/last point
+    coords_b = geom_b.coords if geom_b.type == 'Point' else geom_b.exterior.coords[:-1]  # Linearrings repeat first/last point
 
     vertices = []
     vertices.extend([(x, y, _base_height) for x, y, *z in coords_a])

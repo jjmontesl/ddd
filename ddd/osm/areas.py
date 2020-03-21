@@ -287,7 +287,8 @@ class AreasOSMBuilder():
         #terr.save("/tmp/test.svg")
         #terr = terr.triangulate()
         try:
-            terr = terr.buffer(0.001).extrude(0.3)
+            #terr = terr.buffer(0.001).extrude(0.3)
+            terr = terr.extrude(0.3)
         except ValueError as e:
             logger.error("Cannot generate terrain (FIXME): %s", e)
             raise

@@ -2,6 +2,7 @@
 
 from ddd.pack.sketchy import urban, landscape
 from ddd.ddd import ddd
+import math
 
 items = ddd.group3()
 
@@ -28,6 +29,7 @@ item = urban.sculpture_text("Test")
 items.append(item)
 
 item = urban.trafficlights()
+item = item.rotate([0, 0, (math.pi / 4) - math.pi / 2])
 items.append(item)
 
 item = urban.fountain()

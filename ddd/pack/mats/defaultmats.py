@@ -39,7 +39,7 @@ class DefaultMaterials(MaterialsCollection):
         self.bronze = ddd.material(color='#f0cb11')
         self.steel = ddd.material(color='#78839c')
 
-        self.stone = ddd.material(color='#9c9378')
+        self.stone = ddd.material(name="Stone", color='#9c9378')
         self.cement = ddd.material(name="Concrete", color='#b8b8a0')
         self.brick = ddd.material(color='#d49156')
 

@@ -45,8 +45,10 @@ class D1D2D3Bootstrap():
         # Tasks to run (short, long, area, catalog...) - depends on script (define tasks?)
         # Catalog tasks (common)
         # Overwrite / Fail / Skip task
+        # Run only 1 chunk / task
         # Show / no show / custom debug shows  | logging categories
         # Timings
+        # Exoort instance-markers and/or instance-geometry by default
 
         parser.add_argument("script", nargs='?', default=None, help="script to run")
         #parser.add_argument("rest", nargs='*')

@@ -65,6 +65,7 @@ class ItemsOSMBuilder():
             if item_3d:
                 item_3d.name = item_3d.name if item_3d.name else item_2d.name
                 logger.debug("Generated item: %s", item_3d)
+                # FIXME: This shuld not be done here, but by each element (some are snapped at their center, some min_vertex...)
                 item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
                 self.osm.items_3d.children.append(item_3d)
 
@@ -119,31 +120,35 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_tree(self, item_2d):
-        #print("Tree")
-        coords = item_2d.geom.coords[0]
 
-        plant_height = random.normalvariate(8.0, 3.0)
-        if plant_height < 3.0: plant_height=random.uniform(3.0, 5.5)
-        if plant_height > 15.0: plant_height=random.uniform(12.0, 15.0)
-        #item_3d = plants.plant(height=random.uniform(3.0, 5.5)).translate([coords[0], coords[1], 0.0])
-        item_3d = plants.plant(height=plant_height).translate([coords[0], coords[1], 0.0])
-        for i in item_3d.filter(lambda o: o.extra.get('foliage', None)).children:
-            i.extra['ddd:collider'] = False  # TODO: generation details shall be optional
+        key = "tree-default-%d" % (random.choice([1, 2, 3, 4, 5, 6, 7, 8]))
+        item_3d = self.osm.catalog.instance(key)
+        if not item_3d:
+            plant_height = random.normalvariate(8.0, 3.0)
+            if plant_height < 3.0: plant_height=random.uniform(3.0, 5.5)
+            if plant_height > 15.0: plant_height=random.uniform(12.0, 15.0)
+            item_3d = plants.plant(height=plant_height)
+            for i in item_3d.filter(lambda o: o.extra.get('foliage', None)).children:
+                i.extra['ddd:collider'] = False  # TODO: generation details shall be optional
+            item_3d = self.osm.catalog.add(key, item_3d)
+
+        coords = item_2d.geom.coords[0]
+        item_3d = item_3d.rotate([0.0, 0.0, random.uniform(0, math.pi * 2)])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Tree: %s' % item_2d.name
-        #item_3d.extra['ddd:instance'] = 'tree_1'
         return item_3d
 
     def generate_item_3d_fountain(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
 
-        key = "fountain-default-01"
+        key = "fountain-default-1"
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
             item_3d = urban.fountain(r=1.85)
             item_3d = self.osm.catalog.add(key, item_3d)
 
         coords = item_2d.geom.coords[0]
-        item_3d.translate([coords[0], coords[1], 0.0])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Fountain: %s' % item_2d.name
         return item_3d
 
@@ -151,7 +156,6 @@ class ItemsOSMBuilder():
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
         item_3d = urban.bench(length=2.0).translate([coords[0], coords[1], 0.0])
-        #item_3d = urban.trafficlights().rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
         item_3d.name = 'Bench: %s' % item_2d.name
         item_3d.material(ddd.mats.stone)
         return item_3d
@@ -160,7 +164,6 @@ class ItemsOSMBuilder():
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
         item_3d = urban.post_box().translate([coords[0], coords[1], 0.0])
-        #item_3d = urban.trafficlights().rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
         operator = item_2d.extra['feature'].get('operator')
         item_3d.name = 'Postbox (%s): %s' % (operator, item_2d.name)
         return item_3d
@@ -210,15 +213,28 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_lamppost(self, item_2d):
+
+        key = "lamppost-default-1"
+        item_3d = self.osm.catalog.instance(key)
+        if not item_3d:
+            item_3d = urban.lamppost(height=5.5, r=0.35)
+            item_3d = self.osm.catalog.add(key, item_3d)
+
         coords = item_2d.geom.coords[0]
-        item_3d = urban.lamppost(height=5.5, r=0.35).translate([coords[0], coords[1], 0.0])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Lampppost: %s' % item_2d.name
-        #item_3d.material(ddd.mats.highlight)
         return item_3d
 
     def generate_item_3d_trafficlights(self, item_2d):
+
+        key = "trafficlights-default-1"
+        item_3d = self.osm.catalog.instance(key)
+        if not item_3d:
+            item_3d = urban.trafficlights()
+            item_3d = self.osm.catalog.add(key, item_3d)
+
         coords = item_2d.geom.coords[0]
-        item_3d = urban.trafficlights().rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Traffic Lights %s' % item_2d.name
         return item_3d

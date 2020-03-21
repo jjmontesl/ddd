@@ -1,5 +1,9 @@
 [0.4.2]
 
+  * OSM using catalog and instances for fountains, trees, lamps, traffic lights.
+  * Added support for instances.
+  * Introduced catalog system.
+  * Introduced material libraries.
   * Added align helper and grid/axis helper.
   * Introducing refactors, object catalog, unified materials.
   * Added extrude_step (across geometries, with optional caps).

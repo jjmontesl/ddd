@@ -54,6 +54,7 @@ def trunk(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_s
             ssection = ssection.rotate([(fork_angle * random.uniform(0.65, 1.35)) / 180.0 * math.pi, 0.0, 0.0])
             ssection = ssection.rotate([0.0, 0.0, azimuth / 180.0 * math.pi])
             ssection = ssection.translate([0, 0, height * fork_height_ratio])
+            ssection.name = "Branch (level %d)" % fork_level
             branches.append(ssection)
 
     #else:
@@ -70,6 +71,7 @@ def treetop(r=1.75, flatness=0.3, subdivisions=1):
     treetop = treetop.scale([1.0, 1.0, (1.0 - flatness) * random.uniform(0.85, 1.15)])
     treetop = filters.noise_random(treetop, scale=0.25)
     treetop.extra['foliage'] = True
+    treetop.name = "Treetop"
     return treetop
 
 def plant(height=3.5, r=0.40, fork_iters=3):
@@ -96,6 +98,8 @@ def plant(height=3.5, r=0.40, fork_iters=3):
     obj = objs[0]
     obj = obj.material(mat_leaves)
     '''
+
+    obj.name = "Plant"
 
     return obj
 

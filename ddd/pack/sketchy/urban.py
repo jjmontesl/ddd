@@ -36,6 +36,7 @@ def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=
     line = line.line_to([side * arm_length, height])
     post = line.buffer(r, cap_style=ddd.CAP_FLAT).extrude(r * 2, center=True)
     post = post.rotate([math.pi / 2.0, 0, 0]).material(ddd.mats.metal_paint_green)
+    post.name = "Post Curved"
 
     items = []
     for idx, item in enumerate(arm_items):
@@ -72,19 +73,20 @@ def lamppost_with_arms(height, arms=2, degrees=360):
 
 def trafficlights_head(height=0.8, depth=0.3):
 
-    head = ddd.rect([-0.15, 0, 0.15, height]).material(ddd.mats.metal_paint_green).extrude(depth)
-    disc_green = ddd.disc(ddd.point([0, 0.2]), r=0.09).material(ddd.mats.light_green).extrude(0.05)
-    disc_orange = ddd.disc(ddd.point([0, 0.4]), r=0.09).material(ddd.mats.light_orange).extrude(0.05)
-    disc_red = ddd.disc(ddd.point([0, 0.6]), r=0.09).material(ddd.mats.light_red).extrude(0.05)
+    head = ddd.rect([-0.15, 0, 0.15, height], name="TrafficLight Box").material(ddd.mats.metal_paint_green).extrude(depth)
+    disc_green = ddd.disc(ddd.point([0, 0.2]), r=0.09, name="TrafficLight Disc Green").material(ddd.mats.light_green).extrude(0.05)
+    disc_orange = ddd.disc(ddd.point([0, 0.4]), r=0.09, name="TrafficLight Disc Green").material(ddd.mats.light_orange).extrude(0.05)
+    disc_red = ddd.disc(ddd.point([0, 0.6]), r=0.09, name="TrafficLight Disc Green").material(ddd.mats.light_red).extrude(0.05)
 
-    discs = ddd.group([disc_green, disc_orange, disc_red]).translate([0, 0, depth])  # Put discs over head
-    head = ddd.group([head, discs]).translate([0, -height / 2.0, 0])  # Center vertically
+    discs = ddd.group([disc_green, disc_orange, disc_red], name="TrafficLight Discs").translate([0, 0, depth])  # Put discs over head
+    head = ddd.group([head, discs], name="TrafficLight Head").translate([0, -height / 2.0, 0])  # Center vertically
     head = head.rotate([math.pi / 2.0, 0, 0])
     return head
 
 def trafficlights():
     head = trafficlights_head()
     post = curvedpost(arm_items=[head])
+    post.name = "TrafficLight"
     return post
 
 def trafficsign_sign():
@@ -222,15 +224,15 @@ def sculpture_text(text, d=1.0, height=4.0):
 
 def fountain(r=1.5):
     # Base
-    base = ddd.disc(r=r, resolution=2).extrude(0.30)
+    base = ddd.disc(r=r, resolution=2).extrude(0.30).material(ddd.mats.stone)
+    # Fountain
     fountain = ddd.sphere(r=r, subdivisions=1).subtract(ddd.cube(d=r * 1.2)).subtract(ddd.sphere(r=r - 0.2, subdivisions=1))
     fountain = fountain.translate([0, 0, 1.2])  # TODO: align
     fountain = fountain.material(ddd.mats.stone)
     #.subtract(base)
-
+    # Water
     water = ddd.disc(r=r-0.2, resolution=2).triangulate().translate([0, 0, 1.1]).material(ddd.mats.water)
 
-    # Fountain
     item = ddd.group([base, fountain, water])
     return item
 

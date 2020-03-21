@@ -124,8 +124,8 @@ class D1D2D3():
         return DDDObject2(geom=geom, name=name)
 
     @staticmethod
-    def disc(center=None, r=None, resolution=8):
-        if center is None: center = ddd.point([0, 0, 0])
+    def disc(center=None, r=None, resolution=8, name=None):
+        if center is None: center = ddd.point([0, 0, 0], name=name)
         if r is None: r = 1.0
         geom = center.geom.buffer(r, resolution=resolution)
         return DDDObject2(geom=geom)
@@ -143,6 +143,8 @@ class D1D2D3():
         """
         Cube is sitting on the Z plane defined by the center position.
         `d` is the distance to the side, so cube side length will be twice that value.
+
+        @see :func:`box`
         """
         #if center is not None: raise NotImplementedError()  #
         if center is None: center = [0, 0, 0]
@@ -164,6 +166,7 @@ class D1D2D3():
     def marker(name=None):
         marker = D1D2D3.box(name=name)
         marker.extra['ddd:marker'] = True
+        #marker.extra['ddd:collider'] = False  # should not be explicit
         return marker
 
     @staticmethod
@@ -834,7 +837,7 @@ class DDDInstance(DDDObject):
 
     def translate(self, v):
         obj = self.copy()
-        obj.transform.position = [self.transform.position[0] + v[0], self.transform.position[1] + v[1], self.transform.position[2] + v[2]]
+        obj.transform.position = [obj.transform.position[0] + v[0], obj.transform.position[1] + v[1], obj.transform.position[2] + v[2]]
         return obj
 
     def rotate(self, v):
@@ -842,7 +845,7 @@ class DDDInstance(DDDObject):
         rot = quaternion_from_euler(v[0], v[1], v[2], "sxyz")
         rotation_matrix = transformations.quaternion_matrix(rot)
         obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]  # Hack: use matrices
-        obj.transform.rotation = transformations.quaternion_multiply(obj.transform.rotation, rot)
+        obj.transform.rotation = transformations.quaternion_multiply(rot, obj.transform.rotation)  # order matters!
         return obj
 
     def _recurse_scene(self, path_prefix=""):
@@ -868,8 +871,8 @@ class DDDInstance(DDDObject):
         scene = Scene()
         if self.ref:
 
-            generate_marker = False
-            generate_mesh = True
+            generate_marker = True
+            generate_mesh = False
 
             ref = self.ref.copy()
             if generate_mesh:
@@ -877,10 +880,20 @@ class DDDInstance(DDDObject):
                 ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
                 ref = ref.translate(self.transform.position)
                 refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/")
-                scene = refscene
+                scene = append_scenes([scene] + [refscene])
+
+            if generate_marker:
+                ref = D1D2D3.marker(self.name)
+                ref = ref.scale(self.transform.scale)
+                ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+                ref = ref.translate(self.transform.position)
+                ref.extra.update(self.ref.extra)
+                ref.extra.update(self.extra)
+                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/")
+                scene = append_scenes([scene] + [refscene])
 
         else:
-            raise ValueError("Instance should reference a mesh.")
+            raise ValueError("Instance should reference another object.")
 
         '''
         cscenes = []
@@ -939,10 +952,12 @@ class DDDObject3(DDDObject):
         obj = DDDObject3(name=self.name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
         return obj
 
+    '''
     def instance(self):
         obj = D1D2D3.cube(d=1.0)  #[0, 0, 0], 1)
         obj.extra['ddd:instance'] = self
         return obj
+    '''
 
     def translate(self, v):
         obj = self.copy()
@@ -1074,6 +1089,7 @@ class DDDObject3(DDDObject):
         node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
 
         # Add metadata to name
+        metadata = None
         if True:
             ignore_keys = ('uv', 'feature', 'connections')
             metadata = dict(self.extra)
@@ -1093,6 +1109,7 @@ class DDDObject3(DDDObject):
             self.mesh = self._process_mesh()
 
         scene.add_geometry(geometry=self.mesh, node_name=encoded_node_name.replace(" ", "_"))
+        print("%s %s" % (node_name, metadata))
 
         cscenes = []
         if self.children:
