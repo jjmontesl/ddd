@@ -6,6 +6,14 @@ import math
 
 items = ddd.group3()
 
+# More strange shapes (ie. roofs that failed)
+coords = [[10, 10], [5, 9], [3, 12], [1, 5], [-8, 0], [10, 0]]
+#coords.reverse()
+fig = ddd.polygon(coords)
+fig = fig.extrude_step(fig.buffer(-3), 1)
+items.append(fig)
+fig.show()
+
 # Extrusion to line (empty geometry)
 fig1 = ddd.rect([-4, -2, 4, 2])
 fig = fig1.extrude_step(fig1.buffer(-2.5), 1.0)
@@ -68,6 +76,10 @@ for i in range(10):
 items.append(fig)
 #fig.show()
 
+# Pointy end
+fig = ddd.point().buffer(2.0, cap_style=ddd.CAP_ROUND)
+fig = fig.extrude_step(ddd.point(), 5.0)
+items.append(fig)
 
 # All items
 items = ddd.distribute.grid(items, width=2, space=10.0)

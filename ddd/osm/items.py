@@ -161,7 +161,10 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_post_box(self, item_2d):
-        # Todo: Use fountain shape if available, instead of centroid
+        #item_2d = ddd.snap.project(item_2d, self.osm.areas_2d, penetrate=0.5)
+        logger.info("TODO: move items outside buldins and consider ground too (possibly making ground an area")
+        # TODO: move outside buildings, and move ground into areas_2d
+
         coords = item_2d.geom.coords[0]
         item_3d = urban.post_box().translate([coords[0], coords[1], 0.0])
         operator = item_2d.extra['feature'].get('operator')

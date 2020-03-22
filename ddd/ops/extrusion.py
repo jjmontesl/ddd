@@ -31,7 +31,6 @@ from shapely.geometry.polygon import orient
 logger = logging.getLogger(__name__)
 
 
-
 def extrude_step(obj, shape, offset, cap=True):
     """
     Extrude a shape into another.
@@ -105,8 +104,27 @@ def extrude_step(obj, shape, offset, cap=True):
 
 def extrude_between_geoms(geom_a, geom_b, offset, _base_height):
 
+    # Ensure winding
+    if (geom_a.type == "Polygon" and geom_b.type == "Polygon"):
+        if (geom_a.exterior.is_ccw != geom_b.exterior.is_ccw):
+            logger.debug("Cannot extrude between polygons with different winding. Orienting polygons.")
+            geom_a = orient(geom_a, -1)
+            geom_b = orient(geom_b, -1)
+
     coords_a = geom_a.coords if geom_a.type == 'Point' else geom_a.exterior.coords[:-1]  # Linearrings repeat first/last point
     coords_b = geom_b.coords if geom_b.type == 'Point' else geom_b.exterior.coords[:-1]  # Linearrings repeat first/last point
+
+    # Find closest to coords_a[0] in b, and shift coords in b to match 0
+    closest_idx = 0
+    closest_dist = float("inf")
+    for idx, v in enumerate(coords_b):
+        dist = ((v[0] - coords_a[0][0]) ** 2) + ((v[1] - coords_a[0][1]) ** 2)
+        if dist < closest_dist:
+            closest_idx = idx
+            closest_dist = dist
+    if closest_idx != 0:
+        print("Closest Idx: %s" % closest_idx)
+    coords_b = coords_b[closest_idx:] + coords_b[:closest_idx]
 
     vertices = []
     vertices.extend([(x, y, _base_height) for x, y, *z in coords_a])

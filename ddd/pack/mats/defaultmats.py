@@ -60,7 +60,7 @@ class DefaultMaterials(MaterialsCollection):
 
         # Trees
         self.bark = ddd.material(color='#df9e75')
-        self.leaves = ddd.material(color='#1da345')
+        self.treetop = ddd.material(name="Treetop", color='#1da345')
 
         # Urban props materials
         self.lightbulb = ddd.material(color='e8e0e4')

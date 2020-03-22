@@ -26,8 +26,9 @@ import json
 import base64
 from shapely.geometry.polygon import orient
 from ddd.ops import extrusion
-from ddd.ops.distribute import DDDDistribute
 from trimesh.transformations import quaternion_from_euler
+from ddd.ops.align import DDDAlign
+from ddd.ops.snap import DDDSnap
 
 
 # Get instance of logger for this module
@@ -653,11 +654,18 @@ class DDDObject2(DDDObject):
                     except IndexError as e:
                         logger.error("Could not extrude Polygon in MultiPolygon: %s", e)
                 result = DDDObject3(children=meshes, name="%s (split extr)" % self.name)
+            #elif self.geom.type == "Polygon" and self.geom.exterior.type == "LinearRing" and len(list(self.geom.exterior.coords)) < 3:
+            #    logger.warn("Cannot extrude: A LinearRing must have at least 3 coordinate tuples (cleanup first?)")
+            #    result = DDDObject3(children=[], name="%s (empty polygon extr)" % self.name)
             elif not self.geom.is_empty and not self.geom.type == 'LineString' and not self.geom.type == 'Point':
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)
                 #vertices, faces = creation.triangulate_polygon(self.geom, engine="meshpy")  # , min_angle=math.pi / 180.0)
                 #vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p30", engine='triangle')
+
+                #self.geom = ops.transform(lambda x, y, *z: (x, y), self.geom)
+                #print(self.geom, self.geom.type, self.geom.exterior, self.geom.exterior.type)
+
                 vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
                 mesh = creation.extrude_triangulation(vertices=vertices,
                                                       faces=faces,
@@ -872,7 +880,7 @@ class DDDInstance(DDDObject):
         if self.ref:
 
             generate_marker = True
-            generate_mesh = False
+            generate_mesh = True
 
             ref = self.ref.copy()
             if generate_mesh:
@@ -1109,7 +1117,7 @@ class DDDObject3(DDDObject):
             self.mesh = self._process_mesh()
 
         scene.add_geometry(geometry=self.mesh, node_name=encoded_node_name.replace(" ", "_"))
-        print("%s %s" % (node_name, metadata))
+        #print("%s %s" % (node_name, metadata))
 
         cscenes = []
         if self.children:
@@ -1301,8 +1309,8 @@ ddd.mats = MaterialsCollection()
 ddd.mats.mat_highlight = D1D2D3.material(color='#ff00ff')
 ddd.mats.load_from(DefaultMaterials())
 
-#align = DDDAlign()
-ddd.distribute = DDDDistribute()
+align = DDDAlign()
+ddd.snap = DDDSnap()
 
 from ddd.ops.helper import DDDHelper
 ddd.helper = DDDHelper()

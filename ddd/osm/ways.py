@@ -726,7 +726,7 @@ class WaysOSMBuilder():
         # Fixme: do a proper hedge, do not use ways/areas for everything
         elif barrier == 'hedge':
             width = 0.6
-            material = ddd.mats.leaves
+            material = ddd.mats.treetop
             extra_height = 1.2
 
         elif barrier == 'fence':

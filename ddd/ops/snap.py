@@ -30,22 +30,9 @@ from shapely.geometry.polygon import orient
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-class DDDDistribute():
+class DDDSnap():
 
-    def grid(self, obj, space=5.0, width=None):
-
-        if width is None:
-            width = int(math.sqrt(len(obj.children)))
-
-        result = []
-        for idx, c in enumerate(obj.children):
-            col = idx % width
-            row = int(idx / width)
-            pos = [col * space, row * space, 0.0]
-            result.append(c.translate(pos))
-            col += 1
-
-        obj.children = result
+    def project(self, point, obj, penetrate=0.0):
 
         return obj
 

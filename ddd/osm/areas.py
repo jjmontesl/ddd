@@ -171,6 +171,10 @@ class AreasOSMBuilder():
 
     def generate_area_3d(self, area_2d):
 
+        if area_2d.geom is None:
+            logger.warning("Null area geometry: %s", area_2d)
+            return DDDObject3()
+
         if area_2d.geom.type in ('GeometryCollection', 'MultiPolygon'):
             logger.debug("Generating area 3d as separate areas as it is a GeometryCollection: %s", area_2d)
             # FIXME: We might do this in extrude_step, like we do in triangulate and extrude, but difficult as it is in steps.
@@ -265,6 +269,7 @@ class AreasOSMBuilder():
     def generate_ground_3d(self, area_crop):
 
         logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
+        logger.warning("There's a buffer(0.001) operation which shouldn't be here: implement 'cleanup'.")
 
         #terr = terrain.terrain_grid(distance=500.0, height=1.0, detail=25.0).translate([0, 0, -0.5]).material(mat_terrain)
         #terr = terrain.terrain_geotiff(area_crop.bounds, detail=10.0, ddd_proj=self.osm.ddd_proj).material(mat_terrain)
@@ -287,7 +292,7 @@ class AreasOSMBuilder():
         #terr.save("/tmp/test.svg")
         #terr = terr.triangulate()
         try:
-            #terr = terr.buffer(0.001).extrude(0.3)
+            terr = terr.buffer(0.001)
             terr = terr.extrude(0.3)
         except ValueError as e:
             logger.error("Cannot generate terrain (FIXME): %s", e)
