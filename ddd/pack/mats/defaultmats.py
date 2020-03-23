@@ -18,7 +18,7 @@ class DefaultMaterials(MaterialsCollection):
 
         # Ways
         self.asphalt = ddd.material(name="Asphalt", color='#202020')
-        self.dirt = ddd.material(color="#b58800")
+        self.dirt = ddd.material(name="Dirt", color="#b58800")
         self.railway = ddd.material(color="#47443e")
         self.sidewalk = ddd.material(name="Sidewalk", color='#e0d0d0')
         self.pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
@@ -41,7 +41,7 @@ class DefaultMaterials(MaterialsCollection):
 
         self.stone = ddd.material(name="Stone", color='#9c9378')
         self.cement = ddd.material(name="Concrete", color='#b8b8a0')
-        self.brick = ddd.material(color='#d49156')
+        self.bricks = ddd.material(name="Bricks", color='#d49156')
 
         self.wood = ddd.material(color='#efae85')
 

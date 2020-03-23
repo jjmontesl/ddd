@@ -46,7 +46,7 @@ class AreasOSMBuilder():
 
     def generate_areas_2d(self):
         logger.info("Generating 2D areas")
-        logger.warn("FIXME: Use DDD, not features, and preprocess Points to areas, and so we can sort by area size, etc")
+        logger.warn("FIXME: Use DDD, not features, and preprocess Points to areas, also sort by area size / containment, etc")
 
         # Union all roads in the plane to subtract
         union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], self.osm.areas_2d]).union()
@@ -151,11 +151,29 @@ class AreasOSMBuilder():
     def generate_area_2d_school(self, feature):
         area = ddd.shape(feature["geometry"], name="School: %s" % feature['properties'].get('name', None))
         area = area.material(ddd.mats.dirt)
+        area = self.generate_wallfence_2d(area, doors=2)
         return area
 
-    def generate_area_2d_unused(self, feature):
+    def generate_area_2d_unused(self, feature, wallfence=True):
         area = ddd.shape(feature["geometry"], name="Unused: %s" % feature['properties'].get('name', None))
         area = area.material(ddd.mats.dirt)
+
+        if wallfence:
+            area = self.generate_wallfence_2d(area)
+        #if ruins:
+        #if construction
+        #if ...
+
+        return area
+
+    def generate_wallfence_2d(self, area, fence_ratio=0.0, wall_thick=0.3, doors=1):
+
+        new_area = area.buffer(-wall_thick)
+        wall = area.subtract(new_area).material(ddd.mats.bricks)
+        wall.extra['ddd:height'] = 1.8
+        #ddd.uv.map_2d_polygon(wall, area.linearize())
+        area = ddd.group2([area, wall])
+
         return area
 
     def generate_areas_3d(self):
@@ -171,35 +189,41 @@ class AreasOSMBuilder():
 
     def generate_area_3d(self, area_2d):
 
-        if area_2d.geom is None:
-            logger.warning("Null area geometry: %s", area_2d)
-            return DDDObject3()
+        if area_2d.geom is not None:
 
-        if area_2d.geom.type in ('GeometryCollection', 'MultiPolygon'):
-            logger.debug("Generating area 3d as separate areas as it is a GeometryCollection: %s", area_2d)
-            # FIXME: We might do this in extrude_step, like we do in triangulate and extrude, but difficult as it is in steps.
-            # But also, we should have an individualize that work, correct iterators, and a generic cleanup/flatten method
-            # to flatten areas, which might solve this.
-            areas_3d = []
-            for a in area_2d.individualize().children:
-                areas_3d.append(self.generate_area_3d(a))
-            return ddd.group(areas_3d, empty=3)
+            if area_2d.geom.type in ('GeometryCollection', 'MultiPolygon'):
+                logger.debug("Generating area 3d as separate areas as it is a GeometryCollection: %s", area_2d)
+                # FIXME: We might do this in extrude_step, like we do in triangulate and extrude, but difficult as it is in steps.
+                # But also, we should have an individualize that work, correct iterators, and a generic cleanup/flatten method
+                # to flatten areas, which might solve this.
+                areas_3d = []
+                for a in area_2d.individualize().children:
+                    areas_3d.append(self.generate_area_3d(a))
+                return ddd.group(areas_3d, empty=3)
 
-        if area_2d.extra.get('ddd:area', None) == 'park':
+            if area_2d.extra.get('ddd:area', None) == 'park':
 
-            area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, base=False)
-            area_3d = area_3d.extrude_step(area_2d.buffer(-2.0), 0.1)
+                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, base=False)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-2.0), 0.1)
 
-            #area_3d = ddd.group([area_2d.triangulate().translate([0, 0, 0.0]),
-            #                     area_2d.buffer(-1.0).triangulate().translate([0, 0, 0.2]),
-            #                     area_2d.buffer(-3.0).triangulate().translate([0, 0, 0.3])])
+                #area_3d = ddd.group([area_2d.triangulate().translate([0, 0, 0.0]),
+                #                     area_2d.buffer(-1.0).triangulate().translate([0, 0, 0.2]),
+                #                     area_2d.buffer(-3.0).triangulate().translate([0, 0, 0.3])])
 
-            area_3d = area_3d.translate([0, 0, 0])
+                area_3d = area_3d.translate([0, 0, 0])
+
+            else:
+                height = area_2d.extra.get('ddd:height', 0.2)
+                area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
+                area_3d = ddd.uv.map_cubic(area_3d)
+
+            area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
 
         else:
-            area_3d = area_2d.extrude(-0.5).translate([0, 0, 0.2])
+            logger.warning("Null area geometry: %s", area_2d)
+            area_3d = DDDObject3()
 
-        area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
+        area_3d.children = [self.generate_area_3d(c) for c in area_2d.children]
 
         return area_3d
 
@@ -247,7 +271,7 @@ class AreasOSMBuilder():
         for water_area_geom in geoms:
             # Find closest point, closest segment, and angle to closest segment
             water_area_point = water_area_geom.representative_point()
-            p, segment_idx, segment_coords_a, segment_coords_b = coastlines_1d.closest_segment(ddd.shape(water_area_point))
+            p, segment_idx, segment_coords_a, segment_coords_b, closest_obj = coastlines_1d.closest_segment(ddd.shape(water_area_point))
             pol = LinearRing([segment_coords_a, segment_coords_b, water_area_point.coords[0]])
 
             if not pol.is_ccw:

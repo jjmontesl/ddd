@@ -97,6 +97,9 @@ class BuildingOSMBuilder():
             logger.warning("Cannot generate building: %s (geom: %s)" % (e, building_2d.geom))
             return None
 
+        # UV Mapping
+        building_3d = ddd.uv.map_cubic(building_3d)
+
         building_3d.extra['building_2d'] = building_2d
 
         self.generate_building_3d_amenities(building_3d)

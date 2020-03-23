@@ -43,6 +43,7 @@ class D1D2D3Bootstrap():
         #exclusive_grp.add_argument('--no-color', action='store_false', dest='color', help='no-color')
 
         # Tasks to run (short, long, area, catalog...) - depends on script (define tasks?)
+        # Workers/ Multiprocess
         # Catalog tasks (common)
         # Overwrite / Fail / Skip task
         # Run only 1 chunk / task

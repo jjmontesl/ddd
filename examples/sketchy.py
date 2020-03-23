@@ -29,12 +29,12 @@ item = urban.sculpture_text("Test")
 items.append(item)
 
 item = urban.trafficlights()
-item = item.rotate([0, 0, (math.pi / 4) - math.pi / 2])
+#item = item.rotate([0, 0, (math.pi / 4) - math.pi / 2])
 items.append(item)
 
 item = urban.fountain()
 items.append(item)
 
-items = ddd.distribute.grid(items)
+items = ddd.align.grid(items)
 items.append(ddd.helper.all())
 items.show()

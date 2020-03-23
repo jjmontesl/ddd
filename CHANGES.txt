@@ -1,5 +1,6 @@
 [0.4.2]
 
+  * Introducing UV mapping (cubic).
   * OSM using catalog and instances for fountains, trees, lamps, traffic lights.
   * Added support for instances.
   * Introduced catalog system.
@@ -29,3 +30,14 @@
   * Using logging API.
   * Added (corrected) setup.py.
   * Refactored ddd_osm into object oriented.
+
+[0.2.0]
+
+  * OSM generation.
+  * Export metadata.
+
+[0.1.0]
+
+  * 2D shapes generation.
+  * 3D extrusion and primitives.
+  * Export to GLB.

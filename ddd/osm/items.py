@@ -161,9 +161,10 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_post_box(self, item_2d):
+
+        logger.info("TODO: move items outside buldings and consider ground too (possibly making ground an area")
         #item_2d = ddd.snap.project(item_2d, self.osm.areas_2d, penetrate=0.5)
-        logger.info("TODO: move items outside buldins and consider ground too (possibly making ground an area")
-        # TODO: move outside buildings, and move ground into areas_2d
+        item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
 
         coords = item_2d.geom.coords[0]
         item_3d = urban.post_box().translate([coords[0], coords[1], 0.0])
@@ -203,9 +204,12 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_bus_stop(self, item_2d):
+        item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-0.5)
         coords = item_2d.geom.coords[0]
         text = item_2d.extra.get("name", None)
-        item_3d = urban.busstop_small(text=text).translate([coords[0], coords[1], 0.0])
+        item_3d = urban.busstop_small(text=text)
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Bus Stop: %s' % item_2d.name
         return item_3d
 
@@ -237,7 +241,7 @@ class ItemsOSMBuilder():
             item_3d = self.osm.catalog.add(key, item_3d)
 
         coords = item_2d.geom.coords[0]
-        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd_angle'] - math.pi / 2])
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Traffic Lights %s' % item_2d.name
         return item_3d

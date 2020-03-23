@@ -57,6 +57,7 @@ def treetop(r=1.75, flatness=0.3, subdivisions=1):
     treetop = ddd.sphere(center=ddd.point([random.uniform(-r * 0.2, r * 0.2), random.uniform(-r * 0.2, r * 0.2), 0]), r=r, subdivisions=subdivisions)
     treetop = treetop.scale([1.0, 1.0, (1.0 - flatness) * random.uniform(0.85, 1.15)])
     treetop = filters.noise_random(treetop, scale=0.25)
+    treetop = ddd.uv.map_spherical(treetop)
     treetop.extra['foliage'] = True
     treetop.name = "Treetop"
     return treetop

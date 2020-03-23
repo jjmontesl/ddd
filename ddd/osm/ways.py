@@ -749,7 +749,7 @@ class WaysOSMBuilder():
         elif barrier == 'wall':
             # TODO: Get height and material from metadata
             width = 0.4
-            material = ddd.mats.brick
+            material = ddd.mats.bricks
             extra_height = 1.8
 
         #elif power == 'line':
@@ -1295,8 +1295,8 @@ class WaysOSMBuilder():
                 connected_2d.children.append(way.extra['way_1d'].extra['intersection_start_2d'])
             if 'intersection_end_2d' in way.extra['way_1d'].extra:
                 connected_2d.children.append(way.extra['way_1d'].extra['intersection_end_2d'])
-            print(connected)
-            print(connected_2d)
+            #print(connected)
+            #print(connected_2d)
 
             sidewalk_2d = sidewalk_2d.subtract(connected_2d).buffer(0.001)
             wall_2d = wall_2d.subtract(connected_2d).buffer(sidewalk_width)
@@ -1564,5 +1564,5 @@ class WaysOSMBuilder():
             # Check type of area point is on
             item.extra['way_2d'] = way_2d
             item.extra['ddd_osm'] = 'way_trafficlights'
-            item.extra['ddd_angle'] = angle
+            item.extra['ddd:angle'] = angle
             self.osm.items_1d.children.append(item)

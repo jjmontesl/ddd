@@ -28,7 +28,6 @@ from shapely.geometry.polygon import orient
 from ddd.ops import extrusion
 from trimesh.transformations import quaternion_from_euler
 from ddd.ops.align import DDDAlign
-from ddd.ops.snap import DDDSnap
 
 
 # Get instance of logger for this module
@@ -479,7 +478,6 @@ class DDDObject2(DDDObject):
         # If other has children, union them too
         objs = self.children
         while len(objs) > 1:
-            #print(objs[0], objs[1])
             newo = objs[0].union().union(objs[1].union())
             objs = objs[2:] + [newo]
         if objs:
@@ -548,33 +546,24 @@ class DDDObject2(DDDObject):
         """
         Return a group of multiple DDD2Objects if the object is a GeometryCollection.
         """
-        #result = self.copy()
-        #result.children = [c.individualize() for c in self.children]
-
-        if self.children:
-            raise NotImplementedError()
+        result = self.copy()
+        result.children = [c.individualize() for c in self.children]
 
         if self.geom and self.geom.type == 'GeometryCollection':
-            expanded = []
+            result.geom = None
             for partialgeom in self.geom.geoms:
                 newobj = self.copy()
                 newobj.geom = partialgeom
-                expanded.append(newobj)
-            result = ddd.group(expanded, empty=2)
-
-            return result
+                result.append(newobj)
 
         elif self.geom and self.geom.type == 'MultiPolygon':
-            expanded = []
+            result.geom = None
             for partialgeom in self.geom.geoms:
                 newobj = self.copy()
                 newobj.geom = partialgeom
-                expanded.append(newobj)
-            result = ddd.group(expanded, empty=2)
-            return result
+                result.append(newobj)
 
-        else:
-            return self.copy()
+        return result
 
     def triangulate(self):
         """
@@ -718,7 +707,7 @@ class DDDObject2(DDDObject):
     def simplify(self, distance):
         result = self.copy()
         if self.geom:
-            result.geom = self.geom.simplify(distance, preserve_topology=True)
+            result.geom = result.geom.simplify(distance, preserve_topology=True)
         result.children = [c.simplify(distance) for c in self.children]
         return result
 
@@ -731,6 +720,17 @@ class DDDObject2(DDDObject):
             if self.geom.contains(pnt):
                 result.append(pnt.coords[0])
 
+        return result
+
+    def linearize(self):
+        """
+        Converts all 2D shapes to Linear objects (LineStrings or LinearRing).
+        It takes exterior polygons when holes are present.
+        """
+        result = self.copy()
+        if self.geom:
+            result.geom = result.geom.exterior if result.geom.type == "Polygon" else result.geom
+        result.children = [c.linearize() for c in self.children]
         return result
 
     def distance(self, other):
@@ -746,6 +746,8 @@ class DDDObject2(DDDObject):
         """
         Returns distance and closest object from object and children to other object.
         Does not support children in "other" geometry.
+
+        @return (closest_object, closest_distance)
         """
         if other.children: raise AssertionError()
 
@@ -754,7 +756,7 @@ class DDDObject2(DDDObject):
 
         if self.geom:
             closest_o = self
-            closest_d = self.distance(other)
+            closest_d = self.geom.distance(other.geom)
 
         for c in self.children:
             c_o, c_d = c.closest(other)
@@ -785,7 +787,6 @@ class DDDObject2(DDDObject):
     def closest_segment(self, other):
         """
         Closest segment in a LineString to other geometry.
-
         Does not support children in "other" geometry.
         """
         closest_self, closest_d = self.closest(other)
@@ -793,7 +794,7 @@ class DDDObject2(DDDObject):
 
         d = closest_self.geom.project(other.geom)
 
-        result = closest_self.interpolate_segment(d)
+        result = (*closest_self.interpolate_segment(d), closest_self)
         #ddd.group([other.buffer(5.0),  ddd.point(result[2]).buffer(5.0).material(ddd.mat_highlight), ddd.line([result[2], result[3]]).buffer(2.0), ddd.point(result[0]).buffer(5.0), closest_self.buffer(0.2)]).show()
         return result
 
@@ -1117,7 +1118,6 @@ class DDDObject3(DDDObject):
             self.mesh = self._process_mesh()
 
         scene.add_geometry(geometry=self.mesh, node_name=encoded_node_name.replace(" ", "_"))
-        #print("%s %s" % (node_name, metadata))
 
         cscenes = []
         if self.children:
@@ -1190,7 +1190,6 @@ class DDDObject3(DDDObject):
                 scene.add_geometry(geometry=cscene, node_name=cscene_name)
                 cscenes.append(cscene)
 
-                #print(cscene.__dict__)
                 #changed = scene.graph.transforms.add_edge(node_name, cscene_name)
 
         #matrix = np.eye(4)
@@ -1306,11 +1305,17 @@ ddd = D1D2D3
 from ddd.materials.materials import MaterialsCollection
 from ddd.pack.mats.defaultmats import DefaultMaterials
 ddd.mats = MaterialsCollection()
-ddd.mats.mat_highlight = D1D2D3.material(color='#ff00ff')
+ddd.mats.highlight = D1D2D3.material(color='#ff00ff')
 ddd.mats.load_from(DefaultMaterials())
 
-align = DDDAlign()
+ddd.align = DDDAlign()
+
+from ddd.ops.snap import DDDSnap
 ddd.snap = DDDSnap()
+
+from ddd.ops.uvmapping import DDDUVMapping
+ddd.uv = DDDUVMapping()
+
 
 from ddd.ops.helper import DDDHelper
 ddd.helper = DDDHelper()

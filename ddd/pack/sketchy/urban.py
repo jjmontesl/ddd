@@ -20,6 +20,7 @@ def post(height=2.00, r=0.075, top=None, mat_post=None):
     """
     col = ddd.point([0, 0]).buffer(r, resolution=0, cap_style=ddd.CAP_SQUARE).extrude(height)
     if mat_post: col = col.material(mat_post)
+    col = ddd.uv.map_cylindrical(col)
     if top:
         top = top.translate([0, 0, height])
         col = ddd.group([col, top])
@@ -36,6 +37,7 @@ def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=
     line = line.line_to([side * arm_length, height])
     post = line.buffer(r, cap_style=ddd.CAP_FLAT).extrude(r * 2, center=True)
     post = post.rotate([math.pi / 2.0, 0, 0]).material(ddd.mats.metal_paint_green)
+    post = ddd.uv.map_cubic(post)
     post.name = "Post Curved"
 
     items = []
@@ -121,6 +123,7 @@ def sign_pharmacy(size=1.0, depth=0.3):
     sign = sign.extrude(depth)
     sign = sign.rotate([math.pi / 2.0, 0, 0])
     sign = sign.material(ddd.material(color='#00ff00'))
+    sign = ddd.uv.map_cubic(sign)
     sign.name = "Pharmacy Sign"
     return sign
 
@@ -134,6 +137,7 @@ def sign_pharmacy_side(size=1.0, depth=0.3, arm_length=1.0):
     arm = ddd.rect([-arm_thick / 2, -arm_thick / 2, arm_thick / 2, arm_thick / 2]).extrude(arm_length)
     arm = arm.rotate([math.pi / 2.0, 0, 0])
     arm = arm.material(ddd.material(color='#888888'))
+    arm = ddd.uv.map_cubic(arm)
     sign = sign.rotate([0, 0, -math.pi / 2.0]).translate([depth / 2, 0, 0])
     sign = sign.translate([0, -(arm_length + size * 0.66), 0])
     return ddd.group([sign, arm], name="Pharmacy Side Sign with Arm")
@@ -146,6 +150,7 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, texture=None):
     panel = ddd.rect([-width / 2.0, -height / 2.0, width / 2.0, height / 2.0]).extrude(depth)
     panel = panel.rotate([math.pi / 2.0, 0, 0])
     panel = panel.material(ddd.material(color='#f0f0ff'))
+    panel = ddd.uv.map_cubic(panel)
     panel.name = "Panel"
 
     if text:
@@ -177,6 +182,7 @@ def post_box(height=1.10, r=0.35):
     obj = obj.extrude_step(circle.scale([1.0, 1.0, 1]), 0.10)
     obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), 0.05)
     obj = obj.material(ddd.mats.metal_paint_yellow)
+    obj = ddd.uv.map_cylindrical(obj)
     obj.name = "Post Box"
     logger.warn("Post Box collider should be a cylinder.")
     return obj
@@ -190,11 +196,13 @@ def sculpture(d=1.0, height=4.0):
     An urban sculpture, sitting centered on the XY plane.
     """
     pedestal = ddd.cube(d=d / 2.0)
+    pedestal = ddd.uv.map_cubic(pedestal)
 
     item = ddd.sphere(r=1, subdivisions=2)
     item = item.scale([d, d, height / 2])
     item = filters.noise_random(item, scale=0.50)
     item = item.translate([0, 0, height / 2 + d])
+    item = ddd.uv.map_spherical(item)
 
     item = ddd.group([pedestal, item], name="Urban sculpture")
 
@@ -225,10 +233,13 @@ def sculpture_text(text, d=1.0, height=4.0):
 def fountain(r=1.5):
     # Base
     base = ddd.disc(r=r, resolution=2).extrude(0.30).material(ddd.mats.stone)
+    base = ddd.uv.map_cylindrical(base)
+
     # Fountain
     fountain = ddd.sphere(r=r, subdivisions=1).subtract(ddd.cube(d=r * 1.2)).subtract(ddd.sphere(r=r - 0.2, subdivisions=1))
     fountain = fountain.translate([0, 0, 1.2])  # TODO: align
     fountain = fountain.material(ddd.mats.stone)
+    fountain = ddd.uv.map_spherical(fountain)
     #.subtract(base)
     # Water
     water = ddd.disc(r=r-0.2, resolution=2).triangulate().translate([0, 0, 1.1]).material(ddd.mats.water)
@@ -251,6 +262,7 @@ def religion_cross(width=1, height=1.5):
 
 def column(r=0.1, height=2.0, top=None):
     col = ddd.point([0, 0]).buffer(r, resolution =1).extrude(height)
+    col = ddd.uv.map_cubic(col)
     if top:
         top = top.translate([0, 0, height])
         col = ddd.group([col, top])
