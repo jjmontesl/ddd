@@ -46,6 +46,7 @@ class ItemsOSMBuilder():
         item.extra['feature'] = feature
         item.extra['name'] = feature['properties'].get('name', None)
         item.extra['amenity'] = feature['properties'].get('amenity', None)
+        item.extra['barrier'] = feature['properties'].get('barrier', None)
         item.extra['natural'] = feature['properties'].get('natural', None)
         item.extra['tourism'] = feature['properties'].get('tourism', None)
         item.extra['highway'] = feature['properties'].get('highway', None)
@@ -65,8 +66,6 @@ class ItemsOSMBuilder():
             if item_3d:
                 item_3d.name = item_3d.name if item_3d.name else item_2d.name
                 logger.debug("Generated item: %s", item_3d)
-                # FIXME: This shuld not be done here, but by each element (some are snapped at their center, some min_vertex...)
-                item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
                 self.osm.items_3d.children.append(item_3d)
 
         # FIXME: Do not alter every vertex, move the entire object instead
@@ -109,6 +108,11 @@ class ItemsOSMBuilder():
         elif item_2d.extra.get('power', None) == 'tower':
             item_3d = self.generate_item_3d_powertower(item_2d)
 
+        elif item_2d.extra.get('barrier', None) == 'fence':
+            item_3d = self.generate_item_3d_fence(item_2d)
+        elif item_2d.extra.get('barrier', None) == 'hedge':
+            item_3d = self.generate_item_3d_hedge(item_2d)
+
         elif item_2d.extra.get('ddd_osm', None) == 'way_lamppost':
             item_3d = self.generate_item_3d_lamppost(item_2d)
         elif item_2d.extra.get('ddd_osm', None) == 'way_trafficlights':
@@ -116,6 +120,14 @@ class ItemsOSMBuilder():
 
         else:
             logger.debug("Unknown item: %s", item_2d.extra)
+
+        # FIXME: This shuld not be done here, but by each element (some are snapped at their center, some min_vertex...)
+        if item_3d:
+            height_mapping = item_3d.extra.get('_height_mapping', 'terrain_geotiff_min_elevation_apply')
+            if height_mapping == 'terrain_geotiff_elevation_apply':
+                item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
+            else:
+                item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
 
         return item_3d
 
@@ -199,7 +211,6 @@ class ItemsOSMBuilder():
     def generate_item_3d_lighthouse(self, item_2d):
         coords = item_2d.geom.coords[0]
         item_3d = landscape.lighthouse().translate([coords[0], coords[1], 0.0])
-        item_3d = item_3d.material(ddd.mats.stone)  # mat_bronze
         item_3d.name = 'Lighthouse: %s' % item_2d.name
         return item_3d
 
@@ -217,6 +228,39 @@ class ItemsOSMBuilder():
         coords = item_2d.geom.coords[0]
         item_3d = landscape.powertower(18).translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Power Tower: %s' % item_2d.name
+        return item_3d
+
+    def generate_item_3d_fence(self, item_2d):
+        """
+        Expects a line.
+        """
+        height = item_2d.extra['ddd:item:height']
+        item_3d = item_2d.extrude(height)
+        item_3d = ddd.uv.map_cubic(item_3d)
+        item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
+        item_3d.name = 'Fence: %s' % item_2d.name
+
+        if True:
+            topbar = item_2d.buffer(0.1).extrude(0.1).material(ddd.mats.bronze)
+            topbar = topbar.translate([0, 0, height])
+            topbar = ddd.uv.map_cubic(item_3d)
+            item_3d = ddd.group3([item_3d, topbar])
+
+        return item_3d
+
+    def generate_item_3d_hedge(self, item_2d):
+        """
+        Expects a line.
+        """
+        height = item_2d.extra['ddd:item:height']
+        width = item_2d.extra['ddd:width']
+        profile = item_2d.buffer(width - 0.2)
+        item_3d = profile.extrude_step(profile.buffer(0.2), 0.4)
+        item_3d = item_3d.extrude_step(profile.buffer(0.2), height - 0.6)
+        item_3d = item_3d.extrude_step(profile, 0.2)
+        item_3d = ddd.uv.map_cubic(item_3d)
+        item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
+        item_3d.name = 'Hedge: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_lamppost(self, item_2d):

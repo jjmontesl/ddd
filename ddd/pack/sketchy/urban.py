@@ -5,7 +5,7 @@
 import math
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import filters
+from ddd.ops import filters
 import logging
 from ddd.text import fonts
 
@@ -200,7 +200,8 @@ def sculpture(d=1.0, height=4.0):
 
     item = ddd.sphere(r=1, subdivisions=2)
     item = item.scale([d, d, height / 2])
-    item = filters.noise_random(item, scale=0.50)
+    item = filters.noise_random(item, scale=0.2)
+    item = ddd.uv.map_spherical(item)
     item = item.translate([0, 0, height / 2 + d])
     item = ddd.uv.map_spherical(item)
 
@@ -213,6 +214,7 @@ def sculpture_text(text, d=1.0, height=4.0):
     An urban sculpture, sitting centered on the XY plane.
     """
     pedestal = ddd.cube(d=d / 2.0)
+    pedestal = ddd.uv.map_cubic(pedestal)
 
     logger.debug("Generating text for: %s", text)
     item = fonts.text(text)
@@ -224,6 +226,7 @@ def sculpture_text(text, d=1.0, height=4.0):
     item = item.translate([-0.25, 0.25, 0.0])
     item = item.scale([d, d, height - d])
     item = item.translate([0, 0, height / 2 + d])
+    item = ddd.uv.map_cubic(item)
 
     item = ddd.group([pedestal, item], name="Urban sculpture")
 
@@ -243,6 +246,7 @@ def fountain(r=1.5):
     #.subtract(base)
     # Water
     water = ddd.disc(r=r-0.2, resolution=2).triangulate().translate([0, 0, 1.1]).material(ddd.mats.water)
+    water.extra['ddd:collider'] = False
 
     item = ddd.group([base, fountain, water])
     return item

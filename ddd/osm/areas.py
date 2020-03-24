@@ -95,8 +95,15 @@ class AreasOSMBuilder():
             lm1a = self.osm.ways_2d['-1a'].union()
             #l0a = self.osm.ways_2d['0a'].union()  # shall be trimmed  # added to avoid height conflicts but leaves holes
             c = self.osm.areas_2d.union()
-            union = ddd.group([c, l0, lm1a]).union()
-            #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], self.osm.areas_2d]).union()
+            try:
+                eps = 0.01
+                union = ddd.group2([c, l0, lm1a])
+                union = union.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
+                union = union.union()
+            except TopologicalError as e:
+                logger.error("Error calculating interways (2): %s", e)
+                union = ddd.group2()
+                #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], self.osm.areas_2d]).union()
 
         #union = union.buffer(0.5)
         #union = union.buffer(-0.5)
@@ -172,7 +179,7 @@ class AreasOSMBuilder():
         wall = area.subtract(new_area).material(ddd.mats.bricks)
         wall.extra['ddd:height'] = 1.8
         #ddd.uv.map_2d_polygon(wall, area.linearize())
-        area = ddd.group2([area, wall])
+        area = ddd.group2([new_area, wall])
 
         return area
 
@@ -316,7 +323,7 @@ class AreasOSMBuilder():
         #terr.save("/tmp/test.svg")
         #terr = terr.triangulate()
         try:
-            terr = terr.buffer(0.001)
+            #terr = terr.buffer(0.001)
             terr = terr.extrude(0.3)
         except ValueError as e:
             logger.error("Cannot generate terrain (FIXME): %s", e)

@@ -33,11 +33,11 @@ class DefaultMaterials(MaterialsCollection):
         self.terrain = ddd.material(name="Ground", color='#e6821e')
 
         self.park = ddd.material(name="Park", color='#1db345')
-        self.pitch = ddd.material(color='#196118')
+        self.pitch = ddd.material(name="Pitch", color='#196118')
 
         # Structural / building materials
-        self.bronze = ddd.material(color='#f0cb11')
-        self.steel = ddd.material(color='#78839c')
+        self.bronze = ddd.material(name="Bronze", color='#f0cb11')
+        self.steel = ddd.material(name="Steel", color='#78839c')
 
         self.stone = ddd.material(name="Stone", color='#9c9378')
         self.cement = ddd.material(name="Concrete", color='#b8b8a0')
@@ -45,7 +45,6 @@ class DefaultMaterials(MaterialsCollection):
 
         self.wood = ddd.material(color='#efae85')
 
-        self.railing = ddd.material(color='#181010')
 
         # Painted materials
         self.metal_paint_red = ddd.material("PaintRed", color='#d01010')
@@ -59,12 +58,13 @@ class DefaultMaterials(MaterialsCollection):
         self.light_red = ddd.material(color='#ff0000')
 
         # Trees
-        self.bark = ddd.material(color='#df9e75')
+        self.bark = ddd.material(name="Bark", color='#df9e75')
         self.treetop = ddd.material(name="Treetop", color='#1da345')
 
         # Urban props materials
         self.lightbulb = ddd.material(color='e8e0e4')
-        self.railing = ddd.material(color='282024')
+        self.fence = ddd.material(name="Fence", color='282024')
+        self.railing = ddd.material(name="Fence", color='282024')
 
         # Buildings
         self.building_1 = ddd.material(color='#f7f0be')

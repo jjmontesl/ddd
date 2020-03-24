@@ -15,7 +15,7 @@ from trimesh import creation, primitives, boolean, transformations
 import trimesh
 from trimesh.base import Trimesh
 from trimesh.path import segments
-from trimesh.path.path import Path
+from trimesh.path.path import Path, Path3D, Path2D
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial, PBRMaterial
 from trimesh.scene.transforms import TransformForest
@@ -28,6 +28,7 @@ from shapely.geometry.polygon import orient
 from ddd.ops import extrusion
 from trimesh.transformations import quaternion_from_euler
 from ddd.ops.align import DDDAlign
+from trimesh.path.entities import Line
 
 
 # Get instance of logger for this module
@@ -666,6 +667,17 @@ class DDDObject2(DDDObject):
                     result = result.translate([0, 0, -height / 2])
                 elif height < 0:
                     result = result.translate([0, 0, height])
+            elif not self.geom.is_empty and self.geom.type == 'LineString':
+                coords_a = list(self.geom.coords)
+                coords_b = list(self.geom.coords)
+                mesh = extrusion.extrude_coords(coords_a, coords_b, abs(height))
+                mesh2 = extrusion.extrude_coords(list(reversed(coords_a)), list(reversed(coords_b)), abs(height))
+
+                offset = len(list(mesh.vertices))
+                mesh.vertices = list(mesh.vertices) + list(mesh2.vertices)
+                mesh.faces = list(mesh.faces) + [(f[0] + offset, f[1] + offset, f[2] + offset) for f in mesh2.faces]
+
+                result = DDDObject3(mesh=mesh)
             else:
                 #logger.warn("Cannot extrude (empty polygon)")
                 result = DDDObject3()

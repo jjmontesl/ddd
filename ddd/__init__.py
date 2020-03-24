@@ -1,3 +1,3 @@
 #
 
-APP_VERSION = '0.4.2-devel'
+APP_VERSION = '0.4.3-devel'

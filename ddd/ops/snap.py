@@ -23,15 +23,18 @@ class DDDSnap():
         dirvec_l = math.sqrt(dirvec_d[0] ** 2 + dirvec_d[1] ** 2)
         dirvec = [dirvec_d[0] / dirvec_l, dirvec_d[1] / dirvec_l]
 
+        # Find side (TODO: for linear -not rings- there is no winding direction)
+        exterior = 1
+        pol = LinearRing([segment_coords_a[:2], segment_coords_b[:2], (point.geom.coords[0][0], point.geom.coords[0][1], 0)])
+        if pol.is_ccw == closest_obj.geom.is_ccw: exterior = -1
+
         if penetrate:
-            # Find side (TODO: for linear -not rings- there is no winding direction)
-            pol = LinearRing([segment_coords_a[:2], segment_coords_b[:2], (point.geom.coords[0][0], point.geom.coords[0][1], 0)])
-            if pol.is_ccw == closest_obj.geom.is_ccw: penetrate = penetrate * -1
-            coords_p = [coords_p[0] + dirvec[0] * penetrate, coords_p[1] + dirvec[1] * penetrate]
+
+            coords_p = [coords_p[0] + dirvec[0] * penetrate, coords_p[1] + dirvec[1] * penetrate * exterior]
 
         result = point.copy()
         result.geom.coords = coords_p
-        result.extra['ddd:angle'] = math.atan2(dirvec[1], dirvec[0])
+        result.extra['ddd:angle'] = math.atan2(dirvec[1], dirvec[0]) + (math.pi if exterior < 0 else 0)
 
         return result
 

@@ -6,7 +6,7 @@ import math
 import random
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import filters
+from ddd.ops import filters
 
 
 #def log(height=3.60, r=0.05):
@@ -16,6 +16,7 @@ def trunk(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_s
 
     # Create trunk part
     section = ddd.point([0, 0, 0]).buffer(r, resolution=2).extrude(height * fork_height_ratio)
+    section = ddd.uv.map_cylindrical(section)
     if material is not None: section = section.material(material)
 
     branches = []

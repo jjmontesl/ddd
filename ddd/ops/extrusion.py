@@ -102,7 +102,7 @@ def extrude_step(obj, shape, offset, cap=True):
     return result
 
 
-def extrude_between_geoms(geom_a, geom_b, offset, _base_height):
+def extrude_between_geoms(geom_a, geom_b, offset, base_height):
 
     # Ensure winding
     if (geom_a.type == "Polygon" and geom_b.type == "Polygon"):
@@ -122,14 +122,18 @@ def extrude_between_geoms(geom_a, geom_b, offset, _base_height):
         if dist < closest_dist:
             closest_idx = idx
             closest_dist = dist
-    if closest_idx != 0:
-        print("Closest Idx: %s" % closest_idx)
+    #if closest_idx != 0: print("Closest Idx: %s" % closest_idx)
     coords_b = coords_b[closest_idx:] + coords_b[:closest_idx]
 
+    coords_a = coords_a[:] + [coords_a[0]]
+    coords_b = coords_b[:] + [coords_b[0]]
+    return extrude_coords(coords_a, coords_b, offset, base_height)
+
+    '''
     vertices = []
-    vertices.extend([(x, y, _base_height) for x, y, *z in coords_a])
+    vertices.extend([(x, y, base_height) for x, y, *z in coords_a])
     vertices_b_idx = len(vertices)
-    vertices.extend([(x, y, _base_height + offset) for x, y, *z in coords_b])
+    vertices.extend([(x, y, base_height + offset) for x, y, *z in coords_b])
 
     shape_a_idx = 0
     shape_b_idx = 0
@@ -179,3 +183,78 @@ def extrude_between_geoms(geom_a, geom_b, offset, _base_height):
             finished_b = True
 
     return Trimesh(vertices, faces)
+    '''
+
+
+def extrude_coords(coords_a, coords_b, distance, base_height=0):
+
+    '''
+    closest_idx = 0
+    closest_dist = float("inf")
+    for idx, v in enumerate(coords_b):
+        dist = ((v[0] - coords_a[0][0]) ** 2) + ((v[1] - coords_a[0][1]) ** 2)
+        if dist < closest_dist:
+            closest_idx = idx
+            closest_dist = dist
+    if closest_idx != 0:
+        print("Closest Idx: %s" % closest_idx)
+    coords_b = coords_b[closest_idx:] + coords_b[:closest_idx]
+    '''
+
+    vertices = []
+    vertices.extend([(x, y, base_height) for x, y, *z in coords_a])
+    vertices_b_idx = len(vertices)
+    vertices.extend([(x, y, base_height + distance) for x, y, *z in coords_b])
+
+    shape_a_idx = 0
+    shape_b_idx = 0
+
+    def va(shape_a_idx): return vertices[shape_a_idx]
+    def vb(shape_b_idx): return vertices[(shape_b_idx) + vertices_b_idx]
+    def ang(v): return (math.atan2(v[1], v[0]) + (math.pi * 2)) % (math.pi * 2)
+    def diff(va, vb): return  [va[0] - vb[0], va[1] - vb[1], va[2] - vb[2]]
+    def distsqr(v): return v[0] * v[0] + v[1] * v[1] + v[2] * v[2]
+
+    faces = []
+    finished_a = False
+    finished_b = False
+    last_tri = None
+    while not (finished_a and finished_b):
+
+        la = distsqr(diff(va(shape_a_idx + 1), vb(shape_b_idx))) if (shape_a_idx < len(coords_a) - 1) else float("inf")
+        lb = distsqr(diff(vb(shape_b_idx + 1), va(shape_a_idx))) if (shape_b_idx < len(coords_b) - 1) else float("inf")
+        aa = ang(va(shape_a_idx))
+        aan = ang(va(shape_a_idx + 1)) if (shape_a_idx < len(coords_a) - 1) else float("inf")
+        ab = ang(vb(shape_b_idx))
+        abn = ang(vb(shape_b_idx + 1)) if (shape_b_idx < len(coords_b) - 1) else float("inf")
+
+        norm = 'l2'
+        if norm == 'angle':
+            advance_b = (abs(abn - aa) < abs(aan - ab))
+        elif norm == 'l2':
+            advance_b = lb < la
+
+        if advance_b or finished_a:
+            ntri = [shape_a_idx, shape_b_idx + vertices_b_idx, (shape_b_idx + 1) + vertices_b_idx]
+            shape_b_idx +=1
+        elif not advance_b or finished_b:
+            ntri = [shape_a_idx, shape_b_idx + vertices_b_idx, (shape_a_idx + 1)]
+            shape_a_idx +=1
+        else:
+            raise AssertionError()
+
+        if last_tri == ntri: break
+
+        faces.append(ntri)
+        last_tri = ntri
+        #print(ntri)
+
+        if shape_a_idx >= len(coords_a) - 1:
+            finished_a = True
+        if shape_b_idx >= len(coords_b) - 1:
+            finished_b = True
+
+    #print(vertices)
+    #print(faces)
+    return Trimesh(vertices, faces)
+

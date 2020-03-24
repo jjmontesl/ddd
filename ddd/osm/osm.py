@@ -119,11 +119,11 @@ class OSMBuilder():
         self.osm_proj = osm_proj
         self.ddd_proj = ddd_proj
 
-        self.items_1d = DDDObject2(name="Items 1D")  # Point items
-        self.items_2d = DDDObject2(name="Items 2D")  # Area items
-        self.items_3d = DDDObject3(name="Items")
+        self.items_1d = ddd.group2(name="Items 1D")  # Point items
+        self.items_2d = ddd.group2(name="Items 2D")  # Area items
+        self.items_3d = ddd.group3(name="Items")
 
-        self.ways_1d = None
+        self.ways_1d = ddd.group2(name="Ways 1D")  # Line items
         self.ways_2d = defaultdict(DDDObject2)
         self.ways_3d = defaultdict(DDDObject3)
 

@@ -78,15 +78,14 @@ class WaysOSMBuilder():
 
         # Generate paths
         logger.info("Generating 1D way path objects.")
-        ways = []
         for feature in self.osm.features:
             if feature['geometry']['type'] != 'LineString': continue
             way = self.generate_way_1d(feature)
-            if way:
+            if way and not way.extra['ddd:item']:
                 way.extra['connections'] = []
-                ways.append(way)
-
-        self.osm.ways_1d = ddd.group(ways, empty=2)
+                self.osm.ways_1d.append(way)
+            elif way and way.extra['ddd:item']:
+                self.osm.items_1d.append(way)
 
         # Splitting
         logger.info("Ways before splitting mid connections: %d", len(self.osm.ways_1d.children))
@@ -602,7 +601,7 @@ class WaysOSMBuilder():
         path = ddd.shape(feature['geometry'])
         #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
 
-        name = "Way: %s" % (feature['properties'].get('name', feature['properties'].get('id')))
+        name = "Way %s" % (feature['properties'].get('name', feature['properties'].get('id')))
         width = None  # if not set will be discarded
         material = ddd.mats.asphalt
         extra_height = 0.0
@@ -612,6 +611,8 @@ class WaysOSMBuilder():
         roadlines = False
 
         layer = None
+
+        create_as_item = False
 
         if highway == "motorway":
             lanes = 2.6
@@ -666,12 +667,12 @@ class WaysOSMBuilder():
         elif highway in ("footway", "path", "track"):
             lanes = 0.6
             material = ddd.mats.dirt
-            extra_height = 0.2
+            #extra_height = 0.2
             width = (lanes * 3.30)
         elif highway in ("steps", "stairs"):
             lanes = 0.6
             material = ddd.mats.pathwalk
-            extra_height = 0.2
+            extra_height = 0.2  # 0.2 allows easy car driving
             width = (lanes * 3.30)
         elif highway == "pedestrian":
             lanes = 2.0
@@ -723,16 +724,19 @@ class WaysOSMBuilder():
             material = ddd.mats.stone
             extra_height = 3.5
 
-        # Fixme: do a proper hedge, do not use ways/areas for everything
         elif barrier == 'hedge':
             width = 0.6
+            lanes = None
             material = ddd.mats.treetop
             extra_height = 1.2
+            create_as_item = True
 
         elif barrier == 'fence':
-            width = 0.1
-            material = ddd.mats.railing
+            width = 0.05
+            lanes = None
+            material = ddd.mats.fence
             extra_height = 1.2
+            create_as_item = True
 
         elif barrier == 'kerb':
             logger.debug("Ignoring kerb")
@@ -799,8 +803,11 @@ class WaysOSMBuilder():
         path.extra['extra_height'] = extra_height
         path.extra['ddd_lamps'] = lamps
         path.extra['ddd_trafficlights'] = trafficlights
-        path.extra['ddd:roadlines'] = roadlines
+        path.extra['ddd:width'] = width
+        path.extra['ddd:roadlines'] = roadlines  # should be ddd:road:roadlines ?
         path.extra['ddd:way:weight'] = self.road_weight(feature)
+        path.extra['ddd:item'] = create_as_item
+        path.extra['ddd:item:height'] = extra_height
         #print(feature['properties'].get("name", None))
 
         return path
@@ -1187,8 +1194,10 @@ class WaysOSMBuilder():
                 extra_height = way_2d.extra['extra_height']
                 if extra_height:
                     way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
+                    way_3d = ddd.uv.map_cubic(way_3d)
                 else:
                     way_3d = way_2d.triangulate()  # + layer_height
+                    way_3d = ddd.uv.map_cubic(way_3d)
                 way_3d = terrain.terrain_geotiff_elevation_apply(way_3d, self.osm.ddd_proj)
                 way_3d.extra['way_2d'] = way_2d
                 if way_2d.extra['natural'] == "coastline": way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
