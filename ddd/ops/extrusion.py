@@ -48,7 +48,7 @@ def extrude_step(obj, shape, offset, cap=True):
     result = obj.copy()
 
     if geom_a.is_empty:
-        logger.warn("Should be extruding from point or line, ignoring and returning argument.")
+        logger.debug("Should be extruding from point or line, ignoring and returning argument.")
         # Previous step was empty, avoid destroy the object
         # TODO: this can be improved, previous could be point or line
         return result
@@ -56,7 +56,7 @@ def extrude_step(obj, shape, offset, cap=True):
         logger.warn("Cannot extrude a step from a 'MultiPolygon' or 'GeometryCollection'.")
         return result
     if geom_b.is_empty:
-        logger.warn("Extruding to point (should be using line too).")
+        logger.debug("Extruding to point (should be using line too).")
         geom_b = geom_a.centroid
 
     vertices = list(result.mesh.vertices) if result.mesh else []

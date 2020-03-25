@@ -15,7 +15,8 @@ from ddd.ops import filters
 def trunk(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_scale=0.8, fork_spawn=3, fork_iters=2, fork_level=0, leave_callback=None, material=None):
 
     # Create trunk part
-    section = ddd.point([0, 0, 0]).buffer(r, resolution=2).extrude(height * fork_height_ratio)
+    #section = ddd.point([0, 0, 0]).buffer(r, cap_style=ddd.CAP_ROUND, resolution=1).extrude(height * fork_height_ratio)
+    section = ddd.regularpolygon(sides=5, r=r).extrude(height * fork_height_ratio)
     section = ddd.uv.map_cylindrical(section)
     if material is not None: section = section.material(material)
 

@@ -81,6 +81,8 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_bench(item_2d)
         elif item_2d.extra.get('amenity', None) == 'post_box':
             item_3d = self.generate_item_3d_post_box(item_2d)
+        #elif item_2d.extra.get('amenity', None) == 'taxi':
+        #    item_3d = self.generate_item_3d_taxi(item_2d)
 
         elif item_2d.extra.get('natural', None) == 'tree':
             self.tree_decimate_idx += 1
@@ -184,6 +186,14 @@ class ItemsOSMBuilder():
         item_3d.name = 'Postbox (%s): %s' % (operator, item_2d.name)
         return item_3d
 
+    def generate_item_3d_taxi(self, item_2d):
+        #item_2d = ddd.snap.project(item_2d, self.osm.areas_2d, penetrate=0.5)
+        item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
+        coords = item_2d.geom.coords[0]
+        item_3d = urban.trafficsign_sign_rect(signtype="info", icon="i", text="TAXI").translate([coords[0], coords[1], 0.0])
+        item_3d.name = 'Taxi Stop: %s' % (item_2d.name)
+        return item_3d
+
     def generate_item_3d_sculpture(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
@@ -237,14 +247,15 @@ class ItemsOSMBuilder():
         height = item_2d.extra['ddd:item:height']
         item_3d = item_2d.extrude(height)
         item_3d = ddd.uv.map_cubic(item_3d)
-        item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
-        item_3d.name = 'Fence: %s' % item_2d.name
 
         if True:
             topbar = item_2d.buffer(0.1).extrude(0.1).material(ddd.mats.bronze)
             topbar = topbar.translate([0, 0, height])
-            topbar = ddd.uv.map_cubic(item_3d)
+            topbar = ddd.uv.map_cubic(topbar)
             item_3d = ddd.group3([item_3d, topbar])
+
+        item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
+        item_3d.name = 'Fence: %s' % item_2d.name
 
         return item_3d
 

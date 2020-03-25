@@ -25,6 +25,9 @@ items.append(item)
 item = urban.bench()
 items.append(item)
 
+item = urban.sculpture()
+items.append(item)
+
 item = urban.sculpture_text("Test")
 items.append(item)
 
@@ -34,6 +37,16 @@ items.append(item)
 
 item = urban.fountain()
 items.append(item)
+
+item = urban.wayside_cross()
+items.append(item)
+
+item = urban.trash_bin()
+items.append(item)
+
+item = urban.trash_bin_post()
+items.append(item)
+item.show()
 
 items = ddd.align.grid(items)
 items.append(ddd.helper.all())

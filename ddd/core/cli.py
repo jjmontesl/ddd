@@ -5,6 +5,11 @@ import logging
 import os
 import sys
 import argparse
+from abc import abstractstaticmethod
+
+
+# Get instance of logger for this module
+logger = logging.getLogger(__name__)
 
 
 class D1D2D3Bootstrap():
@@ -12,24 +17,29 @@ class D1D2D3Bootstrap():
     def __init__(self):
         self.debug = True
 
-    def initialize_logging(self):
+    @staticmethod
+    def initialize_logging(debug=False):
 
-        default_level = logging.INFO if not self.debug else logging.DEBUG
+        default_level = logging.INFO if not debug else logging.DEBUG
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=default_level)
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
 
-        if self.debug:
+        if debug:
             logging.basicConfig(format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', level=default_level)
             #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
         else:
             #logging.basicConfig(format='%(asctime)s %(message)s', level=default_level)
-            logging.basicConfig(format='%(message)s', level=default_level)
-
+            logging.basicConfig(format='%(asctime)s  %(message)s', level=default_level)
 
         #warnings.filterwarnings(action='ignore',module='.*paramiko.*')
+        logging.getLogger("trimesh").setLevel(logging.INFO)
         logging.getLogger('paramiko.transport').setLevel(logging.WARN)
         logging.getLogger('invoke').setLevel(logging.WARN)
+
+        logger.info("DDD logging initialized.")
+        logger.debug("DDD debug logging enabled.")
+
 
     def parse_args(self, st):
 
@@ -51,7 +61,7 @@ class D1D2D3Bootstrap():
         # Timings
         # Exoort instance-markers and/or instance-geometry by default
 
-        parser.add_argument("script", nargs='?', default=None, help="script to run")
+        parser.add_argument("script", help="script to run")
         #parser.add_argument("rest", nargs='*')
 
         args, unknown = parser.parse_known_args()  # sys.argv[1:]
@@ -59,25 +69,25 @@ class D1D2D3Bootstrap():
         self.debug = args.debug
         self.script = args.script
 
-        command = command_class(st.ctx)
-        command.parse_args(unknown)
-
     def run(self):
-        pass
+        #data =
+        #compiled = compile()
+        script_abspath = os.path.abspath(self.script)
+        script_dirpath = os.path.dirname(script_abspath)
+        logger.info("Running %s", script_abspath)
 
-    def main(self):
-        pass
+        sys.path.append(script_dirpath)
+        __import__(self.script[:-3])
+
+
+def main():
+    ddd_bootstrap = D1D2D3Bootstrap()
+    ddd_bootstrap.parse_args(sys.argv)
+    D1D2D3Bootstrap.initialize_logging(debug=ddd_bootstrap.debug)
+    ddd_bootstrap.run()
 
 
 if __name__ == "__main__":
-    # Run
+    main()
 
-    ddd_bootstrap = D1D2D3Bootstrap()
 
-    ddd_bootstrap.parse_args()
-
-    ddd_bootstrap.initialize_logging()
-
-    ddd_bootstrap.main()
-
-    return 0

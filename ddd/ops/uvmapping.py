@@ -8,6 +8,12 @@ import numpy as np
 from shapely.geometry.polygon import LinearRing
 
 from ddd.ddd import ddd
+import logging
+
+
+# Get instance of logger for this module
+logger = logging.getLogger(__name__)
+
 
 class DDDUVMapping():
 
@@ -24,6 +30,12 @@ class DDDUVMapping():
     def map_cubic(self, obj):
         result = obj.copy()
         if result.mesh:
+
+            # Avoid remapping
+            if  result.extra.get('uv', None):
+                logger.error("Object already has UV coordinates: %s", result)
+                raise AssertionError()
+
             result.extra['uv'] = [None for idx, v in enumerate(result.mesh.vertices)]
             for face in result.mesh.faces:
                 v1 = result.mesh.vertices[face[1]] - result.mesh.vertices[face[0]]
@@ -103,22 +115,27 @@ def map_3d_from_2d(obj_3d, obj_2d):
     """
 
     def uv_apply_func(x, y, z, idx):
-        # Find nearest point in shape, and return its height
-        closest_uv = obj_2d.extra['uv'][0]
+        # Find nearest point in shape (or children), and return its height
+        closest_o, closest_d = obj_2d.closest(ddd.point([x, y]))
+        closest_uv = None
         closest_distsqr = float('inf')
-        for idx, v in enumerate(obj_2d.geom.exterior.coords):
-            point_2d = [v[0], v[1], 0]
-            diff = [point_2d[0] - x, point_2d[1] - y]
-            distsqr = (diff[0] ** 2) + (diff[1] ** 2)
-            if (distsqr < closest_distsqr):
-                closest_uv = obj_2d.extra['uv'][idx]
-                closest_distsqr = distsqr
-        #print (closest_uv)
+        if closest_o.extra.get('uv', None):
+            for idx, v in enumerate(closest_o.geom.exterior.coords):
+                point_2d = [v[0], v[1], 0]
+                diff = [point_2d[0] - x, point_2d[1] - y]
+                distsqr = (diff[0] ** 2) + (diff[1] ** 2)
+                if (distsqr < closest_distsqr):
+                    closest_uv = closest_o.extra['uv'][idx]
+                    closest_distsqr = distsqr
+
+        if closest_uv is None:
+            logger.error("Error mapping 3D from 2D (3d=%s, 2d=%s %s %s)", obj_3d, obj_2d, obj_2d.geom, [x.geom for x in obj_2d.children])
+            raise AssertionError()
         return closest_uv
 
     result = obj_3d
-    if obj_3d.mesh:
-        result.extra['uv'] = [uv_apply_func(v[0], v[1], v[2], idx) for idx, v in enumerate(obj_3d.mesh.vertices)]
+    if result.mesh:
+        result.extra['uv'] = [uv_apply_func(v[0], v[1], v[2], idx) for idx, v in enumerate(result.mesh.vertices)]
     result.children = [map_3d_from_2d(c, obj_2d) for c in result.children]
     return result
 

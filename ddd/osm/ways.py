@@ -231,6 +231,269 @@ class WaysOSMBuilder():
 
         # Soften / subdivide roads if height angle is larger than X (try as alternative to massive subdivision of roads?)
 
+
+    def generate_way_1d(self, feature):
+
+        highway = feature['properties'].get('highway', None)
+        barrier = feature['properties'].get('barrier', None)
+        railway = feature['properties'].get('railway', None)
+        historic = feature['properties'].get('historic', None)
+        natural = feature['properties'].get('natural', None)
+        man_made = feature['properties'].get('man_made', None)
+        tunnel = feature['properties'].get('tunnel', None)
+        bridge = feature['properties'].get('bridge', None)
+        junction = feature['properties'].get('junction', None)
+        waterway = feature['properties'].get('waterway', None)
+        oneway = feature['properties'].get('oneway', None)
+        ref = feature['properties'].get('ref', None)
+        maxspeed = feature['properties'].get('maxspeed', None)
+        power = feature['properties'].get('power', None)
+        route = feature['properties'].get('route', None)
+
+        path = ddd.shape(feature['geometry'])
+        #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
+
+        name = "Way: %s" % (feature['properties'].get('name', feature['properties'].get('id')))
+        width = None  # if not set will be discarded
+        material = ddd.mats.asphalt
+        extra_height = 0.0
+        lanes = None
+        lamps = False
+        trafficlights = False
+        roadlines = False
+
+        layer = None
+
+        lane_width = 3.3
+        lane_width_right = 0.30
+        lane_width_left = 0.30
+
+        create_as_item = False
+
+        if highway == "motorway":
+            lane_width = 3.6
+            lane_width_right = 1.5
+            lane_width_left = 1.0
+            lanes = 2
+            roadlines = True
+        elif highway == "motorway_link":
+            lanes = 1
+            lane_width = 3.6
+            lane_width_right = 1.5
+            lane_width_left = 1.0
+            roadlines = True
+        elif highway == "trunk":
+            lanes = 1
+            lane_width = 3.4
+            lane_width_right = 1.5
+            lane_width_left = 0.5
+            roadlines = True
+        elif highway == "trunk_link":
+            lanes = 1
+            lane_width = 3.5
+            lane_width_right = 1.5
+            lane_width_left = 1.0
+            roadlines = True
+
+        elif highway == "primary":
+            lanes = 2
+            lane_width = 3.4
+            lane_width_right = 1.0
+            lane_width_left = 0.5
+            roadlines = True
+        elif highway == "primary_link":
+            lanes = 2
+            lane_width = 3.4
+            lane_width_right = 1.0
+            lane_width_left = 0.5
+            roadlines = True
+        elif highway == "secondary":
+            lanes = 2 if oneway else 3
+            lane_width = 3.4
+            lamps = True
+            trafficlights = True
+            roadlines = True
+        elif highway == "tertiary":
+            lanes = 2
+            lane_width = 3.4
+            lamps = True  # shall be only in city?
+            trafficlights = True
+            roadlines = True
+        elif highway == "service":
+            lanes = 1
+            lamps = True  # shall be only in city?
+            roadlines = True
+        elif highway in ("residential", "living_street"):
+            #lanes = 1.0  # Using 1 lane for residential/living causes too small roads
+            #extra_height = 0.1
+            lanes = 2
+            lamps = True  # shall be only in city?
+            trafficlights = False
+            roadlines = True
+        elif highway in ("footway", "path", "track"):
+            lanes = 0
+            material = ddd.mats.dirt
+            #extra_height = 0.2
+            width = 0.6 * 3.3
+        elif highway in ("steps", "stairs"):
+            lanes = 0
+            material = ddd.mats.pathwalk
+            extra_height = 0.2  # 0.2 allows easy car driving
+            width = 0.6 * 3.3
+        elif highway == "pedestrian":
+            lanes = 0
+            material = ddd.mats.pathwalk
+            extra_height = 0.2
+            width = 2 * 3.30
+            lamps = True  # shall be only in city?
+        elif highway == "cycleway":
+            lanes = 1
+            lane_width = 1.5
+            material = ddd.mats.pitch
+            extra_height = 0.2
+            roadlines = True
+        elif highway == "unclassified":
+            lanes = 1
+            material = ddd.mats.dirt
+
+        elif highway == "raceway":
+            lanes = 1
+            lane_width = 10.0
+            material = ddd.mats.dirt
+            #extra_height = 0.2
+
+        elif natural == "coastline":
+            lanes = None
+            name = "Coastline"
+            width = 0.5
+            material = ddd.mats.terrain
+            extra_height = 5.0  # FIXME: Things could cross othis, height shall reach sea precisely
+        elif waterway == "river":
+            lanes = None
+            name = "River %s" % name
+            width = 6.0
+            material = ddd.mats.sea
+
+        elif railway:
+            lanes = None
+            width = 0.6
+            material = ddd.mats.railway
+            extra_height = 0.5
+
+        elif barrier == 'city_wall':
+            width = 1.0
+            material = ddd.mats.stone
+            extra_height = 2.0
+        elif historic == 'castle_wall':
+            width = 3.0
+            material = ddd.mats.stone
+            extra_height = 3.5
+
+        elif barrier == 'hedge':
+            width = 0.6
+            lanes = None
+            material = ddd.mats.treetop
+            extra_height = 1.2
+            create_as_item = True
+
+        elif barrier == 'fence':
+            width = 0.05
+            lanes = None
+            material = ddd.mats.fence
+            extra_height = 1.2
+            create_as_item = True
+
+        elif barrier == 'kerb':
+            logger.debug("Ignoring kerb")
+            return None
+
+        elif man_made == 'pier':
+            width = 1.8
+            material = ddd.mats.wood
+
+        elif barrier == 'retaining_wall':
+            width = 1.0
+            material = ddd.mats.stone
+            extra_height = 1.5
+        elif barrier == 'wall':
+            # TODO: Get height and material from metadata
+            width = 0.4
+            material = ddd.mats.bricks
+            extra_height = 1.8
+
+        elif power == 'line':
+            width = 0.1
+            material = ddd.mats.steel
+            layer = "3"
+            create_as_item
+
+        elif route:
+            # Ignore routes
+            return None
+
+        elif highway:
+            logger.warn("Unknown highway type: %s (%s)", highway, feature['properties'])
+            lanes = 2.0
+
+        else:
+            logger.warn("Unknown way (discarding): %s", feature['properties'])
+            return None
+
+        flanes = feature['properties'].get('lanes', None)
+        if flanes:
+            lanes = int(float(flanes))
+
+        lanes = int(lanes) if lanes is not None else None
+        if lanes is None or lanes < 1:
+            roadlines = False
+
+        if not path.extra.get('oneway', False):
+            lane_width_left = lane_width_right
+
+        if width is None:
+            try:
+                if lanes == 1: lane_width = lane_width * 1.25
+                width = lanes * lane_width + lane_width_left + lane_width_right
+            except Exception as e:
+                logger.error("Cannot calculate width from lanes: %s", feature['properties'])
+                raise
+
+        path = path.material(material)
+        path.name = name
+        path.extra['feature'] = feature
+        path.extra['highway'] = highway
+        path.extra['barrier'] = barrier
+        path.extra['railway'] = railway
+        path.extra['historic'] = historic
+        path.extra['natural'] = natural
+        path.extra['tunnel'] = tunnel
+        path.extra['bridge'] = bridge
+        path.extra['junction'] = junction
+        path.extra['waterway'] = waterway
+        path.extra['ref'] = ref
+        path.extra['maxspeed'] = maxspeed
+        path.extra['man_made'] = man_made
+        path.extra['power'] = power
+        path.extra['width'] = width
+        path.extra['lanes'] = lanes
+        path.extra['layer'] = layer if layer is not None else feature['properties']['layer']
+        path.extra['extra_height'] = extra_height
+        path.extra['ddd_trafficlights'] = trafficlights
+        path.extra['ddd:width'] = width
+        path.extra['ddd:way:lane_width'] = lane_width
+        path.extra['ddd:way:lane_width_left'] = lane_width_left
+        path.extra['ddd:way:lane_width_right'] = lane_width_right
+        path.extra['ddd:way:lamps'] = lamps
+        path.extra['ddd:way:weight'] = self.road_weight(feature)
+        path.extra['ddd:way:oneway'] = oneway
+        path.extra['ddd:way:roadlines'] = roadlines  # should be ddd:road:roadlines ?
+        path.extra['ddd:item'] = create_as_item
+        path.extra['ddd:item:height'] = extra_height
+        #print(feature['properties'].get("name", None))
+
+        return path
+
+
     def ways_1d_intersections(self):
         """
         Intersections are just data structures, they are not geometries.
@@ -581,236 +844,7 @@ class WaysOSMBuilder():
                 # TODO: modify roads metadata
         '''
 
-    def generate_way_1d(self, feature):
-
-        highway = feature['properties'].get('highway', None)
-        barrier = feature['properties'].get('barrier', None)
-        railway = feature['properties'].get('railway', None)
-        historic = feature['properties'].get('historic', None)
-        natural = feature['properties'].get('natural', None)
-        man_made = feature['properties'].get('man_made', None)
-        tunnel = feature['properties'].get('tunnel', None)
-        bridge = feature['properties'].get('bridge', None)
-        junction = feature['properties'].get('junction', None)
-        waterway = feature['properties'].get('waterway', None)
-        oneway = feature['properties'].get('oneway', None)
-        ref = feature['properties'].get('ref', None)
-        maxspeed = feature['properties'].get('maxspeed', None)
-        power = feature['properties'].get('power', None)
-
-        path = ddd.shape(feature['geometry'])
-        #path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
-
-        name = "Way %s" % (feature['properties'].get('name', feature['properties'].get('id')))
-        width = None  # if not set will be discarded
-        material = ddd.mats.asphalt
-        extra_height = 0.0
-        lanes = None
-        lamps = False
-        trafficlights = False
-        roadlines = False
-
-        layer = None
-
-        create_as_item = False
-
-        if highway == "motorway":
-            lanes = 2.6
-            width = (lanes * 3.30)
-            roadlines = True
-        elif highway == "motorway_link":
-            lanes = 1.5
-            width = (lanes * 3.30)
-            roadlines = True
-        elif highway == "trunk":
-            lanes = 2.4
-            width = (lanes * 3.30)
-            roadlines = True
-        elif highway == "trunk_link":
-            lanes = 1.5
-            width = (lanes * 3.30)
-            roadlines = True
-
-        elif highway == "primary":
-            lanes = 2.2
-            width = (lanes * 3.30)
-            roadlines = True
-        elif highway == "primary_link":
-            lanes = 2.0
-            width = (lanes * 3.30)
-            roadlines = True
-        elif highway == "secondary":
-            lanes = 2.1
-            width = (lanes * 3.30)
-            lamps = True
-            trafficlights = True
-            roadlines = True
-        elif highway == "tertiary":
-            lanes = 2.0
-            width = (lanes * 3.30)
-            lamps = True  # shall be only in city?
-            trafficlights = True
-            roadlines = True
-        elif highway == "service":
-            lanes = 1.0
-            width = (lanes * 3.30)
-            lamps = True  # shall be only in city?
-            roadlines = True
-        elif highway in ("residential", "living_street"):
-            #lanes = 1.0  # Using 1 lane for residential/living causes too small roads
-            #extra_height = 0.1
-            lanes = 2.0
-            width = (lanes * 3.30)
-            lamps = True  # shall be only in city?
-            trafficlights = True
-            roadlines = True
-        elif highway in ("footway", "path", "track"):
-            lanes = 0.6
-            material = ddd.mats.dirt
-            #extra_height = 0.2
-            width = (lanes * 3.30)
-        elif highway in ("steps", "stairs"):
-            lanes = 0.6
-            material = ddd.mats.pathwalk
-            extra_height = 0.2  # 0.2 allows easy car driving
-            width = (lanes * 3.30)
-        elif highway == "pedestrian":
-            lanes = 2.0
-            material = ddd.mats.pathwalk
-            extra_height = 0.2
-            width = (lanes * 3.30)
-            lamps = True  # shall be only in city?
-        elif highway == "cycleway":
-            lanes = 0.6
-            material = ddd.mats.sidewalk
-            extra_height = 0.2
-            width = (lanes * 3.30)
-        elif highway == "unclassified":
-            lanes = 1.2
-            material = ddd.mats.dirt
-            #extra_height = 0.2
-            width = (lanes * 3.30)
-
-        elif highway == "raceway":
-            lanes = 1
-            material = ddd.mats.dirt
-            #extra_height = 0.2
-            width = 10.0  #(lanes * 3.30)
-
-        elif natural == "coastline":
-            lanes = None
-            name = "Coastline"
-            width = 0.5
-            material = ddd.mats.terrain
-            extra_height = 5.0  # FIXME: Things could cross othis, height shall reach sea precisely
-        elif waterway == "river":
-            lanes = None
-            name = "River %s" % name
-            width = 6.0
-            material = ddd.mats.sea
-
-        elif railway:
-            lanes = None
-            width = 0.6
-            material = ddd.mats.railway
-            extra_height = 0.5
-
-        elif barrier == 'city_wall':
-            width = 1.0
-            material = ddd.mats.stone
-            extra_height = 2.0
-        elif historic == 'castle_wall':
-            width = 3.0
-            material = ddd.mats.stone
-            extra_height = 3.5
-
-        elif barrier == 'hedge':
-            width = 0.6
-            lanes = None
-            material = ddd.mats.treetop
-            extra_height = 1.2
-            create_as_item = True
-
-        elif barrier == 'fence':
-            width = 0.05
-            lanes = None
-            material = ddd.mats.fence
-            extra_height = 1.2
-            create_as_item = True
-
-        elif barrier == 'kerb':
-            logger.debug("Ignoring kerb")
-            return None
-
-        elif man_made == 'pier':
-            width = 1.8
-            material = ddd.mats.wood
-
-        elif barrier == 'retaining_wall':
-            width = 1.0
-            material = ddd.mats.stone
-            extra_height = 1.5
-        elif barrier == 'wall':
-            # TODO: Get height and material from metadata
-            width = 0.4
-            material = ddd.mats.bricks
-            extra_height = 1.8
-
-        #elif power == 'line':
-        #    width = 0.1
-        #    material = ddd.mats.forgery
-        #    layer = "3"
-
-        else:
-            if highway and width is None:
-                logger.warn("Unknown highway type: %s (%s)", highway, feature['properties'])
-                lanes = 2.0
-                width = (lanes * 3.30)
-            else:
-                logger.warn("Unknown way (discarding): %s", feature['properties'])
-                return None
-
-        flanes = feature['properties'].get('lanes', None)
-        if flanes:
-            lanes = int(float(flanes))
-            width = (lanes * 3.30)
-
-        if lanes is None or lanes < 1:
-            roadlines = False
-
-        lanes = int(lanes) if lanes is not None else None
-
-        path = path.material(material)
-        path.name = name
-        path.extra['feature'] = feature
-        path.extra['highway'] = highway
-        path.extra['barrier'] = barrier
-        path.extra['railway'] = railway
-        path.extra['historic'] = historic
-        path.extra['natural'] = natural
-        path.extra['tunnel'] = tunnel
-        path.extra['bridge'] = bridge
-        path.extra['junction'] = junction
-        path.extra['waterway'] = waterway
-        path.extra['ref'] = ref
-        path.extra['maxspeed'] = maxspeed
-        path.extra['man_made'] = man_made
-        path.extra['power'] = power
-        path.extra['width'] = width
-        path.extra['lanes'] = lanes
-        path.extra['oneway'] = oneway
-        path.extra['layer'] = layer if layer is not None else feature['properties']['layer']
-        path.extra['extra_height'] = extra_height
-        path.extra['ddd_lamps'] = lamps
-        path.extra['ddd_trafficlights'] = trafficlights
-        path.extra['ddd:width'] = width
-        path.extra['ddd:roadlines'] = roadlines  # should be ddd:road:roadlines ?
-        path.extra['ddd:way:weight'] = self.road_weight(feature)
-        path.extra['ddd:item'] = create_as_item
-        path.extra['ddd:item:height'] = extra_height
-        #print(feature['properties'].get("name", None))
-
-        return path
+        pass
 
     '''
     def find_connected_ways(self, way, roads):
@@ -934,9 +968,9 @@ class WaysOSMBuilder():
 
                 intersection_2d.extra['connections'] = []
                 if len(intersection) > 3:  # 2
-                    intersection_2d.extra['ddd_lamps'] = False
+                    intersection_2d.extra['ddd:way:lamps'] = False
                     intersection_2d.extra['ddd_trafficlights'] = False
-                    intersection_2d.extra['ddd:roadlines'] = False
+                    intersection_2d.extra['ddd:way:roadlines'] = False
 
                 intersection_2d.geom = intersection_shape.geom# ddd.shape(intersection_shape, name="Intersection")
                 intersection_2d.extra['intersection'] = intersection
@@ -1009,8 +1043,8 @@ class WaysOSMBuilder():
 
             self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2", name="Ways 2D %s" % layer_idx)
 
-        #logger.debug("Saving intersections 2D.")
-        #ddd.group([self.osm.ways_2d["0"].extrude(1.0), self.osm.intersections_2d.material(ddd.mat_highlight).extrude(1.5)]).save("/tmp/ddd-intersections.glb")
+        #logger.info("Saving intersections 2D.")
+        #ddd.group([self.osm.ways_2d["0"].extrude(1.0), self.osm.intersections_2d.material(ddd.mats.highlight).extrude(1.5)]).save("/tmp/ddd-intersections.glb")
 
         # Subtract connected ways
         #TODO: This shall be possibly done when creating ways not after
@@ -1421,28 +1455,29 @@ class WaysOSMBuilder():
         length = path.geom.length
 
         # Generate lines
-        if path.extra['ddd:roadlines']:
+        if path.extra['ddd:way:roadlines']:
 
-            numlines = path.extra['lanes'] - 1 + 2
+            lanes = path.extra['lanes']
+            numlines = lanes - 1 + 2
             for lineind in range(numlines):
 
-                lanes = path.extra['lanes']
-                width = path.extra['width']
-                sidewidth = 0.25
-                lanes_width = width - sidewidth * 2
-                lane_width = lanes_width / lanes
+                width = path.extra['ddd:width']
+                lane_width = path.extra['ddd:way:lane_width']  # lanes_width / lanes
+                lane_width_left = path.extra['ddd:way:lane_width_left']
+                lane_width_right = path.extra['ddd:way:lane_width_right']
 
                 line_continuous = False
                 if lineind in [0, numlines - 1]: line_continuous = True
-                if lanes > 2 and lineind == int(numlines / 2): line_continuous = True
+                if lanes > 2 and lineind == int(numlines / 2) and not path.extra.get('oneway', False): line_continuous = True
                 line_x_offset = 0.076171875 if line_continuous else 0.5
 
-                line_0_distance = -lanes_width / 2
+                line_0_distance = -(width / 2) + lane_width_left
                 line_distance = line_0_distance + lane_width * lineind
 
                 # Create line
                 pathline = path.copy()
-                pathline.geom = pathline.geom.parallel_offset(line_distance, "left")
+                if abs(line_distance) > 0.01:
+                    pathline.geom = pathline.geom.parallel_offset(line_distance, "left")
                 line = pathline.buffer(0.15).material(ddd.mats.roadline)
                 line.extra['way_1d'] = pathline
 
@@ -1453,21 +1488,27 @@ class WaysOSMBuilder():
                 line = line.intersect(way_2d)
                 line = line.individualize()
 
-                if line.geom and not line.geom.is_empty:
-                    uvmapping.map_2d_path(line, pathline, line_x_offset / 0.05)
-                    line_3d = line.triangulate().translate([0, 0, 0.05])  # Temporary hack until fitting lines properly
-                    vertex_func = self.get_height_apply_func(path)
-                    line_3d = line_3d.vertex_func(vertex_func)
-                    line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
-                    line_3d.extra['ddd:collider'] = False
-                    line_3d.extra['ddd:shadows'] = False
-                    uvmapping.map_3d_from_2d(line_3d, line)
-                    #uvmapping.map_2d_path(line_3d, path)
+                #if line.geom and not line.geom.is_empty:
+                #try:
+                uvmapping.map_2d_path(line, pathline, line_x_offset / 0.05)
+                #except Exception as e:
+                #    logger.error("Could not UV map Way 2D from path: %s %s %s: %s", line, line.geom, pathline.geom, e)
+                #    continue
+                line_3d = line.triangulate().translate([0, 0, 0.05])  # Temporary hack until fitting lines properly
+                vertex_func = self.get_height_apply_func(path)
+                line_3d = line_3d.vertex_func(vertex_func)
+                line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
+                line_3d.extra['ddd:collider'] = False
+                line_3d.extra['ddd:shadows'] = False
+                #print(line)
+                #print(line.geom)
+                uvmapping.map_3d_from_2d(line_3d, line)
+                #uvmapping.map_2d_path(line_3d, path)
 
-                    self.osm.roadlines_3d.children.append(line_3d)
+                self.osm.roadlines_3d.children.append(line_3d)
 
         # Check if to generate lamps
-        if path.extra['ddd_lamps'] and path.extra['layer'] == "0":
+        if path.extra['ddd:way:lamps'] and path.extra['layer'] == "0":
 
             # Generate lamp posts
             interval = 25.0

@@ -263,6 +263,7 @@ class OSMBuilder():
         # - ground (fill rest of space)
         # - holes (for layer beyond)
 
+        self.areas.generate_areas_1d()
         self.areas.generate_areas_2d()
         self.areas.generate_areas_2d_interways()  # and assign types
 

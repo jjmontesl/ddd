@@ -29,6 +29,7 @@ from ddd.ops import extrusion
 from trimesh.transformations import quaternion_from_euler
 from ddd.ops.align import DDDAlign
 from trimesh.path.entities import Line
+from ddd.core.cli import D1D2D3Bootstrap
 
 
 # Get instance of logger for this module
@@ -52,24 +53,7 @@ class D1D2D3():
         """
         Convenience method for users.
         """
-
-        # In absence of file config
-        default_level = logging.INFO if not debug else logging.DEBUG
-        #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=default_level)
-        #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
-        #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
-
-        if debug:
-            logging.basicConfig(format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', level=default_level)
-            #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
-        else:
-            #logging.basicConfig(format='%(asctime)s %(message)s', level=default_level)
-            logging.basicConfig(format='%(message)s', level=default_level)
-
-        logging.getLogger("trimesh").setLevel(logging.INFO)
-
-        logger.info("DDD logging initialized.")
-        logger.debug("DDD debug logging enabled.")
+        D1D2D3Bootstrap.initialize_logging(debug)
 
     @staticmethod
     def material(name=None, color=None):
@@ -99,6 +83,11 @@ class D1D2D3():
     def polygon(coords, name=None):
         geom = geometry.Polygon(coords)
         return DDDObject2(geom=geom, name=name)
+
+    @staticmethod
+    def regularpolygon(sides, r=1.0, name=None):
+        coords = [[math.cos(i * math.pi * 2 / sides) * r, math.sin(i * math.pi * 2 / sides) * r] for i in range(sides)]
+        return D1D2D3.polygon(coords, name=name)
 
     @staticmethod
     def shape(geometry, name=None):
@@ -542,6 +531,24 @@ class DDDObject2(DDDObject):
         result = self.copy().union()
         result.geom = result.geom.convex_hull
         return result
+
+    def validate(self):
+        if self.geom:
+            if not self.geom.is_valid:
+                raise AssertionError()
+            if self.geom.is_empty:
+                raise AssertionError()
+            if not self.geom.is_simple:
+                raise AssertionError()
+            if self.geom.type == "Polygon":
+                if len(list(self.geom.exterior.coords)) < 3:
+                    raise AssertionError()
+                for interior in self.geom.interiors:
+                    if len(list(interior.coords)) < 3:
+                        raise AssertionError()
+
+        for c in self.children:
+            c.validate()
 
     def individualize(self):
         """
@@ -1157,7 +1164,7 @@ class DDDObject3(DDDObject):
             uvs = [(v[0], v[2]) for v in self.mesh.vertices]
 
         if len(uvs) != len(self.mesh.vertices):
-            raise AssertionError("Invalid number of UV coordinates.")
+            raise AssertionError("Invalid number of UV coordinates: %s", self)
         #if self.mesh.visual is None:
         #    self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
         #else:

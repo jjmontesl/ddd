@@ -14,16 +14,22 @@ from ddd.text import fonts
 logger = logging.getLogger(__name__)
 
 
-def post(height=2.00, r=0.075, top=None, mat_post=None):
+def post(height=2.00, r=0.075, top=None, side=None, mat_post=None):
     """
     A round (or squared) post.
     """
     col = ddd.point([0, 0]).buffer(r, resolution=0, cap_style=ddd.CAP_SQUARE).extrude(height)
     if mat_post: col = col.material(mat_post)
     col = ddd.uv.map_cylindrical(col)
+
+    col = ddd.group3([col])
     if top:
         top = top.translate([0, 0, height])
-        col = ddd.group([col, top])
+        col.append(top)
+    if side:
+        side = side.translate([0, -r, height - 0.2])
+        col.append(side)
+
     return col
 
 def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=None, arm_side='left'):
@@ -156,6 +162,8 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, texture=None):
     if text:
         textobj = ddd.marker(name="Panel Text Marker").translate([0, - depth - 0.02, 0])
         textobj.extra['ddd:text'] = text
+        textobj.extra['ddd:text:width'] = width * 0.9
+        textobj.extra['ddd:text:height'] = height * 0.9
         textobj.extra['ddd:collider'] = False
         #textobj.extra['ddd:layer'] = "Texts"
 
@@ -166,7 +174,8 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, texture=None):
 
 def busstop_small(height=2.50, panel_height=1.4, panel_width=0.45, text=None):
     obj_post = post(height=height).material(ddd.mats.metal_paint_green)
-    obj_panel = panel(height=panel_height, width=panel_width, depth=0.05, text=text).translate([panel_width / 2, 0, height - 0.20 - panel_height / 2])
+    obj_panel = panel(height=panel_width, width=panel_height, depth=0.05, text=text)
+    obj_panel = obj_panel.rotate([0, -math.pi / 2, 0]).translate([panel_width / 2 + 0.075, 0, height - 0.20 - panel_height / 2])
     obj = ddd.group([obj_post, obj_panel])
     return obj
 
@@ -201,7 +210,6 @@ def sculpture(d=1.0, height=4.0):
     item = ddd.sphere(r=1, subdivisions=2)
     item = item.scale([d, d, height / 2])
     item = filters.noise_random(item, scale=0.2)
-    item = ddd.uv.map_spherical(item)
     item = item.translate([0, 0, height / 2 + d])
     item = ddd.uv.map_spherical(item)
 
@@ -341,4 +349,28 @@ def bank(length=1.40, height=1.00, seat_height=0.40,
     #bench =
     pass
 
+def trash_bin(height=1.20, r=0.35):
+    base = ddd.disc(r=r - 0.05, resolution=3)
+    item = base.extrude_step(base, 0.10)
+    item = item.extrude_step(base.buffer(0.05, join_style=ddd.JOIN_MITRE), 0.0)
+    item = item.extrude_step(base.buffer(0.05, join_style=ddd.JOIN_MITRE), height - 0.15)
+    item = item.extrude_step(base, 0.05)
+    item = item.extrude_step(base.buffer(-0.05), 0.0)
+    item = item.extrude_step(base.buffer(-0.05), -(height - 0.4))
+    item.material(ddd.mats.steel)
+    return item
 
+def trash_bin_hung(height=0.70, r=0.25):
+    base = ddd.disc(r=r - 0.05, resolution=3)
+    item = base.extrude_step(base, 0.10)
+    item = item.extrude_step(base.buffer(0.05, join_style=ddd.JOIN_MITRE), height)
+    item = item.extrude_step(base.buffer(0.03, join_style=ddd.JOIN_MITRE), 0.0)
+    item = item.extrude_step(base, -(height - 0.2))
+    item = item.translate([0, -r, -height + 0.05])
+    item.material(ddd.mats.steel)
+    return item
+
+def trash_bin_post(height = 1.30):
+    item = trash_bin_hung()
+    item_post = post(height=height, side=item, mat_post=ddd.mats.steel)
+    return item_post

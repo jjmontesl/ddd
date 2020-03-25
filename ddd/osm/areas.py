@@ -44,6 +44,17 @@ class AreasOSMBuilder():
 
         self.osm = osmbuilder
 
+    def generate_areas_1d(self):
+        logger.info('Generating "1D" areas (features and relations)')
+        print("BRING AREAITEMS here and sort them too. Possibly remove areaitems, and refactor from here (2D -> shapes).")
+
+        '''
+        for feature in self.osm.features:
+            if feature['geometry']['type'] == 'Point':
+                continue
+            area = ddd.shape(feature['geometry'])
+        '''
+
     def generate_areas_2d(self):
         logger.info("Generating 2D areas")
         logger.warn("FIXME: Use DDD, not features, and preprocess Points to areas, also sort by area size / containment, etc")
@@ -227,7 +238,8 @@ class AreasOSMBuilder():
             area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
 
         else:
-            logger.warning("Null area geometry: %s", area_2d)
+            if len(area_2d.children) == 0:
+                logger.warning("Null area geometry (children?): %s", area_2d)
             area_3d = DDDObject3()
 
         area_3d.children = [self.generate_area_3d(c) for c in area_2d.children]
@@ -295,12 +307,11 @@ class AreasOSMBuilder():
             self.osm.water_3d = ddd.group(areas)
             self.osm.water_2d = ddd.group(areas_2d)
         else:
-            logger.warning("No coastline water areas generated!")
+            logger.info("No water areas from coastline generated.")
 
     def generate_ground_3d(self, area_crop):
 
         logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
-        logger.warning("There's a buffer(0.001) operation which shouldn't be here: implement 'cleanup'.")
 
         #terr = terrain.terrain_grid(distance=500.0, height=1.0, detail=25.0).translate([0, 0, -0.5]).material(mat_terrain)
         #terr = terrain.terrain_geotiff(area_crop.bounds, detail=10.0, ddd_proj=self.osm.ddd_proj).material(mat_terrain)
@@ -322,8 +333,12 @@ class AreasOSMBuilder():
 
         #terr.save("/tmp/test.svg")
         #terr = terr.triangulate()
+        logger.warning("There's a buffer(0.000-0.001) operation which shouldn't be here: implement 'cleanup'.")
         try:
-            #terr = terr.buffer(0.001)
+            #terr = terr.individualize()
+            #terr.validate()
+            terr = terr.buffer(0.001)
+            #terr = terr.buffer(0.0)
             terr = terr.extrude(0.3)
         except ValueError as e:
             logger.error("Cannot generate terrain (FIXME): %s", e)

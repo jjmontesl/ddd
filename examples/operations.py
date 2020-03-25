@@ -52,6 +52,12 @@ fig = ddd.point([0, 0]).buffer(1.0, cap_style=ddd.CAP_ROUND).extrude(5.0)
 items.append(fig)
 #fig.show()
 
+# Simple extrusion
+fig = ddd.regularpolygon(5).extrude(5.0)
+items.append(fig)
+fig.show()
+
+
 # Simple extrusion no caps
 fig = ddd.point([0, 0]).buffer(1.0, cap_style=ddd.CAP_ROUND)
 fig = fig.extrude_step(fig, 5.0, base=False, cap=False)
