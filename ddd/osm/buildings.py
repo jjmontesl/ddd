@@ -41,9 +41,23 @@ class BuildingOSMBuilder():
 
     def generate_building_2d(self, feature):
         building_2d = ddd.shape(feature["geometry"], name="Building (%s)" % (feature['properties'].get("name", None)))
+        building_2d.extra['osm:feature'] = feature
         building_2d.extra['building'] = feature['properties'].get('building', None)
-        building_2d.extra['feature'] = feature
         building_2d.extra['amenities'] = []
+
+        # Generate info: segment_facing_way + sidewalk, pricipal facade, secondary (if any) facades, portal entry...
+
+        # Augment building (roof type, facade type, portals ?)
+
+        if building_2d.extra['building'] == 'church':
+            building_2d = self.generate_building_2d_church(building_2d)
+
+        return building_2d
+
+    def generate_building_2d_church(self, building_2d):
+
+        # Add cross to principal and secondary facades if all building is church
+
         return building_2d
 
     def generate_buildings_3d(self):
@@ -51,15 +65,20 @@ class BuildingOSMBuilder():
 
         buildings = []
         for building_2d in self.osm.buildings_2d.children:
-            building_3d = self.generate_building_3d(building_2d)
+
+            if building_2d.extra['building'] == 'church':
+                building_3d = self.generate_building_3d_church(building_2d)
+            else:
+                building_3d = self.generate_building_3d_basic(building_2d)
+
             if building_3d:
                 buildings.append(building_3d)
 
         self.osm.buildings_3d = ddd.group(buildings, empty=3)
 
-    def generate_building_3d(self, building_2d):
+    def generate_building_3d_basic(self, building_2d):
 
-        feature = building_2d.extra['feature']
+        feature = building_2d.extra['osm:feature']
 
         floors = feature.properties.get('building:levels', None)
         if not floors:
@@ -106,7 +125,11 @@ class BuildingOSMBuilder():
 
         self.generate_building_3d_amenities(building_3d)
 
+        return building_3d
 
+    def generate_building_3d_church(self, building_2d):
+
+        building_3d = self.generate_building_3d_basic(building_2d)
         return building_3d
 
     def link_features_2d(self):
@@ -117,7 +140,7 @@ class BuildingOSMBuilder():
             if feature['geometry']['type'] != "Point": continue
             # Find closest building
             point = ddd.shape(feature['geometry'], name="Point: %s" % (feature['properties'].get('name', None)))
-            point.extra['feature'] = feature
+            point.extra['osm:feature'] = feature
             point.extra['amenity'] = feature['properties'].get('amenity', None)
             point.extra['shop'] = feature['properties'].get('shop', None)
             point.extra['name'] = feature['properties'].get('name', None)
@@ -197,7 +220,7 @@ class BuildingOSMBuilder():
                 item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
                 building_3d.children.append(item)
 
-            elif item_1d.extra['amenity'] and item_1d.extra['amenity'] not in ('fountain', 'taxi', 'post_box', 'bench'):
+            elif item_1d.extra['amenity'] and item_1d.extra['amenity'] not in ('fountain', 'taxi', 'post_box', 'bench', 'toilets', 'parking_entrance'):
                 # Except parking?
 
                 #coords = amenity.geom.centroid.coords[0]

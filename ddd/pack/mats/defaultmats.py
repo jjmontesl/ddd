@@ -19,16 +19,16 @@ class DefaultMaterials(MaterialsCollection):
         # Ways
         self.asphalt = ddd.material(name="Asphalt", color='#202020')
         self.dirt = ddd.material(name="Dirt", color="#b58800")
-        self.railway = ddd.material(color="#47443e")
         self.sidewalk = ddd.material(name="Sidewalk", color='#e0d0d0')
         self.pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
         self.pathwalk = ddd.material(name="WayPedestrian", color='#78281e')
 
-        self.roadline = ddd.material(name="Roadline", color='#e8e8e8')
+        self.railway = ddd.material(name="RoadRailway", color="#47443e", extra={'ddd:collider': False, 'ddd:shadows': False})
+        self.roadline = ddd.material(name="Roadline", color='#e8e8e8', extra={'ddd:shadows': False})
 
         # Areas
-        self.sea = ddd.material(name="Water4Advanced", color='#3d43b5')
-        self.water = ddd.material(name="WaterBasicDaytime", color='#4d53c5')
+        self.sea = ddd.material(name="Water4Advanced", color='#3d43b5', extra={'ddd:collider': False, 'ddd:shadows': False})
+        self.water = ddd.material(name="WaterBasicDaytime", color='#4d53c5', extra={'ddd:collider': False, 'ddd:shadows': False})
 
         self.terrain = ddd.material(name="Ground", color='#e6821e')
 

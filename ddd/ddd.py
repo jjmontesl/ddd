@@ -27,9 +27,10 @@ import base64
 from shapely.geometry.polygon import orient
 from ddd.ops import extrusion
 from trimesh.transformations import quaternion_from_euler
-from ddd.ops.align import DDDAlign
 from trimesh.path.entities import Line
 from ddd.core.cli import D1D2D3Bootstrap
+from ddd.core.exception import DDDException
+from shapely.geometry.linestring import LineString
 
 
 # Get instance of logger for this module
@@ -46,7 +47,7 @@ class D1D2D3():
 
     JOIN_ROUND = 1
     JOIN_MITRE = 2
-    JOIN_BEVEL = 2
+    JOIN_BEVEL = 3
 
     @staticmethod
     def initialize_logging(debug=True):
@@ -56,10 +57,10 @@ class D1D2D3():
         D1D2D3Bootstrap.initialize_logging(debug)
 
     @staticmethod
-    def material(name=None, color=None):
+    def material(name=None, color=None, extra=None):
         #material = SimpleMaterial(diffuse=color, )
         #return (0.3, 0.9, 0.3)
-        material = DDDMaterial(name=name, color=color)
+        material = DDDMaterial(name=name, color=color, extra=extra)
         return material
 
     @staticmethod
@@ -267,13 +268,14 @@ class D1D2D3():
 
 class DDDMaterial():
 
-    def __init__(self, name=None, color=None):
+    def __init__(self, name=None, color=None, extra=None):
         """
         Color is hex color.
         """
         self.name = name
         self.color = color
         self.color_rgba = None
+        self.extra = extra
 
         if self.color:
             self.color_rgba = trimesh.visual.color.hex_to_rgba(self.color)
@@ -411,15 +413,27 @@ class DDDObject2(DDDObject):
         result.children = [c.scale(coords) for c in self.children]
         return result
 
-    def clean(self):
+    def clean(self, eps=None):
         result = self.copy()
         if result.geom and not result.geom.is_valid:
-            logger.debug("Removed invalid geometry from: %s", result)
+            logger.warn("Removed invalid geometry: %s", result)
             result.geom = None
+        if result.geom and not result.geom.is_simple:
+            logger.warn("Removed geometry that crosses itself: %s", result)
+            result.geom = None
+        if result.geom and not self.children and eps:
+            result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
         result.children = [c.clean() for c in self.children]
         return result
 
-    def buffer(self, distance, resolution=8, cap_style=3, join_style=3, mitre_limit=5.0):
+    def outline(self):
+        result = self.copy().individualize()
+        if result.geom and result.geom.type == "Polygon":
+            result.geom = LineString(list(result.geom.exterior.coords))
+        result.children = [c.outline() for c in result.children]
+        return result
+
+    def buffer(self, distance, resolution=8, cap_style=D1D2D3.CAP_SQUARE, join_style=D1D2D3.JOIN_MITRE, mitre_limit=5.0):
         '''
         Resolution is:
 
@@ -445,7 +459,11 @@ class DDDObject2(DDDObject):
 
         result = self.copy()
         if self.geom and other.geom:
-            result.geom = result.geom.difference(other.geom)
+            try:
+                result.geom = result.geom.difference(other.geom)
+            except Exception as e:
+                raise DDDException("Cannot subtract geometries: %s - %s: %s" % (self, other, e),
+                                   ddd_obj=ddd.group2([self, other.material(ddd.mats.highlight)]))
         for c in other.children:
             result = result.subtract(c)
         #if self.geom:
@@ -550,26 +568,42 @@ class DDDObject2(DDDObject):
         for c in self.children:
             c.validate()
 
-    def individualize(self):
+    def individualize(self, remove_interiors=False):
         """
         Return a group of multiple DDD2Objects if the object is a GeometryCollection.
         """
         result = self.copy()
-        result.children = [c.individualize() for c in self.children]
+
+        newchildren = []
 
         if self.geom and self.geom.type == 'GeometryCollection':
             result.geom = None
             for partialgeom in self.geom.geoms:
                 newobj = self.copy()
                 newobj.geom = partialgeom
-                result.append(newobj)
+                newchildren.append(newobj)
 
         elif self.geom and self.geom.type == 'MultiPolygon':
             result.geom = None
             for partialgeom in self.geom.geoms:
                 newobj = self.copy()
                 newobj.geom = partialgeom
-                result.append(newobj)
+                newchildren.append(newobj)
+
+        elif self.geom and self.geom.type == 'MultiLineString':
+            result.geom = None
+            for partialgeom in self.geom.geoms:
+                newobj = self.copy()
+                newobj.geom = partialgeom
+                newchildren.append(newobj)
+
+        elif self.geom and self.geom.type == 'Polygon' and remove_interiors and self.geom.interiors:
+            result.geom = None
+            newobj = self.copy()
+            newobj.geom = self.geom.exterior
+            newchildren.append(newobj)
+
+        result.children = [c.individualize() for c in (self.children + newchildren)]
 
         return result
 
@@ -664,11 +698,14 @@ class DDDObject2(DDDObject):
                 #print(self.geom, self.geom.type, self.geom.exterior, self.geom.exterior.type)
 
                 vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
-                mesh = creation.extrude_triangulation(vertices=vertices,
-                                                      faces=faces,
-                                                      height=abs(height))
-                mesh.merge_vertices()
-                result = DDDObject3(mesh=mesh)
+                try:
+                    mesh = creation.extrude_triangulation(vertices=vertices,
+                                                          faces=faces,
+                                                          height=abs(height))
+                    mesh.merge_vertices()
+                    result = DDDObject3(mesh=mesh)
+                except Exception as e:
+                    raise DDDException("Could not extrude: %s" % self, ddd_obj=self)
 
                 if center:
                     result = result.translate([0, 0, -height / 2])
@@ -883,13 +920,16 @@ class DDDInstance(DDDObject):
 
         # Add metadata to name
         if True:
-            ignore_keys = ('uv', 'feature', 'connections')
+            ignore_keys = ('uv', 'osm:feature', 'connections')
             metadata = dict(self.extra)
             metadata['path'] = path_prefix + node_name
             if self.mat and self.mat.name:
                 metadata['ddd:material'] = self.mat.name
             if self.mat and self.mat.color:
                 metadata['ddd:material:color'] = self.mat.color  # hex
+            if self.mat and self.mat.extra:
+                # If material has extra metadata, add it but do not replace
+                metadata.update({k:v for k, v in self.mat.extra.items() if k not in metadata or metadata[k] is None})
 
             metadata = json.loads(json.dumps(metadata, default=lambda x: None))
             metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
@@ -1119,7 +1159,7 @@ class DDDObject3(DDDObject):
         # Add metadata to name
         metadata = None
         if True:
-            ignore_keys = ('uv', 'feature', 'connections')
+            ignore_keys = ('uv', 'osm:feature', 'connections')
             metadata = dict(self.extra)
             metadata['path'] = path_prefix + node_name
             if self.mat and self.mat.name:
@@ -1161,6 +1201,7 @@ class DDDObject3(DDDObject):
         if self.extra.get('uv', None):
             uvs = self.extra['uv']
         else:
+            # Note that this does not flatten normals (that should be optional)
             uvs = [(v[0], v[2]) for v in self.mesh.vertices]
 
         if len(uvs) != len(self.mesh.vertices):
@@ -1327,6 +1368,10 @@ ddd.mats = MaterialsCollection()
 ddd.mats.highlight = D1D2D3.material(color='#ff00ff')
 ddd.mats.load_from(DefaultMaterials())
 
+from ddd.ops.geometry import DDDGeometry
+ddd.geomops = DDDGeometry()
+
+from ddd.ops.align import DDDAlign
 ddd.align = DDDAlign()
 
 from ddd.ops.snap import DDDSnap
@@ -1334,7 +1379,6 @@ ddd.snap = DDDSnap()
 
 from ddd.ops.uvmapping import DDDUVMapping
 ddd.uv = DDDUVMapping()
-
 
 from ddd.ops.helper import DDDHelper
 ddd.helper = DDDHelper()

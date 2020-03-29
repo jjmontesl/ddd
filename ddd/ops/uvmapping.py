@@ -9,6 +9,7 @@ from shapely.geometry.polygon import LinearRing
 
 from ddd.ddd import ddd
 import logging
+from ddd.core.exception import DDDException
 
 
 # Get instance of logger for this module
@@ -86,7 +87,7 @@ class DDDUVMapping():
     #def map_wrap(self, obj):
     #    raise NotImplementedError
 
-def map_2d_path(obj, path, line_x_offset=0.0):
+def map_2d_path(obj, path, line_x_offset=0.0, line_x_width=0.1):
     """
     Assigns UV coordinates to a shape for a line along a path.
     This method does not create a copy of objects, affecting the hierarchy.
@@ -96,13 +97,21 @@ def map_2d_path(obj, path, line_x_offset=0.0):
         # Find nearest point in path
         d = path.geom.project(ddd.point([x, y, z]).geom)
         #print(x, y, z, idx, d, path)
-        p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(d)
-        pol = LinearRing([segment_coords_a, segment_coords_b, [x, y, z]])
-        return (line_x_offset + (0.1 * (-1 if pol.is_ccw else 1)), d)
+        interpolate_result = path.interpolate_segment(d)
+        if interpolate_result:
+            p, segment_idx, segment_coords_a, segment_coords_b = interpolate_result
+            pol = LinearRing([segment_coords_a, segment_coords_b, [x, y, z]])
+            return (line_x_offset + (line_x_width * (-1 if pol.is_ccw else 1)), d)
+        else:
+            logger.error("Cannot interpolate segment: %s", path)
+            return (line_x_offset, d)
 
     result = obj
     if obj.geom:
-        result.extra['uv'] = [uv_apply_func(v[0], v[1], 0.0, idx) for idx, v in enumerate(obj.geom.exterior.coords)]
+        if obj.geom.exterior:
+            result.extra['uv'] = [uv_apply_func(v[0], v[1], 0.0, idx) for idx, v in enumerate(obj.geom.exterior.coords)]
+        else:
+            logger.error("Geometry to map 2D path to does not have exterior coordinates: %s" % obj)
 
     result.children = [map_2d_path(c, path) for c in obj.children]
     return result
@@ -127,10 +136,13 @@ def map_3d_from_2d(obj_3d, obj_2d):
                 if (distsqr < closest_distsqr):
                     closest_uv = closest_o.extra['uv'][idx]
                     closest_distsqr = distsqr
+        else:
+            raise DDDException("Closest object has no UV mapping: %s (%s)" % (closest_o, closest_o.extra.get('uv', None)), ddd_obj=obj_3d)
 
         if closest_uv is None:
             logger.error("Error mapping 3D from 2D (3d=%s, 2d=%s %s %s)", obj_3d, obj_2d, obj_2d.geom, [x.geom for x in obj_2d.children])
-            raise AssertionError()
+            raise DDDException("Could not map 3D from 2D (no closest vertex found): %s" % obj_3d, ddd_obj=obj_3d)
+
         return closest_uv
 
     result = obj_3d

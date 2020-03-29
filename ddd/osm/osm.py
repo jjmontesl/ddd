@@ -256,14 +256,12 @@ class OSMBuilder():
         sys.exit(1)
         '''
 
+        # Generate buildings
+        self.buildings.generate_buildings_2d()
+
+        # Ways depend on buildings
         self.ways.generate_ways_2d()
 
-        # Regions
-        # - fill (order) + correct types if interesect or marker: (park, forest, etc...)
-        # - ground (fill rest of space)
-        # - holes (for layer beyond)
-
-        self.areas.generate_areas_1d()
         self.areas.generate_areas_2d()
         self.areas.generate_areas_2d_interways()  # and assign types
 
@@ -272,7 +270,6 @@ class OSMBuilder():
 
 
         # Buildings
-        self.buildings.generate_buildings_2d()
         self.buildings.link_features_2d()
 
         '''

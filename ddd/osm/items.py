@@ -43,7 +43,7 @@ class ItemsOSMBuilder():
 
     def generate_item_1d(self, feature):
         item = ddd.shape(feature['geometry'], name="Item: %s" % feature['properties'].get('name', feature['properties'].get('id', None)))
-        item.extra['feature'] = feature
+        item.extra['osm:feature'] = feature
         item.extra['name'] = feature['properties'].get('name', None)
         item.extra['amenity'] = feature['properties'].get('amenity', None)
         item.extra['barrier'] = feature['properties'].get('barrier', None)
@@ -82,6 +82,8 @@ class ItemsOSMBuilder():
         elif item_2d.extra.get('amenity', None) == 'post_box':
             item_3d = self.generate_item_3d_post_box(item_2d)
         #elif item_2d.extra.get('amenity', None) == 'taxi':
+        #    item_3d = self.generate_item_3d_taxi(item_2d)
+        #elif item_2d.extra.get('amenity', None) == 'toilets':
         #    item_3d = self.generate_item_3d_taxi(item_2d)
 
         elif item_2d.extra.get('natural', None) == 'tree':
@@ -182,7 +184,7 @@ class ItemsOSMBuilder():
 
         coords = item_2d.geom.coords[0]
         item_3d = urban.post_box().translate([coords[0], coords[1], 0.0])
-        operator = item_2d.extra['feature'].get('operator')
+        operator = item_2d.extra['osm:feature'].get('operator')
         item_3d.name = 'Postbox (%s): %s' % (operator, item_2d.name)
         return item_3d
 
@@ -204,7 +206,7 @@ class ItemsOSMBuilder():
     def generate_item_3d_monument(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
-        item_name = item_2d.extra['feature']['properties'].get('name', None)
+        item_name = item_2d.extra['osm:feature']['properties'].get('name', None)
         if item_name:
             item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
         else:

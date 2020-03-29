@@ -1,6 +1,8 @@
 [0.4.3]
 
-
+  * Improved walls and areas (inner areas removed, buildings removed from walls...).
+  * Texts on both sides of bus stops.
+  * Sport pitch lines (draft for football).
 
 [0.4.2]
 

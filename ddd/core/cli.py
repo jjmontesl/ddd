@@ -1,11 +1,13 @@
 # ddd - D1D2D3
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
+
 import logging
 import os
 import sys
 import argparse
-from abc import abstractstaticmethod
+from ddd.core.exception import DDDException
+import importlib
 
 
 # Get instance of logger for this module
@@ -14,11 +16,18 @@ logger = logging.getLogger(__name__)
 
 class D1D2D3Bootstrap():
 
+    _logging_initialized = False
+
     def __init__(self):
         self.debug = True
 
     @staticmethod
     def initialize_logging(debug=False):
+
+        if D1D2D3Bootstrap._logging_initialized:
+            return
+
+        D1D2D3Bootstrap._logging_initialized = True
 
         default_level = logging.INFO if not debug else logging.DEBUG
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=default_level)
@@ -47,6 +56,7 @@ class D1D2D3Bootstrap():
         parser = argparse.ArgumentParser()  # description='', usage = ''
 
         parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug logging")
+        parser.add_argument("-v", "--visualize-errors", action="store_true", default=False, help="visualize objects that caused exceptions")
 
         #exclusive_grp = parser.add_mutually_exclusive_group()
         #exclusive_grp.add_argument('--color', action='store_true', dest='color', default=None, help='color')
@@ -54,8 +64,11 @@ class D1D2D3Bootstrap():
 
         # Tasks to run (short, long, area, catalog...) - depends on script (define tasks?)
         # Workers/ Multiprocess
-        # Catalog tasks (common)
+        # Catalog tasks (common: generate catalog, show catalog)
         # Overwrite / Fail / Skip task
+        # Generate GIS GeoJSON with chunks and info
+        # Generate classification input data
+        # Generate custom data (customs_1d, etc)
         # Run only 1 chunk / task
         # Show / no show / custom debug shows  | logging categories
         # Timings
@@ -64,10 +77,13 @@ class D1D2D3Bootstrap():
         parser.add_argument("script", help="script to run")
         #parser.add_argument("rest", nargs='*')
 
-        args, unknown = parser.parse_known_args()  # sys.argv[1:]
+        args, unparsed_args = parser.parse_known_args()  # sys.argv[1:]
 
         self.debug = args.debug
         self.script = args.script
+        self.visualize_errors = args.visualize_errors
+
+        self._unparsed_args = unparsed_args
 
     def run(self):
         #data =
@@ -77,7 +93,19 @@ class D1D2D3Bootstrap():
         logger.info("Running %s", script_abspath)
 
         sys.path.append(script_dirpath)
-        __import__(self.script[:-3])
+        try:
+            D1D2D3Bootstrap._instance = self
+            importlib.import_module(self.script[:-3])  #, globals={'ddd_bootstrap': self})
+            #__import__(self.script[:-3], globals={'ddd_bootstrap': self})
+        except DDDException as e:
+            logger.error("Error: %s (obj: %s)" % (e, e.ddd_obj))
+            if e.ddd_obj and self.visualize_errors:
+                e.ddd_obj.dump()
+                try:
+                    e.ddd_obj.show()
+                except Exception as e:
+                    logger.warn("Cannot show error object: %s", e)
+            raise
 
 
 def main():

@@ -98,6 +98,8 @@ class AreaItemsOSMBuilder():
     def generate_item_3d_fountain(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         exterior = item_2d.subtract(item_2d.buffer(-0.3)).extrude(1.0).material(ddd.mats.stone)
+        exterior = ddd.uv.map_cylindrical(exterior)
+
         water =  item_2d.buffer(-0.3).extrude(.7).material(ddd.mats.water)
 
         #coords = item_2d.geom.centroid.coords[0]
@@ -111,6 +113,8 @@ class AreaItemsOSMBuilder():
     def generate_item_3d_pond(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         exterior = item_2d.subtract(item_2d.buffer(-0.4)).extrude(0.4).material(ddd.mats.dirt)
+        exterior = ddd.uv.map_cylindrical(exterior)
+
         water = item_2d.buffer(-0.4).extrude(.25).material(ddd.mats.water)
 
         #coords = item_2d.geom.centroid.coords[0]

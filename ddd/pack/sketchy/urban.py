@@ -148,7 +148,7 @@ def sign_pharmacy_side(size=1.0, depth=0.3, arm_length=1.0):
     sign = sign.translate([0, -(arm_length + size * 0.66), 0])
     return ddd.group([sign, arm], name="Pharmacy Side Sign with Arm")
 
-def panel(height=1.0, width=2.0, depth=0.2, text=None, texture=None):
+def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=None):
     '''
     A panel, like what commerces have either sideways or sitting on the facade. Also
     road panels.
@@ -165,16 +165,26 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, texture=None):
         textobj.extra['ddd:text:width'] = width * 0.9
         textobj.extra['ddd:text:height'] = height * 0.9
         textobj.extra['ddd:collider'] = False
+        textobj.extra['ddd:shadows'] = False
         #textobj.extra['ddd:layer'] = "Texts"
+    if text_back:
+        textbackobj = ddd.marker(name="Panel Text Marker").rotate([0, 0, math.pi]).translate([0, + depth - 0.02, 0])
+        textbackobj.extra['ddd:text'] = text
+        textbackobj.extra['ddd:text:width'] = width * 0.9
+        textbackobj.extra['ddd:text:height'] = height * 0.9
+        textbackobj.extra['ddd:collider'] = False
+        textbackobj.extra['ddd:shadows'] = False
 
-    panel = ddd.group([panel, textobj]) if text else panel
+    panel = ddd.group3([panel])
+    if text: panel.append(textobj)
+    if text_back: panel.append(textbackobj)
 
     return panel
 
 
 def busstop_small(height=2.50, panel_height=1.4, panel_width=0.45, text=None):
     obj_post = post(height=height).material(ddd.mats.metal_paint_green)
-    obj_panel = panel(height=panel_width, width=panel_height, depth=0.05, text=text)
+    obj_panel = panel(height=panel_width, width=panel_height, depth=0.05, text=text, text_back=text)
     obj_panel = obj_panel.rotate([0, -math.pi / 2, 0]).translate([panel_width / 2 + 0.075, 0, height - 0.20 - panel_height / 2])
     obj = ddd.group([obj_post, obj_panel])
     return obj
@@ -323,11 +333,11 @@ def gardener(length=2.0):
     pass
 
 
-def bench(length=1.40, height=1.00, width=0.8, seat_height=0.50,
+def bench(length=1.40, height=1.00, width=0.8, seat_height=0.45,
           legs=2, hangout=0.20):
 
-    seat_thick = 0.10
-    leg_thick = 0.2
+    seat_thick = 0.05
+    leg_thick = 0.05
     leg_padding = 0.3
     leg_width = width - leg_padding
     leg_height = seat_height - seat_thick
@@ -344,7 +354,7 @@ def bench(length=1.40, height=1.00, width=0.8, seat_height=0.50,
     bench.name = "Bench"
     return bench
 
-def bank(length=1.40, height=1.00, seat_height=0.40,
+def bank(length=1.40, height=1.00, seat_height=0.45,
           legs=2, hangout=0.20, angle=100.0, arms=0):
     #bench =
     pass
