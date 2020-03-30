@@ -143,7 +143,7 @@ class AreasOSMBuilder():
         has_trees = area.intersects(trees)
         add_trees = not has_trees # and area.geom.area > 100
 
-        if add_trees:
+        if add_trees and area.geom:
             tree_density_m2 = 0.0025  # decimation would affect after
             num_trees = int((area.geom.area * tree_density_m2))
             if num_trees == 0 and random.uniform(0, 1) < 0.5: num_trees = 1
@@ -200,10 +200,14 @@ class AreasOSMBuilder():
     def generate_wallfence_2d(self, area, fence_ratio=0.0, wall_thick=0.3, doors=1):
 
         area_original = area.extra['ddd:area:original']
-        reduced_area = area_original.buffer(-wall_thick)
+        reduced_area = area_original.buffer(-wall_thick).clean(eps=0.01)
 
         wall = area.subtract(reduced_area).material(ddd.mats.bricks)
-        wall = wall.subtract(self.osm.buildings_2d)
+        try:
+            wall = wall.subtract(self.osm.buildings_2d)
+        except Exception as e:
+            logger.error("Could not subtract buildings from wall.")
+
         wall.extra['ddd:height'] = 1.8
 
         #ddd.uv.map_2d_polygon(wall, area.linearize())
@@ -254,6 +258,9 @@ class AreasOSMBuilder():
                 else:
                     logger.warn("Invalid square.")
 
+    def generate_areas_2d_postprocess(self):
+        #for area in self.osm.areas_2d.children:
+        pass
 
     def generate_coastline_3d(self, area_crop):
 
@@ -286,13 +293,20 @@ class AreasOSMBuilder():
         geoms = coastline_areas.geom.geoms if coastline_areas.geom.type == 'MultiPolygon' else [coastline_areas.geom]
         for water_area_geom in geoms:
             # Find closest point, closest segment, and angle to closest segment
+            water_area_geom = ddd.shape(water_area_geom).clean(eps=0.01).geom
+
+            if not water_area_geom.is_simple:
+                logger.error("Invalid water area geometry (not simple): %s", water_area_geom)
+                continue
+
             water_area_point = water_area_geom.representative_point()
             p, segment_idx, segment_coords_a, segment_coords_b, closest_obj = coastlines_1d.closest_segment(ddd.shape(water_area_point))
             pol = LinearRing([segment_coords_a, segment_coords_b, water_area_point.coords[0]])
 
             if not pol.is_ccw:
-                area_2d = ddd.shape(water_area_geom)
                 #area_3d = area_2d.extrude(-0.2)
+                area_2d = ddd.shape(water_area_geom).clean(eps=0.01)
+                area_2d.validate()
                 area_3d = area_2d.triangulate()
                 area_3d = area_3d.material(ddd.mats.sea)
                 area_3d.extra['ddd:collider'] = False
@@ -418,8 +432,8 @@ class AreasOSMBuilder():
                     else:
                         area_3d = area_2d.triangulate()
                     area_3d = ddd.uv.map_cubic(area_3d)
-                except DDDException as e:
-                    logger.error("Could not generate area: %s (%s)", e, e.ddd_obj)
+                except Exception as e:
+                    logger.error("Could not generate area: %s (%s)", e, area_2d)
                     area_3d = DDDObject3()
 
         else:
@@ -437,7 +451,7 @@ class AreasOSMBuilder():
 
     def generate_area_3d_pitch(self, area_2d):
 
-        logger.info("Pitch: %s", area_2d)
+        logger.debug("Pitch: %s", area_2d)
         area_3d = self.generate_area_3d(area_2d)
 
         # TODO: pass size then adapt to position and orientation, easier to construct and reuse

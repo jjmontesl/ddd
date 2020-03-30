@@ -27,4 +27,3 @@ class MaterialsCollection():
                 self.__dict__[name] = value
 
         logger.info("Loaded %d materials.", count)
-        print("Loaded %d materials." % count)

@@ -21,7 +21,7 @@ def football_field_lines(area, line_width=0.10):
 
     rectangle = ddd.geomops.inscribed_rectangle(area, padding=0.5)
 
-    if not rectangle.geom:
+    if not rectangle.geom or not rectangle.geom.exterior:
         return
 
     coords = rectangle.geom.exterior.coords

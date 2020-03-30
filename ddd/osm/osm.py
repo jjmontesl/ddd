@@ -18,6 +18,7 @@ from ddd.osm.items import ItemsOSMBuilder
 from ddd.osm.ways import WaysOSMBuilder
 from shapely.geometry.geo import shape
 from ddd.prefab.catalog import PrefabCatalog
+from ddd.osm.osmops.osmops import OSMBuilderOps
 
 
 # Get instance of logger for this module
@@ -95,6 +96,8 @@ class OSMBuilder():
         self.areas = AreasOSMBuilder(self)
         self.buildings = BuildingOSMBuilder(self)
         self.customs = CustomsOSMBuilder(self)
+
+        self.osmops = OSMBuilderOps(self)
 
         self.area_filter = area_filter
         self.area_crop = area_crop
@@ -264,6 +267,8 @@ class OSMBuilder():
 
         self.areas.generate_areas_2d()
         self.areas.generate_areas_2d_interways()  # and assign types
+
+        self.areas.generate_areas_2d_postprocess()
 
         #self.generate_unbounded_squares_2d() # this is current cropped ground, replace with this, assign types
         #self.assign_area_types() #

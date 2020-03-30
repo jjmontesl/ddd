@@ -19,7 +19,7 @@ items.append(item)
 item = landscape.powertower()
 items.append(item)
 
-item = urban.busstop_small(text="15")
+item = urban.busstop_small(text="Bus Stop")
 items.append(item)
 
 item = urban.bench()
@@ -46,7 +46,6 @@ items.append(item)
 
 item = urban.trash_bin_post()
 items.append(item)
-item.show()
 
 items = ddd.align.grid(items)
 items.append(ddd.helper.all())

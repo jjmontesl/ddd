@@ -30,7 +30,7 @@ def download_block(bounds, name):
     osm_download_url = 'https://www.openstreetmap.org/api/0.6/map?bbox=%.5f%%2C%.5f%%2C%.5f%%2C%.5f'
 
     url = osm_download_url % (bounds[0], bounds[1], bounds[2], bounds[3])
-    filename = "private/data/osm/" + "%s-%.3f,%.3f.osm" % (name, bounds[0], bounds[1])
+    filename = "private/data/osm/" + "%s/%s-%.3f,%.3f.osm" % (name, name, bounds[0], bounds[1])
 
     if os.path.exists(filename):
         logger.debug("Exists: %s (skipping)", filename)
@@ -43,7 +43,7 @@ def download_block(bounds, name):
         with open(filename,'wb') as output:
             output.write(request.read())
     except HTTPError as e:
-        #logger.error("Could not retrieve '%s': %s", url, e)
+        logger.error("Could not retrieve '%s': %s", url, e)
         raise
 
 def download_area(bounds, chunk=0.01, name="osm"):
@@ -63,7 +63,7 @@ salamanca_wgs84 = [-5.664100, 40.964999]
 
 km = 0.01
 center_wgs84 = salamanca_wgs84
-size_km = 5
+size_km = 20
 name = "salamanca"
 
 download_area([center_wgs84[0] - size_km * km, center_wgs84[1] - size_km * km,
@@ -72,5 +72,5 @@ download_area([center_wgs84[0] - size_km * km, center_wgs84[1] - size_km * km,
 
 # Converted using:
 # find /tmp -maxdepth 1 -name '*.osm' -exec sh -c './osmtogeojson {} > /tmp/$( basename {} ).geojson' \;
-# find ~/git/ddd/private/data/oms/ -maxdepth 1 -name '*.osm' -exec sh -c './osmtogeojson {} > /tmp/$( basename {} ).geojson' \;
+# find ~/git/ddd/private/data/oms/salamanca -maxdepth 1 -name '*.osm' -exec sh -c './osmtogeojson {} > /tmp/$( basename {} ).geojson' \;
 

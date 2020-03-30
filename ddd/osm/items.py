@@ -24,7 +24,7 @@ class ItemsOSMBuilder():
         self.pool = {}
         #self.pool['tree'] = [self.generate_item_3d_tree(ddd.point([0, 0, 0])) for i in range(8)]
 
-        self.tree_decimate = 1
+        self.tree_decimate = 3
         self.tree_decimate_idx = 0
 
     def generate_items_1d(self):
@@ -137,6 +137,12 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_tree(self, item_2d):
 
+        coords = item_2d.geom.coords[0]
+
+        #invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d])
+        #if not self.osm.osmops.placement_valid(ddd.disc(coords, r=0.4), invalid=invalid):
+        #    return None
+
         key = "tree-default-%d" % (random.choice([1, 2, 3, 4, 5, 6, 7, 8]))
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
@@ -148,7 +154,6 @@ class ItemsOSMBuilder():
                 i.extra['ddd:collider'] = False  # TODO: generation details shall be optional
             item_3d = self.osm.catalog.add(key, item_3d)
 
-        coords = item_2d.geom.coords[0]
         item_3d = item_3d.rotate([0.0, 0.0, random.uniform(0, math.pi * 2)])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Tree: %s' % item_2d.name
@@ -171,7 +176,10 @@ class ItemsOSMBuilder():
     def generate_item_3d_bench(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
-        item_3d = urban.bench(length=2.0).translate([coords[0], coords[1], 0.0])
+        oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
+        item_3d = urban.bench(length=2.0)
+        item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Bench: %s' % item_2d.name
         item_3d.material(ddd.mats.stone)
         return item_3d
@@ -278,13 +286,19 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_lamppost(self, item_2d):
 
+        coords = item_2d.geom.coords[0]
+
+        # Check if item can be placed
+        invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d])
+        if not self.osm.osmops.placement_valid(ddd.disc(coords, r=0.2, resolution=0, name=item_2d.name), invalid=invalid):
+            return None
+
         key = "lamppost-default-1"
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
             item_3d = urban.lamppost(height=5.5, r=0.35)
             item_3d = self.osm.catalog.add(key, item_3d)
 
-        coords = item_2d.geom.coords[0]
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Lampppost: %s' % item_2d.name
         return item_3d

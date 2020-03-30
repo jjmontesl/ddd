@@ -31,6 +31,7 @@ from trimesh.path.entities import Line
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
 from shapely.geometry.linestring import LineString
+from _collections_abc import Iterable
 
 
 # Get instance of logger for this module
@@ -115,22 +116,23 @@ class D1D2D3():
         return DDDObject2(geom=geom, name=name)
 
     @staticmethod
-    def disc(center=None, r=None, resolution=8, name=None):
+    def disc(center=None, r=None, resolution=4, name=None):
+        if isinstance(center, Iterable): center = ddd.point(center, name=name)
         if center is None: center = ddd.point([0, 0, 0], name=name)
         if r is None: r = 1.0
         geom = center.geom.buffer(r, resolution=resolution)
-        return DDDObject2(geom=geom)
+        return DDDObject2(geom=geom, name=name)
 
     @staticmethod
-    def sphere(center=None, r=None, subdivisions=2):
+    def sphere(center=None, r=None, subdivisions=2, name=None):
         if center is None: center = ddd.point([0, 0, 0])
         if r is None: r = 1.0
         mesh = primitives.Sphere(center=center.geom.coords[0], radius=r, subdivisions=subdivisions)
         mesh = Trimesh([[v[0], v[1], v[2]] for v in mesh.vertices], list(mesh.faces))
-        return DDDObject3(mesh=mesh)
+        return DDDObject3(mesh=mesh, name=name)
 
     @staticmethod
-    def cube(center=None, d=None):
+    def cube(center=None, d=None, name=None):
         """
         Cube is sitting on the Z plane defined by the center position.
         `d` is the distance to the side, so cube side length will be twice that value.
@@ -140,7 +142,7 @@ class D1D2D3():
         #if center is not None: raise NotImplementedError()  #
         if center is None: center = [0, 0, 0]
         if d is None: d = 1.0
-        cube = D1D2D3.rect([-d, -d, d, d]).extrude(d * 2).translate(center)
+        cube = D1D2D3.rect([-d, -d, d, d], name=name).extrude(d * 2).translate(center)
         return cube
 
     @staticmethod
@@ -352,7 +354,11 @@ class DDDObject2(DDDObject):
             if self.geom.is_empty: return 0
             return len(self.geom.exterior.coords) + sum([len(i.coords) for i in self.geom.interiors])
         else:
-            return len(self.geom.coords)
+            try:
+                return len(self.geom.coords)
+            except Exception as e:
+                #logger.debug("Invalid vertex count (multi-part geometry involved): %s", self)
+                pass
         return None
 
     def copy(self, name=None):
@@ -415,15 +421,15 @@ class DDDObject2(DDDObject):
 
     def clean(self, eps=None):
         result = self.copy()
+        if result.geom and not self.children and eps:
+            result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
         if result.geom and not result.geom.is_valid:
             logger.warn("Removed invalid geometry: %s", result)
             result.geom = None
         if result.geom and not result.geom.is_simple:
             logger.warn("Removed geometry that crosses itself: %s", result)
             result.geom = None
-        if result.geom and not self.children and eps:
-            result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
-        result.children = [c.clean() for c in self.children]
+        result.children = [c.clean(eps=eps) for c in self.children]
         return result
 
     def outline(self):
@@ -460,12 +466,22 @@ class DDDObject2(DDDObject):
         result = self.copy()
         if self.geom and other.geom:
             try:
-                result.geom = result.geom.difference(other.geom)
+                diffgeom = result.geom.difference(other.geom)
+                result.geom = diffgeom
             except Exception as e:
-                raise DDDException("Cannot subtract geometries: %s - %s: %s" % (self, other, e),
-                                   ddd_obj=ddd.group2([self, other.material(ddd.mats.highlight)]))
+                logger.error("Error subtracting geometry. Trying cleaning.")
+                result = result.clean(eps=0.01)
+                if result.geom:
+                    try:
+                        diffgeom = result.geom.difference(other.geom)
+                        result.geom = diffgeom
+                    except Exception as e:
+                        raise DDDException("Cannot subtract geometries: %s - %s: %s" % (self, other, e),
+                                           ddd_obj=ddd.group2([self, other.material(ddd.mats.highlight)]))
+
         for c in other.children:
             result = result.subtract(c)
+
         #if self.geom:
         #    union = other.union()
         #    result.geom = result.geom.difference(union.geom)
@@ -483,7 +499,6 @@ class DDDObject2(DDDObject):
         result = self.copy()
         result.children = []
 
-        # If other has children, union them too
         objs = self.children
         while len(objs) > 1:
             newo = objs[0].union().union(objs[1].union())
@@ -498,8 +513,8 @@ class DDDObject2(DDDObject):
             union = other.union()
             if result.geom and union.geom:
                 result.geom = result.geom.union(union.geom)
-            elif other.geom:
-                result.geom = other.geom
+            elif union.geom:
+                result.geom = union.geom
 
         return result
 
@@ -522,9 +537,10 @@ class DDDObject2(DDDObject):
         Calculates if this object and children intersects with any of
         the other object (and children).
         """
+        #logger.debug("Intersects: %s with %s", self, other)
         other = other.union()
 
-        if not other.geom or other.geom.empty:
+        if (not other.geom) or other.geom.is_empty:
             return False
 
         if self.geom:
@@ -547,7 +563,10 @@ class DDDObject2(DDDObject):
 
     def convex_hull(self):
         result = self.copy().union()
-        result.geom = result.geom.convex_hull
+        if result.geom:
+            result.geom = result.geom.convex_hull
+        else:
+            return None
         return result
 
     def validate(self):
@@ -940,7 +959,7 @@ class DDDInstance(DDDObject):
         if self.ref:
 
             generate_marker = True
-            generate_mesh = True
+            generate_mesh = False
 
             ref = self.ref.copy()
             if generate_mesh:

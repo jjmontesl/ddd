@@ -13,9 +13,38 @@ from ddd.ddd import ddd
 logger = logging.getLogger(__name__)
 
 
-def extend_way(obj):
-    # Should use joins and intersections
-    return ddd.geomops.extend_line(obj, 2, 2)
+class OSMBuilderOps():
 
+    def __init__(self, osm):
+
+        self.osm = osm
+
+    def extend_way(self, obj):
+        # Should use joins and intersections
+        #return ddd.geomops.extend_line(obj, 2, 2)
+        pass
+
+    def placement_valid(self, obj, valid=None, invalid=None):
+
+        currently_valid = None
+
+        if valid:
+            if valid.intersects(obj):
+                currently_valid = True
+            else:
+                currently_valid = False
+        else:
+            currently_valid = True
+
+        if invalid and currently_valid:
+            if invalid.intersects(obj):
+                currently_valid = False
+
+        #print(obj)
+        #print("Valid: %s" % currently_valid)
+        #if obj.name and 'Luis' in obj.name:
+        #    ddd.group3([obj.material(ddd.mats.highlight), invalid]).show()
+
+        return currently_valid
 
 

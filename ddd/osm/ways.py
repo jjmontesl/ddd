@@ -234,6 +234,7 @@ class WaysOSMBuilder():
     def generate_way_1d(self, feature):
 
         highway = feature['properties'].get('highway', None)
+        footway = feature['properties'].get('footway', None)
         barrier = feature['properties'].get('barrier', None)
         railway = feature['properties'].get('railway', None)
         historic = feature['properties'].get('historic', None)
@@ -250,6 +251,8 @@ class WaysOSMBuilder():
         route = feature['properties'].get('route', None)
         indoor = feature['properties'].get('indoor', None)
         disused = feature['properties'].get('disused', None)
+
+        if junction == "roundabout": oneway = True
 
         path = ddd.shape(feature['geometry'])
         # path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
@@ -337,6 +340,7 @@ class WaysOSMBuilder():
             material = ddd.mats.dirt
             extra_height = 0.0
             width = 0.6 * 3.3
+            if footway == 'sidewalk': return None
         elif highway in ("path", "track"):
             lanes = 0
             material = ddd.mats.dirt
@@ -518,7 +522,7 @@ class WaysOSMBuilder():
         Intersections are just data structures, they are not geometries.
         """
 
-        logger.info("Generating intersections form %d ways.", len(self.osm.ways_1d.children))
+        logger.info("Generating intersections from %d ways.", len(self.osm.ways_1d.children))
 
         intersections = []
         intersections_cache = defaultdict(default=list)
@@ -956,13 +960,13 @@ class WaysOSMBuilder():
                     shape2 = join_ways.children[j]
                     # points = shape1.exterior.intersection(shape2.exterior)
                     # join_points.extend(points)
-                    shape = shape1.intersect(shape2).buffer(0.001)
+                    shape = shape1.intersect(shape2).clean(eps=0.01)
                     join_shapes.append(shape)
             # intersection_shape = MultiPoint(join_points).convex_hull
             intersection_shape = ddd.group(join_shapes, empty=2).union().convex_hull()
 
             # print(intersection_shape)
-            if intersection_shape.geom and intersection_shape.geom.type in ('Polygon', 'MultiPolygon') and not intersection_shape.geom.is_empty:
+            if intersection_shape and intersection_shape.geom and intersection_shape.geom.type in ('Polygon', 'MultiPolygon') and not intersection_shape.geom.is_empty:
 
                 # Get intersection way type by vote
                 votes = defaultdict(list)
@@ -1060,11 +1064,17 @@ class WaysOSMBuilder():
                     '''
 
                     if way:
-                        way.extrude(1.0)
-                        ways.append(way)
-                        # try:
-                        # except Exception as e:
-                        #    logger.warn("Could not generate way due to exception in extrude check: %s", way )
+                         try:
+                            way.extrude(1.0)
+                            ways.append(way)
+                         except Exception as e:
+                            logger.warn("Could not generate way due to exception in extrude check: %s (trying cleanup)", way )
+                            way = way.clean(eps=0.01)
+                            try:
+                                way.extrude(1.0)
+                                ways.append(way)
+                            except Exception as e:
+                                logger.error("Could not generate way due to exception in extrude check: %s", way)
 
             self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2", name="Ways 2D %s" % layer_idx)
 
@@ -1114,8 +1124,8 @@ class WaysOSMBuilder():
         for w in ways_1d:
             f = w.extra['osm:feature']
             way_2d = self.generate_way_2d(w)
-            weight = self.road_weight(f)
             if way_2d:
+                weight = self.road_weight(f)
                 ways_2d[weight].append(way_2d)
 
         '''
@@ -1202,7 +1212,12 @@ class WaysOSMBuilder():
         if way_2d.extra.get('ddd:subtract_buildings', False):
             #buildings_2d_union = self.osm.buildings_2d.union()
             #way_2d = way_2d.subtract(self.osm.buildings_2d_union)
-            way_2d = way_2d.subtract(self.osm.buildings_2d)
+            way_2d = way_2d.clean(eps=0.05)
+            try:
+                way_2d = way_2d.subtract(self.osm.buildings_2d)
+            except Exception as e:
+                logger.error("Could not subtract buildings from way: %s", way_2d)
+                return None
 
         # print(feature['properties'].get("name", None))
         # way_2d.extra['osm:feature'] = feature

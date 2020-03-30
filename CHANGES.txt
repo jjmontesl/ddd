@@ -1,5 +1,6 @@
 [0.4.3]
 
+  * Fixed bug in intersects() causing false negatives.
   * Improved walls and areas (inner areas removed, buildings removed from walls...).
   * Texts on both sides of bus stops.
   * Sport pitch lines (draft for football).
