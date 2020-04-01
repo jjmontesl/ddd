@@ -50,7 +50,7 @@ class AreasOSMBuilder():
 
         areas = []
         for feature in self.osm.features:
-            if feature['geometry']['type'] not in ('Polygon', ):
+            if feature['geometry']['type'] not in ('Polygon', 'MultiPolygon', 'GeometryCollection'):
                 continue
             if feature.properties.get('building', None) is not None:
                 # FIXME: better filter which features we are interested in
@@ -58,9 +58,11 @@ class AreasOSMBuilder():
 
             area = ddd.shape(feature['geometry'], name="Area: %s" % (feature['properties'].get('name', feature['properties'].get('id'))))
 
-            if not area.geom.is_valid:
-                logger.info("Invalid area (discarding): %s", area)
-                continue
+            try:
+                area.validate()
+            except DDDException as e:
+                logger.warn("Invalid geometry for area %s (ignoring area): %s", area, e)
+                return None
 
             area.extra['osm:feature'] = feature
             area.extra['ddd:area:type'] = None
@@ -82,12 +84,12 @@ class AreasOSMBuilder():
                     larger.extra['ddd:area:contained'].append(area)
                     break
 
-        logger.info("Generating 2D areas (%d)", len(areas))
-
         # Union all roads in the plane to subtract
-        union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'],
-                           self.osm.areas_2d]).union()
+        logger.info("Generating 2D areas subtract.")
+        union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a']]).union()  # , self.osm.areas_2d
+        #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a']])
 
+        logger.info("Generating 2D areas (%d)", len(areas))
         for narea in areas:
         #for feature in self.osm.features:
             feature = narea.extra['osm:feature']
@@ -97,27 +99,42 @@ class AreasOSMBuilder():
 
             narea.extra['ddd:area:original'] = narea
 
+            '''
             # Subtract areas contained (use contained relationship)
             for contained in narea.extra['ddd:area:contained']:
                 narea = narea.subtract(contained)
+            '''
 
             area = None
             if feature['properties'].get('leisure', None) in ('park', 'garden'):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_park(narea)
             elif feature['properties'].get('landuse', None) in ('grass', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_park(narea)
-            if feature['properties'].get('leisure', None) in ('pitch', ):  # Cancha
+            elif feature['properties'].get('leisure', None) in ('pitch', ):  # Cancha
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 area = self.generate_area_2d_pitch(narea)
             elif feature['properties'].get('landuse', None) in ('railway', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 area = self.generate_area_2d_railway(narea)
             elif feature['properties'].get('landuse', None) in ('brownfield', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 area = self.generate_area_2d_unused(narea)
                 narea = narea.subtract(union)
             elif feature['properties'].get('amenity', None) in ('school', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_school(narea)
+            elif (feature['properties'].get('waterway', None) in ('riverbank', ) or
+                  feature['properties'].get('natural', None) in ('water', )):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_riverbank(narea)
+            else:
+                logger.debug("Unknown area: %s", feature)
 
             #elif feature['properties'].get('amenity', None) in ('fountain', ):
             #    area = self.generate_area_2d_school(feature)
@@ -183,6 +200,13 @@ class AreasOSMBuilder():
 
         return area
 
+    def generate_area_2d_riverbank(self, area):
+        feature = area.extra['osm:feature']
+        area.name = "Riverbank: %s" % feature['properties'].get('name', None)
+        area = area.material(ddd.mats.sea)
+        area.extra['ddd:height'] = 0.0
+        return area
+
     def generate_area_2d_unused(self, area, wallfence=True):
         feature = area.extra['osm:feature']
         area.name = "Unused land: %s" % feature['properties'].get('name', None)
@@ -206,7 +230,7 @@ class AreasOSMBuilder():
         try:
             wall = wall.subtract(self.osm.buildings_2d)
         except Exception as e:
-            logger.error("Could not subtract buildings from wall.")
+            logger.error("Could not subtract buildings from wall: %s", e)
 
         wall.extra['ddd:height'] = 1.8
 
@@ -229,11 +253,11 @@ class AreasOSMBuilder():
             l0 = self.osm.ways_2d['0'].union()
             lm1a = self.osm.ways_2d['-1a'].union()
             #l0a = self.osm.ways_2d['0a'].union()  # shall be trimmed  # added to avoid height conflicts but leaves holes
-            c = self.osm.areas_2d.union()
+            c = self.osm.areas_2d.clean(eps=0.01).union()
             try:
-                eps = 0.01
                 union = ddd.group2([c, l0, lm1a])
-                union = union.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
+                #union = union.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
+                union = union.clean(eps=0.01)
                 union = union.union()
             except TopologicalError as e:
                 logger.error("Error calculating interways (2): %s", e)
@@ -349,8 +373,13 @@ class AreasOSMBuilder():
         terr = terr.clean(eps=0.01)
 
         #terr = terr.subtract(self.osm.ways_2d['0a'])  # added to avoid floor, but shall be done better, by layers spawn and base_height,e tc
-        terr = terr.subtract(self.osm.areas_2d)
-        terr = terr.clean(eps=0.01)
+        #terr = terr.clean(eps=0.01)
+
+        try:
+            terr = terr.subtract(self.osm.areas_2d)
+            terr = terr.clean(eps=0.01)
+        except Exception as e:
+            logger.error("Could not subtract areas_2d from terrain.")
 
         terr = terr.subtract(self.osm.water_2d)
         terr = terr.clean(eps=0.01)
@@ -363,18 +392,20 @@ class AreasOSMBuilder():
 
         #terr.save("/tmp/test.svg")
         #terr = terr.triangulate()
-        logger.warning("There's a buffer(0.000-0.001) operation which shouldn't be here: improve and use 'clean()'.")
         try:
             #terr = terr.individualize()
             #terr.validate()
+            logger.warning("There's a buffer(0.000-0.001) operation which shouldn't be here: improve and use 'clean()'.")
             terr = terr.buffer(0.001)
             #terr = terr.buffer(0.0)
+            #terr = terr.clean(eps=0.001)
 
             #terr = terr.extrude(0.3)
             terr = terr.triangulate()
         except ValueError as e:
             logger.error("Cannot generate terrain (FIXME): %s", e)
-            raise
+            raise DDDException("Coould not generate terrain: %s" % e, ddd_obj=terr)
+
         terr = terrain.terrain_geotiff_elevation_apply(terr, self.osm.ddd_proj)
         terr = terr.material(ddd.mats.terrain)
 

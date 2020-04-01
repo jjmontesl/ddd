@@ -40,11 +40,11 @@ class DefaultMaterials(MaterialsCollection):
         self.steel = ddd.material(name="Steel", color='#78839c')
 
         self.stone = ddd.material(name="Stone", color='#9c9378')
+        self.pabbles = ddd.material(name="Pebbles", color='#7c5378')
         self.cement = ddd.material(name="Concrete", color='#b8b8a0')
         self.bricks = ddd.material(name="Bricks", color='#d49156')
 
         self.wood = ddd.material(color='#efae85')
-
 
         # Painted materials
         self.metal_paint_red = ddd.material("PaintRed", color='#d01010')

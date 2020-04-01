@@ -11,6 +11,7 @@ from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.pack.sketchy import plants, urban
 from ddd.geo import terrain
+from ddd.core.exception import DDDException
 
 
 # Get instance of logger for this module
@@ -41,6 +42,13 @@ class BuildingOSMBuilder():
 
     def generate_building_2d(self, feature):
         building_2d = ddd.shape(feature["geometry"], name="Building (%s)" % (feature['properties'].get("name", None)))
+
+        try:
+            building_2d.validate()
+        except DDDException as e:
+            logger.warn("Invalid geometry for building: %s", e)
+            return None
+
         building_2d.extra['osm:feature'] = feature
         building_2d.extra['building'] = feature['properties'].get('building', None)
         building_2d.extra['amenities'] = []

@@ -275,7 +275,10 @@ class WaysOSMBuilder():
 
         create_as_item = False
 
-        if highway == "motorway":
+        if highway in ('proposed', 'construction', ):
+            return None
+
+        elif highway == "motorway":
             lane_width = 3.6
             lane_width_right = 1.5
             lane_width_left = 1.0
@@ -456,12 +459,14 @@ class WaysOSMBuilder():
             return None
 
         elif highway:
-            logger.warn("Unknown highway type: %s (%s)", highway, feature['properties'])
+            logger.info("Unknown highway type: %s (%s)", highway, feature['properties'])
             lanes = 2.0
 
         else:
-            logger.warn("Unknown way (discarding): %s", feature['properties'])
+            logger.debug("Unknown way (discarding): %s", feature['properties'])
             return None
+
+        # Calculated properties
 
         flanes = feature['properties'].get('lanes', None)
         if flanes:
@@ -1064,10 +1069,10 @@ class WaysOSMBuilder():
                     '''
 
                     if way:
-                         try:
+                        try:
                             way.extrude(1.0)
                             ways.append(way)
-                         except Exception as e:
+                        except Exception as e:
                             logger.warn("Could not generate way due to exception in extrude check: %s (trying cleanup)", way )
                             way = way.clean(eps=0.01)
                             try:
@@ -1216,7 +1221,7 @@ class WaysOSMBuilder():
             try:
                 way_2d = way_2d.subtract(self.osm.buildings_2d)
             except Exception as e:
-                logger.error("Could not subtract buildings from way: %s", way_2d)
+                logger.error("Could not subtract buildings %s from way %s: %s", self.osm.buildings_2d, way_2d, e)
                 return None
 
         # print(feature['properties'].get("name", None))
@@ -1314,7 +1319,8 @@ class WaysOSMBuilder():
         '''
         '''
         rail_height = 0.30
-        way_2d_interior = way_2d.buffer(-0.3)
+        way_2d = way_2d.individualize()
+        way_2d_interior = way_2d.buffer(-0.3).individualize()
         #way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
         way_3d = way_2d.extrude_step(way_2d_interior, rail_height, base=False, cap=False)
         way_3d = way_3d.material(ddd.mats.dirt)
@@ -1325,7 +1331,11 @@ class WaysOSMBuilder():
         railroad_3d = way_2d_interior.triangulate().translate([0, 0, rail_height]).material(ddd.mats.railway)
         railroad_3d.extra['ddd:collider'] = False
         railroad_3d.extra['ddd:shadows'] = False
-        uvmapping.map_3d_from_2d(railroad_3d, way_2d_interior)
+        try:
+            uvmapping.map_3d_from_2d(railroad_3d, way_2d_interior)
+        except Exception as e:
+            logger.error("Could not map railway UV coordinates: %s", e)
+            railroad_3d.extra['uv'] = None
 
         return ddd.group3([way_3d, railroad_3d])
 
@@ -1420,9 +1430,9 @@ class WaysOSMBuilder():
 
             # FIXME: Move cropping to generic site, use itermediate osm.something for storage
             crop = ddd.shape(self.osm.area_crop)
-            sidewalk_2d = sidewalk_2d.intersect(crop.buffer(-0.003))
-            wall_2d = wall_2d.intersect(crop.buffer(-0.003))
-            floor_2d = floor_2d.intersect(crop.buffer(-0.003))
+            sidewalk_2d = sidewalk_2d.intersect(crop.buffer(-0.003)).clean(eps=0.01)
+            wall_2d = wall_2d.intersect(crop.buffer(-0.003)).clean(eps=0.01)
+            floor_2d = floor_2d.intersect(crop.buffer(-0.003)).clean(eps=0.01)
 
             # ddd.group((sidewalk_2d, wall_2d)).show()
             elevated.append((sidewalk_2d, wall_2d, floor_2d))

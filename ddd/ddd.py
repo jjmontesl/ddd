@@ -464,6 +464,11 @@ class DDDObject2(DDDObject):
     def subtract(self, other):
 
         result = self.copy()
+
+        # Attempt to optimize (test)
+        #if not result.intersects(other):
+        #    return result
+
         if self.geom and other.geom:
             try:
                 diffgeom = result.geom.difference(other.geom)
@@ -479,12 +484,13 @@ class DDDObject2(DDDObject):
                         raise DDDException("Cannot subtract geometries: %s - %s: %s" % (self, other, e),
                                            ddd_obj=ddd.group2([self, other.material(ddd.mats.highlight)]))
 
-        for c in other.children:
-            result = result.subtract(c)
+        #for c in other.children:
+        #    result = result.subtract(c)
+        if self.geom:
+            union = other.union()
+            if union.geom and not union.geom.is_empty:
+                result.geom = result.geom.difference(union.geom)
 
-        #if self.geom:
-        #    union = other.union()
-        #    result.geom = result.geom.difference(union.geom)
         result.children = [c.subtract(other) for c in result.children]
 
         return result
@@ -512,7 +518,13 @@ class DDDObject2(DDDObject):
         if other:
             union = other.union()
             if result.geom and union.geom:
-                result.geom = result.geom.union(union.geom)
+                try:
+                    result.geom = result.geom.union(union.geom)
+                except Exception as e:
+                    logger.error("Cannot perform union between %s and %s (unioned).", result, other)
+                    result = result.clean(eps=0.001)
+                    other = other.clean(eps=0.001)
+                    result.geom = result.geom.union(union.geom)
             elif union.geom:
                 result.geom = union.geom
 
@@ -572,11 +584,11 @@ class DDDObject2(DDDObject):
     def validate(self):
         if self.geom:
             if not self.geom.is_valid:
-                raise AssertionError()
+                raise DDDException("Invalid polygon: poligon is invalid for Shapely.")
             if self.geom.is_empty:
-                raise AssertionError()
+                raise DDDException("Invalid polygon: empty.")
             if not self.geom.is_simple:
-                raise AssertionError()
+                raise DDDException("Invalid polygon: poligon is not simple.")
             if self.geom.type == "Polygon":
                 if len(list(self.geom.exterior.coords)) < 3:
                     raise AssertionError()
@@ -1220,11 +1232,14 @@ class DDDObject3(DDDObject):
         if self.extra.get('uv', None):
             uvs = self.extra['uv']
         else:
-            # Note that this does not flatten normals (that should be optional)
+            # Note that this does not flatten normals (that should be optional) - also, we assume mesh is rotated (XZ)
             uvs = [(v[0], v[2]) for v in self.mesh.vertices]
 
         if len(uvs) != len(self.mesh.vertices):
-            raise AssertionError("Invalid number of UV coordinates: %s", self)
+            logger.warning("Invalid number of UV coordinates: %s (uv: %s)", self, uvs)
+            #raise DDDException("Invalid number of UV coordinates: %s", self)
+            uvs = [(v[0], v[2]) for v in self.mesh.vertices]
+
         #if self.mesh.visual is None:
         #    self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
         #else:

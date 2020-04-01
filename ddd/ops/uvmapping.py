@@ -33,7 +33,7 @@ class DDDUVMapping():
         if result.mesh:
 
             # Avoid remapping
-            if  result.extra.get('uv', None):
+            if result.extra.get('uv', None):
                 logger.error("Object already has UV coordinates: %s", result)
                 raise AssertionError()
 
@@ -72,8 +72,8 @@ class DDDUVMapping():
                     setuv(face, face[1], (p1[0], p1[1]))
                     setuv(face, face[2], (p2[0], p2[1]))
 
+        result.children = [self.map_cubic(c) for c in result.children]
         return result
-
 
     def map_spherical(self, obj):
         return self.map_cubic(obj)
@@ -137,6 +137,7 @@ def map_3d_from_2d(obj_3d, obj_2d):
                     closest_uv = closest_o.extra['uv'][idx]
                     closest_distsqr = distsqr
         else:
+            logger.error("Closest object has no UV mapping: %s (%s) (obj_2d=%s, obj_3d=%s)", closest_o, closest_o.extra.get('uv', None), obj_2d, obj_3d)
             raise DDDException("Closest object has no UV mapping: %s (%s)" % (closest_o, closest_o.extra.get('uv', None)), ddd_obj=obj_3d)
 
         if closest_uv is None:

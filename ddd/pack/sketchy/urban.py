@@ -279,6 +279,7 @@ def religion_cross(width=1, height=1.5):
     sign = sign.extrude(width / 4.0)
     sign = sign.translate([0, 0, -width / 8.0]).rotate([-math.pi / 2.0, 0, 0])
     sign = sign.translate([0, 0, height])
+    sign = ddd.uv.map_cubic(sign)
     sign.name = "Cross"
     return sign
 
@@ -351,6 +352,8 @@ def bench(length=1.40, height=1.00, width=0.8, seat_height=0.45,
         legs_objs.append(leg)
 
     bench = ddd.group([seat] + legs_objs)
+    bench.material(ddd.mats.stone)
+    bench = ddd.uv.map_cubic(bench)
     bench.name = "Bench"
     return bench
 

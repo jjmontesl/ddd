@@ -181,7 +181,7 @@ class ItemsOSMBuilder():
         item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Bench: %s' % item_2d.name
-        item_3d.material(ddd.mats.stone)
+        item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
         return item_3d
 
     def generate_item_3d_post_box(self, item_2d):
@@ -289,7 +289,7 @@ class ItemsOSMBuilder():
         coords = item_2d.geom.coords[0]
 
         # Check if item can be placed
-        invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d])
+        invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d]).clean(eps=0.01)
         if not self.osm.osmops.placement_valid(ddd.disc(coords, r=0.2, resolution=0, name=item_2d.name), invalid=invalid):
             return None
 
