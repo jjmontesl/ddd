@@ -965,7 +965,7 @@ class WaysOSMBuilder():
                     shape2 = join_ways.children[j]
                     # points = shape1.exterior.intersection(shape2.exterior)
                     # join_points.extend(points)
-                    shape = shape1.intersect(shape2).clean(eps=0.01)
+                    shape = shape1.intersection(shape2).clean(eps=0.01)
                     join_shapes.append(shape)
             # intersection_shape = MultiPoint(join_points).convex_hull
             intersection_shape = ddd.group(join_shapes, empty=2).union().convex_hull()
@@ -990,7 +990,7 @@ class WaysOSMBuilder():
                 '''
 
                 intersection_2d = highest_way.copy(name="Intersection (%s)" % highest_way.name)
-                intersection_2d.extra['way_1d'] = highest_way.copy()
+                intersection_2d.extra['way_1d'] = highest_way  #.copy()
                 # intersection_2d.extra['way_1d'].geom = ddd.group2(highest_ways).union().geom
                 intersection_2d.extra['way_1d'].children = highest_ways
 
@@ -1360,10 +1360,10 @@ class WaysOSMBuilder():
 
         # FIXME: Move cropping to generic site, use itermediate osm.something for storage
         crop = ddd.shape(self.osm.area_crop)
-        sidewalks_2d = sidewalks_2d.intersect(crop)
-        walls_2d = walls_2d.intersect(crop)
-        floors_2d = floors_2d.intersect(crop)
-        ceilings_2d = ceilings_2d.intersect(crop)
+        sidewalks_2d = sidewalks_2d.intersection(crop)
+        walls_2d = walls_2d.intersection(crop)
+        floors_2d = floors_2d.intersection(crop)
+        ceilings_2d = ceilings_2d.intersection(crop)
 
         sidewalks_3d = sidewalks_2d.extrude(0.3).translate([0, 0, -5]).material(ddd.mats.sidewalk)
         walls_3d = walls_2d.extrude(5).translate([0, 0, -5]).material(ddd.mats.cement)
@@ -1430,9 +1430,9 @@ class WaysOSMBuilder():
 
             # FIXME: Move cropping to generic site, use itermediate osm.something for storage
             crop = ddd.shape(self.osm.area_crop)
-            sidewalk_2d = sidewalk_2d.intersect(crop.buffer(-0.003)).clean(eps=0.01)
-            wall_2d = wall_2d.intersect(crop.buffer(-0.003)).clean(eps=0.01)
-            floor_2d = floor_2d.intersect(crop.buffer(-0.003)).clean(eps=0.01)
+            sidewalk_2d = sidewalk_2d.intersection(crop.buffer(-0.003)).clean(eps=0.01)
+            wall_2d = wall_2d.intersection(crop.buffer(-0.003)).clean(eps=0.01)
+            floor_2d = floor_2d.intersection(crop.buffer(-0.003)).clean(eps=0.01)
 
             # ddd.group((sidewalk_2d, wall_2d)).show()
             elevated.append((sidewalk_2d, wall_2d, floor_2d))
@@ -1569,8 +1569,8 @@ class WaysOSMBuilder():
                 # FIXME: Move cropping to generic site, use itermediate osm.something for storage
                 # Also, cropping shall interpolate UVs
                 crop = ddd.shape(self.osm.area_crop)
-                line = line.intersect(crop)
-                line = line.intersect(way_2d)
+                line = line.intersection(crop)
+                line = line.intersection(way_2d)
                 line = line.individualize()
 
                 # if line.geom and not line.geom.is_empty:

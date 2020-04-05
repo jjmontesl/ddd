@@ -47,4 +47,12 @@ class OSMBuilderOps():
 
         return currently_valid
 
+    def placement_smart(self, obj, options):
+        """
+        Consider other objects (eg. do not place on fountains or trees)
+        """
+
+        # options = [{'valid': if distance &...}]
+
+        pass
 

@@ -46,6 +46,7 @@ class AreasOSMBuilder():
         self.osm = osmbuilder
 
     def generate_areas_2d(self):
+        logger.info("Generating 2D areas.")
         logger.warning("BRING AREAITEMS here and sort them too. Possibly remove areaitems, and refactor from here (2D -> shapes).")
 
         areas = []
@@ -61,8 +62,8 @@ class AreasOSMBuilder():
             try:
                 area.validate()
             except DDDException as e:
-                logger.warn("Invalid geometry for area %s (ignoring area): %s", area, e)
-                return None
+                logger.warn("Invalid geometry (ignoring area) for area %s: %s", area, e)
+                continue
 
             area.extra['osm:feature'] = feature
             area.extra['ddd:area:type'] = None
@@ -241,19 +242,28 @@ class AreasOSMBuilder():
 
     def generate_areas_2d_interways(self):
 
-        logger.info("Generating 2D areas between ways")
+        logger.info("Generating 2D areas between ways.")
 
         #self.osm.ways_2d['0'].dump()
         #self.osm.ways_2d['-1a'].dump()
         #self.osm.areas_2d.dump()
+
+        areas_2d = self.osm.areas_2d
+        #areas_2d_unsubtracted = ddd.group2()
+        #for a in self.osm.areas_2d.children:
+        #    if a.extra.get('ddd:area:original', None):
+        #        areas_2d.append(a.extra.get('ddd:area:original'))
+
         try:
-            union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], self.osm.areas_2d]).union()
+            #ways_2d_0 = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('highway', None) not in ('path', 'track', 'footway', None))
+            ways_2d_0 = self.osm.ways_2d["0"]
+            union = ddd.group([ways_2d_0, self.osm.ways_2d['-1a'], areas_2d]).union()
         except TopologicalError as e:
             logger.error("Error calculating interways: %s", e)
-            l0 = self.osm.ways_2d['0'].union()
+            l0 = ways_2d_0.union()
             lm1a = self.osm.ways_2d['-1a'].union()
             #l0a = self.osm.ways_2d['0a'].union()  # shall be trimmed  # added to avoid height conflicts but leaves holes
-            c = self.osm.areas_2d.clean(eps=0.01).union()
+            c = areas_2d.clean(eps=0.01).union()
             try:
                 union = ddd.group2([c, l0, lm1a])
                 #union = union.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
@@ -262,7 +272,7 @@ class AreasOSMBuilder():
             except TopologicalError as e:
                 logger.error("Error calculating interways (2): %s", e)
                 union = ddd.group2()
-                #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], self.osm.areas_2d]).union()
+                #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], areas_2d]).union()
 
         #union = union.buffer(0.5)
         #union = union.buffer(-0.5)
@@ -275,16 +285,69 @@ class AreasOSMBuilder():
             for interior in c.interiors:
                 area = ddd.polygon(interior.coords, name="Interways area")
                 if area:
-                    area = area.subtract(union)
+                    #area = area.subtract(union)
                     area = area.clean(eps=0.01)
                     area = area.material(ddd.mats.pavement)
+                    area.extra['ddd:area:type'] = 'sidewalk'
                     self.osm.areas_2d.children.append(area)
                 else:
                     logger.warn("Invalid square.")
 
+    '''
+    def generate_areas_ways_relations(self):
+        logger.info("Areas - Ways relations (%d areas, %d ways['0']).", len(self.osm.areas_2d.children), len(self.osm.ways_2d['0'].children))
+        for area in self.osm.areas_2d.children:
+            if area.extra.get('ddd:area:type', None) != 'sidewalk': continue
+    '''
+
     def generate_areas_2d_postprocess(self):
-        #for area in self.osm.areas_2d.children:
-        pass
+        logger.info("Postprocessing areas and ways (%d areas, %d ways['0']).", len(self.osm.areas_2d.children), len(self.osm.ways_2d['0'].children))
+
+        #
+        areas_2d_original = ddd.group2()
+        for a in self.osm.areas_2d.children:
+            if a.extra.get('ddd:area:original', None):
+                areas_2d_original.append(a.extra.get('ddd:area:original'))
+
+        # Remove paths from some areas (sidewalks), and reincorporate to them
+        #to_remove = []
+        for way_2d in self.osm.ways_2d['0'].children:
+            if way_2d.extra.get('highway', None) not in ('footway', 'path', 'track', None): continue
+
+            for area in areas_2d_original.children:  #self.osm.areas_2d.children:  # self.osm.areas_2d.children:
+
+                #area_original = area.extra.get('ddd:area:original', None)
+                #if area_original is None: continue
+
+                area_original = area
+
+                #if area.extra.get('ddd:area:type', None) != 'sidewalk': continue
+
+                intersects = False
+                try:
+                    intersects = area_original.intersects(way_2d)
+                except Exception as e:
+                    logger.error("Could not calculate intersections between way and area: %s %s", way_2d, area)
+                    raise DDDException("Could not calculate intersections between way and area: %s %s" % (way_2d, area))
+
+                if intersects:
+                    logger.info("Path %s intersects area: %s (subtracting and arranging)", way_2d, area)
+                    way_2d.extra['ddd:area:container'] = area_original
+                    #to_remove.append(area
+
+                    intersection = way_2d.intersection(area_original)
+                    remainder = way_2d.subtract(area_original)
+
+                    way_2d.replace(intersection)  # way_2d.subtract(intersection))
+
+                    remainder = remainder.material(ddd.mats.pavement)
+                    area.extra['ddd:area:type'] = 'sidewalk'
+                    remainder.name = "Path to interways: %s" % way_2d.name
+                    remainder.clean(eps=0.001)
+                    self.osm.areas_2d.append(remainder)
+                    #area = area.union().clean(eps=0.001)
+
+        #self.osm.areas_2d.children = [c for c in self.osm.areas_2d.children if c not in to_remove]
 
     def generate_coastline_3d(self, area_crop):
 
@@ -366,7 +429,7 @@ class AreasOSMBuilder():
         #terr = ddd.grid2(area_crop.bounds, detail=10.0).buffer(0.0)  # useless, shapely does not keep triangles when operating
         terr = ddd.rect(area_crop.bounds, name="Ground")
 
-        terr = terr.subtract(self.osm.ways_2d['0'])
+        terr = terr.subtract(self.osm.ways_2d['0'].clean(eps=0.01))
         terr = terr.clean(eps=0.01)
 
         terr = terr.subtract(self.osm.ways_2d['-1a'])
@@ -417,10 +480,13 @@ class AreasOSMBuilder():
             try:
                 if area_2d.extra.get('ddd:area:type', None) is None:
                     area_3d = self.generate_area_3d(area_2d)
+                elif area_2d.extra['ddd:area:type'] == 'sidewalk':
+                    area_3d = self.generate_area_3d(area_2d)
                 elif area_2d.extra['ddd:area:type'] == 'pitch':
                     area_3d = self.generate_area_3d_pitch(area_2d)
                 else:
-                    raise AssertionError("Area type undefined.")
+                    logger.warning("Area type undefined: %s", area_2d.extra.get('ddd:area:type', None))
+                    raise AssertionError("Area type undefined: %s" % (area_2d.extra.get('ddd:area:type', None)))
 
                 self.osm.areas_3d.children.append(area_3d)
             except ValueError as e:

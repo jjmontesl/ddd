@@ -4,6 +4,8 @@
 
 import logging
 from ddd.ddd import ddd
+import pickle
+import os
 
 
 # Get instance of logger for this module
@@ -27,27 +29,74 @@ class PrefabCatalog():
 
     def __init__(self):
         self._cache = {}
-
-    def show(self):
-        ddd.distribute.grid(ddd.group(self._cache.values())).show()
+        self.path = "./catalog"
+        self.autosave = True
+        self.autoload = True
 
     def add(self, key, obj):
         """
         This method returns an instance of the added object, like 'instance' does,
         so the result can be directly used as if it was retrieved from the catalog.
         """
-        if key in self._cache:
+        if key in self._cache and self._cache[key]:
             raise ValueError("Object already exists in catalog: %s", key)
         obj.extra['ddd:catalog:key'] = key
         self._cache[key] = obj
+
+        if self.autosave:
+            self.save(key)
 
         obj = self.instance(key)
         return obj
 
     def instance(self, key):
         obj = self._cache.get(key, None)
+
+        if obj is None and self.autoload:
+            obj = self.load(key)
+
         if obj:
             obj = ddd.instance(obj)
             obj.extra['ddd:instance:key'] = key
+
         return obj
+
+    def show(self):
+        ddd.distribute.grid(ddd.group(self._cache.values())).show()
+
+    def save(self, key):
+        obj = self._cache[key]
+        filename = self.path + "/" + key + ".ddd"
+        logger.info("Saving catalog object %s to: %s", key, filename)
+        data = pickle.dumps(obj)
+        with open(filename, "wb") as f:
+            f.write(data)
+
+    def load(self, key):
+        """
+        Returns an instance or None.
+        """
+        obj = None
+        filename = self.path + "/" + key + ".ddd"
+
+        if os.path.exists(filename):
+            logger.info("Loading catalog object %s from: %s", key, filename)
+            with open(filename, "rb") as f:
+                data = pickle.load(f)
+                self._cache[key] = data
+                obj = self.instance(key)
+        else:
+            self._cache[key] = None
+
+        return obj
+
+    def loadall(self):
+        for p in os.listdir(self.path):
+            if p.endswith(".ddd"):
+                key = p[:-4]
+                self.load(key)
+
+    def export(self, path="catalog.glb"):
+        scene = ddd.group(self._cache.values())
+        scene.save(path)
 

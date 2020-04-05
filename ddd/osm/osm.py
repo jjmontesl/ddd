@@ -303,8 +303,8 @@ class OSMBuilder():
         if self.area_crop:
             logger.info("Cropping to: %s" % (self.area_crop.bounds, ))
             crop = ddd.shape(self.area_crop)
-            self.areas_2d = self.areas_2d.intersect(crop)
-            self.ways_2d = {k: self.ways_2d[k].intersect(crop) for k in self.layer_indexes}
+            self.areas_2d = self.areas_2d.intersection(crop)
+            self.ways_2d = {k: self.ways_2d[k].intersection(crop) for k in self.layer_indexes}
 
             #self.items_1d = self.items_1d.intersect(crop)
             self.items_1d = ddd.group([b for b in self.items_1d.children if self.area_crop.contains(b.geom.centroid)], empty=2)

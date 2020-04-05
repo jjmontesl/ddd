@@ -11,13 +11,19 @@ items = ddd.group3()
 
 catalog = PrefabCatalog()
 
-#item = urban.trafficlights()
-item = plants.plant(height=10)
-catalog.add('prefab1', item)
+catalog.loadall()
 
-item = urban.trafficlights()
-#item = plants.plant(fork_iters=3, height=7)
-catalog.add('prefab2', item)
+item = catalog.instance('prefab1')  # Preload
+if not item:
+    item = plants.plant(height=10)
+    #item = urban.trafficlights()
+    catalog.add('prefab1', item)
+
+item = catalog.instance('prefab2')  # Preload
+if not item:
+    item = urban.trafficlights()
+    #item = plants.plant(fork_iters=3, height=7)
+    catalog.add('prefab2', item)
 
 items = ddd.group3()
 

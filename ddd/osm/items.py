@@ -24,7 +24,7 @@ class ItemsOSMBuilder():
         self.pool = {}
         #self.pool['tree'] = [self.generate_item_3d_tree(ddd.point([0, 0, 0])) for i in range(8)]
 
-        self.tree_decimate = 3
+        self.tree_decimate = 1
         self.tree_decimate_idx = 0
 
     def generate_items_1d(self):
@@ -85,6 +85,10 @@ class ItemsOSMBuilder():
         #    item_3d = self.generate_item_3d_taxi(item_2d)
         #elif item_2d.extra.get('amenity', None) == 'toilets':
         #    item_3d = self.generate_item_3d_taxi(item_2d)
+        elif item_2d.extra.get('amenity', None) == 'waste_basket':
+            item_3d = self.generate_item_3d_waste_basket(item_2d)
+        elif item_2d.extra.get('amenity', None) == 'waste_disposal':
+            item_3d = self.generate_item_3d_waste_disposal(item_2d)
 
         elif item_2d.extra.get('natural', None) == 'tree':
             self.tree_decimate_idx += 1
@@ -130,6 +134,8 @@ class ItemsOSMBuilder():
             height_mapping = item_3d.extra.get('_height_mapping', 'terrain_geotiff_min_elevation_apply')
             if height_mapping == 'terrain_geotiff_elevation_apply':
                 item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
+            elif height_mapping == 'terrain_geotiff_incline_elevation_apply':
+                item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
             else:
                 item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
 
@@ -174,14 +180,19 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_bench(self, item_2d):
-        # Todo: Use fountain shape if available, instead of centroid
+        key = "bench-default-1"
+        item_3d = self.osm.catalog.instance(key)
+
+        if not item_3d:
+            item_3d = urban.bench(length=2.0)
+            item_3d = self.osm.catalog.add(key, item_3d)
+
         coords = item_2d.geom.coords[0]
         oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
-        item_3d = urban.bench(length=2.0)
         item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Bench: %s' % item_2d.name
-        item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
+        item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
         return item_3d
 
     def generate_item_3d_post_box(self, item_2d):
@@ -194,6 +205,29 @@ class ItemsOSMBuilder():
         item_3d = urban.post_box().translate([coords[0], coords[1], 0.0])
         operator = item_2d.extra['osm:feature'].get('operator')
         item_3d.name = 'Postbox (%s): %s' % (operator, item_2d.name)
+        return item_3d
+
+    def generate_item_3d_waste_basket(self, item_2d):
+        coords = item_2d.geom.coords[0]
+        invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d]).clean(eps=0.01)
+
+        item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
+        if not self.osm.osmops.placement_valid(item_2d.buffer(r=0.2), invalid=invalid): return None
+
+        itemtype = "waste-basket" if random.uniform(0, 1) < 0.5 else "waste-basket-post"
+
+        key = "%s-default-1" % itemtype
+        item_3d = self.osm.catalog.instance(key)
+        if not item_3d:
+            if itemtype == "waste-basket":
+                item_3d = urban.trash_bin()
+            else:
+                item_3d = urban.trash_bin_post()
+            item_3d = self.osm.catalog.add(key, item_3d)
+
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+        item_3d.name = 'Waste bin (%s): %s' % (item_2d.name)
         return item_3d
 
     def generate_item_3d_taxi(self, item_2d):
@@ -235,7 +269,8 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_bus_stop(self, item_2d):
-        item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-0.5)
+        busways = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('highway', None) not in ('path', 'track', 'footway', None))
+        item_2d = ddd.snap.project(item_2d, busways, penetrate=-0.5)
         coords = item_2d.geom.coords[0]
         text = item_2d.extra.get("name", None)
         item_3d = urban.busstop_small(text=text)

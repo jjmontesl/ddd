@@ -154,12 +154,18 @@ class BuildingOSMBuilder():
             point.extra['name'] = feature['properties'].get('name', None)
 
             building, distance = self.closest_building(point)
-            #logger.debug("Point: %s  Building: %s  Distance: %s", point, building, distance)
-
             if not building:
                 continue
 
+            point.extra['osm:building'] = building
+
             if point.extra['amenity'] or point.extra['shop']:
+                #logger.debug("Point: %s  Building: %s  Distance: %s", point, building, distance)
+
+                # TODO: Do the opposite, create items we are interested in
+                if point.extra['amenity'] in ('waste_disposal', 'waste_basket'):
+                    continue
+
                 building.extra['amenities'].append(point)
                 #logger.debug("Amenity: %s" % point)
 
@@ -240,6 +246,7 @@ class BuildingOSMBuilder():
                 item.name = "Panel: %s %s" % (item_1d.extra['amenity'], item_1d.extra['name'])
                 item = self.snap_to_building(item, building_3d)
                 item = item.translate([0, 0, 3.2])  # no post
+                color = random.choice(["#d41b8d", "#a7d42a", "#e2de9f", "#9f80e2"])
                 item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
                 building_3d.children.append(item)
                 #building_3d.show()

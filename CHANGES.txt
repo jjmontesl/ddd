@@ -1,5 +1,6 @@
 [0.4.3]
 
+  * Added catalog support.
   * Added osmops for item placement.
   * Fixed bug in intersects() causing false negatives.
   * Improved walls and areas (inner areas removed, buildings removed from walls...).

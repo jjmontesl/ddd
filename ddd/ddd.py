@@ -321,15 +321,31 @@ class DDDObject():
             cr = c.filter(func)
             if cr: result.extend(cr.children)
 
-        if isinstance(self, DDDObject2):
-            return ddd.group(result, empty=2)
-        elif isinstance(self, DDDObject3):
-            return ddd.group(result, empty=3)
-        else:
-            return ddd.group(result)
+        return self.grouptyped(result)
 
     def filter(self, func):
         return self.select(func)
+
+    def grouptyped(self, children=None):
+        if isinstance(self, DDDObject2):
+            return ddd.group(children, empty=2)
+        elif isinstance(self, DDDObject3):
+            return ddd.group(children, empty=3)
+        else:
+            return ddd.group()
+
+    def flatten(self):
+        result = self.grouptyped()
+
+        res = self.copy()
+        children = res.children
+        res.children = []
+
+        result.append(res)
+        for c in children:
+            result.children.extend(c.flatten().children)
+
+        return result
 
     def append(self, obj):
         self.children.append(obj)
@@ -364,6 +380,18 @@ class DDDObject2(DDDObject):
     def copy(self, name=None):
         obj = DDDObject2(name=name if name else self.name, children=[c.copy() for c in self.children], geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
         return obj
+
+    def replace(self, obj):
+        """
+        Replaces self data with data from other object. Serves to "replace"
+        instances in lists.
+        """
+        # TODO: Study if the system shall modify instances and let user handle cloning, this method would be unnecessary
+        self.geom = obj.geom
+        self.name = obj.name
+        self.extra = obj.extra
+        self.material = obj.material
+        return self
 
     def material(self, material):
         obj = self.copy()
@@ -419,7 +447,7 @@ class DDDObject2(DDDObject):
         result.children = [c.scale(coords) for c in self.children]
         return result
 
-    def clean(self, eps=None):
+    def clean(self, eps=None, remove_empty=True):
         result = self.copy()
         if result.geom and not self.children and eps:
             result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
@@ -429,7 +457,11 @@ class DDDObject2(DDDObject):
         if result.geom and not result.geom.is_simple:
             logger.warn("Removed geometry that crosses itself: %s", result)
             result.geom = None
-        result.children = [c.clean(eps=eps) for c in self.children]
+        result.children = [c.clean(eps=eps, remove_empty=remove_empty) for c in self.children]
+
+        if remove_empty:
+            result.children = [c for c in result.children if c.children or c.geom]
+
         return result
 
     def outline(self):
@@ -530,7 +562,7 @@ class DDDObject2(DDDObject):
 
         return result
 
-    def intersect(self, other):
+    def intersection(self, other):
         """
         Calculates the intersection of this object and children with
         the other object (and children).
@@ -540,7 +572,7 @@ class DDDObject2(DDDObject):
 
         if self.geom and other.geom:
             result.geom = self.geom.intersection(other.geom)
-        result.children = [c.intersect(other) for c in self.children]
+        result.children = [c.intersection(other) for c in self.children]
 
         return result
 
@@ -971,11 +1003,13 @@ class DDDInstance(DDDObject):
         if self.ref:
 
             generate_marker = True
-            generate_mesh = False
+            generate_mesh = True
 
             ref = self.ref.copy()
             if generate_mesh:
-                ref = ref.scale(self.transform.scale)
+                if self.transform.scale != [1, 1, 1]:
+                    raise DDDException("Invalid scale for an instance object (%s): %s", self.transform.scale, self)
+                #ref = ref.scale(self.transform.scale)
                 ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
                 ref = ref.translate(self.transform.position)
                 refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/")
