@@ -120,12 +120,13 @@ class WaysOSMBuilder():
         vertex_cache = None
         '''
 
-        # Split first and last only
+        # Split ways on joins
         vertex_cache = defaultdict(list)
         for way in self.osm.ways_1d.children:
             start = way.geom.coords[0]
             end = way.geom.coords[-1]
-            for c in (start, end):
+            #for c in (start, end):
+            for c in list(way.geom.coords):
                 vertex_cache[c].append(way)
 
         split = True
@@ -133,7 +134,8 @@ class WaysOSMBuilder():
             split = False
             for way in self.osm.ways_1d.children:
                 for way_idx, c in enumerate(way.geom.coords[1:-1]):
-                    if c in vertex_cache:
+                    # If vertex is shared (in cache and more than one feature uses it)
+                    if c in vertex_cache and len(vertex_cache[c]) > 1:
                         # if w.extra['natural'] == 'coastline': continue
                         split1, split2 = self.split_way_1d_vertex(way, c)
                         if split1 and split2:
@@ -990,7 +992,7 @@ class WaysOSMBuilder():
                 '''
 
                 intersection_2d = highest_way.copy(name="Intersection (%s)" % highest_way.name)
-                intersection_2d.extra['way_1d'] = highest_way  #.copy()
+                intersection_2d.extra['way_1d'] = highest_way.copy()
                 # intersection_2d.extra['way_1d'].geom = ddd.group2(highest_ways).union().geom
                 intersection_2d.extra['way_1d'].children = highest_ways
 
@@ -1356,7 +1358,7 @@ class WaysOSMBuilder():
         sidewalks_2d = union_sidewalks.subtract(union_with_transitions)  # we include transitions
         walls_2d = sidewalks_2d.buffer(0.5, cap_style=2, join_style=2).subtract(union_sidewalks)
         floors_2d = union_sidewalks.copy()
-        ceilings_2d = union.copy()
+        ceilings_2d = union.buffer(0.6, cap_style=2, join_style=2).subtract(self.osm.ways_2d["-1a"])
 
         # FIXME: Move cropping to generic site, use itermediate osm.something for storage
         crop = ddd.shape(self.osm.area_crop)
@@ -1369,7 +1371,7 @@ class WaysOSMBuilder():
         walls_3d = walls_2d.extrude(5).translate([0, 0, -5]).material(ddd.mats.cement)
         #floors_3d = floors_2d.extrude(-0.3).translate([0, 0, -5]).material(ddd.mats.sidewalk)
         floors_3d = floors_2d.triangulate().translate([0, 0, -5]).material(ddd.mats.sidewalk)
-        ceilings_3d = ceilings_2d.extrude(0.5).translate([0, 0, -0.5]).material(ddd.mats.cement)
+        ceilings_3d = ceilings_2d.extrude(0.5).translate([0, 0, -1.0]).material(ddd.mats.cement)
 
         sidewalks_3d = terrain.terrain_geotiff_elevation_apply(sidewalks_3d, self.osm.ddd_proj)
         sidewalks_3d = ddd.uv.map_cubic(sidewalks_3d)
@@ -1417,14 +1419,13 @@ class WaysOSMBuilder():
             connected = self.follow_way(way.extra['way_1d'], 1)
             connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
             if 'intersection_start_2d' in way.extra['way_1d'].extra:
-                connected_2d.children.append(way.extra['way_1d'].extra['intersection_start_2d'])
+                connected_2d.append(way.extra['way_1d'].extra['intersection_start_2d'])
             if 'intersection_end_2d' in way.extra['way_1d'].extra:
-                connected_2d.children.append(way.extra['way_1d'].extra['intersection_end_2d'])
+                connected_2d.append(way.extra['way_1d'].extra['intersection_end_2d'])
             # print(connected)
-            # print(connected_2d)
 
             sidewalk_2d = sidewalk_2d.subtract(connected_2d).buffer(0.001)
-            wall_2d = wall_2d.subtract(connected_2d).buffer(sidewalk_width)
+            wall_2d = wall_2d.subtract(connected_2d.buffer(sidewalk_width))
             # TODO: Subtract floors from connected or resolve intersections
             wall_2d = wall_2d.subtract(elevated_union)
 

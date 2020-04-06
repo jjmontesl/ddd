@@ -57,6 +57,7 @@ class D1D2D3Bootstrap():
 
         parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug logging")
         parser.add_argument("-v", "--visualize-errors", action="store_true", default=False, help="visualize objects that caused exceptions")
+        parser.add_argument("-o", "--overwrite", action="store_true", default=False, help="overwrite output files")
 
         #exclusive_grp = parser.add_mutually_exclusive_group()
         #exclusive_grp.add_argument('--color', action='store_true', dest='color', default=None, help='color')
@@ -82,6 +83,7 @@ class D1D2D3Bootstrap():
         self.debug = args.debug
         self.script = args.script
         self.visualize_errors = args.visualize_errors
+        self.overwrite = args.overwrite
 
         self._unparsed_args = unparsed_args
 

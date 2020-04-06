@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 class OSMBuilderOps():
 
     def __init__(self, osm):
-
         self.osm = osm
 
     def extend_way(self, obj):
@@ -49,9 +48,8 @@ class OSMBuilderOps():
 
     def placement_smart(self, obj, options):
         """
-        Consider other objects (eg. do not place on fountains or trees)
+        Consider other objects (eg. do not place on fountains or trees).
         """
-
         # options = [{'valid': if distance &...}]
 
         pass

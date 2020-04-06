@@ -285,7 +285,7 @@ class AreasOSMBuilder():
             for interior in c.interiors:
                 area = ddd.polygon(interior.coords, name="Interways area")
                 if area:
-                    #area = area.subtract(union)
+                    area = area.subtract(union)
                     area = area.clean(eps=0.01)
                     area = area.material(ddd.mats.pavement)
                     area.extra['ddd:area:type'] = 'sidewalk'
@@ -307,7 +307,8 @@ class AreasOSMBuilder():
         areas_2d_original = ddd.group2()
         for a in self.osm.areas_2d.children:
             if a.extra.get('ddd:area:original', None):
-                areas_2d_original.append(a.extra.get('ddd:area:original'))
+                if a.extra.get('ddd:area:original') not in areas_2d_original.children:
+                    areas_2d_original.append(a.extra.get('ddd:area:original'))
 
         # Remove paths from some areas (sidewalks), and reincorporate to them
         #to_remove = []
@@ -331,7 +332,7 @@ class AreasOSMBuilder():
                     raise DDDException("Could not calculate intersections between way and area: %s %s" % (way_2d, area))
 
                 if intersects:
-                    logger.info("Path %s intersects area: %s (subtracting and arranging)", way_2d, area)
+                    logger.debug("Path %s intersects area: %s (subtracting and arranging)", way_2d, area)
                     way_2d.extra['ddd:area:container'] = area_original
                     #to_remove.append(area
 
