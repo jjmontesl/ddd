@@ -61,8 +61,12 @@ class PrefabCatalog():
 
         return obj
 
+    def all(self):
+        items = [self.instance(k) for k in self._cache.keys() if self._cache[k]]
+        return ddd.group3(items)
+
     def show(self):
-        ddd.distribute.grid(ddd.group(self._cache.values())).show()
+        ddd.align.grid(self.all()).show()
 
     def save(self, key):
         obj = self._cache[key]
@@ -97,6 +101,6 @@ class PrefabCatalog():
                 self.load(key)
 
     def export(self, path="catalog.glb"):
-        scene = ddd.group(self._cache.values())
-        scene.save(path)
+        scene = self.all()
+        scene.save(path, instance_mesh=True, instance_marker=True)
 

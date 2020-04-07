@@ -24,7 +24,7 @@ class ItemsOSMBuilder():
         self.pool = {}
         #self.pool['tree'] = [self.generate_item_3d_tree(ddd.point([0, 0, 0])) for i in range(8)]
 
-        self.tree_decimate = 1
+        self.tree_decimate = 3
         self.tree_decimate_idx = 0
 
     def generate_items_1d(self):
@@ -87,8 +87,8 @@ class ItemsOSMBuilder():
         #    item_3d = self.generate_item_3d_taxi(item_2d)
         elif item_2d.extra.get('amenity', None) == 'waste_basket':
             item_3d = self.generate_item_3d_waste_basket(item_2d)
-        elif item_2d.extra.get('amenity', None) == 'waste_disposal':
-            item_3d = self.generate_item_3d_waste_disposal(item_2d)
+        #elif item_2d.extra.get('amenity', None) == 'waste_disposal':
+        #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
 
         elif item_2d.extra.get('natural', None) == 'tree':
             self.tree_decimate_idx += 1
@@ -212,7 +212,7 @@ class ItemsOSMBuilder():
         invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d]).clean(eps=0.01)
 
         item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
-        if not self.osm.osmops.placement_valid(item_2d.buffer(r=0.2), invalid=invalid): return None
+        if not self.osm.osmops.placement_valid(item_2d.buffer(0.2), invalid=invalid): return None
 
         itemtype = "waste-basket" if random.uniform(0, 1) < 0.5 else "waste-basket-post"
 
@@ -227,7 +227,7 @@ class ItemsOSMBuilder():
 
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
-        item_3d.name = 'Waste bin (%s): %s' % (item_2d.name)
+        item_3d.name = 'Waste bin (%s): %s' % (itemtype, item_2d.name)
         return item_3d
 
     def generate_item_3d_taxi(self, item_2d):

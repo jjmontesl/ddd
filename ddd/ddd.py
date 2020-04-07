@@ -335,7 +335,10 @@ class DDDObject():
             return ddd.group()
 
     def flatten(self):
-        result = self.grouptyped()
+
+        result = self.copy()
+        result.children = []
+        result.geom = None
 
         res = self.copy()
         children = res.children
@@ -553,7 +556,7 @@ class DDDObject2(DDDObject):
                 try:
                     result.geom = result.geom.union(union.geom)
                 except Exception as e:
-                    logger.error("Cannot perform union between %s and %s (unioned).", result, other)
+                    logger.error("Cannot perform union (1st try) between %s and %s.", result, other)
                     result = result.clean(eps=0.001)
                     other = other.clean(eps=0.001)
                     result.geom = result.geom.union(union.geom)
@@ -616,11 +619,11 @@ class DDDObject2(DDDObject):
     def validate(self):
         if self.geom:
             if not self.geom.is_valid:
-                raise DDDException("Invalid polygon: poligon is invalid for Shapely.")
+                raise DDDException("Invalid polygon: polygon is invalid for Shapely.")
             if self.geom.is_empty:
                 raise DDDException("Invalid polygon: empty.")
             if not self.geom.is_simple:
-                raise DDDException("Invalid polygon: poligon is not simple.")
+                raise DDDException("Invalid polygon: polygon is not simple.")
             if self.geom.type == "Polygon":
                 if len(list(self.geom.exterior.coords)) < 3:
                     raise AssertionError()
@@ -831,7 +834,7 @@ class DDDObject2(DDDObject):
         return result
 
     def random_points(self, num_points=1, density=None):
-        # TODO: use density or count, accoridng to poligon area :?
+        # TODO: use density or count, accoridng to polygon area :?
         result = []
         minx, miny, maxx, maxy = self.geom.bounds
         while len(result) < num_points:
@@ -976,7 +979,7 @@ class DDDInstance(DDDObject):
         obj.transform.rotation = transformations.quaternion_multiply(rot, obj.transform.rotation)  # order matters!
         return obj
 
-    def _recurse_scene(self, path_prefix=""):
+    def _recurse_scene(self, path_prefix, instance_mesh, instance_marker):
 
         auto_name = "node_%s" % (id(self))
         node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
@@ -1002,31 +1005,28 @@ class DDDInstance(DDDObject):
         scene = Scene()
         if self.ref:
 
-            generate_marker = True
-            generate_mesh = True
-
             ref = self.ref.copy()
-            if generate_mesh:
+            if instance_mesh:
                 if self.transform.scale != [1, 1, 1]:
                     raise DDDException("Invalid scale for an instance object (%s): %s", self.transform.scale, self)
                 #ref = ref.scale(self.transform.scale)
                 ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
                 ref = ref.translate(self.transform.position)
-                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/")
+                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", instance_mesh=instance_mesh, instance_marker=instance_marker)
                 scene = append_scenes([scene] + [refscene])
 
-            if generate_marker:
+            if instance_marker:
                 ref = D1D2D3.marker(self.name)
                 ref = ref.scale(self.transform.scale)
                 ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
                 ref = ref.translate(self.transform.position)
                 ref.extra.update(self.ref.extra)
                 ref.extra.update(self.extra)
-                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/")
+                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", instance_mesh=instance_mesh, instance_marker=instance_marker)
                 scene = append_scenes([scene] + [refscene])
 
         else:
-            raise ValueError("Instance should reference another object.")
+            raise DDDException("Instance should reference another object: %s" % (self, ))
 
         '''
         cscenes = []
@@ -1215,7 +1215,7 @@ class DDDObject3(DDDObject):
         result = extrusion.extrude_step(result, obj_2d, offset, cap=cap)
         return result
 
-    def _recurse_scene(self, path_prefix=""):
+    def _recurse_scene(self, path_prefix, instance_mesh, instance_marker):
 
         scene = Scene()
         auto_name = "node_%s" % (id(self))
@@ -1246,7 +1246,7 @@ class DDDObject3(DDDObject):
         cscenes = []
         if self.children:
             for c in self.children:
-                cscene = c._recurse_scene(path_prefix=path_prefix + node_name + "/")
+                cscene = c._recurse_scene(path_prefix=path_prefix + node_name + "/", instance_mesh=instance_mesh, instance_marker=instance_marker)
                 cscenes.append(cscene)
 
         scene = append_scenes([scene] + cscenes)
@@ -1402,7 +1402,7 @@ class DDDObject3(DDDObject):
         pyrender.Viewer(pr_scene, lighting="direct")  #, viewport_size=resolution)
         #pyrender.Viewer(scene, lighting="direct")  #, viewport_size=resolution)
 
-    def save(self, path):
+    def save(self, path, instance_marker=True, instance_mesh=False):
         logger.info("Saving to: %s (%s)", path, self)
 
         if path.endswith('.obj'):
@@ -1417,7 +1417,7 @@ class DDDObject3(DDDObject):
 
         elif path.endswith('.glb'):
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
-            scene = rotated._recurse_scene()
+            scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = trimesh.exchange.gltf.export_glb(scene)
 
         else:

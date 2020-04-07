@@ -1,5 +1,8 @@
 [0.4.3]
 
+  * Fixed riverbanks.
+  * Using PBF+osmconvert+osmtogeojson in 1 file (resolves larger areas: rivers).
+  * Export catalog command line support, also export markers or not.
   * Added catalog support.
   * Added osmops for item placement.
   * Fixed bug in intersects() causing false negatives.

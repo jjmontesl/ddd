@@ -352,7 +352,7 @@ def bench(length=1.40, height=1.00, width=0.8, seat_height=0.45,
         legs_objs.append(leg)
 
     bench = ddd.group([seat] + legs_objs)
-    bench.material(ddd.mats.stone)
+    bench = bench.material(ddd.mats.stone)
     bench = ddd.uv.map_cubic(bench)
     bench.name = "Bench"
     return bench
@@ -370,7 +370,7 @@ def trash_bin(height=1.20, r=0.35):
     item = item.extrude_step(base, 0.05)
     item = item.extrude_step(base.buffer(-0.05), 0.0)
     item = item.extrude_step(base.buffer(-0.05), -(height - 0.4))
-    item.material(ddd.mats.steel)
+    item = item.material(ddd.mats.steel)
     return item
 
 def trash_bin_hung(height=0.70, r=0.25):
@@ -380,7 +380,7 @@ def trash_bin_hung(height=0.70, r=0.25):
     item = item.extrude_step(base.buffer(0.03, join_style=ddd.JOIN_MITRE), 0.0)
     item = item.extrude_step(base, -(height - 0.2))
     item = item.translate([0, -r, -height + 0.05])
-    item.material(ddd.mats.steel)
+    item = item.material(ddd.mats.steel)
     return item
 
 def trash_bin_post(height = 1.30):

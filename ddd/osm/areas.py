@@ -59,18 +59,25 @@ class AreasOSMBuilder():
 
             area = ddd.shape(feature['geometry'], name="Area: %s" % (feature['properties'].get('name', feature['properties'].get('id'))))
 
-            try:
-                area.validate()
-            except DDDException as e:
-                logger.warn("Invalid geometry (ignoring area) for area %s: %s", area, e)
-                continue
-
             area.extra['osm:feature'] = feature
             area.extra['ddd:area:type'] = None
-            area.extra['ddd:area:area'] = area.geom.area
+            area.extra['ddd:area:area'] = area.geom.area if area.geom else None
             area.extra['ddd:area:container'] = None
             area.extra['ddd:area:contained'] = []
             area.extra['ddd:baseheight'] = 0.0
+
+            try:
+                area.validate()
+            except DDDException as e:
+                logger.warn("Invalid geometry (cropping area) for area %s (%s): %s", area, feature['properties'], e)
+                area = area.intersection(ddd.shape(self.osm.area_crop))
+                area = area.individualize()
+                try:
+                    area.validate()
+                except DDDException as e:
+                    logger.warn("Invalid geometry (ignoring area) for area %s (%s): %s", area, feature['properties'], e)
+                    continue
+
             areas.append(area)
 
         logger.info("Sorting 2D areas  (%d).", len(areas))
@@ -111,10 +118,19 @@ class AreasOSMBuilder():
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_park(narea)
+            elif feature['properties'].get('natural', None) in ('wood', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_forest(narea)
+            elif feature['properties'].get('natural', None) in ('wetland', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_wetland(narea)
             elif feature['properties'].get('landuse', None) in ('grass', ):
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_park(narea)
+
             elif feature['properties'].get('leisure', None) in ('pitch', ):  # Cancha
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 area = self.generate_area_2d_pitch(narea)
@@ -130,9 +146,10 @@ class AreasOSMBuilder():
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_school(narea)
             elif (feature['properties'].get('waterway', None) in ('riverbank', ) or
-                  feature['properties'].get('natural', None) in ('water', )):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
+                  feature['properties'].get('natural', None) in ('water', ) or
+                  feature['properties'].get('water', None) in ('river', )):
+                #narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                #narea = narea.subtract(union)
                 area = self.generate_area_2d_riverbank(narea)
             else:
                 logger.debug("Unknown area: %s", feature)
@@ -147,7 +164,7 @@ class AreasOSMBuilder():
                 self.osm.areas_2d.append(area)
                 #self.osm.areas_2d.children.extend(area.individualize().children)
 
-    def generate_area_2d_park(self, area):
+    def generate_area_2d_park(self, area, tree_density_m2=0.0025):
 
         #area = ddd.shape(feature["geometry"], name="Park: %s" % feature['properties'].get('name', None))
         feature = area.extra['osm:feature']
@@ -162,7 +179,7 @@ class AreasOSMBuilder():
         add_trees = not has_trees # and area.geom.area > 100
 
         if add_trees and area.geom:
-            tree_density_m2 = 0.0025  # decimation would affect after
+             # decimation would affect after
             num_trees = int((area.geom.area * tree_density_m2))
             if num_trees == 0 and random.uniform(0, 1) < 0.5: num_trees = 1
             num_trees = min(num_trees, 20)
@@ -176,6 +193,12 @@ class AreasOSMBuilder():
                 self.osm.items_1d.children.append(tree)
 
         return area
+
+    def generate_area_2d_forest(self, area):
+        return self.generate_area_2d_park(area, tree_density_m2=0.0050)
+
+    def generate_area_2d_wetland(self, area):
+        return self.generate_area_2d_park(area, tree_density_m2=0.0010)
 
     def generate_area_2d_pitch(self, area):
         feature = area.extra['osm:feature']
@@ -203,6 +226,7 @@ class AreasOSMBuilder():
 
     def generate_area_2d_riverbank(self, area):
         feature = area.extra['osm:feature']
+        area = area.individualize().flatten()
         area.name = "Riverbank: %s" % feature['properties'].get('name', None)
         area = area.material(ddd.mats.sea)
         area.extra['ddd:height'] = 0.0

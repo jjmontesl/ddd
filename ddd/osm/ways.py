@@ -78,6 +78,7 @@ class WaysOSMBuilder():
 
         # Generate paths
         logger.info("Generating 1D way path objects.")
+
         for feature in self.osm.features:
             if feature['geometry']['type'] != 'LineString': continue
             way = self.generate_way_1d(feature)
@@ -550,8 +551,7 @@ class WaysOSMBuilder():
 
             return intersection
 
-        # FIXME: Seems connectios in the middle of path are incorrectly handled, split is bad, or...? (Alameda paths)
-        logger.warn("FIXME: Seems connectios in the middle of path are incorrectly handled, split is bad, or...? (Alameda paths)")
+        # Walk connected ways and generate intersections
         for way in self.osm.ways_1d.children:
 
             # For each vertex (start / end), evaluate the connection
@@ -1307,6 +1307,9 @@ class WaysOSMBuilder():
     def generate_way_3d_common(self, way_2d):
         '''
         '''
+
+        way_2d = way_2d.individualize()
+
         extra_height = way_2d.extra['extra_height']
         if extra_height:
             way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height

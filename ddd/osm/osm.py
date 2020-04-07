@@ -207,8 +207,7 @@ class OSMBuilder():
 
             #feature = f
             #if 'Río Tormes' in feature['properties'].get('name', ""):
-            #    print(feature.properties)
-            #    print(feature['geometry']['type'])
+            #    print(feature['properties']['name'], feature['geometry']['type'])
 
             geom = shape(f['geometry'])
             #if self.area_filter.contains(geom.centroid):
