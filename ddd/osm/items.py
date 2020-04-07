@@ -101,7 +101,7 @@ class ItemsOSMBuilder():
 
         elif item_2d.extra.get('tourism', None) == 'artwork' and item_2d.extra.get('artwork_type', None) == 'sculpture':
             item_3d = self.generate_item_3d_sculpture(item_2d)
-        elif item_2d.extra.get('historic', None) == 'monument':  # Monumento grande
+        elif item_2d.extra.get('historic', None) == 'monument':  # Large monument
             item_3d = self.generate_item_3d_monument(item_2d)
         elif item_2d.extra.get('historic', None) == 'memorial':
             item_3d = self.generate_item_3d_monument(item_2d)
@@ -115,6 +115,8 @@ class ItemsOSMBuilder():
 
         elif item_2d.extra.get('power', None) == 'tower':
             item_3d = self.generate_item_3d_powertower(item_2d)
+        elif item_2d.extra.get('power', None) == 'pole':
+            item_3d = self.generate_item_3d_powerpole(item_2d)
 
         elif item_2d.extra.get('barrier', None) == 'fence':
             item_3d = self.generate_item_3d_fence(item_2d)
@@ -280,9 +282,17 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_powertower(self, item_2d):
+        # TODO: Unify powertower, post, and maybe other joins, add catenaries using power:line
+        # and orient poles
         coords = item_2d.geom.coords[0]
         item_3d = landscape.powertower(18).translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Power Tower: %s' % item_2d.name
+        return item_3d
+
+    def generate_item_3d_powerpole(self, item_2d):
+        coords = item_2d.geom.coords[0]
+        item_3d = landscape.powertower(18).translate([coords[0], coords[1], 0.0])
+        item_3d.name = 'Power Pole: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_fence(self, item_2d):

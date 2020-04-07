@@ -463,7 +463,7 @@ class DDDObject2(DDDObject):
         result.children = [c.clean(eps=eps, remove_empty=remove_empty) for c in self.children]
 
         if remove_empty:
-            result.children = [c for c in result.children if c.children or c.geom]
+            result.children = [c for c in result.children if (c.children or c.geom)]
 
         return result
 

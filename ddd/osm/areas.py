@@ -61,24 +61,27 @@ class AreasOSMBuilder():
 
             area.extra['osm:feature'] = feature
             area.extra['ddd:area:type'] = None
-            area.extra['ddd:area:area'] = area.geom.area if area.geom else None
             area.extra['ddd:area:container'] = None
             area.extra['ddd:area:contained'] = []
             area.extra['ddd:baseheight'] = 0.0
 
             try:
+                area = area.individualize().flatten()
                 area.validate()
             except DDDException as e:
                 logger.warn("Invalid geometry (cropping area) for area %s (%s): %s", area, feature['properties'], e)
-                area = area.intersection(ddd.shape(self.osm.area_crop))
-                area = area.individualize()
                 try:
+                    area = area.clean(eps=0.001).intersection(ddd.shape(self.osm.area_crop))
+                    area = area.individualize().flatten()
                     area.validate()
                 except DDDException as e:
                     logger.warn("Invalid geometry (ignoring area) for area %s (%s): %s", area, feature['properties'], e)
                     continue
 
-            areas.append(area)
+            for a in area.children:
+                if a.geom:
+                    a.extra['ddd:area:area'] = a.geom.area
+                    areas.append(a)
 
         logger.info("Sorting 2D areas  (%d).", len(areas))
         areas.sort(key=lambda a: a.extra['ddd:area:area'])
@@ -226,17 +229,17 @@ class AreasOSMBuilder():
 
     def generate_area_2d_riverbank(self, area):
         feature = area.extra['osm:feature']
-        area = area.individualize().flatten()
         area.name = "Riverbank: %s" % feature['properties'].get('name', None)
-        area = area.material(ddd.mats.sea)
         area.extra['ddd:height'] = 0.0
+        area = area.individualize().flatten()
+        area = area.material(ddd.mats.sea)
         return area
 
     def generate_area_2d_unused(self, area, wallfence=True):
         feature = area.extra['osm:feature']
         area.name = "Unused land: %s" % feature['properties'].get('name', None)
-        area = area.material(ddd.mats.dirt)
         area.extra['ddd:height'] = 0.0
+        area = area.material(ddd.mats.dirt)
 
         if wallfence:
             area = self.generate_wallfence_2d(area)

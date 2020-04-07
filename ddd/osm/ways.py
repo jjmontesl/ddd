@@ -1312,7 +1312,13 @@ class WaysOSMBuilder():
 
         extra_height = way_2d.extra['extra_height']
         if extra_height:
-            way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
+            try:
+                way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
+            except DDDException as e:
+                logger.error("Could not extrude (1st try) way %s: %s", way_2d, e)
+                way_2d = way_2d.clean(eps=0.001)
+                way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
+
             way_3d = ddd.uv.map_cubic(way_3d)
         else:
             way_3d = way_2d.triangulate()  # + layer_height
