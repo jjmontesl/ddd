@@ -304,6 +304,8 @@ class DDDObject():
     def __repr__(self):
         return "<DDDObject (name=%s, children=%d)>" % (self.name, len(self.children) if self.children else 0)
 
+
+
     def dump(self, indent_level=0):
         print("  " * indent_level + str(self))
         for c in self.children:

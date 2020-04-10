@@ -163,7 +163,8 @@ class BuildingOSMBuilder():
                 #logger.debug("Point: %s  Building: %s  Distance: %s", point, building, distance)
 
                 # TODO: Do the opposite, create items we are interested in
-                if point.extra['amenity'] in ('waste_disposal', 'waste_basket'):
+                if point.extra['amenity'] in ('waste_disposal', 'waste_basket',
+                                              'recycling', 'bicycle_parking'):
                     continue
 
                 building.extra['amenities'].append(point)
@@ -186,8 +187,8 @@ class BuildingOSMBuilder():
         building_2d = building_3d.extra['building_2d']
 
         if building_2d.geom.type == "MultiPolygon":
-            logger.warn("Cannot snap to MultiPolygon building.")
-            return item_3d
+            logger.warn("Cannot snap to MultiPolygon building (ignoring item_3d)  TODO: usecommon snap functions which should support MultiPolygon")
+            return None
 
         line = building_2d.geom.exterior
         closest_distance_to_closest_point_in_exterior = line.project(amenity.geom.centroid)
@@ -253,7 +254,7 @@ class BuildingOSMBuilder():
 
             elif item_1d.extra['shop']:
                 #coords = item_1d.geom.centroid.coords[0]
-                panel_text = ((item_1d.extra['name']  + "<br>") if item_1d.extra['name'] else item_1d.extra['shop'])
+                panel_text = ((item_1d.extra['name']) if item_1d.extra['name'] else item_1d.extra['shop'])
                 item = urban.panel(width=2.5, height=0.8, text=panel_text)
                 item.extra['amenity'] = item_1d
                 item.extra['text'] = panel_text

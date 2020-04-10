@@ -89,6 +89,10 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_waste_basket(item_2d)
         #elif item_2d.extra.get('amenity', None) == 'waste_disposal':
         #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
+        #elif item_2d.extra.get('amenity', None) == 'recycling':
+        #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
+        #elif item_2d.extra.get('amenity', None) == 'bicycle_parking':
+        #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
 
         elif item_2d.extra.get('natural', None) == 'tree':
             self.tree_decimate_idx += 1
@@ -199,7 +203,7 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_post_box(self, item_2d):
 
-        logger.info("TODO: move items outside buldings and consider ground too (possibly making ground an area")
+        logger.warn("TODO: move items outside buldings and consider ground too (possibly making ground an area")
         #item_2d = ddd.snap.project(item_2d, self.osm.areas_2d, penetrate=0.5)
         item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
 
@@ -243,24 +247,30 @@ class ItemsOSMBuilder():
     def generate_item_3d_sculpture(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
+        oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
         item_3d = urban.sculpture(1.5).translate([coords[0], coords[1], 0.0]).material(ddd.mats.steel)  # mat_bronze
+        item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
         item_3d.name = 'Sculpture: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_monument(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
+        oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
         item_name = item_2d.extra['osm:feature']['properties'].get('name', None)
         if item_name:
             item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
         else:
             item_3d = urban.sculpture(2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
+        item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
         item_3d.name = 'Monument: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_wayside_cross(self, item_2d):
         coords = item_2d.geom.coords[0]
+        oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
         item_3d = urban.wayside_cross().translate([coords[0], coords[1], 0.0]).material(ddd.mats.stone)  # mat_bronze
+        item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
         item_3d.name = 'Wayside Cross: %s' % item_2d.name
         return item_3d
 

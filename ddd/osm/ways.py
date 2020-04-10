@@ -303,7 +303,7 @@ class WaysOSMBuilder():
             lanes = 1
             lane_width = 3.5
             lane_width_right = 1.5
-            lane_width_left = 1.0
+            lane_width_left = 0.5
             roadlines = True
 
         elif highway == "primary":
@@ -367,7 +367,7 @@ class WaysOSMBuilder():
             lanes = 1
             lane_width = 1.5
             material = ddd.mats.pitch
-            extra_height = 0.2
+            #extra_height = 0.0
             roadlines = True
         elif highway == "unclassified":
             lanes = 1
@@ -385,6 +385,7 @@ class WaysOSMBuilder():
             width = 0.5
             material = ddd.mats.terrain
             extra_height = 5.0  # FIXME: Things could cross othis, height shall reach sea precisely
+
         elif waterway == "river":
             lanes = None
             name = "River: %s" % name_id
