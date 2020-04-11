@@ -87,6 +87,8 @@ class WaysOSMBuilder():
                 self.osm.ways_1d.append(way)
             elif way and way.extra['ddd:item']:
                 self.osm.items_1d.append(way)
+            #else:
+            #    logger.warn("Ignoring way (unknown feature type): %s", way)
 
         # Splitting
         logger.info("Ways before splitting mid connections: %d", len(self.osm.ways_1d.children))
@@ -284,25 +286,25 @@ class WaysOSMBuilder():
         elif highway == "motorway":
             lane_width = 3.6
             lane_width_right = 1.5
-            lane_width_left = 1.0
+            lane_width_left = 0.8
             lanes = 2
             roadlines = True
         elif highway == "motorway_link":
             lanes = 1
             lane_width = 3.6
             lane_width_right = 1.5
-            lane_width_left = 1.0
+            lane_width_left = 0.8
             roadlines = True
         elif highway == "trunk":
             lanes = 1
             lane_width = 3.4
-            lane_width_right = 1.5
+            lane_width_right = 1.4
             lane_width_left = 0.5
             roadlines = True
         elif highway == "trunk_link":
             lanes = 1
-            lane_width = 3.5
-            lane_width_right = 1.5
+            lane_width = 3.4
+            lane_width_right = 1.4
             lane_width_left = 0.5
             roadlines = True
 
@@ -352,6 +354,9 @@ class WaysOSMBuilder():
             material = ddd.mats.dirt
             # extra_height = 0.2
             width = 0.6 * 3.3
+            path.extra['ddd:way:elevated:border'] = 'fence'
+            path.extra['ddd:way:elevated:material'] = ddd.mats.pathwalk
+
         elif highway in ("steps", "stairs"):
             lanes = 0
             material = ddd.mats.pathwalk
@@ -391,6 +396,8 @@ class WaysOSMBuilder():
             name = "River: %s" % name_id
             width = 6.0
             material = ddd.mats.sea
+            path.extra['ddd:area:type'] = 'water'
+            path.extra['ddd:baseheight'] = -0.5
 
         elif railway:
             lanes = None
@@ -480,7 +487,7 @@ class WaysOSMBuilder():
         if lanes is None or lanes < 1:
             roadlines = False
 
-        if not path.extra.get('oneway', False):
+        if not oneway:
             lane_width_left = lane_width_right
 
         if width is None:
@@ -513,6 +520,7 @@ class WaysOSMBuilder():
         path.extra['extra_height'] = extra_height
         path.extra['ddd_trafficlights'] = trafficlights
         path.extra['ddd:width'] = width
+        path.extra['ddd:height'] = extra_height
         path.extra['ddd:way:lane_width'] = lane_width
         path.extra['ddd:way:lane_width_left'] = lane_width_left
         path.extra['ddd:way:lane_width_right'] = lane_width_right
@@ -1324,7 +1332,10 @@ class WaysOSMBuilder():
         else:
             way_3d = way_2d.triangulate()  # + layer_height
             way_3d = ddd.uv.map_cubic(way_3d)
+            way_3d.extra['ddd:shadows'] = False  # Should come from style
+
         if way_2d.extra['natural'] == "coastline": way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
+        if way_2d.extra.get('ddd:area:type') == "water": way_3d = way_3d.translate([0, 0, -0.5])
         return way_3d
 
     def generate_way_3d_railway(self, way_2d):
@@ -1337,11 +1348,13 @@ class WaysOSMBuilder():
         way_3d = way_2d.extrude_step(way_2d_interior, rail_height, base=False, cap=False)
         way_3d = way_3d.material(ddd.mats.dirt)
         way_3d = ddd.uv.map_cubic(way_3d)
+        way_3d.extra['ddd:shadows'] = False
+        way_3d.extra['ddd:collider'] = True
 
         pathline = way_2d_interior.extra['way_1d'].copy()
         way_2d_interior = uvmapping.map_2d_path(way_2d_interior, pathline, line_x_offset=0.5, line_x_width=0.5)
         railroad_3d = way_2d_interior.triangulate().translate([0, 0, rail_height]).material(ddd.mats.railway)
-        railroad_3d.extra['ddd:collider'] = False
+        railroad_3d.extra['ddd:collider'] = True
         railroad_3d.extra['ddd:shadows'] = False
         try:
             uvmapping.map_3d_from_2d(railroad_3d, way_2d_interior)
@@ -1445,8 +1458,28 @@ class WaysOSMBuilder():
             wall_2d = wall_2d.intersection(crop.buffer(-0.003)).clean(eps=0.01)
             floor_2d = floor_2d.intersection(crop.buffer(-0.003)).clean(eps=0.01)
 
+            #FIXME: TODO: this shal be done earlier, before generating the path
+            #if way.extra.get('ddd:way:elevated:material', None):
+            #    way.extra['way_2d'].material(way.extra.get('ddd:way:elevated:material'))
+
             # ddd.group((sidewalk_2d, wall_2d)).show()
-            elevated.append((sidewalk_2d, wall_2d, floor_2d))
+            if way.extra.get('ddd:way:elevated:border', None) == 'fence':
+                fence_2d =  wall_2d.outline().clean()
+                fence_2d.material(ddd.mats.fence)
+                #fence_2d.dump()
+                #wall_2d.show()
+                fence_2d.extra['ddd:item'] = True
+                fence_2d.extra['ddd:item:height'] = 1.2
+                fence_2d.extra['ddd:height'] = 1.2
+                fence_2d.extra['barrier'] = "fence"
+                fence_2d.extra['_height_mapping'] = "terrain_geotiff_and_path_apply"
+                fence_2d.extra['way_1d'] = way.extra['way_1d']
+
+                self.osm.items_1d.append(fence_2d)
+                elevated.append((sidewalk_2d, None, floor_2d))
+            else:
+                elevated.append((sidewalk_2d, wall_2d, floor_2d))
+
             elevated_union = elevated_union.union(ddd.group([sidewalk_2d, wall_2d, floor_2d]))
 
             # Bridge piers
@@ -1496,14 +1529,19 @@ class WaysOSMBuilder():
         for item in elevated:
             sidewalk_2d, wall_2d, floor_2d = item
             sidewalk_3d = sidewalk_2d.extrude(0.2).translate([0, 0, -0.2])
-            wall_3d = wall_2d.extrude(0.6)
+            wall_3d = wall_2d.extrude(0.6) if wall_2d else None
             floor_3d = floor_2d.extrude(-0.5).translate([0, 0, -0.2])
             # extra_height = way_2d.extra['extra_height']
             # way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
 
+            sidewalk_3d = ddd.uv.map_cubic(sidewalk_3d)
+            wall_3d = ddd.uv.map_cubic(wall_3d) if wall_3d else None
+            floor_3d = ddd.uv.map_cubic(floor_3d)
+
             elevated_3d.append(sidewalk_3d)
-            elevated_3d.append(wall_3d)
             elevated_3d.append(floor_3d)
+            if wall_3d:
+                elevated_3d.append(wall_3d)
 
         # Raise items to their way height position
         nitems = []

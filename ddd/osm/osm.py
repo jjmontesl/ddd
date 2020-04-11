@@ -137,8 +137,8 @@ class OSMBuilder():
         self.areas_2d_objects = DDDObject2(name="Areas 2D Objects")
         self.areas_3d = DDDObject3(name="Areas")
 
-        self.buildings_2d = None
-        self.buildings_3d = None
+        self.buildings_2d = DDDObject2(name="Buildings 2D")
+        self.buildings_3d = DDDObject3(name="Buildings")
 
         self.water_2d = DDDObject2(name="Water 2D")
         self.water_3d = DDDObject3(name="Water")
@@ -209,10 +209,16 @@ class OSMBuilder():
             #if 'Río Tormes' in feature['properties'].get('name', ""):
             #    print(feature['properties']['name'], feature['geometry']['type'])
 
-            geom = shape(f['geometry'])
+            try:
+                geom = shape(f['geometry'])
+            except Exception as e:
+                logger.warn("Could not load feature with invalid geometry: %s", f.get('name'))
+                continue
+
             #if self.area_filter.contains(geom.centroid):
             if self.area_filter.intersects(geom):
                 filtered.append(f)
+
         features = filtered
         logger.info("Using %d features after filtering to %s" % (len(features), self.area_filter.bounds))
 
@@ -248,22 +254,6 @@ class OSMBuilder():
         # Roads sorted + intersections + metadata
         self.ways.generate_ways_1d()
 
-        # Test: get a way and walk connections
-        #ways = [w for w in self.ways_1d.children if 'de Ceta' in w.name or 'way/165386383' in w.name or 'way/666643707' in w.name or 'way/700343244' in w.name]
-        '''
-        ways = [w for w in self.ways_1d.children if 'de Ceta' in w.name]
-        ddd.group(ways).save("/tmp/test.svg")  #group(see).show()
-
-        #for way in ways:
-        ways[-1] = ways[-1].material(ddd.mat_highlight)
-        way = ways[-1]
-        for d in range(15):  #range():
-            dumped = self.ways.dump_way(way, depth=d)
-            #ddd.group(dumped).save("/tmp/test%02d.svg" % d)  #group(see).show()
-            ddd.group(dumped).buffer(1).show()
-        sys.exit(1)
-        '''
-
         # Generate buildings
         self.buildings.generate_buildings_2d()
 
@@ -274,21 +264,12 @@ class OSMBuilder():
         self.areas.generate_areas_2d_interways()  # and assign types
 
         self.areas.generate_areas_2d_postprocess()
-
-        #self.generate_unbounded_squares_2d() # this is current cropped ground, replace with this, assign types
-        #self.assign_area_types() #
-
-
-        # Buildings
-        self.buildings.link_features_2d()
-
-        '''
-        self.areas_2d = self.areas_2d.subtract(self.buildings_2d)
-        '''
+        self.areas.generate_areas_2d_postprocess_water()
 
         # Associate features (amenities, etc) to 2D objects (buildings, etc)
-        #self.buildings.associate_features()
+        self.buildings.link_features_2d()
 
+        # Coastline and ground
         self.areas.generate_coastline_3d(self.area_crop if self.area_crop else self.area_filter)  # must come before ground
         self.areas.generate_ground_3d(self.area_crop if self.area_crop else self.area_filter) # separate in 2d + 3d, also subdivide (calculation is huge - core dump-)
 

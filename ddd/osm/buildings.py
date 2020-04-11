@@ -36,9 +36,7 @@ class BuildingOSMBuilder():
             building_2d = self.generate_building_2d(feature)
 
             if building_2d:
-                buildings.append(building_2d)
-
-        self.osm.buildings_2d = ddd.group(buildings, name="Buildings", empty=2)  #translate([0, 0, 50])
+                self.osm.buildings_2d.append(building_2d)
 
     def generate_building_2d(self, feature):
         building_2d = ddd.shape(feature["geometry"], name="Building (%s)" % (feature['properties'].get("name", None)))
@@ -80,9 +78,7 @@ class BuildingOSMBuilder():
                 building_3d = self.generate_building_3d_basic(building_2d)
 
             if building_3d:
-                buildings.append(building_3d)
-
-        self.osm.buildings_3d = ddd.group(buildings, empty=3)
+                self.osm.buildings_3d.append(building_3d)
 
     def generate_building_3d_basic(self, building_2d):
 
@@ -246,10 +242,13 @@ class BuildingOSMBuilder():
                 item.extra['text'] = panel_text
                 item.name = "Panel: %s %s" % (item_1d.extra['amenity'], item_1d.extra['name'])
                 item = self.snap_to_building(item, building_3d)
-                item = item.translate([0, 0, 3.2])  # no post
-                color = random.choice(["#d41b8d", "#a7d42a", "#e2de9f", "#9f80e2"])
-                item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
-                building_3d.children.append(item)
+                if item:
+                    item = item.translate([0, 0, 3.2])  # no post
+                    color = random.choice(["#d41b8d", "#a7d42a", "#e2de9f", "#9f80e2"])
+                    item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
+                    building_3d.children.append(item)
+                else:
+                    logger.info("Could not snap item to building (skipping item): %s", item)
                 #building_3d.show()
 
             elif item_1d.extra['shop']:

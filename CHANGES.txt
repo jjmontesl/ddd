@@ -1,6 +1,6 @@
 [0.4.4]
 
-
+  * Improved water handling (an underwater terrain is now generated).
 
 [0.4.3]
 

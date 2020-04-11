@@ -24,11 +24,11 @@ class DefaultMaterials(MaterialsCollection):
         self.pathwalk = ddd.material(name="WayPedestrian", color='#78281e')
 
         self.roadline = ddd.material(name="Roadline", color='#e8e8e8', extra={'ddd:collider': False, 'ddd:shadows': False})
-        self.railway = ddd.material(name="RoadRailway", color="#47443e", extra={'ddd:shadows': False})
+        self.railway = ddd.material(name="RoadRailway", color="#47443e")
 
         # Areas
-        self.sea = ddd.material(name="Water4Advanced", color='#3d43b5', extra={'ddd:collider': False, 'ddd:shadows': False})
-        self.water = ddd.material(name="WaterBasicDaytime", color='#4d53c5', extra={'ddd:collider': False, 'ddd:shadows': False})
+        self.sea = ddd.material(name="Water4Advanced", color='#3d43b5', extra={'ddd:collider': False, 'ddd:shadows': False, 'ddd:transparent': True})
+        self.water = ddd.material(name="WaterBasicDaytime", color='#4d53c5', extra={'ddd:collider': False, 'ddd:shadows': False, 'ddd:transparent': True})
 
         self.terrain = ddd.material(name="Ground", color='#e6821e')
 
@@ -63,8 +63,8 @@ class DefaultMaterials(MaterialsCollection):
 
         # Urban props materials
         self.lightbulb = ddd.material(color='e8e0e4')
-        self.fence = ddd.material(name="Fence", color='282024')
-        self.railing = ddd.material(name="Fence", color='282024')
+        self.fence = ddd.material(name="Fence", color='282024', extra={'ddd:transparent': True})
+        self.railing = ddd.material(name="Fence", color='282024', extra={'ddd:transparent': True})
 
         # Buildings
         self.building_1 = ddd.material(color='#f7f0be')

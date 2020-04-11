@@ -50,6 +50,11 @@ class D1D2D3():
     JOIN_MITRE = 2
     JOIN_BEVEL = 3
 
+    ROT_FLOOR_TO_FRONT = (math.pi / 2.0, 0, 0)
+    ROT_TOP_CW = (0, 0, -math.pi / 2.0)
+    ROT_TOP_CCW = (0, 0, math.pi / 2.0)
+    ROT_TOP_HALFTURN = (0, 0, math.pi)
+
     @staticmethod
     def initialize_logging(debug=True):
         """
@@ -311,7 +316,7 @@ class DDDObject():
         for c in self.children:
             c.dump(indent_level=indent_level + 1)
 
-    def select(self, func):
+    def select(self, func, remove=False):
         """
         """
 
@@ -320,8 +325,11 @@ class DDDObject():
             result.append(self)
 
         for c in self.children:
-            cr = c.filter(func)
+            cr = c.select(func, remove=remove)
             if cr: result.extend(cr.children)
+
+        if remove:
+            self.children = [c for c in self.children if c not in result]
 
         return self.grouptyped(result)
 
@@ -423,8 +431,31 @@ class DDDObject2(DDDObject):
         linecoords = [p for p in self.geom.coords]
         linecoords.append(coords)
 
-        geom = geometry.LineString(linecoords)
-        return DDDObject2(geom=geom)
+        result = self.copy()
+        result.geom = geometry.LineString(linecoords)
+        return result
+
+    def arc_to(self, coords, center, ccw, resolution=4):
+        if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
+        if len(center) == 2: center = [center[0], center[1], 0.0]
+
+        # Calculate arc coordinates from center
+        linecoords = list(self.geom.coords)
+        angle_start = math.atan2(linecoords[-1][1] - center[1], linecoords[-1][0] - center[0])
+        angle_end = math.atan2(coords[1] - center[1], coords[0] - center[0])
+        angle_diff = angle_end - angle_start
+        radius_vec = (coords[0] - center[0], coords[1] - center[1])
+        radius_l = math.sqrt(radius_vec[0] * radius_vec[0] + radius_vec[1] * radius_vec[1])
+        if ccw: angle_diff = (math.pi * 2) - angle_diff
+
+        numpoints = math.ceil(angle_diff * (resolution / (math.pi / 2)))
+        angles = np.linspace(angle_start, angle_end, numpoints)
+        for a in angles:
+            linecoords.append([center[0] + math.cos(a) * radius_l, center[1] + math.sin(a) * radius_l, coords[2]])
+
+        result = self.copy()
+        result.geom = geometry.LineString(linecoords)
+        return result
 
     def translate(self, coords):
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
@@ -435,7 +466,8 @@ class DDDObject2(DDDObject):
         result.children = [c.translate(coords) for c in self.children]
         return result
 
-    def rotate(self, angle, origin='centroid'):
+    def rotate(self, angle, origin=None):  # center (bb center), centroid, point
+        if origin is None: origin = (0, 0)
         result = self.copy()
         if self.geom:
             result.geom = affinity.rotate(self.geom, angle / (math.pi / 180), origin=origin)
@@ -443,11 +475,12 @@ class DDDObject2(DDDObject):
         return result
 
     def scale(self, coords):
+        if isinstance(coords, int): coords = float(coords)
         if isinstance(coords, float): coords = [coords, coords, 1.0]
         if len(coords) == 2: coords = [coords[0], coords[1], 1.0]
         result = self.copy()
         if self.geom:
-            trans_func = lambda x, y, z=0.0: (x * coords[0], y * coords[1], z * coords[2])
+            trans_func = lambda x, y, z=1.0: (x * coords[0], y * coords[1], z * coords[2])
             result.geom = ops.transform(trans_func, self.geom)
         result.children = [c.scale(coords) for c in self.children]
         return result
@@ -675,7 +708,7 @@ class DDDObject2(DDDObject):
 
         return result
 
-    def triangulate(self):
+    def triangulate(self, twosided=False):
         """
         Returns a triangulated mesh (3D) from this 2D shape.
         """
@@ -684,7 +717,7 @@ class DDDObject2(DDDObject):
                 meshes = []
                 for geom in self.geom.geoms:
                     pol = DDDObject2(geom=geom)
-                    mesh = pol.triangulate()
+                    mesh = pol.triangulate(twosided)
                     meshes.append(mesh)
                 result = ddd.group(children=meshes, name=self.name)
             elif not self.geom.is_empty and not self.geom.type == 'LineString' and not self.geom.type == 'Point':
@@ -692,6 +725,10 @@ class DDDObject2(DDDObject):
                 #mesh = creation.extrude_polygon(self.geom, height)
                 #vertices, faces = creation.triangulate_polygon(self.geom)  # , min_angle=math.pi / 180.0)
                 vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
+                if twosided:
+                    faces2 = np.fliplr(faces)
+                    faces = np.concatenate((faces, faces2))
+
                 mesh = Trimesh([(v[0], v[1], 0.0) for v in vertices], faces)
                 #mesh = creation.extrude_triangulation(vertices=vertices, faces=faces, height=0.2)
                 mesh.merge_vertices()
@@ -701,7 +738,7 @@ class DDDObject2(DDDObject):
         else:
             result = DDDObject3()
 
-        result.children.extend([c.triangulate() for c in self.children])
+        result.children.extend([c.triangulate(twosided) for c in self.children])
 
         # Copy extra information from original object
         result.name = self.name if result.name is None else result.name
@@ -779,6 +816,7 @@ class DDDObject2(DDDObject):
                     result = result.translate([0, 0, -height / 2])
                 elif height < 0:
                     result = result.translate([0, 0, height])
+
             elif not self.geom.is_empty and self.geom.type == 'LineString':
                 coords_a = list(self.geom.coords)
                 coords_b = list(self.geom.coords)
@@ -811,6 +849,9 @@ class DDDObject2(DDDObject):
     def extrude_step(self, obj_2d, offset, cap=True, base=True):
         # Triangulate and store info for 3D extrude_step
 
+        if obj_2d.children:
+            raise DDDException("Cannot extrude_step with children.")
+
         if base:
             result = self.triangulate()
             if result.mesh:
@@ -824,6 +865,7 @@ class DDDObject2(DDDObject):
             if self.mat is not None:
                 result = result.material(self.mat)
 
+        result.extra['_extrusion_steps'] = 0
         result.extra['_extrusion_last_shape'] = self
         result = result.extrude_step(obj_2d, offset, cap)
         return result
@@ -997,7 +1039,7 @@ class DDDInstance(DDDObject):
                 metadata['ddd:material:color'] = self.mat.color  # hex
             if self.mat and self.mat.extra:
                 # If material has extra metadata, add it but do not replace
-                metadata.update({k:v for k, v in self.mat.extra.items() if k not in metadata or metadata[k] is None})
+                metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
 
             metadata = json.loads(json.dumps(metadata, default=lambda x: None))
             metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
@@ -1213,6 +1255,9 @@ class DDDObject3(DDDObject):
         return self._csg(other, operation='union')
 
     def extrude_step(self, obj_2d, offset, cap=True):
+        if self.children:
+            raise DDDException("Cannot extrude_step with children.")
+
         result = self.copy()
         result = extrusion.extrude_step(result, obj_2d, offset, cap=cap)
         return result
@@ -1233,6 +1278,9 @@ class DDDObject3(DDDObject):
                 metadata['ddd:material'] = self.mat.name
             if self.mat and self.mat.color:
                 metadata['ddd:material:color'] = self.mat.color  # hex
+            if self.mat and self.mat.extra:
+                # If material has extra metadata, add it but do not replace
+                metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
 
             metadata = json.loads(json.dumps(metadata, default=lambda x: None))
             metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
@@ -1452,5 +1500,14 @@ ddd.uv = DDDUVMapping()
 
 from ddd.ops.helper import DDDHelper
 ddd.helper = DDDHelper()
+
+
+# Selectors
+class DDDSelectors():
+    def extra_eq(self, k, v):
+        return lambda o: o.extra.get(k, None) == v
+    def extra(self, k, v):
+        return self.extra_eq(k, v)
+ddd.sel = DDDSelectors()
 
 

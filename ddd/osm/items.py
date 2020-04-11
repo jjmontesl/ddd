@@ -142,6 +142,11 @@ class ItemsOSMBuilder():
                 item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
             elif height_mapping == 'terrain_geotiff_incline_elevation_apply':
                 item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
+            elif height_mapping == 'terrain_geotiff_and_path_apply':
+                path = item_3d.extra['way_1d']
+                vertex_func = self.osm.ways.get_height_apply_func(path)
+                item_3d = item_3d.vertex_func(vertex_func)
+                item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
             else:
                 item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
 
@@ -317,9 +322,9 @@ class ItemsOSMBuilder():
             topbar = item_2d.buffer(0.1).extrude(0.1).material(ddd.mats.bronze)
             topbar = topbar.translate([0, 0, height])
             topbar = ddd.uv.map_cubic(topbar)
-            item_3d = ddd.group3([item_3d, topbar])
+            item_3d = item_3d.append(topbar)
 
-        item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
+        item_3d.extra['_height_mapping'] = item_3d.extra.get('_height_mapping', 'terrain_geotiff_elevation_apply')
         item_3d.name = 'Fence: %s' % item_2d.name
 
         return item_3d

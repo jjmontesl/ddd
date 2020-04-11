@@ -60,7 +60,7 @@ class AreasOSMBuilder():
             area = ddd.shape(feature['geometry'], name="Area: %s" % (feature['properties'].get('name', feature['properties'].get('id'))))
 
             area.extra['osm:feature'] = feature
-            area.extra['ddd:area:type'] = None
+            area.extra['ddd:area:type'] = area.extra.get('ddd:area:type', None)
             area.extra['ddd:area:container'] = None
             area.extra['ddd:area:contained'] = []
             area.extra['ddd:baseheight'] = 0.0
@@ -231,6 +231,7 @@ class AreasOSMBuilder():
         feature = area.extra['osm:feature']
         area.name = "Riverbank: %s" % feature['properties'].get('name', None)
         area.extra['ddd:height'] = 0.0
+        area.extra['ddd:area:type'] = 'water'
         area = area.individualize().flatten()
         area = area.material(ddd.mats.sea)
         return area
@@ -377,6 +378,25 @@ class AreasOSMBuilder():
 
         #self.osm.areas_2d.children = [c for c in self.osm.areas_2d.children if c not in to_remove]
 
+    def generate_areas_2d_postprocess_water(self):
+        logger.info("Postprocessing water areas and ways")
+
+        # Get all water areas ('ddd:water')
+        water_areas = self.osm.areas_2d.select(ddd.sel.extra('ddd:area:type', 'water'))
+        river_areas = self.osm.ways_2d["0"].select(ddd.sel.extra('ddd:area:type', 'water'), remove=True)
+        all_water_areas = ddd.group(water_areas.children + river_areas.children)
+
+        # Move river areas to areas
+        self.osm.areas_2d.children.extend(river_areas.children)
+
+        # Create ground area
+        underwater_area = all_water_areas.union().material(ddd.mats.terrain)
+        underwater_area.extra['ddd:area:type'] = 'underwater'
+        #underwater_area = underwater_area.individualize()
+        #underwater_area.show()
+        self.osm.areas_2d.append(underwater_area)
+
+
     def generate_coastline_3d(self, area_crop):
 
         logger.info("Generating water and land areas according to coastline: %s", (area_crop.bounds))
@@ -512,6 +532,10 @@ class AreasOSMBuilder():
                     area_3d = self.generate_area_3d(area_2d)
                 elif area_2d.extra['ddd:area:type'] == 'pitch':
                     area_3d = self.generate_area_3d_pitch(area_2d)
+                elif area_2d.extra['ddd:area:type'] == 'water':
+                    area_3d = self.generate_area_3d_water(area_2d)
+                elif area_2d.extra['ddd:area:type'] == 'underwater':
+                    area_3d = self.generate_area_3d_underwater(area_2d)
                 else:
                     logger.warning("Area type undefined: %s", area_2d.extra.get('ddd:area:type', None))
                     raise AssertionError("Area type undefined: %s" % (area_2d.extra.get('ddd:area:type', None)))
@@ -547,7 +571,7 @@ class AreasOSMBuilder():
                 #                     area_2d.buffer(-1.0).triangulate().translate([0, 0, 0.2]),
                 #                     area_2d.buffer(-3.0).triangulate().translate([0, 0, 0.3])])
 
-                area_3d = area_3d.translate([0, 0, 0])
+                #area_3d = area_3d.translate([0, 0, 0])
 
             else:
                 try:
@@ -580,8 +604,17 @@ class AreasOSMBuilder():
         area_3d = self.generate_area_3d(area_2d)
 
         # TODO: pass size then adapt to position and orientation, easier to construct and reuse
+        # TODO: get area uncropped (create a cropping utility that stores the original area)
 
-        lines = sports.football_field_lines(area_2d)
+        sport = area_2d.extra['osm:feature'].get('sport', None)
+
+        if sport == 'tennis':
+            lines = sports.field_lines_area(area_2d, sports.tennis_field_lines, padding=3.0)
+        elif sport == 'basketball':
+            lines = sports.field_lines_area(area_2d, sports.basketball_field_lines, padding=2.0)
+        else:
+            lines = sports.field_lines_area(area_2d, sports.football_field_lines, padding=1.25)
+
         if lines:
             lines = terrain.terrain_geotiff_elevation_apply(lines, self.osm.ddd_proj).translate([0, 0, 0.15])
             height = area_2d.extra.get('ddd:height', 0.2)
@@ -592,3 +625,42 @@ class AreasOSMBuilder():
             logger.debug("No pitch lines generated.")
 
         return area_3d
+
+    def generate_area_3d_water(self, area_2d):
+        area_3d = self.generate_area_3d(area_2d)
+
+        # Move water down, to account for waves
+        area_3d = area_3d.translate([0, 0, -0.5])
+        return area_3d
+
+    def generate_area_3d_underwater(self, area_2d):
+        logger.info ("Generating underwater for: %s", area_2d)
+        #area_2d.dump()
+        areas_2d = area_2d.individualize().flatten().clean()
+        #area_2d.show()
+
+        result = ddd.group3()
+        for area_2d in areas_2d.children:
+            area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), -0.3, base=False)
+            area_3d = area_3d.extrude_step(area_2d.buffer(-2.0), -0.5)
+            area_3d = area_3d.extrude_step(area_2d.buffer(-4.0), -1.0)
+            area_3d = area_3d.extrude_step(area_2d.buffer(-6.0), -0.5)
+            area_3d = area_3d.extrude_step(area_2d.buffer(-9.0), -0.4)
+            area_3d = area_3d.extrude_step(area_2d.buffer(-12.0), -0.3)
+            print(area_3d.extra['_extrusion_steps'])
+            if area_3d.extra['_extrusion_steps'] < 2:
+                logger.debug("COuld not extrude underwater area softly. Extruding abruptly.")
+                area_3d = area_2d.extrude_step(area_2d.buffer(-0.05), -1.0, base=False)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-0.15), -0.5)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-0.3), -0.5)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-1.0), -0.5)
+            print(area_3d.extra['_extrusion_steps'])
+            if area_3d.extra['_extrusion_steps'] < 1:
+                logger.warn("COuld not extrude underwater area at all: %s", area_3d)
+                area_3d = area_3d.translate([0, 0, -1.0])
+            if area_3d: result.append(area_3d)
+
+        result = terrain.terrain_geotiff_elevation_apply(result, self.osm.ddd_proj)
+        #result.show()
+
+        return result

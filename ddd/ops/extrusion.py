@@ -83,6 +83,7 @@ def extrude_step(obj, shape, offset, cap=True):
             mesh = extrude_between_geoms(geom_a, geom_b, offset, obj.extra.get('_extrusion_last_offset', 0) )
             faces =  faces + [[f[0] + len(vertices), f[1] + len(vertices), f[2] + len(vertices)] for f in mesh.faces]
             vertices = vertices + list(mesh.vertices)
+            result.extra['_extrusion_steps'] = result.extra['_extrusion_steps'] + 1
 
     result.extra['_extrusion_last_cap_idx'] = len(faces)
 
