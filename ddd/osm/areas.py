@@ -329,6 +329,7 @@ class AreasOSMBuilder():
     '''
 
     def generate_areas_2d_postprocess(self):
+        return
         logger.info("Postprocessing areas and ways (%d areas, %d ways['0']).", len(self.osm.areas_2d.children), len(self.osm.ways_2d['0'].children))
 
         #
@@ -384,7 +385,7 @@ class AreasOSMBuilder():
         # Get all water areas ('ddd:water')
         water_areas = self.osm.areas_2d.select(ddd.sel.extra('ddd:area:type', 'water'))
         river_areas = self.osm.ways_2d["0"].select(ddd.sel.extra('ddd:area:type', 'water'), remove=True)
-        all_water_areas = ddd.group(water_areas.children + river_areas.children)
+        all_water_areas = ddd.group2(water_areas.children + river_areas.children)
 
         # Move river areas to areas
         self.osm.areas_2d.children.extend(river_areas.children)
@@ -435,7 +436,7 @@ class AreasOSMBuilder():
                 continue
 
             water_area_point = water_area_geom.representative_point()
-            p, segment_idx, segment_coords_a, segment_coords_b, closest_obj = coastlines_1d.closest_segment(ddd.shape(water_area_point))
+            p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = coastlines_1d.closest_segment(ddd.shape(water_area_point))
             pol = LinearRing([segment_coords_a, segment_coords_b, water_area_point.coords[0]])
 
             if not pol.is_ccw:
@@ -641,22 +642,35 @@ class AreasOSMBuilder():
 
         result = ddd.group3()
         for area_2d in areas_2d.children:
-            area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), -0.3, base=False)
-            area_3d = area_3d.extrude_step(area_2d.buffer(-2.0), -0.5)
-            area_3d = area_3d.extrude_step(area_2d.buffer(-4.0), -1.0)
-            area_3d = area_3d.extrude_step(area_2d.buffer(-6.0), -0.5)
-            area_3d = area_3d.extrude_step(area_2d.buffer(-9.0), -0.4)
-            area_3d = area_3d.extrude_step(area_2d.buffer(-12.0), -0.3)
-            print(area_3d.extra['_extrusion_steps'])
-            if area_3d.extra['_extrusion_steps'] < 2:
-                logger.debug("COuld not extrude underwater area softly. Extruding abruptly.")
+
+            area_2d = area_2d.clean()
+            try:
+                area_2d.validate()
+            except DDDException as e:
+                logger.error("Could not generate underwater area (invalid area %s): %s", area_2d, e)
+                continue
+
+            try:
+                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), -0.3, base=False)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-2.0), -0.5)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-4.0), -1.0)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-6.0), -0.5)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-9.0), -0.4)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-12.0), -0.3)
+            except Exception as e:
+                logger.warn("Exception extruding underwater area (reduced LinearRings need caring): %s", e)
+                print(area_2d.geom)
+                print(area_2d.buffer(-1.0).geom)
+                area_3d = None
+
+            if area_3d is None or area_3d.extra['_extrusion_steps'] < 2:
+                logger.debug("Could not extrude underwater area softly. Extruding abruptly.")
                 area_3d = area_2d.extrude_step(area_2d.buffer(-0.05), -1.0, base=False)
                 area_3d = area_3d.extrude_step(area_2d.buffer(-0.15), -0.5)
                 area_3d = area_3d.extrude_step(area_2d.buffer(-0.3), -0.5)
                 area_3d = area_3d.extrude_step(area_2d.buffer(-1.0), -0.5)
-            print(area_3d.extra['_extrusion_steps'])
             if area_3d.extra['_extrusion_steps'] < 1:
-                logger.warn("COuld not extrude underwater area at all: %s", area_3d)
+                logger.warn("COuld not extrude underwater area: %s", area_3d)
                 area_3d = area_3d.translate([0, 0, -1.0])
             if area_3d: result.append(area_3d)
 

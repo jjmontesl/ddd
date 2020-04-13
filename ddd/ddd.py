@@ -467,6 +467,9 @@ class DDDObject2(DDDObject):
         return result
 
     def rotate(self, angle, origin=None):  # center (bb center), centroid, point
+        """
+        Angle is in degrees
+        """
         if origin is None: origin = (0, 0)
         result = self.copy()
         if self.geom:
@@ -485,9 +488,10 @@ class DDDObject2(DDDObject):
         result.children = [c.scale(coords) for c in self.children]
         return result
 
-    def clean(self, eps=None, remove_empty=True):
+    def clean(self, eps=None, remove_empty=True, validate=True):
         result = self.copy()
         if result.geom and not self.children and eps:
+            #result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
             result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
         if result.geom and not result.geom.is_valid:
             logger.warn("Removed invalid geometry: %s", result)
@@ -495,10 +499,17 @@ class DDDObject2(DDDObject):
         if result.geom and not result.geom.is_simple:
             logger.warn("Removed geometry that crosses itself: %s", result)
             result.geom = None
-        result.children = [c.clean(eps=eps, remove_empty=remove_empty) for c in self.children]
+        result.children = [c.clean(eps=eps, remove_empty=remove_empty, validate=validate) for c in self.children]
 
         if remove_empty:
             result.children = [c for c in result.children if (c.children or c.geom)]
+
+        if validate:
+            try:
+                result.validate()
+            except DDDException as e:
+                logger.warn("Removed node that didn't pass validation check: %s", result)
+                result.geom = None
 
         return result
 
@@ -870,6 +881,20 @@ class DDDObject2(DDDObject):
         result = result.extrude_step(obj_2d, offset, cap)
         return result
 
+    def split(self, other):
+        splitter = other  # .union()
+        result = self.copy()
+        result.name = "%s (split)" % self.name
+
+        result.children = [c.split(other) for c in self.children]
+
+        if self.geom:
+            splits = ops.split(self.geom, splitter.geom)
+            result.append(ddd.shape(splits[0]))
+            #result.append(ddd.shape(splits[1]))
+
+        return result
+
     def simplify(self, distance):
         result = self.copy()
         if self.geom:
@@ -954,14 +979,38 @@ class DDDObject2(DDDObject):
         """
         Closest segment in a LineString to other geometry.
         Does not support children in "other" geometry.
+
+        Returns: coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d
         """
         closest_self, closest_d = self.closest(other)
         #logger.debug("Closest: %s  %s > %s", closest_d, closest_self, other)
 
         d = closest_self.geom.project(other.geom)
 
-        result = (*closest_self.interpolate_segment(d), closest_self)
+        result = (*closest_self.interpolate_segment(d), closest_self, d)
         #ddd.group([other.buffer(5.0),  ddd.point(result[2]).buffer(5.0).material(ddd.mat_highlight), ddd.line([result[2], result[3]]).buffer(2.0), ddd.point(result[0]).buffer(5.0), closest_self.buffer(0.2)]).show()
+        return result
+
+    def perpendicular(self, distance=0.0, length=1.0, double=False):
+
+        (coords_p, segment_idx, segment_coords_a, segment_coords_b) = self.interpolate_segment(distance)
+
+        dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+        dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+        dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+        perpendicular_vec = (-dir_vec[1], dir_vec[0])
+
+        left = (coords_p[0] + perpendicular_vec[0] * length, coords_p[1] + perpendicular_vec[1] * length)
+        right = (coords_p[0] - perpendicular_vec[0] * length, coords_p[1] - perpendicular_vec[1] * length)
+
+        #self.copy(children=None)
+        if not double:
+            result = ddd.line([coords_p, left])
+        else:
+            result = ddd.line([right, left])
+
+        #ddd.group2([self.buffer(0.1), result.buffer(0.1).material(ddd.mats.highlight)]).show()
+
         return result
 
     def geom_recursive(self):
@@ -1452,8 +1501,13 @@ class DDDObject3(DDDObject):
         pyrender.Viewer(pr_scene, lighting="direct")  #, viewport_size=resolution)
         #pyrender.Viewer(scene, lighting="direct")  #, viewport_size=resolution)
 
-    def save(self, path, instance_marker=True, instance_mesh=False):
+    def save(self, path, instance_marker=None, instance_mesh=None):
         logger.info("Saving to: %s (%s)", path, self)
+
+        if instance_marker is None:
+            instance_marker = D1D2D3Bootstrap.export_marker
+        if instance_mesh is None:
+            instance_mesh = D1D2D3Bootstrap.export_mesh
 
         if path.endswith('.obj'):
             # Exporting just first mesh
@@ -1468,7 +1522,7 @@ class DDDObject3(DDDObject):
         elif path.endswith('.glb'):
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
             scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            data = trimesh.exchange.gltf.export_glb(scene)
+            data = trimesh.exchange.gltf.export_glb(scene, include_normals=False)
 
         else:
             raise ValueError()

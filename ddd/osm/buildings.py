@@ -100,6 +100,7 @@ class BuildingOSMBuilder():
                 base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.roof_tiles]))
                 building_3d.children.append(base)
             if random.uniform(0, 1) < 0.4:
+                roof = None
                 roof_type = random.choice([1, 2, 3])
                 roof_buffer = random.uniform(0.5, 1.5) if random.uniform(0, 1) < 0.5 else 0.0
                 if roof_type == 1:
@@ -108,13 +109,19 @@ class BuildingOSMBuilder():
                 elif roof_type == 2:
                     # Pointy
                     height = floors * 0.2 + random.uniform(2.0, 5.0)
-                    roof = building_2d.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(building_2d.buffer(-10), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
+                    try:
+                        roof = building_2d.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(building_2d.buffer(-10), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
+                    except DDDException as e:
+                        logger.debug("Could not generate roof: %s", e)
                 elif roof_type == 3:
                     # Attic
                     height = random.uniform(3.0, 4.0)
-                    roof = building_2d.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(building_2d.buffer(-2), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
+                    try:
+                        roof = building_2d.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(building_2d.buffer(-2), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
+                    except DDDException as e:
+                        logger.debug("Could not generate roof: %s", e)
 
-                building_3d.children.append(roof)
+                if roof: building_3d.children.append(roof)
 
         except ValueError as e:
             logger.warning("Cannot generate building: %s (geom: %s)" % (e, building_2d.geom))
@@ -259,11 +266,14 @@ class BuildingOSMBuilder():
                 item.extra['text'] = panel_text
                 item.name = "Panel: %s %s" % (item_1d.extra['shop'], item_1d.extra['name'])
                 item = self.snap_to_building(item, building_3d)
-                item = item.translate([0, 0, 2.8])  # no post
-                color = random.choice(["#c41a7d", "#97c41a", "#f2ee0f", "#0f90f2"])
-                item = item.material(ddd.material(color=color))
-                item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
-                building_3d.children.append(item)
+                if item:
+                    item = item.translate([0, 0, 2.8])  # no post
+                    color = random.choice(["#c41a7d", "#97c41a", "#f2ee0f", "#0f90f2"])
+                    item = item.material(ddd.material(color=color))
+                    item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
+                    building_3d.children.append(item)
+                else:
+                    logger.info("Could not snap item to building (skipping item): %s", item)
 
             else:
                 logger.debug("Unknown building-related item (%s): %s", item_1d.extra['amenity'], item_1d)

@@ -47,6 +47,16 @@ items.append(item)
 item = urban.trash_bin_post()
 items.append(item)
 
+# Road signs
+item = urban.traffic_sign('stop')
+items.append(item)
+item.show()
+
+item = urban.traffic_sign('give_way')
+items.append(item)
+item.show()
+
+
 items = ddd.align.grid(items)
 items.append(ddd.helper.all())
 items.show()

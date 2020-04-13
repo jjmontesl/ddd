@@ -29,7 +29,7 @@ class PrefabCatalog():
 
     def __init__(self):
         self._cache = {}
-        self.path = "./catalog"
+        self.path = "./_catalog"
         self.autosave = True
         self.autoload = True
 

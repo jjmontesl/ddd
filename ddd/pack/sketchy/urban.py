@@ -97,20 +97,34 @@ def trafficlights():
     post.name = "TrafficLight"
     return post
 
-def trafficsign_sign():
+def traffic_sign(signtype):
+    head = None
+    if (signtype == 'give_way'):
+        head = traffic_sign_triangle()
+    elif (signtype == 'stop'):
+        head = traffic_sign_octagon()
+    item = post(2.2, r=0.04, top=head, mat_post=ddd.mats.steel)
+    return item
+
+def traffic_sign_triangle(r=0.5, thick=0.1):
+    item = ddd.regularpolygon(3, r, name="Sign triangle").material(ddd.mats.metal_paint_red)
+    item = item.rotate(math.pi / 2 + math.pi).extrude(thick)
+    item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, - thick / 2, r])
+    return item
+
+def traffic_sign_octagon(r=0.5, thick=0.1):
+    item = ddd.regularpolygon(8, r, name="Sign triangle").material(ddd.mats.metal_paint_red)
+    item = item.rotate(math.pi / 8).extrude(thick)
+    item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, thick / 2, r])
+    return item
+
+def traffic_sign_rect():
     pass
 
-def trafficsign_sign_triangle():
+def traffic_sign_circle():
     pass
 
-def trafficsign_sign_rect():
-    pass
 
-def trafficsign_sign_circle():
-    pass
-
-def trafficsign_sign_octagon():
-    pass
 
 def signpost():
     pass

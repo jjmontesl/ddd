@@ -87,7 +87,7 @@ def extrude_step(obj, shape, offset, cap=True):
 
     result.extra['_extrusion_last_cap_idx'] = len(faces)
 
-    if cap:
+    if cap and not shape.geom.is_empty:
         cap_mesh = shape.triangulate().translate([0, 0, result.extra['_extrusion_last_offset']])
         if cap_mesh.mesh:
             faces = faces + [[f[0] + len(vertices), f[1] + len(vertices), f[2] + len(vertices)] for f in cap_mesh.mesh.faces]

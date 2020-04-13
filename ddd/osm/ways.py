@@ -15,6 +15,8 @@ from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.ops import uvmapping
 from ddd.core.exception import DDDException
+import sys
+from shapely import ops
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -981,6 +983,59 @@ class WaysOSMBuilder():
             # intersection_shape = MultiPoint(join_points).convex_hull
             intersection_shape = ddd.group(join_shapes, empty=2).union().convex_hull()
 
+            #intersection_shape.show()
+
+            # Perpendicularize intersection towards paths
+            logger.info("Intersection: %s", join_ways)
+            #join_ways.show()
+            join_splits = ddd.group2()
+            for join_way in join_ways.children:
+                # Project each intersection point to the line
+                logger.info("Way 2D: %s", join_way)
+                way_1d = join_way.extra['way_1d']
+                logger.info("Way 1D: %s", way_1d)
+                max_dist = 0
+                max_d = 0
+                max_o = None
+                for intersection_point in list(intersection_shape.geom.exterior.coords):
+
+                    closest_seg = way_1d.closest_segment(ddd.point(intersection_point))
+                    (coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d) = closest_seg
+                    dist = ddd.point(coords_p).distance(ddd.point(intersection_shape.geom.centroid.coords))
+                    if dist > max_dist:
+                        max_dist = dist
+                        max_d = closest_object_d
+                        max_o = closest_object
+                #logger.info("  max_dist=%s, max_d=%s", max_dist, max_d)
+
+                # Cut line at the specified point.
+                if max_o:
+                    perpendicular = max_o.perpendicular(distance=max_d, length=way_1d.extra['width'] + 0.1, double=True)
+                    join_way_splits = ops.split(join_way.geom, perpendicular.geom)
+                    #logger.info("Split: %s", join_way_splits)
+
+                    #ddd.group([join_ways, intersection_shape, perpendicular.buffer(1.0).material(ddd.mats.highlight), join_ways]).show()
+
+                    join_way_split = None
+                    if join_way_splits[0].overlaps(intersection_shape.buffer(-0.05).geom):
+                        join_way_split = join_way_splits[0]
+                    elif len(join_way_splits) > 1 and join_way_splits[1].overlaps(intersection_shape.buffer(-0.05).geom):
+                        join_way_split = join_way_splits[1]
+                    elif len(join_way_splits) > 2 and join_way_splits[2].overlaps(intersection_shape.buffer(-0.05).geom):
+                        join_way_split = join_way_splits[1]
+                    else:
+                        logger.error("Coud not find split side for intersection extension: %s", join_way)
+                        #raise AssertionError()
+
+                    if join_way_split:
+                        join_splits.append(ddd.shape(join_way_split))
+
+            intersection_shape = intersection_shape.union(join_splits.union()).clean(eps=0.005)
+
+            #ddd.group([intersection_shape.material(ddd.mats.highlight), join_ways]).dump()
+            #ddd.group([intersection_shape.material(ddd.mats.highlight), join_ways]).show()
+
+            # Resolve intersection
             # print(intersection_shape)
             if intersection_shape and intersection_shape.geom and intersection_shape.geom.type in ('Polygon', 'MultiPolygon') and not intersection_shape.geom.is_empty:
 
@@ -1012,7 +1067,7 @@ class WaysOSMBuilder():
                 """
 
                 intersection_2d.extra['connections'] = []
-                if len(intersection) > 3:  # 2
+                if len(intersection) > 3 or len(intersection) == len(highest_ways):  # 2
                     intersection_2d.extra['ddd:way:lamps'] = False
                     intersection_2d.extra['ddd_trafficlights'] = False
                     intersection_2d.extra['ddd:way:roadlines'] = False
@@ -1342,27 +1397,32 @@ class WaysOSMBuilder():
         '''
         '''
         rail_height = 0.30
-        way_2d = way_2d.individualize()
-        way_2d_interior = way_2d.buffer(-0.3).individualize()
-        #way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
-        way_3d = way_2d.extrude_step(way_2d_interior, rail_height, base=False, cap=False)
-        way_3d = way_3d.material(ddd.mats.dirt)
-        way_3d = ddd.uv.map_cubic(way_3d)
-        way_3d.extra['ddd:shadows'] = False
-        way_3d.extra['ddd:collider'] = True
 
-        pathline = way_2d_interior.extra['way_1d'].copy()
-        way_2d_interior = uvmapping.map_2d_path(way_2d_interior, pathline, line_x_offset=0.5, line_x_width=0.5)
-        railroad_3d = way_2d_interior.triangulate().translate([0, 0, rail_height]).material(ddd.mats.railway)
-        railroad_3d.extra['ddd:collider'] = True
-        railroad_3d.extra['ddd:shadows'] = False
-        try:
-            uvmapping.map_3d_from_2d(railroad_3d, way_2d_interior)
-        except Exception as e:
-            logger.error("Could not map railway UV coordinates: %s", e)
-            railroad_3d.extra['uv'] = None
+        result = ddd.group3()
 
-        return ddd.group3([way_3d, railroad_3d])
+        for way_2d in way_2d.individualize().flatten().children:
+            way_2d_interior = way_2d.buffer(-0.3).individualize()
+            #way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
+            way_3d = way_2d.extrude_step(way_2d_interior, rail_height, base=False, cap=False)
+            way_3d = way_3d.material(ddd.mats.dirt)
+            way_3d = ddd.uv.map_cubic(way_3d)
+            way_3d.extra['ddd:shadows'] = False
+            way_3d.extra['ddd:collider'] = True
+
+            pathline = way_2d_interior.extra['way_1d'].copy()
+            way_2d_interior = uvmapping.map_2d_path(way_2d_interior, pathline, line_x_offset=0.5, line_x_width=0.5)
+            railroad_3d = way_2d_interior.triangulate().translate([0, 0, rail_height]).material(ddd.mats.railway)
+            railroad_3d.extra['ddd:collider'] = True
+            railroad_3d.extra['ddd:shadows'] = False
+            try:
+                uvmapping.map_3d_from_2d(railroad_3d, way_2d_interior)
+            except Exception as e:
+                logger.error("Could not map railway UV coordinates: %s", e)
+                railroad_3d.extra['uv'] = None
+
+            result.append(ddd.group3([way_3d, railroad_3d]))
+
+        return result
 
     def generate_ways_3d_subways(self):
         """
@@ -1465,7 +1525,7 @@ class WaysOSMBuilder():
             # ddd.group((sidewalk_2d, wall_2d)).show()
             if way.extra.get('ddd:way:elevated:border', None) == 'fence':
                 fence_2d =  wall_2d.outline().clean()
-                fence_2d.material(ddd.mats.fence)
+                fence_2d = fence_2d.material(ddd.mats.fence)
                 #fence_2d.dump()
                 #wall_2d.show()
                 fence_2d.extra['ddd:item'] = True
@@ -1516,6 +1576,7 @@ class WaysOSMBuilder():
                     if p[2] > 1.0:  # If no height, no pilar, but should be a margin and also corrected by base_height
                         item = ddd.rect([-way.extra['width'] * 0.3, -0.5, way.extra['width'] * 0.3, 0.5], name="Bridge Post %s" % way.name)
                         item = item.extrude(-(math.fabs(p[2]) - 0.5)).material(ddd.mats.cement)
+                        item = ddd.uv.map_cubic(item)
                         item = item.rotate([0, 0, angle - math.pi / 2]).translate([p[0], p[1], 0])
                         vertex_func = self.get_height_apply_func(path)
                         item = item.vertex_func(vertex_func)
@@ -1652,43 +1713,43 @@ class WaysOSMBuilder():
             idx_offset = random.choice([0, 1])
 
             # Ignore if street is short
-            if numlamps == 0: return
+            if numlamps > 0:
 
-            logger.debug("Props for way (length=%s, num=%d, way=%s)", length, numlamps, way_2d)
-            for d in numpy.linspace(0.0, length, numlamps, endpoint=False):
-                if d == 0.0: continue
+                logger.debug("Props for way (length=%s, num=%d, way=%s)", length, numlamps, way_2d)
+                for d in numpy.linspace(0.0, length, numlamps, endpoint=False):
+                    if d == 0.0: continue
 
-                # Calculate left and right perpendicular intersections with sidewalk, park, land...
-                # point = path.geom.interpolate(d)
-                p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(d)
-                # logger.error("Could not generate props for way %s: %s", way_2d, e)
-                # print(d, p, segment_idx, segment_coords_a, segment_coords_b)
+                    # Calculate left and right perpendicular intersections with sidewalk, park, land...
+                    # point = path.geom.interpolate(d)
+                    p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(d)
+                    # logger.error("Could not generate props for way %s: %s", way_2d, e)
+                    # print(d, p, segment_idx, segment_coords_a, segment_coords_b)
 
-                # segment = ddd.line([segment_coords_a, segment_coords_b])
-                dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
-                dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
-                dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
-                perpendicular_vec = (-dir_vec[1], dir_vec[0])
-                lightlamp_dist = path.extra['width'] * 0.5 + 0.5
-                left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
-                right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
+                    # segment = ddd.line([segment_coords_a, segment_coords_b])
+                    dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+                    dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+                    dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+                    perpendicular_vec = (-dir_vec[1], dir_vec[0])
+                    lightlamp_dist = path.extra['width'] * 0.5 + 0.5
+                    left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
+                    right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 
-                alternate_lampposts = True
-                if alternate_lampposts:
-                    points = [left] if (idx + idx_offset) % 2 == 0 else [right]
-                else:
-                    points = left, right
+                    alternate_lampposts = True
+                    if alternate_lampposts:
+                        points = [left] if (idx + idx_offset) % 2 == 0 else [right]
+                    else:
+                        points = left, right
 
-                for point in points:
-                    idx = idx + 1
-                    item = ddd.point(point, name="LampPost %s" % way_2d.name)
+                    for point in points:
+                        idx = idx + 1
+                        item = ddd.point(point, name="Lamppost: %s" % way_2d.name)
 
-                    # area = self.osm.areas_2d.intersect(item)
-                    # Check type of area point is on
+                        # area = self.osm.areas_2d.intersect(item)
+                        # Check type of area point is on
 
-                    item.extra['way_2d'] = way_2d
-                    item.extra['ddd_osm'] = 'way_lamppost'
-                    self.osm.items_1d.children.append(item)
+                        item.extra['way_2d'] = way_2d
+                        item.extra['ddd_osm'] = 'way_lamppost'
+                        self.osm.items_1d.children.append(item)
 
         '''
         # Check if to generate bridge posts
@@ -1741,7 +1802,7 @@ class WaysOSMBuilder():
             left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
             right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 
-            item = ddd.point(right, name="Traffic Lights %s" % way_2d.name)
+            item = ddd.point(right, name="Traffic lights: %s" % way_2d.name)
 
             angle = math.atan2(dir_vec[1], dir_vec[0])
 
@@ -1751,3 +1812,29 @@ class WaysOSMBuilder():
             item.extra['ddd_osm'] = 'way_trafficlights'
             item.extra['ddd:angle'] = angle
             self.osm.items_1d.children.append(item)
+
+
+        # Generate trafficlights
+        if path.geom.length > 20.0 and path.extra['layer'] == "0":
+
+            # End right
+            p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 10.0)
+            dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+            dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+            dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+            perpendicular_vec = (-dir_vec[1], dir_vec[0])
+            lightlamp_dist = path.extra['width'] * 0.5 + 5.5
+            left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
+            right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
+
+            item = ddd.point(right, name="Traffic sign: %s" % way_2d.name)
+
+            angle = math.atan2(dir_vec[1], dir_vec[0])
+
+            # area = self.osm.areas_2d.intersect(item)
+            # Check type of area point is on
+            item.extra['way_2d'] = way_2d
+            item.extra['ddd:angle'] = angle
+            item.extra['traffic_sign'] = random.choice(['give_way', 'stop'])
+            self.osm.items_1d.children.append(item)
+

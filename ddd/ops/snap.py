@@ -17,7 +17,7 @@ class DDDSnap():
     def project(self, point, obj, penetrate=0.0):
 
         obj = obj.individualize().linearize()
-        coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj = obj.closest_segment(point)
+        coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = obj.closest_segment(point)
 
         dirvec_d = [coords_p[0] - point.geom.coords[0][0], coords_p[1] - point.geom.coords[0][1]]
         dirvec_l = math.sqrt(dirvec_d[0] ** 2 + dirvec_d[1] ** 2)

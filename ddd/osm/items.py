@@ -54,7 +54,7 @@ class ItemsOSMBuilder():
         item.extra['artwork_type'] = feature['properties'].get('artwork_type', None)
         item.extra['man_made'] = feature['properties'].get('man_made', None)
         item.extra['power'] = feature['properties'].get('power', None)
-
+        item.extra['traffic_sign'] = feature['properties'].get('traffic_sign', None)
         return item
 
     def generate_items_3d(self):
@@ -131,6 +131,9 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_lamppost(item_2d)
         elif item_2d.extra.get('ddd_osm', None) == 'way_trafficlights':
             item_3d = self.generate_item_3d_trafficlights(item_2d)
+
+        elif item_2d.extra.get('traffic_sign', None) is not None:
+            item_3d = self.generate_item_3d_traffic_sign(item_2d)
 
         else:
             logger.debug("Unknown item: %s", item_2d.extra)
@@ -360,7 +363,7 @@ class ItemsOSMBuilder():
             item_3d = self.osm.catalog.add(key, item_3d)
 
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
-        item_3d.name = 'Lampppost: %s' % item_2d.name
+        item_3d.name = 'Lamppost: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_trafficlights(self, item_2d):
@@ -374,7 +377,23 @@ class ItemsOSMBuilder():
         coords = item_2d.geom.coords[0]
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
-        item_3d.name = 'Traffic Lights %s' % item_2d.name
+        item_3d.extra['_height_mapping'] = 'terrain_geotiff_min_elevation_apply'
+        return item_3d
+
+    def generate_item_3d_traffic_sign(self, item_2d):
+
+        signtype = item_2d.extra['traffic_sign']
+
+        key = "traffic_sign-%s-1" % (signtype)
+        item_3d = self.osm.catalog.instance(key)
+        if not item_3d:
+            item_3d = urban.traffic_sign(signtype)
+            item_3d = self.osm.catalog.add(key, item_3d)
+
+        coords = item_2d.geom.coords[0]
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+        item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
         return item_3d
 
 
