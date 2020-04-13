@@ -986,14 +986,14 @@ class WaysOSMBuilder():
             #intersection_shape.show()
 
             # Perpendicularize intersection towards paths
-            logger.info("Intersection: %s", join_ways)
+            #logger.info("Intersection: %s", join_ways)
             #join_ways.show()
             join_splits = ddd.group2()
             for join_way in join_ways.children:
                 # Project each intersection point to the line
-                logger.info("Way 2D: %s", join_way)
                 way_1d = join_way.extra['way_1d']
-                logger.info("Way 1D: %s", way_1d)
+                #logger.info("Way 2D: %s", join_way)
+                #logger.info("Way 1D: %s", way_1d)
                 max_dist = 0
                 max_d = 0
                 max_o = None
@@ -1815,15 +1815,15 @@ class WaysOSMBuilder():
 
 
         # Generate trafficlights
-        if path.geom.length > 20.0 and path.extra['layer'] == "0":
+        if path.geom.length > 20.0 and path.extra['ddd_trafficlights'] and path.extra['layer'] == "0":
 
             # End right
-            p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 10.0)
+            p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 11.5)
             dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
             dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
             dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
             perpendicular_vec = (-dir_vec[1], dir_vec[0])
-            lightlamp_dist = path.extra['width'] * 0.5 + 5.5
+            lightlamp_dist = path.extra['width'] * 0.5 + 0.5
             left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
             right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 

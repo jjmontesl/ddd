@@ -109,13 +109,15 @@ def traffic_sign(signtype):
 def traffic_sign_triangle(r=0.5, thick=0.1):
     item = ddd.regularpolygon(3, r, name="Sign triangle").material(ddd.mats.metal_paint_red)
     item = item.rotate(math.pi / 2 + math.pi).extrude(thick)
-    item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, - thick / 2, r])
+    item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, thick / 2, r])
+    item = ddd.uv.map_cubic(item)
     return item
 
 def traffic_sign_octagon(r=0.5, thick=0.1):
     item = ddd.regularpolygon(8, r, name="Sign triangle").material(ddd.mats.metal_paint_red)
     item = item.rotate(math.pi / 8).extrude(thick)
     item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, thick / 2, r])
+    item = ddd.uv.map_cubic(item)
     return item
 
 def traffic_sign_rect():

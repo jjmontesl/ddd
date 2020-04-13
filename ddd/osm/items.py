@@ -9,6 +9,7 @@ import random
 from ddd.ddd import ddd
 from ddd.pack.sketchy import plants, urban, landscape
 from ddd.geo import terrain
+import sys
 
 
 # Get instance of logger for this module
@@ -24,7 +25,7 @@ class ItemsOSMBuilder():
         self.pool = {}
         #self.pool['tree'] = [self.generate_item_3d_tree(ddd.point([0, 0, 0])) for i in range(8)]
 
-        self.tree_decimate = 3
+        self.tree_decimate = 1
         self.tree_decimate_idx = 0
 
     def generate_items_1d(self):
@@ -73,6 +74,10 @@ class ItemsOSMBuilder():
         #self.osm.items_3d = self.osm.items_3d.translate([0, 0, -0.20])  # temporary fix snapping
 
     def generate_item_3d(self, item_2d):
+
+        #if 'osm:feature' in item_2d.extra:
+        #    if ("Julio Verne" in item_2d.extra['osm:feature']['properties'].get('name', "")):
+        #        print(item_2d)
 
         item_3d = None
         if item_2d.extra.get('amenity', None) == 'fountain':
@@ -152,6 +157,9 @@ class ItemsOSMBuilder():
                 item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
             else:
                 item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
+
+            #if ("Julio Verne" in item_3d.name):
+            #    print(item_3d.show())
 
         return item_3d
 
@@ -256,8 +264,9 @@ class ItemsOSMBuilder():
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
         oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
-        item_3d = urban.sculpture(1.5).translate([coords[0], coords[1], 0.0]).material(ddd.mats.steel)  # mat_bronze
+        item_3d = urban.sculpture(1.5)
         item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0]).material(ddd.mats.steel)  # mat_bronze
         item_3d.name = 'Sculpture: %s' % item_2d.name
         return item_3d
 
@@ -267,18 +276,20 @@ class ItemsOSMBuilder():
         oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
         item_name = item_2d.extra['osm:feature']['properties'].get('name', None)
         if item_name:
-            item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
+            item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0)
         else:
-            item_3d = urban.sculpture(2.0, 5.0).translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
+            item_3d = urban.sculpture(2.0, 5.0)
         item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
         item_3d.name = 'Monument: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_wayside_cross(self, item_2d):
         coords = item_2d.geom.coords[0]
         oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
-        item_3d = urban.wayside_cross().translate([coords[0], coords[1], 0.0]).material(ddd.mats.stone)  # mat_bronze
+        item_3d = urban.wayside_cross()
         item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0]).material(ddd.mats.stone)  # mat_bronze
         item_3d.name = 'Wayside Cross: %s' % item_2d.name
         return item_3d
 
@@ -303,13 +314,15 @@ class ItemsOSMBuilder():
         # TODO: Unify powertower, post, and maybe other joins, add catenaries using power:line
         # and orient poles
         coords = item_2d.geom.coords[0]
-        item_3d = landscape.powertower(18).translate([coords[0], coords[1], 0.0])
+        item_3d = landscape.powertower(18)
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Power Tower: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_powerpole(self, item_2d):
         coords = item_2d.geom.coords[0]
-        item_3d = landscape.powertower(18).translate([coords[0], coords[1], 0.0])
+        item_3d = landscape.powertower(18)
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Power Pole: %s' % item_2d.name
         return item_3d
 

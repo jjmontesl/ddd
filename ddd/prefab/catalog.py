@@ -38,6 +38,7 @@ class PrefabCatalog():
         This method returns an instance of the added object, like 'instance' does,
         so the result can be directly used as if it was retrieved from the catalog.
         """
+        key = key.replace("_", "-")
         if key in self._cache and self._cache[key]:
             raise ValueError("Object already exists in catalog: %s", key)
         obj.extra['ddd:catalog:key'] = key
@@ -50,6 +51,7 @@ class PrefabCatalog():
         return obj
 
     def instance(self, key):
+        key = key.replace("_", "-")
         obj = self._cache.get(key, None)
 
         if obj is None and self.autoload:
@@ -69,6 +71,7 @@ class PrefabCatalog():
         ddd.align.grid(self.all()).show()
 
     def save(self, key):
+        key = key.replace("_", "-")
         obj = self._cache[key]
         filename = self.path + "/" + key + ".ddd"
         logger.info("Saving catalog object %s to: %s", key, filename)
@@ -80,6 +83,7 @@ class PrefabCatalog():
         """
         Returns an instance or None.
         """
+        key = key.replace("_", "-")
         obj = None
         filename = self.path + "/" + key + ".ddd"
 
