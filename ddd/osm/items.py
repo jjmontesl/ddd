@@ -377,6 +377,8 @@ class ItemsOSMBuilder():
 
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Lamppost: %s' % item_2d.name
+        item_3d.prop_set('ddd:static', False, children=True)
+
         return item_3d
 
     def generate_item_3d_trafficlights(self, item_2d):

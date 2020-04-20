@@ -18,9 +18,10 @@ def post(height=2.00, r=0.075, top=None, side=None, mat_post=None):
     """
     A round (or squared) post.
     """
-    col = ddd.point([0, 0]).buffer(r, resolution=0, cap_style=ddd.CAP_SQUARE).extrude(height)
+    col = ddd.point([0, 0], name="Post").buffer(r, resolution=0, cap_style=ddd.CAP_SQUARE).extrude(height)
     if mat_post: col = col.material(mat_post)
     col = ddd.uv.map_cylindrical(col)
+    col = ddd.collision.aabox_from_aabb(col)
 
     col = ddd.group3([col])
     if top:
@@ -29,6 +30,7 @@ def post(height=2.00, r=0.075, top=None, side=None, mat_post=None):
     if side:
         side = side.translate([0, -r, height - 0.2])
         col.append(side)
+
 
     return col
 
@@ -67,6 +69,7 @@ def lamp_case(height=0.5, r=0.25):
     lamp = lamp_shape.extrude_step(lamp_shape.buffer(0.10, cap_style=ddd.CAP_SQUARE, join_style=ddd.JOIN_BEVEL), height * 0.8)
     lamp = lamp.extrude_step(lamp_shape.buffer(-0.10), height * 0.2)
     lamp = lamp.material(ddd.mats.lightbulb)
+    lamp = ddd.collision.aabox_from_aabb(lamp)
     return lamp
 
 def lamp_ball(r=0.25):

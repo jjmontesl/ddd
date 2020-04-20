@@ -32,6 +32,7 @@ from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
 from shapely.geometry.linestring import LineString
 from _collections_abc import Iterable
+import sys
 
 
 # Get instance of logger for this module
@@ -272,6 +273,15 @@ class D1D2D3():
         obj = DDDInstance(obj, name)
         return obj
 
+    @staticmethod
+    def json_serialize(obj):
+        try:
+            data = obj.export()
+        except Exception as e:
+            data = None
+        #if data: print(data)
+        return data
+
 
 class DDDMaterial():
 
@@ -316,9 +326,11 @@ class DDDObject():
         for c in self.children:
             c.dump(indent_level=indent_level + 1)
 
-    def select(self, func, remove=False):
+    def select(self, func=None, remove=False):
         """
         """
+
+        if func is None: func = lambda o: True
 
         result = []
         if func(self):
@@ -336,13 +348,40 @@ class DDDObject():
     def filter(self, func):
         return self.select(func)
 
+    def apply(self, func):
+        for obj in self.select().children:
+            func(obj)
+
+    def apply_components(self, methodname, *args, **kwargs):
+        """
+        Applies a method with arguments to all applicable components in this object
+        (eg. apply transformation to colliders).
+
+        Does not act on children.
+        """
+
+        for k in ('ddd:collider:primitive',):
+            if k in self.extra:
+                comp = self.extra[k]
+                if isinstance(comp, DDDObject):
+                    method_to_call = getattr(comp, methodname)
+                    self.extra[k] = method_to_call(*args, **kwargs)
+
+    def prop_set(self, key, value, children=False):
+        if children:
+            for o in self.select().children:
+                o.extra[key]= value
+        else:
+            self.extra[key] = value
+
+
     def grouptyped(self, children=None):
         if isinstance(self, DDDObject2):
             return ddd.group(children, empty=2)
-        elif isinstance(self, DDDObject3):
+        elif isinstance(self, DDDObject3) or isinstance(self, DDDInstance):
             return ddd.group(children, empty=3)
         else:
-            return ddd.group()
+            return ddd.group(children)
 
     def flatten(self):
 
@@ -1090,7 +1129,7 @@ class DDDInstance(DDDObject):
                 # If material has extra metadata, add it but do not replace
                 metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
 
-            metadata = json.loads(json.dumps(metadata, default=lambda x: None))
+            metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
             metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
             serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
             encoded_node_name = node_name + "_" + str(serialized_metadata)
@@ -1185,10 +1224,36 @@ class DDDObject3(DDDObject):
         return obj
     '''
 
+    def bounds(self):
+        """
+        Returns the axis aligned bounding box for this object's geometry.
+
+        Ref: https://github.com/mikedh/trimesh/issues/57
+        """
+
+        corners = list()
+        for c in self.children:
+            cb = c.bounds()
+            corners.extend((*cb, ))
+
+        if self.mesh:
+            corners.extend((*list(self.mesh.bounds), ))
+
+        if corners:
+            corners = np.array(corners)
+            bounds = np.array([corners.min(axis=0),
+                               corners.max(axis=0)])
+        else:
+            bounds = None
+
+        return bounds
+
+
     def translate(self, v):
         obj = self.copy()
         if obj.mesh:
             obj.mesh.apply_translation(v)
+        obj.apply_components("translate", v)
         obj.children = [c.translate(v) for c in self.children]
         return obj
 
@@ -1197,6 +1262,7 @@ class DDDObject3(DDDObject):
         if obj.mesh:
             rot = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
             obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
+        obj.apply_components("rotate", v)
         obj.children = [c.rotate(v) for c in obj.children]
         return obj
 
@@ -1331,8 +1397,9 @@ class DDDObject3(DDDObject):
                 # If material has extra metadata, add it but do not replace
                 metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
 
-            metadata = json.loads(json.dumps(metadata, default=lambda x: None))
+            metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
             metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
+            #print(json.dumps(metadata))
             serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
             encoded_node_name = node_name + "_" + str(serialized_metadata)
 
@@ -1548,6 +1615,9 @@ ddd.align = DDDAlign()
 
 from ddd.ops.snap import DDDSnap
 ddd.snap = DDDSnap()
+
+from ddd.ops.collision import DDDCollision
+ddd.collision = DDDCollision()
 
 from ddd.ops.uvmapping import DDDUVMapping
 ddd.uv = DDDUVMapping()

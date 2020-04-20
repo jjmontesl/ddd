@@ -40,3 +40,5 @@ class DDDSnap():
 
         return result
 
+
+    # for snap3, check https://github.com/mikedh/trimesh/blob/master/trimesh/proximity.py

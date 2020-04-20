@@ -89,6 +89,10 @@ class BuildingOSMBuilder():
             floors = random.randint(2, 8)
         floors = int(floors)
 
+        if floors == 0:
+            logger.error("Building with 0 floors (setting to 1): %s", floors)
+            floors = 1
+
         building_3d = None
         try:
 

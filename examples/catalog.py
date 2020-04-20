@@ -15,7 +15,8 @@ catalog.loadall()
 
 item = catalog.instance('prefab1')  # Preload
 if not item:
-    item = plants.plant(height=10)
+    item = urban.lamppost()
+    #item = plants.plant(height=10)
     #item = urban.trafficlights()
     catalog.add('prefab1', item)
 
