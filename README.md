@@ -5,15 +5,15 @@ DDD is a library for procedural generation of 2D and 3D geometries.
 
 ## Features
 
-- Scenegraph approach (not yet there, in refactoring)
+- Procedurally generate and alter 2D and 3D geometry
+- Object catalog ("prefabs") management
 - Export 2D to SVG
 - Export 3D to GLTF, FBX or OBJ
 - Builtin viewer based on Trimesh/...?
-- Procedurally generate and alter 2D and 3D geometry
 - TTF based generation of text geometry
+- Procedural objects library and examples
 
-- Procedural objects library
-
+- Scenegraph approach? (not yet there, in refactoring)
 
 ## Introduction
 
@@ -63,6 +63,17 @@ export C_INCLUDE_PATH=/usr/include/gdal/
 ## Example
 
 ## Documentation
+
+### OSM data import
+
+Using PBFs:
+  osmconvert spain-latest.osm.pbf -b=-5.870,40.760,-5.470,41.160 -o=salamanca-latest.osm.pbf
+  osmconvert spain-latest.osm.pbf -b=-8.980,41.980,-8.480,42.480 -o=vigo-latest.osm.pbf
+  osmconvert spain-latest.osm.pbf -b=-8.600,43.170,-8.200,43.570 -o=acoruna-latest.osm.pbf
+Then, geojson:
+  ./osmtogeojson city-latest.osm.pbf > /tmp/city.geojson
+
+
 
 ## License
 

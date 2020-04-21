@@ -33,6 +33,7 @@ from ddd.core.exception import DDDException
 from shapely.geometry.linestring import LineString
 from _collections_abc import Iterable
 import sys
+from ddd.exchange.dddjson import DDDJSON
 
 
 # Get instance of logger for this module
@@ -1118,6 +1119,8 @@ class DDDInstance(DDDObject):
 
         # Add metadata to name
         if True:
+            metadata = self.metadata(path_prefix)
+            '''
             ignore_keys = ('uv', 'osm:feature', 'connections')
             metadata = dict(self.extra)
             metadata['path'] = path_prefix + node_name
@@ -1131,6 +1134,7 @@ class DDDInstance(DDDObject):
 
             metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
             metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
+            '''
             serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
             encoded_node_name = node_name + "_" + str(serialized_metadata)
 
@@ -1188,8 +1192,33 @@ class DDDInstance(DDDObject):
                 cmeshes.extend(c.recurse_meshes())
         return cmeshes
 
+    def metadata(self, path_prefix):
+        auto_name = "node_%s" % (id(self))
+        node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
+
+        ignore_keys = ('uv', 'osm:feature', 'connections')
+        metadata = dict(self.extra)
+        metadata['path'] = path_prefix + node_name
+        if self.mat and self.mat.name:
+            metadata['ddd:material'] = self.mat.name
+        if self.mat and self.mat.color:
+            metadata['ddd:material:color'] = self.mat.color  # hex
+        if self.mat and self.mat.extra:
+            # If material has extra metadata, add it but do not replace
+            metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
+
+        metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
+        metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
+
+        return metadata
+
 
 class DDDTransform():
+    """
+    Stores position, rotation and scale.
+
+    These can be used to form an homogeneous transformation matrix.
+    """
 
     def __init__(self):
         self.position = [0, 0, 0]
@@ -1201,6 +1230,12 @@ class DDDTransform():
         result.position = list(self.position)
         result.rotation = list(self.rotation)
         result.scale = list(self.scale)
+        return result
+
+    def export(self):
+        result = {'position': self.position,
+                  'rotation': self.rotation,
+                  'scale': self.scale}
         return result
 
 
@@ -1377,28 +1412,37 @@ class DDDObject3(DDDObject):
         result = extrusion.extrude_step(result, obj_2d, offset, cap=cap)
         return result
 
+    def metadata(self, path_prefix):
+        auto_name = "node_%s" % (id(self))
+        node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
+
+        ignore_keys = ('uv', 'osm:feature', 'connections')
+        metadata = dict(self.extra)
+        metadata['path'] = path_prefix + node_name
+        if self.mat and self.mat.name:
+            metadata['ddd:material'] = self.mat.name
+        if self.mat and self.mat.color:
+            metadata['ddd:material:color'] = self.mat.color  # hex
+        if self.mat and self.mat.extra:
+            # If material has extra metadata, add it but do not replace
+            metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
+
+        metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
+        metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
+
+        return metadata
+
     def _recurse_scene(self, path_prefix, instance_mesh, instance_marker):
 
         scene = Scene()
+
         auto_name = "node_%s" % (id(self))
         node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
 
         # Add metadata to name
         metadata = None
         if True:
-            ignore_keys = ('uv', 'osm:feature', 'connections')
-            metadata = dict(self.extra)
-            metadata['path'] = path_prefix + node_name
-            if self.mat and self.mat.name:
-                metadata['ddd:material'] = self.mat.name
-            if self.mat and self.mat.color:
-                metadata['ddd:material:color'] = self.mat.color  # hex
-            if self.mat and self.mat.extra:
-                # If material has extra metadata, add it but do not replace
-                metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
-
-            metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
-            metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
+            metadata = self.metadata(path_prefix)
             #print(json.dumps(metadata))
             serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
             encoded_node_name = node_name + "_" + str(serialized_metadata)
@@ -1569,6 +1613,19 @@ class DDDObject3(DDDObject):
         #pyrender.Viewer(scene, lighting="direct")  #, viewport_size=resolution)
 
     def save(self, path, instance_marker=None, instance_mesh=None):
+        """
+        Saves this object to a file.
+
+        Format is chosen based on the file extension:
+
+            .glb - GLB (GLTF) binary format
+            .json - DDD custom JSON export format
+
+        @todo: Unify export code paths and recursion, metadata, path name and mesh production.
+        """
+
+        # Unify export code paths and recursion, metadata, path name and mesh production.
+
         logger.info("Saving to: %s (%s)", path, self)
 
         if instance_marker is None:
@@ -1589,7 +1646,13 @@ class DDDObject3(DDDObject):
         elif path.endswith('.glb'):
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
             scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            data = trimesh.exchange.gltf.export_glb(scene, include_normals=False)
+            data = trimesh.exchange.gltf.export_glb(scene, include_normals=D1D2D3Bootstrap.export_normals)
+
+        elif path.endswith('.json'):
+            #rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDJSON.export_json(self, "")
+            data = data.encode("utf8")
 
         else:
             raise ValueError()

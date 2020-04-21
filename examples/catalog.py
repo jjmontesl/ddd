@@ -39,6 +39,7 @@ for i in range(6):
 # All items
 items = ddd.align.grid(items, space=10.0)
 items.append(ddd.helper.all())
+items.save("/tmp/catalog.json")
 items.save("/tmp/catalog.glb")
 items.show()
 

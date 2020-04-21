@@ -1,5 +1,6 @@
 [0.4.4]
 
+  * Added export to JSON support.
   * Primitive colliders (AABox) and colliders export.
   * Added export mesh/markers command line switches.
   * Improved water handling (an underwater terrain is now generated).

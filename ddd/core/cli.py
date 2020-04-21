@@ -63,7 +63,8 @@ class D1D2D3Bootstrap():
         parser.add_argument("-o", "--overwrite", action="store_true", default=False, help="overwrite output files")
 
         parser.add_argument("--export-mesh", action="store_true", default=False, help="export instance meshes")
-        parser.add_argument("--no-export-marker", action="store_true", default=False, help="don't export instance markers")
+        parser.add_argument("--export-marker", action="store_true", default=False, help="export instance markers (default)")
+        parser.add_argument("--export-normals", action="store_true", default=False, help="export normals")
 
 
         #exclusive_grp = parser.add_mutually_exclusive_group()
@@ -92,8 +93,12 @@ class D1D2D3Bootstrap():
         self.visualize_errors = args.visualize_errors
         self.overwrite = args.overwrite
 
-        D1D2D3Bootstrap.export_marker = not args.no_export_marker
+        D1D2D3Bootstrap.export_marker = args.export_marker
         D1D2D3Bootstrap.export_mesh = args.export_mesh
+        if not D1D2D3Bootstrap.export_mesh and not D1D2D3Bootstrap.export_marker:
+            D1D2D3Bootstrap.export_marker = True
+
+        D1D2D3Bootstrap.export_normals = args.export_normals
 
         self._unparsed_args = unparsed_args
 
