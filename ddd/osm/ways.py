@@ -1649,6 +1649,8 @@ class WaysOSMBuilder():
         # if path.geom.type != "LineString": return
         length = path.geom.length
 
+        crop = ddd.shape(self.osm.area_crop)
+
         # Generate lines
         if way_2d.extra['ddd:way:roadlines']:
 
@@ -1666,7 +1668,7 @@ class WaysOSMBuilder():
                 if lanes > 2 and lineind == int(numlines / 2) and not path.extra.get('oneway', False): line_continuous = True
                 line_x_offset = 0.076171875 if line_continuous else 0.5
 
-                line_0_distance = -(width / 2) + lane_width_left
+                line_0_distance = -(width / 2) + lane_width_right
                 line_distance = line_0_distance + lane_width * lineind
 
                 # Create line
@@ -1678,7 +1680,6 @@ class WaysOSMBuilder():
 
                 # FIXME: Move cropping to generic site, use itermediate osm.something for storage
                 # Also, cropping shall interpolate UVs
-                crop = ddd.shape(self.osm.area_crop)
                 line = line.intersection(crop)
                 line = line.intersection(way_2d)
                 line = line.individualize()
@@ -1724,6 +1725,9 @@ class WaysOSMBuilder():
                     p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(d)
                     # logger.error("Could not generate props for way %s: %s", way_2d, e)
                     # print(d, p, segment_idx, segment_coords_a, segment_coords_b)
+
+                    # Only for the correct part of the line (since path is not adjusted by intersections)
+                    if not way_2d.intersects(ddd.point(p)): continue
 
                     # segment = ddd.line([segment_coords_a, segment_coords_b])
                     dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
@@ -1792,49 +1796,64 @@ class WaysOSMBuilder():
         # Generate trafficlights
         if path.geom.length > 45.0 and path.extra['ddd_trafficlights'] and path.extra['layer'] == "0":
 
-            # End right
-            p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 10.0)
-            dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
-            dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
-            dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
-            perpendicular_vec = (-dir_vec[1], dir_vec[0])
-            lightlamp_dist = path.extra['width'] * 0.5 + 0.5
-            left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
-            right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
+            for end in (1, -1):
 
-            item = ddd.point(right, name="Traffic lights: %s" % way_2d.name)
+                if end == 1:
+                    p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 10.0)
+                else:
+                    p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(10.0)
 
-            angle = math.atan2(dir_vec[1], dir_vec[0])
+                # Only for the correct part of the line (since path is not adjusted by intersections)
+                if not way_2d.intersects(ddd.point(p)): continue
 
-            # area = self.osm.areas_2d.intersect(item)
-            # Check type of area point is on
-            item.extra['way_2d'] = way_2d
-            item.extra['ddd_osm'] = 'way_trafficlights'
-            item.extra['ddd:angle'] = angle
-            self.osm.items_1d.children.append(item)
+                dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+                dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+                dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+                perpendicular_vec = (-dir_vec[1], dir_vec[0])
+                lightlamp_dist = path.extra['width'] * 0.5 + 0.5
+                left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
+                right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
+
+                if end == 1:
+                    item = ddd.point(right, name="Traffic lights: %s" % way_2d.name)
+                    angle = math.atan2(dir_vec[1], dir_vec[0])
+                else:
+                    item = ddd.point(left, name="Traffic lights: %s" % way_2d.name)
+                    angle = math.atan2(dir_vec[1], dir_vec[0]) + 180
+
+                # area = self.osm.areas_2d.intersect(item)
+                # Check type of area point is on
+                item.extra['way_2d'] = way_2d
+                item.extra['ddd_osm'] = 'way_trafficlights'
+                item.extra['ddd:angle'] = angle
+                self.osm.items_1d.children.append(item)
 
 
-        # Generate trafficlights
+        # Generate traffic signs
         if path.geom.length > 20.0 and path.extra['ddd_trafficlights'] and path.extra['layer'] == "0":
 
             # End right
-            p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 11.5)
-            dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
-            dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
-            dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
-            perpendicular_vec = (-dir_vec[1], dir_vec[0])
-            lightlamp_dist = path.extra['width'] * 0.5 + 0.5
-            left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
-            right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
+            p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 11.5 - random.uniform(0.0, 10.0))
 
-            item = ddd.point(right, name="Traffic sign: %s" % way_2d.name)
+            # Only for the correct part of the line (since path is not adjusted by intersections)
+            if way_2d.intersects(ddd.point(p)):
 
-            angle = math.atan2(dir_vec[1], dir_vec[0])
+                dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+                dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+                dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+                perpendicular_vec = (-dir_vec[1], dir_vec[0])
+                lightlamp_dist = path.extra['width'] * 0.5 + 0.5
+                left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
+                right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 
-            # area = self.osm.areas_2d.intersect(item)
-            # Check type of area point is on
-            item.extra['way_2d'] = way_2d
-            item.extra['ddd:angle'] = angle
-            item.extra['traffic_sign'] = random.choice(['give_way', 'stop'])
-            self.osm.items_1d.children.append(item)
+                item = ddd.point(right, name="Traffic sign: %s" % way_2d.name)
+
+                angle = math.atan2(dir_vec[1], dir_vec[0])
+
+                # area = self.osm.areas_2d.intersect(item)
+                # Check type of area point is on
+                item.extra['way_2d'] = way_2d
+                item.extra['ddd:angle'] = angle
+                item.extra['traffic_sign'] = random.choice(['give_way', 'stop'])
+                self.osm.items_1d.children.append(item)
 

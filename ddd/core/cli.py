@@ -21,6 +21,12 @@ class D1D2D3Bootstrap():
     export_marker = True
     export_mesh = False
 
+    commands = {"catalog-show": "ddd.prefab.commands.show",  # TODO: replace with unique command with options (show, export, dump...)
+                "catalog-export": "ddd.prefab.commands.export",
+                "osm-gen": "ddd.osm.commands.gen",
+                "osm-query": "ddd.osm.commands.query",
+                }
+
     def __init__(self):
         self.debug = True
 
@@ -66,7 +72,6 @@ class D1D2D3Bootstrap():
         parser.add_argument("--export-marker", action="store_true", default=False, help="export instance markers (default)")
         parser.add_argument("--export-normals", action="store_true", default=False, help="export normals")
 
-
         #exclusive_grp = parser.add_mutually_exclusive_group()
         #exclusive_grp.add_argument('--color', action='store_true', dest='color', default=None, help='color')
         #exclusive_grp.add_argument('--no-color', action='store_false', dest='color', help='no-color')
@@ -83,7 +88,7 @@ class D1D2D3Bootstrap():
         # Timings
         # Exoort instance-markers and/or instance-geometry by default
 
-        parser.add_argument("script", help="script to run")
+        parser.add_argument("script", help="script or command to run")
         #parser.add_argument("rest", nargs='*')
 
         args, unparsed_args = parser.parse_known_args()  # sys.argv[1:]
@@ -100,6 +105,9 @@ class D1D2D3Bootstrap():
 
         D1D2D3Bootstrap.export_normals = args.export_normals
 
+        if self.script in self.commands:
+            self.script = self.commands[self.script]
+
         self._unparsed_args = unparsed_args
 
     def run(self):
@@ -112,7 +120,9 @@ class D1D2D3Bootstrap():
         sys.path.append(script_dirpath)
         try:
             D1D2D3Bootstrap._instance = self
-            importlib.import_module(self.script[:-3])  #, globals={'ddd_bootstrap': self})
+            if self.script.endswith(".py"):
+                self.script = self.script[:-3]
+            importlib.import_module(self.script)  #, globals={'ddd_bootstrap': self})
             #__import__(self.script[:-3], globals={'ddd_bootstrap': self})
         except DDDException as e:
             logger.error("Error: %s (obj: %s)" % (e, e.ddd_obj))

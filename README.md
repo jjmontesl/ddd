@@ -59,6 +59,10 @@ Exported C and CPLUS_LIBRARY_PATH as per https://gis.stackexchange.com/questions
 export CPLUS_INCLUDE_PATH=/usr/include/gdal/
 export C_INCLUDE_PATH=/usr/include/gdal/
 
+**For Osmium package (reading OSM files)**
+
+sudo apt-get install build-essential cmake libboost-dev libexpat1-dev zlib1g-dev libbz2-dev
+
 
 ## Example
 

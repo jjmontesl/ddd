@@ -10,6 +10,7 @@ from shapely import geometry, affinity, ops
 from trimesh import transformations
 
 from ddd.core.exception import DDDException
+from ddd.core.cli import D1D2D3Bootstrap
 
 
 # Get instance of logger for this module
@@ -27,24 +28,24 @@ class DDDJSON():
         return encoded
 
     @staticmethod
-    def export_data(obj, path_prefix=""):
+    def export_data(obj, path_prefix="", name_suffix=""):
         """
         TODO: Unify export code paths and recursion, metadata, path name and mesh production.
         """
 
-        auto_name = "node_%s" % (id(obj))
-        node_name = ("%s_%s" % (obj.name, id(obj))) if obj.name else auto_name
+        node_name = obj.uniquename() + name_suffix
 
-        extra = obj.metadata(path_prefix)
+        extra = obj.metadata(path_prefix, name_suffix)
         data = {'_name': node_name,
-                '_path': extra['path'],
+                '_path': extra['ddd:path'],
                 '_str': str(obj),
                 '_extra': extra,
                 '_material': str(obj.mat)}
 
-        for c in obj.children:
-            cdata = DDDJSON.export_data(c, path_prefix + node_name + "/")
-            cpath = cdata['_extra']['path']
+        for idx, c in enumerate(obj.children):
+
+            cdata = DDDJSON.export_data(c, path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx))
+            cpath = cdata['_extra']['ddd:path']
             data[cpath] = cdata
 
         # FIXME: This code is duplicated from DDDInstance: normalize export / generation
@@ -62,8 +63,12 @@ class DDDJSON():
                     raise DDDException("Invalid scale for an instance object (%s): %s", obj.transform.scale, obj)
                 #ref = ref.rotate(transformations.euler_from_quaternion(obj.transform.rotation, axes='sxyz'))
                 #ref = ref.translate(self.transform.position)
-                refdata = DDDJSON.export_data(ref, path_prefix=path_prefix + node_name + "/")  #, instance_mesh=instance_mesh, instance_marker=instance_marker)
-                data['_ref'] = refdata
+
+                # Export complete references? (too verbose)
+                if D1D2D3Bootstrap.export_mesh:
+                    #refdata = DDDJSON.export_data(ref, path_prefix=path_prefix + node_name +  "/")  #, instance_mesh=instance_mesh, instance_marker=instance_marker)
+                    refdata = DDDJSON.export_data(ref, path_prefix="", name_suffix="#ref")  #, instance_mesh=instance_mesh, instance_marker=instance_marker)
+                    data['_ref'] = refdata
 
             '''
             if instance_marker:

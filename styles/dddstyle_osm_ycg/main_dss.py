@@ -8,6 +8,10 @@ STYLES.update({
 
 })
 
+stage('ways').steps.extend([
+
+])
+
 # Schools with no wall/fence contained or in border -> generate_wall_fence
 area["amenity"="school"] & (! contains(any["barrier"] & !contains(any[""])) {
     o = utils.area_add_wallfence(o, fence_ratio, gates=x)

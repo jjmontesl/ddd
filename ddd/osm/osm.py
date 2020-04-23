@@ -40,52 +40,6 @@ def project_coordinates(coords, transformer):
 
 class OSMBuilder():
 
-    # Golf
-    #mat_lane = ddd.material(color='#1db345')
-    #mat_border = ddd.material(color='#f0f0ff')
-
-    '''
-    # Ways
-    mat_asphalt = ddd.material(name="Asphalt", color='#202020')
-    mat_dirt = ddd.material(color="#b58800")
-    mat_railway = ddd.material(color="#47443e")
-    mat_sidewalk = ddd.material(name="Sidewalk", color='#e0d0d0')
-    mat_pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
-    mat_pathwalk = ddd.material(name="WayPedestrian", color='#78281e')
-
-    mat_roadline = ddd.material(name="Roadline", color='#e8e8e8')
-
-    # Areas
-    mat_park = ddd.material(name="Park", color='#1db345')
-    mat_pitch = ddd.material(color='#196118')
-    mat_sea = ddd.material(name="Water4Advanced", color='#3d43b5')
-    mat_terrain = ddd.material(name="Ground", color='#e6821e')
-
-    # Structural / building materials
-    mat_bronze = ddd.material(color='#f0cb11')
-    mat_steel = ddd.material(color='#78839c')
-    mat_stone = ddd.material(color='#9c9378')
-    mat_cement = ddd.material(name="Concrete", color='#b8b8a0')
-    mat_brick = ddd.material(color='#d49156')
-    mat_forgery = ddd.material(color='#1e1118')
-    mat_wood = ddd.material(color='#efae85')
-    mat_water = ddd.material(name="WaterBasicDaytime", color='#4d53c5')
-
-    # Trees
-    mat_bark = ddd.material(name="Bark", color='#df9e75')
-    mat_leaves = ddd.material(color='#1da345')
-
-    # Urban props materials
-    mat_lightbulb = ddd.material(color='e8e0e4')
-    mat_railing = ddd.material(color='282024')
-
-    # Buildings
-    mat_building_1 = ddd.material(color='#f7f0be')
-    mat_building_2 = ddd.material(color='#bdb9a0')
-    mat_building_3 = ddd.material(color='#c49156')
-    mat_roof_tile = ddd.material(color='#f25129')
-    '''
-
     def __init__(self, features=None, area_filter=None, area_crop=None, osm_proj=None, ddd_proj=None, config=None):
 
         self.catalog = PrefabCatalog()
@@ -118,6 +72,7 @@ class OSMBuilder():
 
 
         self.features = features if features else []
+        self.features_2d = ddd.group2(name="Features")
 
         self.osm_proj = osm_proj
         self.ddd_proj = ddd_proj
@@ -169,6 +124,11 @@ class OSMBuilder():
                     print("Invalid Tag: %s" % t)
         return other_tags
     '''
+
+    def load_osmium(self, file):
+        # See: Examples: https://github.com/osmcode/pyosmium/blob/master/examples/convert.py
+        # See: https://osmcode.org/libosmium/manual.html (there's a GeoJSON factory, but possibly...)
+        pass
 
     def load_geojson(self, files):
 
@@ -241,6 +201,25 @@ class OSMBuilder():
                 f.properties['layer'] = "1"
             if f.properties.get('layer', None) is None:
                 f.properties['layer'] = "0"
+
+            # Create feature objects
+            defaultname = f.geometry.type  # "Feature"
+            name = f.properties.get('name', defaultname)
+            osmid = f.properties.get('id', None)
+            if osmid is not None:
+                name = "%s_(%s)" % (name, osmid)
+
+            feature_2d = ddd.shape(f.geometry, name=name)
+            for k, v in f.properties.items():
+                feature_2d.extra['osm:' + k] = v
+
+            try:
+                feature_2d.validate()
+                self.features_2d.append(feature_2d)
+            except Exception as e:
+                logger.info("Invalid feature '%s': %s", name, e)
+
+        self.features_2d.save("/tmp/dddosm2d.json")
 
     def generate(self):
 

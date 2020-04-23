@@ -40,11 +40,13 @@ setup(
         "pyproj >= 2.4.2.post1",
         "pycsg >= 0.3.3",
         "Shapely >= 1.6.4.post2",
-        "trimesh >= 3.5.0",
+        "trimesh >= 3.5.0",  # -e git+https://github.com/mikedh/trimesh.git@8c5633028984b4abb1b7911208f7652119a3c96d#egg=trimesh
+        "triangle >= 20190115.3",
 
         'svgpath2mpl >= 0.2.1',
         'svgpathtools >= 1.3.3',
 
+        "osmium >= 2.15.4",
     ],
 
     entry_points={'console_scripts': ['ddd=ddd.core.cli:main']},

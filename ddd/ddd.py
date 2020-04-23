@@ -34,6 +34,7 @@ from shapely.geometry.linestring import LineString
 from _collections_abc import Iterable
 import sys
 from ddd.exchange.dddjson import DDDJSON
+import hashlib
 
 
 # Get instance of logger for this module
@@ -166,7 +167,6 @@ class D1D2D3():
     def marker(name=None):
         marker = D1D2D3.box(name=name)
         marker.extra['ddd:marker'] = True
-        #marker.extra['ddd:collider'] = False  # should not be explicit
         return marker
 
     @staticmethod
@@ -301,6 +301,9 @@ class DDDMaterial():
     def __repr__(self):
         return "DDDMaterial(name=%s, color=%s)" % (self.name, self.color)
 
+    def __hash__(self):
+        return abs(hash((self.name, self.color, sorted(self.extra.values()))))
+
 
 class DDDObject():
 
@@ -320,7 +323,44 @@ class DDDObject():
     def __repr__(self):
         return "<DDDObject (name=%s, children=%d)>" % (self.name, len(self.children) if self.children else 0)
 
+    def hash(self):
+        h = hashlib.new('sha256')
+        h.update(self.__class__.__name__.encode("utf8"))
+        if self.name:
+            h.update(self.name.encode("utf8"))
+        for k, v in self.extra.items():
+            h.update(k.encode("utf8"))
+            h.update(str(v).encode("utf8"))
+        for c in self.children:
+            h.update(c.hash().digest())
+        return h
 
+        #print(self.__class__.__name__, self.name, hash((self.__class__.__name__, self.name)))
+        #return abs(hash((self.__class__.__name__, self.name)))  #, ((k, self.extra[k]) for k in sorted(self.extra.keys())))))
+
+    def uniquename(self):
+        node_name = "%s_%s" % (self.name if self.name else 'Node', self.hash().hexdigest()[:8])
+        return node_name
+
+    def metadata(self, path_prefix, name_suffix):
+
+        node_name = self.uniquename() + name_suffix
+
+        ignore_keys = ('uv', 'osm:feature', 'connections')
+        metadata = dict(self.extra)
+        metadata['ddd:path'] = path_prefix + node_name
+        if self.mat and self.mat.name:
+            metadata['ddd:material'] = self.mat.name
+        if self.mat and self.mat.color:
+            metadata['ddd:material:color'] = self.mat.color  # hex
+        if self.mat and self.mat.extra:
+            # If material has extra metadata, add it but do not replace
+            metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
+
+        metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
+        metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
+
+        return metadata
 
     def dump(self, indent_level=0):
         print("  " * indent_level + str(self))
@@ -412,7 +452,7 @@ class DDDObject2(DDDObject):
         self.geom = geom
 
     def __repr__(self):
-        return "<DDDObject2 (name=%s, geom=%s (%s verts), children=%d, id=%s)>" % (self.name, self.geom.type if self.geom else None, self.vertex_count(), len(self.children) if self.children else 0, id(self))
+        return "<DDDObject2 (name=%s, geom=%s (%s verts), children=%d>" % (self.name, self.geom.type if self.geom else None, self.vertex_count(), len(self.children) if self.children else 0)
 
     def vertex_count(self):
         if not self.geom:
@@ -1065,11 +1105,21 @@ class DDDObject2(DDDObject):
     def save(self, path):
 
         # $$('path').forEach(function(p) {console.log(p); p.setAttribute('stroke-width', 1.0)});
-
         geoms = self.geom_recursive()
-        with open(path, 'w') as f:
+
+        if path.endswith(".svg"):
             geom = geometry.GeometryCollection(geoms)
-            f.write(geom._repr_svg_())
+            data = geom._repr_svg_()
+        elif path.endswith(".json"):
+            #rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDJSON.export_json(self, "")
+            data = data.encode("utf8")
+        else:
+            raise ValueError()
+
+        with open(path, 'wb') as f:
+            f.write(data)
 
     def show(self):
         #self.extrude(1.0).show()
@@ -1084,7 +1134,7 @@ class DDDInstance(DDDObject):
         self.transform = DDDTransform()
 
     def __repr__(self):
-        return "<DDDInstance (name=%s, ref=%s, id=%s)>" % (self.name, self.ref, id(self))
+        return "<DDDInstance (name=%s, ref=%s)>" % (self.name, self.ref)
 
     def copy(self):
         obj = DDDInstance(ref=self.ref, name=self.name, extra=dict(self.extra))
@@ -1112,14 +1162,13 @@ class DDDInstance(DDDObject):
         obj.transform.rotation = transformations.quaternion_multiply(rot, obj.transform.rotation)  # order matters!
         return obj
 
-    def _recurse_scene(self, path_prefix, instance_mesh, instance_marker):
+    def _recurse_scene(self, path_prefix, name_suffix, instance_mesh, instance_marker):
 
-        auto_name = "node_%s" % (id(self))
-        node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
+        node_name = self.uniquename() + name_suffix
 
         # Add metadata to name
         if True:
-            metadata = self.metadata(path_prefix)
+            metadata = self.metadata(path_prefix, name_suffix)
             '''
             ignore_keys = ('uv', 'osm:feature', 'connections')
             metadata = dict(self.extra)
@@ -1148,7 +1197,7 @@ class DDDInstance(DDDObject):
                 #ref = ref.scale(self.transform.scale)
                 ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
                 ref = ref.translate(self.transform.position)
-                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", instance_mesh=instance_mesh, instance_marker=instance_marker)
+                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker)
                 scene = append_scenes([scene] + [refscene])
 
             if instance_marker:
@@ -1158,7 +1207,7 @@ class DDDInstance(DDDObject):
                 ref = ref.translate(self.transform.position)
                 ref.extra.update(self.ref.extra)
                 ref.extra.update(self.extra)
-                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", instance_mesh=instance_mesh, instance_marker=instance_marker)
+                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#marker", instance_mesh=instance_mesh, instance_marker=instance_marker)
                 scene = append_scenes([scene] + [refscene])
 
         else:
@@ -1191,26 +1240,6 @@ class DDDInstance(DDDObject):
             for c in ref.children:
                 cmeshes.extend(c.recurse_meshes())
         return cmeshes
-
-    def metadata(self, path_prefix):
-        auto_name = "node_%s" % (id(self))
-        node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
-
-        ignore_keys = ('uv', 'osm:feature', 'connections')
-        metadata = dict(self.extra)
-        metadata['path'] = path_prefix + node_name
-        if self.mat and self.mat.name:
-            metadata['ddd:material'] = self.mat.name
-        if self.mat and self.mat.color:
-            metadata['ddd:material:color'] = self.mat.color  # hex
-        if self.mat and self.mat.extra:
-            # If material has extra metadata, add it but do not replace
-            metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
-
-        metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
-        metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
-
-        return metadata
 
 
 class DDDTransform():
@@ -1246,7 +1275,7 @@ class DDDObject3(DDDObject):
         self.mesh = mesh
 
     def __repr__(self):
-        return "<DDDObject3 (name=%s, faces=%d, children=%d, id=%s)>" % (self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0, id(self))
+        return "<DDDObject3 (name=%s, faces=%d, children=%d)>" % (self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
 
     def copy(self):
         obj = DDDObject3(name=self.name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
@@ -1412,13 +1441,11 @@ class DDDObject3(DDDObject):
         result = extrusion.extrude_step(result, obj_2d, offset, cap=cap)
         return result
 
-    def metadata(self, path_prefix):
-        auto_name = "node_%s" % (id(self))
-        node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
-
+    def metadata(self, path_prefix, name_suffix):
+        node_name = self.uniquename() + name_suffix
         ignore_keys = ('uv', 'osm:feature', 'connections')
         metadata = dict(self.extra)
-        metadata['path'] = path_prefix + node_name
+        metadata['ddd:path'] = path_prefix + node_name
         if self.mat and self.mat.name:
             metadata['ddd:material'] = self.mat.name
         if self.mat and self.mat.color:
@@ -1432,17 +1459,15 @@ class DDDObject3(DDDObject):
 
         return metadata
 
-    def _recurse_scene(self, path_prefix, instance_mesh, instance_marker):
+    def _recurse_scene(self, path_prefix, name_suffix, instance_mesh, instance_marker):
 
         scene = Scene()
-
-        auto_name = "node_%s" % (id(self))
-        node_name = ("%s_%s" % (self.name, id(self))) if self.name else auto_name
+        node_name = self.uniquename()
 
         # Add metadata to name
         metadata = None
         if True:
-            metadata = self.metadata(path_prefix)
+            metadata = self.metadata(path_prefix, name_suffix)
             #print(json.dumps(metadata))
             serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
             encoded_node_name = node_name + "_" + str(serialized_metadata)
@@ -1455,8 +1480,8 @@ class DDDObject3(DDDObject):
 
         cscenes = []
         if self.children:
-            for c in self.children:
-                cscene = c._recurse_scene(path_prefix=path_prefix + node_name + "/", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            for idx, c in enumerate(self.children):
+                cscene = c._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx), instance_mesh=instance_mesh, instance_marker=instance_marker)
                 cscenes.append(cscene)
 
         scene = append_scenes([scene] + cscenes)
@@ -1500,6 +1525,7 @@ class DDDObject3(DDDObject):
 
         return self.mesh
 
+    '''
     def _recurse_scene_ALT(self, base_frame=None, graph=None):
 
         if graph is None:
@@ -1509,9 +1535,8 @@ class DDDObject3(DDDObject):
 
         scene = Scene(base_frame=base_frame, graph=None)
 
-        auto_name = "node_%s" % (id(self))
-        node_name = self.name + "_%s" % id(self) if self.name else auto_name
-        node_name = node_name.replace(" ", "_")
+        node_name = self.uniquename()
+        #node_name = node_name.replace(" ", "_")
         scene.add_geometry(geometry=self.mesh, node_name=node_name)
 
         #tf = TransformForest()
@@ -1548,6 +1573,7 @@ class DDDObject3(DDDObject):
         """
 
         return scene
+    '''
 
     def __rezero(self):
         # From Trimesh as graph example
@@ -1645,7 +1671,7 @@ class DDDObject3(DDDObject):
 
         elif path.endswith('.glb'):
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
-            scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = trimesh.exchange.gltf.export_glb(scene, include_normals=D1D2D3Bootstrap.export_normals)
 
         elif path.endswith('.json'):
