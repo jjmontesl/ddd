@@ -219,7 +219,8 @@ class OSMBuilder():
             except Exception as e:
                 logger.info("Invalid feature '%s': %s", name, e)
 
-        self.features_2d.save("/tmp/dddosm2d.json")
+        #self.features_2d.save("/tmp/dddosm2d.json")
+        #self.features_2d.show()
 
     def generate(self):
 
@@ -257,6 +258,18 @@ class OSMBuilder():
 
         # Road props (traffic lights, lampposts, fountains, football fields...) - needs. roads, areas, coastline, etc... and buildings
         self.ways.generate_props_2d()  # Objects related to ways
+
+        # 2D output (before cropping)
+        ddd.group2([ddd.shape(self.area_crop).material(ddd.material(color='#ffffff')),
+                    self.areas_2d, self.ways_2d['0'], self.roadlines_2d,
+                    self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f', opacity=0.6)),
+                    self.items_2d, self.items_1d.buffer(0.5).material(ddd.mats.highlight),
+                    self.water_2d]).intersection(ddd.shape(self.area_crop)).save("/tmp/osm2d.png")
+        ddd.group2([ddd.shape(self.area_crop).material(ddd.material(color='#ffffff')),
+                    self.areas_2d, self.ways_2d['0'], self.roadlines_2d,
+                    self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f', opacity=0.6)),
+                    self.items_2d, self.items_1d.buffer(0.5).material(ddd.mats.highlight),
+                    self.water_2d]).intersection(ddd.shape(self.area_crop)).save("/tmp/osm2d.svg")
 
         # Crop if necessary
         if self.area_crop:

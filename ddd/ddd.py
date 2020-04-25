@@ -35,6 +35,8 @@ from _collections_abc import Iterable
 import sys
 from ddd.exchange.dddjson import DDDJSON
 import hashlib
+import webbrowser
+import cairosvg
 
 
 # Get instance of logger for this module
@@ -66,10 +68,10 @@ class D1D2D3():
         D1D2D3Bootstrap.initialize_logging(debug)
 
     @staticmethod
-    def material(name=None, color=None, extra=None):
+    def material(name=None, color=None, extra=None, opacity=1.0):
         #material = SimpleMaterial(diffuse=color, )
         #return (0.3, 0.9, 0.3)
-        material = DDDMaterial(name=name, color=color, extra=extra)
+        material = DDDMaterial(name=name, color=color, extra=extra, opacity=1.0)
         return material
 
     @staticmethod
@@ -164,8 +166,11 @@ class D1D2D3():
         return cube
 
     @staticmethod
-    def marker(name=None):
+    def marker(pos=None, name=None, extra=None):
         marker = D1D2D3.box(name=name)
+        if pos: marker = marker.translate(pos)
+        if extra:
+            marker.extra = extra
         marker.extra['ddd:marker'] = True
         return marker
 
@@ -286,7 +291,7 @@ class D1D2D3():
 
 class DDDMaterial():
 
-    def __init__(self, name=None, color=None, extra=None):
+    def __init__(self, name=None, color=None, extra=None, opacity=1.0):
         """
         Color is hex color.
         """
@@ -294,6 +299,7 @@ class DDDMaterial():
         self.color = color
         self.color_rgba = None
         self.extra = extra
+        self.opacity = opacity
 
         if self.color:
             self.color_rgba = trimesh.visual.color.hex_to_rgba(self.color)
@@ -342,6 +348,18 @@ class DDDObject():
         node_name = "%s_%s" % (self.name if self.name else 'Node', self.hash().hexdigest()[:8])
         return node_name
 
+    def replace(self, obj):
+        """
+        Replaces self data with data from other object. Serves to "replace"
+        instances in lists.
+        """
+        # TODO: Study if the system shall modify instances and let user handle cloning, this method would be unnecessary
+        self.name = obj.name
+        self.extra = obj.extra
+        self.material = obj.material
+        self.children = obj.children
+        return self
+
     def metadata(self, path_prefix, name_suffix):
 
         node_name = self.uniquename() + name_suffix
@@ -358,7 +376,7 @@ class DDDObject():
             metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
 
         metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
-        metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
+        metadata = {k: v for k, v in metadata.items() if v is not None and k not in ignore_keys}
 
         return metadata
 
@@ -480,10 +498,8 @@ class DDDObject2(DDDObject):
         instances in lists.
         """
         # TODO: Study if the system shall modify instances and let user handle cloning, this method would be unnecessary
+        super(DDDObject2, self).replace(obj)
         self.geom = obj.geom
-        self.name = obj.name
-        self.extra = obj.extra
-        self.material = obj.material
         return self
 
     def material(self, material):
@@ -1102,18 +1118,98 @@ class DDDObject2(DDDObject):
                 geoms.extend(cgems)
         return geoms
 
-    def save(self, path):
+    def svg(self):
+        #geoms = self.geom_recursive()
+        #geom = geometry.GeometryCollection(geoms)
 
-        # $$('path').forEach(function(p) {console.log(p); p.setAttribute('stroke-width', 1.0)});
+        color = None
+        if self.mat: color = self.mat.color
+
+        opacity = 0.7
+        if self.mat: opacity = self.mat.opacity
+
+        data = ""
+        if self.children:
+            data = data + '<g>' + ''.join(c.svg() for c in self.children) + '</g>'
+        if self.geom:
+            geom = geometry.GeometryCollection([self.geom])
+            data = data + geom.svg(scale_factor=0.01, color=color)
+
+        if not data:
+            data = '<g />'
+
+        return data
+
+    def svgdoc(self):
+        """
+        Produces a complete SVG document.
+        """
+
         geoms = self.geom_recursive()
+        geom = geometry.GeometryCollection(geoms)
+
+        svg_top = '<svg xmlns="http://www.w3.org/2000/svg" ' \
+            'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        if geom.is_empty:
+            return svg_top + '/>'
+        else:
+            # Establish SVG canvas that will fit all the data + small space
+            xmin, ymin, xmax, ymax = geom.bounds
+            if xmin == xmax and ymin == ymax:
+                # This is a point; buffer using an arbitrary size
+                xmin, ymin, xmax, ymax = geom.buffer(1).bounds
+            else:
+                # Expand bounds by a fraction of the data ranges
+                expand = 0.04  # or 4%, same as R plots
+                widest_part = max([xmax - xmin, ymax - ymin])
+                expand_amount = widest_part * expand
+                xmin -= expand_amount
+                ymin -= expand_amount
+                xmax += expand_amount
+                ymax += expand_amount
+            dx = xmax - xmin
+            dy = ymax - ymin
+            width = min([max([100., dx]), 300])
+            height = min([max([100., dy]), 300])
+
+            '''
+            try:
+                scale_factor = max([dx, dy]) / max([width, height])
+            except ZeroDivisionError:
+                scale_factor = 1.
+            '''
+
+            view_box = "{} {} {} {}".format(xmin, ymin, dx, dy)
+            transform = "matrix(1,0,0,-1,0,{})".format(ymax + ymin)
+
+            return svg_top + (
+                'width="{1}" height="{2}" viewBox="{0}" '
+                'preserveAspectRatio="xMinYMin meet">'
+                '<g transform="{3}">{4}</g></svg>'
+                ).format(view_box, width, height, transform, self.svg())
+
+    def save(self, path, instance_marker=None, instance_mesh=None):
+
+        if instance_marker is None:
+            instance_marker = D1D2D3Bootstrap.export_marker
+        if instance_mesh is None:
+            instance_mesh = D1D2D3Bootstrap.export_mesh
 
         if path.endswith(".svg"):
-            geom = geometry.GeometryCollection(geoms)
-            data = geom._repr_svg_()
+            #data = geom._repr_svg_().encode()
+            data = self.svgdoc().encode()
+
+        elif path.endswith(".png"):
+            logger.info("Exporting 2D as PNG to: %s", path)
+            svgdata = self.svgdoc().encode("utf8")
+            data = cairosvg.svg2png(bytestring=svgdata, scale=5)  #, write_to=path) parent_width, parent_height, dpi, scale, unsafe.
+
+            # NOTE: Also, using Inkscape: https://stackoverflow.com/questions/6589358/convert-svg-to-png-in-python
+
         elif path.endswith(".json"):
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
             #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            data = DDDJSON.export_json(self, "")
+            data = DDDJSON.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = data.encode("utf8")
         else:
             raise ValueError()
@@ -1122,19 +1218,27 @@ class DDDObject2(DDDObject):
             f.write(data)
 
     def show(self):
-        #self.extrude(1.0).show()
+
+        # Show in 3D view
+        #self.extrude(0.2).show()
         self.triangulate().show()
+
+        # Show in browser
+        #logger.info("Showing 2D image via shell.")
+        #FIXME: save to a temporary/uniquefilename
+        #self.save("/tmp/tmp-MAKEUNIQUE.svg")
+        #webbrowser.open('file:///tmp/tmp-MAKEUNIQUE.svg', new=2)
 
 
 class DDDInstance(DDDObject):
 
-    def __init__(self, ref, name=None, extra=None, material=None):
-        super().__init__(name, None, extra, material)
+    def __init__(self, ref, name=None, extra=None):
+        super().__init__(name, None, extra)
         self.ref = ref
         self.transform = DDDTransform()
 
     def __repr__(self):
-        return "<DDDInstance (name=%s, ref=%s)>" % (self.name, self.ref)
+        return "<%s (name=%s, ref=%s)>" % (self.__class__.__name__, self.name, self.ref)
 
     def copy(self):
         obj = DDDInstance(ref=self.ref, name=self.name, extra=dict(self.extra))
@@ -1162,6 +1266,21 @@ class DDDInstance(DDDObject):
         obj.transform.rotation = transformations.quaternion_multiply(rot, obj.transform.rotation)  # order matters!
         return obj
 
+    def scale(self, v):
+        obj = self.copy()
+        obj.transform.position = np.array(v) * obj.transform.position
+        return obj
+
+    def marker(self):
+        ref = D1D2D3.marker(name=self.name, extra=dict(self.extra))
+        ref = ref.scale(self.transform.scale)
+        ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+        ref = ref.translate(self.transform.position)
+        if self.ref:
+            ref.extra.update(self.ref.extra)
+        ref.extra.update(self.extra)
+        return ref
+
     def _recurse_scene(self, path_prefix, name_suffix, instance_mesh, instance_marker):
 
         node_name = self.uniquename() + name_suffix
@@ -1169,29 +1288,14 @@ class DDDInstance(DDDObject):
         # Add metadata to name
         if True:
             metadata = self.metadata(path_prefix, name_suffix)
-            '''
-            ignore_keys = ('uv', 'osm:feature', 'connections')
-            metadata = dict(self.extra)
-            metadata['path'] = path_prefix + node_name
-            if self.mat and self.mat.name:
-                metadata['ddd:material'] = self.mat.name
-            if self.mat and self.mat.color:
-                metadata['ddd:material:color'] = self.mat.color  # hex
-            if self.mat and self.mat.extra:
-                # If material has extra metadata, add it but do not replace
-                metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
-
-            metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
-            metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
-            '''
             serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
             encoded_node_name = node_name + "_" + str(serialized_metadata)
 
         scene = Scene()
-        if self.ref:
 
-            ref = self.ref.copy()
-            if instance_mesh:
+        if instance_mesh:
+            if self.ref:
+                ref = self.ref.copy()
                 if self.transform.scale != [1, 1, 1]:
                     raise DDDException("Invalid scale for an instance object (%s): %s", self.transform.scale, self)
                 #ref = ref.scale(self.transform.scale)
@@ -1199,19 +1303,15 @@ class DDDInstance(DDDObject):
                 ref = ref.translate(self.transform.position)
                 refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker)
                 scene = append_scenes([scene] + [refscene])
+            else:
+                if type(self) == type(DDDInstance):
+                    raise DDDException("Instance should reference another object: %s" % (self, ))
 
-            if instance_marker:
-                ref = D1D2D3.marker(self.name)
-                ref = ref.scale(self.transform.scale)
-                ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
-                ref = ref.translate(self.transform.position)
-                ref.extra.update(self.ref.extra)
-                ref.extra.update(self.extra)
-                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#marker", instance_mesh=instance_mesh, instance_marker=instance_marker)
-                scene = append_scenes([scene] + [refscene])
+        if instance_marker:
+            ref = self.marker()
+            refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#marker", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            scene = append_scenes([scene] + [refscene])
 
-        else:
-            raise DDDException("Instance should reference another object: %s" % (self, ))
 
         '''
         cscenes = []
@@ -1227,18 +1327,25 @@ class DDDInstance(DDDObject):
 
     def recurse_meshes(self):
 
-        ref = self.ref.copy()
-        ref = ref.scale(self.transform.scale)
-        ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
-        ref = ref.translate(self.transform.position)
-
         cmeshes = []
-        if ref.mesh:
-            mesh = ref._process_mesh()
-            cmeshes = [mesh]
-        if ref.children:
-            for c in ref.children:
-                cmeshes.extend(c.recurse_meshes())
+
+        if self.ref:
+            ref = self.ref.copy()
+            ref = ref.scale(self.transform.scale)
+            ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+            ref = ref.translate(self.transform.position)
+
+            cmeshes.extend(ref.recurse_meshes())
+
+        '''
+        if hasattr(ref, 'mesh'):
+            if ref.mesh:
+                mesh = ref._process_mesh()
+                cmeshes = [mesh]
+            if ref.children:
+                for c in ref.children:
+                    cmeshes.extend(c.recurse_meshes())
+        '''
         return cmeshes
 
 
@@ -1281,12 +1388,15 @@ class DDDObject3(DDDObject):
         obj = DDDObject3(name=self.name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
         return obj
 
-    '''
-    def instance(self):
-        obj = D1D2D3.cube(d=1.0)  #[0, 0, 0], 1)
-        obj.extra['ddd:instance'] = self
-        return obj
-    '''
+    def replace(self, obj):
+        """
+        Replaces self data with data from other object. Serves to "replace"
+        instances in lists.
+        """
+        # TODO: Study if the system shall modify instances and let user handle cloning, this method would be unnecessary
+        super(DDDObject3, self).replace(obj)
+        self.mesh = obj.mesh
+        return self
 
     def bounds(self):
         """
@@ -1441,6 +1551,7 @@ class DDDObject3(DDDObject):
         result = extrusion.extrude_step(result, obj_2d, offset, cap=cap)
         return result
 
+    '''
     def metadata(self, path_prefix, name_suffix):
         node_name = self.uniquename() + name_suffix
         ignore_keys = ('uv', 'osm:feature', 'connections')
@@ -1458,6 +1569,7 @@ class DDDObject3(DDDObject):
         metadata = {k: v for k,v in metadata.items() if v is not None and k not in ignore_keys}
 
         return metadata
+    '''
 
     def _recurse_scene(self, path_prefix, name_suffix, instance_mesh, instance_marker):
 
@@ -1677,7 +1789,7 @@ class DDDObject3(DDDObject):
         elif path.endswith('.json'):
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
             #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            data = DDDJSON.export_json(self, "")
+            data = DDDJSON.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = data.encode("utf8")
 
         else:

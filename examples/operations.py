@@ -10,7 +10,7 @@ items = ddd.group3()
 fig1 = ddd.line([[-2, 0], [0, 0], [2, 2]])
 fig = fig1.extrude(2.0)
 items.append(fig)
-fig.show()
+#fig.show()
 
 # Extrusion to line (empty geometry)
 fig1 = ddd.rect([-4, -2, 4, 2])
@@ -55,7 +55,7 @@ items.append(fig)
 # Simple extrusion
 fig = ddd.regularpolygon(5).extrude(5.0)
 items.append(fig)
-fig.show()
+#fig.show()
 
 
 # Simple extrusion no caps

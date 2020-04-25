@@ -19,16 +19,16 @@ logger = logging.getLogger(__name__)
 class DDDJSON():
 
     @staticmethod
-    def export_json(obj, path_prefix=""):
+    def export_json(obj, path_prefix="", instance_mesh=True, instance_marker=False):
 
         from ddd.ddd import D1D2D3
-        data = DDDJSON.export_data(obj, path_prefix)
+        data = DDDJSON.export_data(obj, path_prefix, "", instance_mesh, instance_marker)
         encoded = json.dumps(data, indent=2, default=lambda x: D1D2D3.json_serialize(x))
 
         return encoded
 
     @staticmethod
-    def export_data(obj, path_prefix="", name_suffix=""):
+    def export_data(obj, path_prefix="", name_suffix="", instance_mesh=True, instance_marker=False):
         """
         TODO: Unify export code paths and recursion, metadata, path name and mesh production.
         """
@@ -44,43 +44,35 @@ class DDDJSON():
 
         for idx, c in enumerate(obj.children):
 
-            cdata = DDDJSON.export_data(c, path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx))
+            cdata = DDDJSON.export_data(c, path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx), instance_mesh=instance_mesh, instance_marker=instance_marker)
             cpath = cdata['_extra']['ddd:path']
             data[cpath] = cdata
 
         # FIXME: This code is duplicated from DDDInstance: normalize export / generation
         from ddd.ddd import DDDInstance
-        if isinstance(obj, DDDInstance) and obj.ref:
-
-            instance_mesh = True
-            instance_marker = False
+        if isinstance(obj, DDDInstance):
 
             data['_transform'] = obj.transform
 
-            ref = obj.ref.copy()
             if instance_mesh:
-                if obj.transform.scale != [1, 1, 1]:
-                    raise DDDException("Invalid scale for an instance object (%s): %s", obj.transform.scale, obj)
-                #ref = ref.rotate(transformations.euler_from_quaternion(obj.transform.rotation, axes='sxyz'))
-                #ref = ref.translate(self.transform.position)
+                # Export mesh if object instance has a referenced object (it may not, eg lights)
+                if obj.ref:
+                    ref = obj.ref.copy()
 
-                # Export complete references? (too verbose)
-                if D1D2D3Bootstrap.export_mesh:
-                    #refdata = DDDJSON.export_data(ref, path_prefix=path_prefix + node_name +  "/")  #, instance_mesh=instance_mesh, instance_marker=instance_marker)
-                    refdata = DDDJSON.export_data(ref, path_prefix="", name_suffix="#ref")  #, instance_mesh=instance_mesh, instance_marker=instance_marker)
+                    if obj.transform.scale != [1, 1, 1]:
+                        raise DDDException("Invalid scale for an instance object (%s): %s", obj.transform.scale, obj)
+
+                    #ref = ref.rotate(transformations.euler_from_quaternion(obj.transform.rotation, axes='sxyz'))
+                    #ref = ref.translate(self.transform.position)
+
+                    # Export complete references? (too verbose)
+                    refdata = DDDJSON.export_data(ref, path_prefix="", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker)  #, instance_mesh=instance_mesh, instance_marker=instance_marker)
                     data['_ref'] = refdata
 
-            '''
             if instance_marker:
-                ref = D1D2D3.marker(self.name)
-                ref = ref.scale(self.transform.scale)
-                ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
-                ref = ref.translate(self.transform.position)
-                ref.extra.update(self.ref.extra)
-                ref.extra.update(self.extra)
-                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", instance_mesh=instance_mesh, instance_marker=instance_marker)
-                scene = append_scenes([scene] + [refscene])
-            '''
+                ref = obj.marker()
+                refdata = DDDJSON.export_data(ref, path_prefix="", name_suffix="#marker", instance_mesh=instance_mesh, instance_marker=instance_marker)
+                data['_marker'] = refdata
 
         return data
 

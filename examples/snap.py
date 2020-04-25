@@ -43,6 +43,5 @@ for i in range(10):
     fig.append(result)
 fig.buffer(0.1).show()
 
-
-
+fig.buffer(0.1).save("/tmp/snap.png")
 

@@ -329,7 +329,7 @@ class AreasOSMBuilder():
     '''
 
     def generate_areas_2d_postprocess(self):
-        return
+
         logger.info("Postprocessing areas and ways (%d areas, %d ways['0']).", len(self.osm.areas_2d.children), len(self.osm.ways_2d['0'].children))
 
         #

@@ -35,7 +35,7 @@ class DDDHelper():
 
     def all(self, size=20.0, plane_xy=True, grid_yz=True, grid_xz=True, grid_space=2.0, center=None, around_center=False):
 
-        objs = ddd.group3()
+        objs = ddd.group3(name="Helper grid")
 
         if plane_xy:
             objs.append(self.plane_xy(size))
@@ -55,12 +55,12 @@ class DDDHelper():
         return objs
 
     def plane_xy(self, size=10.0):
-        obj = ddd.rect([0, 0, size, size]).triangulate()
+        obj = ddd.rect([0, 0, size, size], name="Helper plane XY").triangulate()
         return obj
 
     def grid_yz(self, size=10.0, grid_space=1.0):
         gw = 0.05
-        grid = ddd.group3()
+        grid = ddd.group3(name="Helper grid YZ")
         for i in range(int(size / grid_space) + 1):
             line1 = ddd.box([0, i * grid_space, 0, 0 + gw, i * grid_space + gw, size])
             grid.append(line1)
@@ -71,7 +71,7 @@ class DDDHelper():
 
     def grid_xz(self, size=10.0, grid_space=1.0):
         gw = 0.05
-        grid = ddd.group3()
+        grid = ddd.group3(name="Helper grid XZ")
         for i in range(int(size / grid_space) + 1):
             line1 = ddd.box([i * grid_space, 0, 0, i * grid_space + gw, 0 + gw, size])
             grid.append(line1)

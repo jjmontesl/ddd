@@ -225,7 +225,7 @@ class ItemsOSMBuilder():
 
         coords = item_2d.geom.coords[0]
         item_3d = urban.post_box().translate([coords[0], coords[1], 0.0])
-        item_3d.prop_set('ddd:static', False, children=True)
+        item_3d.prop_set('ddd:static', False, children=True)  # TODO: Make static or not via styling
         operator = item_2d.extra['osm:feature'].get('operator')
         item_3d.name = 'Postbox (%s): %s' % (operator, item_2d.name)
         return item_3d
@@ -246,9 +246,9 @@ class ItemsOSMBuilder():
                 item_3d = urban.trash_bin()
             else:
                 item_3d = urban.trash_bin_post()
-            item_3d.prop_set('ddd:static', False, children=True)
             item_3d = self.osm.catalog.add(key, item_3d)
 
+        item_3d.prop_set('ddd:static', False, children=False)  # TODO: Make static or not via styling
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Waste bin (%s): %s' % (itemtype, item_2d.name)
@@ -375,9 +375,10 @@ class ItemsOSMBuilder():
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
             item_3d = urban.lamppost(height=5.5, r=0.35)
-            item_3d.prop_set('ddd:static', False, children=True)
             item_3d = self.osm.catalog.add(key, item_3d)
 
+        item_3d.prop_set('ddd:static', False, children=False)  # TODO: Make static or not via styling
+        item_3d.extra['yc:layer'] = 'DynamicObjects'  # TODO: Assign layers via styling
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Lamppost: %s' % item_2d.name
 
@@ -399,16 +400,17 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_traffic_sign(self, item_2d):
 
+        coords = item_2d.geom.coords[0]
         signtype = item_2d.extra['traffic_sign']
 
         key = "traffic_sign-%s-1" % (signtype)
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
             item_3d = urban.traffic_sign(signtype)
-            item_3d.prop_set('ddd:static', False, children=True)
             item_3d = self.osm.catalog.add(key, item_3d)
 
-        coords = item_2d.geom.coords[0]
+        item_3d.prop_set('ddd:static', False, children=False)  # TODO: Make static or not via styling
+        item_3d.extra['yc:layer'] = 'DynamicObjects'  # TODO: Assign layers via styling
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'

@@ -8,6 +8,7 @@ from ddd.ddd import ddd
 from ddd.ops import filters
 import logging
 from ddd.text import fonts
+from ddd.lighting.lights import PointLight
 
 
 # Get instance of logger for this module
@@ -30,7 +31,6 @@ def post(height=2.00, r=0.075, top=None, side=None, mat_post=None):
     if side:
         side = side.translate([0, -r, height - 0.2])
         col.append(side)
-
 
     return col
 
@@ -60,7 +60,7 @@ def lamppost(height=2.80, r=0.25, lamp=None, mat_post=None):
     if lamp is None:
         #lamp = ddd.sphere(r=r, subdivisions=1).scale([1.0, 1.0, 1.2]).material(self.osm.mat_lightbulb)
         lamp = lamp_case(height=0.8, r=r)
-    col = post(height=height, top=lamp, mat_post=mat_post or ddd.mats.metal_paint_green)
+    col = post(height=height, top=lamp, mat_post=mat_post or ddd.mats.metal_paint_green)  # FIXME: materials shall be assigned by styling, not passing args
     col.name = "Lamppost"
     return col
 
@@ -70,7 +70,16 @@ def lamp_case(height=0.5, r=0.25):
     lamp = lamp.extrude_step(lamp_shape.buffer(-0.10), height * 0.2)
     lamp = lamp.material(ddd.mats.lightbulb)
     lamp = ddd.collision.aabox_from_aabb(lamp)
-    return lamp
+    lamp = ddd.uv.map_cubic(lamp)
+
+
+    # TODO: Possibly add this with styling too, although lights are first class citizens (used for render)
+    print("POINTLIGHT")
+    light = PointLight([0, 0, height * 0.8], name="Lamp Light", color="#e4e520", radius=18, intensity=1.25, enabled=False)
+
+    lamp_case = ddd.group([lamp, light], name="Lamp Case and Light")
+
+    return lamp_case
 
 def lamp_ball(r=0.25):
     lamp = ddd.sphere(r=r, subdivisions=1)  # .scale([1.0, 1.0, 1.2])
@@ -362,15 +371,17 @@ def bench(length=1.40, height=1.00, width=0.8, seat_height=0.45,
     leg_width = width - leg_padding
     leg_height = seat_height - seat_thick
 
-    seat = ddd.rect([-length/ 2.0, -width / 2.0, length / 2.0, width / 2.0]).extrude(-seat_thick).translate([0, 0, seat_height])
+    seat = ddd.rect([-length/ 2.0, -width / 2.0, length / 2.0, width / 2.0], name="Bench Seat")
+    seat = seat.extrude(-seat_thick).translate([0, 0, seat_height])
+
     legs_objs = []
     leg_spacing = (length - leg_padding * 2) / (legs - 1)
     for leg_idx in range(legs):
-        leg = ddd.rect([-leg_thick / 2, -leg_width / 2.0, leg_thick / 2, leg_width / 2]).extrude(leg_height)
+        leg = ddd.rect([-leg_thick / 2, -leg_width / 2.0, leg_thick / 2, leg_width / 2], name="Bench Leg").extrude(leg_height)
         leg = leg.translate([-(length / 2) + leg_padding + leg_spacing * leg_idx, 0, 0])
         legs_objs.append(leg)
 
-    bench = ddd.group([seat] + legs_objs)
+    bench = ddd.group([seat] + legs_objs, name="Bench")
     bench = bench.material(ddd.mats.stone)
     bench = ddd.uv.map_cubic(bench)
     bench.name = "Bench"

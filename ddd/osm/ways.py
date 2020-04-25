@@ -976,12 +976,18 @@ class WaysOSMBuilder():
                 for j in range(i + 1, len(join_ways.children)):
                     shape1 = join_ways.children[i]
                     shape2 = join_ways.children[j]
-                    # points = shape1.exterior.intersection(shape2.exterior)
-                    # join_points.extend(points)
                     shape = shape1.intersection(shape2).clean(eps=0.01)
                     join_shapes.append(shape)
-            # intersection_shape = MultiPoint(join_points).convex_hull
-            intersection_shape = ddd.group(join_shapes, empty=2).union().convex_hull()
+                    #points = shape1.outline().intersection(shape2.outline())
+                    #join_points.append(points)
+            #intersection_shape = ddd.group2(join_points).union()
+            intersection_shape = ddd.group2(join_shapes).union().convex_hull()
+
+            try:
+                intersection_shape.validate()
+            except Exception as e:
+                logger.warn("Invalid intersection shape generated: %s", intersection_shape)
+                continue
 
             #intersection_shape.show()
 
@@ -998,6 +1004,10 @@ class WaysOSMBuilder():
                 max_d = 0
                 max_o = None
                 for intersection_point in list(intersection_shape.geom.exterior.coords):
+                #for intersection_g in list(intersection_shape.geom.geoms):
+                    #    for intersection_point in list(intersection_g.coords):
+                    #        #intersection_point = intersection_point[0]
+                    #        if not intersection_point: continue
 
                     closest_seg = way_1d.closest_segment(ddd.point(intersection_point))
                     (coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d) = closest_seg
@@ -1006,7 +1016,7 @@ class WaysOSMBuilder():
                         max_dist = dist
                         max_d = closest_object_d
                         max_o = closest_object
-                #logger.info("  max_dist=%s, max_d=%s", max_dist, max_d)
+                    #logger.info("  max_dist=%s, max_d=%s", max_dist, max_d)
 
                 # Cut line at the specified point.
                 if max_o:
@@ -1017,6 +1027,20 @@ class WaysOSMBuilder():
                     #ddd.group([join_ways, intersection_shape, perpendicular.buffer(1.0).material(ddd.mats.highlight), join_ways]).show()
 
                     join_way_split = None
+                    '''
+                    if join_way_splits:
+                        if join_way_splits[0].intersects(intersection_shape.geom):
+                            join_way_split = join_way_splits[0]
+                        elif len(join_way_splits) > 1 and join_way_splits[1].intersects(intersection_shape.geom):
+                            join_way_split = join_way_splits[1]
+                        elif len(join_way_splits) > 2 and join_way_splits[2].intersects(intersection_shape.geom):
+                            join_way_split = join_way_splits[1]
+                        else:
+                            logger.error("Coud not find split side for intersection extension: %s", join_way)
+                        #else:
+                        #    logger.error("Coud not find split side for intersection extension (no splits): %s", join_way)
+                        #    #raise AssertionError()
+                    '''
                     if join_way_splits[0].overlaps(intersection_shape.buffer(-0.05).geom):
                         join_way_split = join_way_splits[0]
                     elif len(join_way_splits) > 1 and join_way_splits[1].overlaps(intersection_shape.buffer(-0.05).geom):
@@ -1688,6 +1712,8 @@ class WaysOSMBuilder():
                 # try:
                 uvmapping.map_2d_path(line, pathline, line_x_offset / 0.05)
 
+                self.osm.roadlines_2d.children.append(line)
+
                 # except Exception as e:
                 #    logger.error("Could not UV map Way 2D from path: %s %s %s: %s", line, line.geom, pathline.geom, e)
                 #    continue
@@ -1819,7 +1845,7 @@ class WaysOSMBuilder():
                     angle = math.atan2(dir_vec[1], dir_vec[0])
                 else:
                     item = ddd.point(left, name="Traffic lights: %s" % way_2d.name)
-                    angle = math.atan2(dir_vec[1], dir_vec[0]) + 180
+                    angle = math.atan2(dir_vec[1], dir_vec[0]) + math.pi
 
                 # area = self.osm.areas_2d.intersect(item)
                 # Check type of area point is on

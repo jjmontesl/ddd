@@ -24,7 +24,7 @@ class PrefabCatalog():
     - Export: export in a GLB format that Unity importer understands.
     - Reproducible: NOT IMPLEMENTED (requires random seeding / reproducible packs)
     - Dummy Catalog: allows for generation without instancing/sharing.
-    - Inheritance: a catalog can extend or be based on another one.
+    - (??) Inheritance: a catalog can extend or be based on another one
     """
 
     def __init__(self):
@@ -65,7 +65,7 @@ class PrefabCatalog():
 
     def all(self):
         items = [self.instance(k) for k in self._cache.keys() if self._cache[k]]
-        return ddd.group3(items)
+        return ddd.group3(items, name="Catalog Group")
 
     def show(self):
         ddd.align.grid(self.all()).show()
@@ -107,4 +107,5 @@ class PrefabCatalog():
     def export(self, path="catalog.glb"):
         scene = self.all()
         scene.save(path, instance_mesh=True, instance_marker=True)
+        scene.save(path + ".json", instance_mesh=True, instance_marker=True)
 

@@ -29,6 +29,11 @@ class DDDUVMapping():
         return result
 
     def map_cubic(self, obj):
+        """
+        FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
+        before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
+        """
+
         result = obj.copy()
         if result.mesh:
 
@@ -46,6 +51,8 @@ class DDDUVMapping():
 
                 def setuv(face, idx, uv):
                     if result.extra['uv'][idx] != None:
+                        # FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
+                        # before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
                         newidx = len(result.mesh.vertices)
                         result.mesh.vertices = np.array(list(result.mesh.vertices) + [result.mesh.vertices[idx]])
                         if face[0] == idx: face[0] = newidx

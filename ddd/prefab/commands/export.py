@@ -11,6 +11,7 @@ catalog.loadall()
 
 # Save
 catalog.export()
+catalog.export("/tmp/catalog.json")
 
 # Show items
 #items = ddd.group3([catalog.instance(c) for c in catalog._cache.values()])

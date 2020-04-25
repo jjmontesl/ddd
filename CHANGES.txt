@@ -1,5 +1,8 @@
 [0.4.4]
 
+  * Added SVG and PNG export support for 2D.
+  * Several improvements and fixes to exporters.
+  * Added support for lights (exported as instances with marker) and ddd:static.
   * Added export tree to JSON support.
   * Primitive colliders (AABox) and colliders export.
   * Added export mesh/markers command line switches.
