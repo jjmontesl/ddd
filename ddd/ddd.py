@@ -553,6 +553,11 @@ class DDDObject2(DDDObject):
         result.geom = geometry.LineString(linecoords)
         return result
 
+    def centroid(self):
+        result = self.copy()
+        result.geom = self.union().geom.centroid.geom
+        return result
+
     def translate(self, coords):
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
         result = self.copy()

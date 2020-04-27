@@ -17,7 +17,7 @@ from ddd.osm.custom import CustomsOSMBuilder
 from ddd.osm.items import ItemsOSMBuilder
 from ddd.osm.ways import WaysOSMBuilder
 from shapely.geometry.geo import shape
-from ddd.prefab.catalog import PrefabCatalog
+from ddd.catalog.catalog import PrefabCatalog
 from ddd.osm.osmops.osmops import OSMBuilderOps
 
 

@@ -101,6 +101,11 @@ def stump(height=0.3, r=0.3):
     """
     pass
 
+
+def tree_default(height=3.5, r=0.40):
+    obj = plant(height=height, r=r, fork_iters=3)
+    return obj
+
 def tree_fir():
     """
     Abeto

@@ -1,5 +1,7 @@
 [0.4.4]
 
+  * Introduced command line script form OSM build (accepts center coordinates).
+  * Initial features wishlist resolved.
   * Added SVG and PNG export support for 2D.
   * Several improvements and fixes to exporters.
   * Added support for lights (exported as instances with marker) and ddd:static.

@@ -8,6 +8,7 @@ import sys
 import argparse
 from ddd.core.exception import DDDException
 import importlib
+from collections import OrderedDict
 
 
 # Get instance of logger for this module
@@ -21,12 +22,15 @@ class D1D2D3Bootstrap():
     export_marker = True
     export_mesh = False
 
-    commands = {"catalog-show": "ddd.prefab.commands.show",  # TODO: replace with unique command with options (show, export, dump...)
-                "catalog-export": "ddd.prefab.commands.export",
-                "catalog-clear": "ddd.prefab.commands.clear",
-                "osm-gen": "ddd.osm.commands.gen",
-                "osm-query": "ddd.osm.commands.query",
-                }
+    # TODO: make classes that provide help, leave "run" for user scripts
+    commands = OrderedDict(
+        {"catalog-show": ("ddd.catalog.commands.show", None),
+        "catalog-export": ("ddd.catalog.commands.export", None),
+        "catalog-clear": ("ddd.catalog.commands.clear", None),
+        "osm-build": ("ddd.osm.commands.build.OSMBuildCommand", None),
+        "run": ("ddd.core.commands.run", None),  # default
+        "osm-query": ("ddd.osm.commands.query", None),
+        })
 
     def __init__(self):
         self.debug = True
@@ -62,16 +66,29 @@ class D1D2D3Bootstrap():
 
     def parse_args(self, st):
 
+        description = "DDD123 Procedural geometry and mesh scene generator.\n\n"
+
+        for k, (v, d) in self.commands.items():
+            description = description + ("  %20s %s\n" % (k, d))
+
         #program_name = os.path.basename(sys.argv[0])
-        parser = argparse.ArgumentParser()  # description='', usage = ''
+        parser = argparse.ArgumentParser(description=description, add_help=False, formatter_class=argparse.RawTextHelpFormatter)  #usage = ''
 
         parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug logging")
+        parser.add_argument("-h", "--help", action="store_true", default=False, help="show help and exit")
         parser.add_argument("-v", "--visualize-errors", action="store_true", default=False, help="visualize objects that caused exceptions")
         parser.add_argument("-o", "--overwrite", action="store_true", default=False, help="overwrite output files")
 
-        parser.add_argument("--export-mesh", action="store_true", default=False, help="export instance meshes")
+        parser.add_argument("--export-meshes", action="store_true", default=False, help="export instance meshes")
         parser.add_argument("--export-markers", action="store_true", default=False, help="export instance markers (default)")
         parser.add_argument("--export-normals", action="store_true", default=False, help="export normals")
+
+        parser.add_argument("command", help="script or command to run", nargs="?")
+
+        #sp = parser.add_subparsers(dest="script", description="script or command to run")
+        #for k, v in self.commands.items():
+        #    sp.add_parser(k)
+
 
         #exclusive_grp = parser.add_mutually_exclusive_group()
         #exclusive_grp.add_argument('--color', action='store_true', dest='color', default=None, help='color')
@@ -89,42 +106,74 @@ class D1D2D3Bootstrap():
         # Timings
         # Exoort instance-markers and/or instance-geometry by default
 
-        parser.add_argument("script", help="script or command to run")
         #parser.add_argument("rest", nargs='*')
 
         args, unparsed_args = parser.parse_known_args()  # sys.argv[1:]
 
         self.debug = args.debug
-        self.script = args.script
+        self.command = args.command
         self.visualize_errors = args.visualize_errors
         self.overwrite = args.overwrite
 
+        if args.help:
+            if not self.command:
+                print(parser.format_help())
+                sys.exit(0)
+            else:
+                unparsed_args = unparsed_args + ['-h']
+
         D1D2D3Bootstrap.export_marker = args.export_markers
-        D1D2D3Bootstrap.export_mesh = args.export_mesh
+        D1D2D3Bootstrap.export_mesh = args.export_meshes
         if not D1D2D3Bootstrap.export_mesh and not D1D2D3Bootstrap.export_marker:
             D1D2D3Bootstrap.export_marker = True
 
         D1D2D3Bootstrap.export_normals = args.export_normals
 
-        if self.script in self.commands:
-            self.script = self.commands[self.script]
+        if self.command in self.commands:
+            self.command = self.commands[self.command][0]
 
         self._unparsed_args = unparsed_args
 
-    def run(self):
+    def runcommand(self):
         #data =
         #compiled = compile()
-        script_abspath = os.path.abspath(self.script)
-        script_dirpath = os.path.dirname(script_abspath)
-        logger.info("Running %s", script_abspath)
 
-        sys.path.append(script_dirpath)
+        if not self.command:
+            return
+
+        logger.info("Running %s", self.command)
+
         try:
+
             D1D2D3Bootstrap._instance = self
-            if self.script.endswith(".py"):
-                self.script = self.script[:-3]
-            importlib.import_module(self.script)  #, globals={'ddd_bootstrap': self})
-            #__import__(self.script[:-3], globals={'ddd_bootstrap': self})
+            if self.command.endswith(".py"):
+                self.command = self.command[:-3]
+
+            # Try to import as module
+            result = None
+
+            try:
+                script_abspath = os.path.abspath(self.command)
+                script_dirpath = os.path.dirname(script_abspath)
+                sys.path.append(script_dirpath)
+                importlib.import_module(self.command)  #, globals={'ddd_bootstrap': self})
+                result = True
+            except ModuleNotFoundError as e:
+                result = False
+
+            if not result:
+                modulename = ".".join(self.command.split(".")[:-1])
+                classname = self.command.split(".")[-1]
+                modul = importlib.import_module(modulename)
+                clazz = getattr(modul, classname)
+                cliobj = clazz()
+                cliobj.parse_args(self._unparsed_args)
+                cliobj.run()
+
+            # Try to import as class
+
+            #__import__(self.command[:-3], globals={'ddd_bootstrap': self})
+
         except DDDException as e:
             logger.error("Error: %s (obj: %s)" % (e, e.ddd_obj))
             if e.ddd_obj and self.visualize_errors:
@@ -140,7 +189,7 @@ def main():
     ddd_bootstrap = D1D2D3Bootstrap()
     ddd_bootstrap.parse_args(sys.argv)
     D1D2D3Bootstrap.initialize_logging(debug=ddd_bootstrap.debug)
-    ddd_bootstrap.run()
+    ddd_bootstrap.runcommand()
 
 
 if __name__ == "__main__":

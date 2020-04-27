@@ -134,6 +134,11 @@ class AreasOSMBuilder():
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_park(narea)
 
+            elif feature['properties'].get('tourism', None) in ('artwork', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_artwork(narea)
+
             elif feature['properties'].get('leisure', None) in ('pitch', ):  # Cancha
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 area = self.generate_area_2d_pitch(narea)
@@ -194,6 +199,23 @@ class AreasOSMBuilder():
                 tree = ddd.point(p, name="Tree")
                 tree.extra['natural'] = 'tree'
                 self.osm.items_1d.children.append(tree)
+
+        return area
+
+    def generate_area_2d_artwork(self, area):
+
+        feature = area.extra['osm:feature']
+        item = area.centroid()
+
+        area.name = "Artwork: %s" % feature['properties'].get('name', None)
+        area.extra['ddd:area:type'] = 'steps'
+        area.extra['ddd:steps:number'] = 2
+        area.extra['ddd:steps:height'] = 0.16
+        area.extra['ddd:steps:depth'] = 0.38
+        area = area.material(ddd.mats.sidewalk)
+
+        # Add artwork in center as point
+        self.osm.items_1d.append(item)
 
         return area
 
