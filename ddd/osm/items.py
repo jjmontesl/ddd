@@ -411,7 +411,7 @@ class ItemsOSMBuilder():
 
         item_3d.prop_set('ddd:static', False, children=False)  # TODO: Make static or not via styling
         item_3d.extra['yc:layer'] = 'DynamicObjects'  # TODO: Assign layers via styling
-        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.rotate([0, 0, item_2d.extra.get('ddd:angle', 0) - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
         return item_3d

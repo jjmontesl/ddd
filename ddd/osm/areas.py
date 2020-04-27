@@ -178,7 +178,7 @@ class AreasOSMBuilder():
         feature = area.extra['osm:feature']
         area = area.material(ddd.mats.park)
         area.name = "Park: %s" % feature['properties'].get('name', None)
-        area.extra['_ddd:area'] = 'park'
+        area.extra['ddd:area:type'] = 'park'
 
         # Add trees if necesary
         # FIXME: should not check for None in intersects, filter shall not return None (empty group)
@@ -206,10 +206,11 @@ class AreasOSMBuilder():
 
         feature = area.extra['osm:feature']
         item = area.centroid()
+        item.extra['historic'] = "monument"
 
         area.name = "Artwork: %s" % feature['properties'].get('name', None)
         area.extra['ddd:area:type'] = 'steps'
-        area.extra['ddd:steps:number'] = 2
+        area.extra['ddd:steps:count'] = 2
         area.extra['ddd:steps:height'] = 0.16
         area.extra['ddd:steps:depth'] = 0.38
         area = area.material(ddd.mats.sidewalk)
@@ -553,6 +554,11 @@ class AreasOSMBuilder():
                     area_3d = self.generate_area_3d(area_2d)
                 elif area_2d.extra['ddd:area:type'] == 'sidewalk':
                     area_3d = self.generate_area_3d(area_2d)
+                elif area_2d.extra['ddd:area:type'] == 'park':
+                    area_3d = self.generate_area_3d(area_2d)
+                elif area_2d.extra['ddd:area:type'] == 'steps':
+                    area_3d = self.generate_area_3d(area_2d)
+                    # TODO: Raise areas to base_height (area.extra['ddd:area:container'] ?)
                 elif area_2d.extra['ddd:area:type'] == 'pitch':
                     area_3d = self.generate_area_3d_pitch(area_2d)
                 elif area_2d.extra['ddd:area:type'] == 'water':
@@ -585,7 +591,7 @@ class AreasOSMBuilder():
                     areas_3d.append(self.generate_area_3d(a))
                 return ddd.group(areas_3d, empty=3)
 
-            if area_2d.extra.get('_ddd:area', None) == 'park':
+            if area_2d.extra.get('ddd:area:type', None) == 'park':
 
                 area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, base=False)
                 area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), 0.1)
@@ -595,6 +601,15 @@ class AreasOSMBuilder():
                 #                     area_2d.buffer(-3.0).triangulate().translate([0, 0, 0.3])])
 
                 #area_3d = area_3d.translate([0, 0, 0])
+
+            elif area_2d.extra.get('ddd:area:type', None) == 'steps':
+
+                area_3d = area_2d.extrude_step(area_2d, area_2d.extra['ddd:steps:height'], base=False)
+                for stepidx in range(1, area_2d.extra['ddd:steps:count'] + 1):
+                    area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), 0)
+                    area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), area_2d.extra['ddd:steps:height'])
+
+                # TODO: Crop in 3D (or as a workaround fake it as centroid cropping)
 
             else:
                 try:
@@ -614,8 +629,8 @@ class AreasOSMBuilder():
             area_3d = DDDObject3()
 
         if area_3d.mesh:
+            #height = area_2d.extra.get('ddd:height', 0.2)
             area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
-            height = area_2d.extra.get('ddd:height', 0.2)
 
         area_3d.children = [self.generate_area_3d(c) for c in area_2d.children]
 

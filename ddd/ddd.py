@@ -555,7 +555,7 @@ class DDDObject2(DDDObject):
 
     def centroid(self):
         result = self.copy()
-        result.geom = self.union().geom.centroid.geom
+        result.geom = self.union().geom.centroid
         return result
 
     def translate(self, coords):

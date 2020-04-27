@@ -373,7 +373,7 @@ class WaysOSMBuilder():
         elif highway == "cycleway":
             lanes = 1
             lane_width = 1.5
-            material = ddd.mats.pitch
+            material = ddd.mats.pitch_blue
             #extra_height = 0.0
             roadlines = True
         elif highway == "unclassified":
