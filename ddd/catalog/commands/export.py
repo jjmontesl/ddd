@@ -4,7 +4,7 @@
 
 
 from ddd.ddd import ddd
-from ddd.prefab.catalog import PrefabCatalog
+from ddd.catalog.catalog import PrefabCatalog
 
 catalog = PrefabCatalog()
 catalog.loadall()

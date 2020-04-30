@@ -1146,9 +1146,12 @@ class DDDObject2(DDDObject):
 
         return data
 
-    def svgdoc(self):
+    def svgdoc(self, margin=0.0):
         """
         Produces a complete SVG document.
+
+        By default, no margin is produced (margin=0). 0.04 is the
+        default for R plots.
         """
 
         geoms = self.geom_recursive()
@@ -1166,7 +1169,7 @@ class DDDObject2(DDDObject):
                 xmin, ymin, xmax, ymax = geom.buffer(1).bounds
             else:
                 # Expand bounds by a fraction of the data ranges
-                expand = 0.04  # or 4%, same as R plots
+                expand = margin  # 0.04 or 4%, same as R plots
                 widest_part = max([xmax - xmin, ymax - ymin])
                 expand_amount = widest_part * expand
                 xmin -= expand_amount
@@ -1194,7 +1197,7 @@ class DDDObject2(DDDObject):
                 '<g transform="{3}">{4}</g></svg>'
                 ).format(view_box, width, height, transform, self.svg())
 
-    def save(self, path, instance_marker=None, instance_mesh=None):
+    def save(self, path, instance_marker=None, instance_mesh=None, scale=1.0):
 
         if instance_marker is None:
             instance_marker = D1D2D3Bootstrap.export_marker
@@ -1208,7 +1211,7 @@ class DDDObject2(DDDObject):
         elif path.endswith(".png"):
             logger.info("Exporting 2D as PNG to: %s", path)
             svgdata = self.svgdoc().encode("utf8")
-            data = cairosvg.svg2png(bytestring=svgdata, scale=5)  #, write_to=path) parent_width, parent_height, dpi, scale, unsafe.
+            data = cairosvg.svg2png(bytestring=svgdata, scale=scale)  #, write_to=path) parent_width, parent_height, dpi, scale, unsafe.
 
             # NOTE: Also, using Inkscape: https://stackoverflow.com/questions/6589358/convert-svg-to-png-in-python
 

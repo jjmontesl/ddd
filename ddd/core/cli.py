@@ -24,9 +24,9 @@ class D1D2D3Bootstrap():
 
     # TODO: make classes that provide help, leave "run" for user scripts
     commands = OrderedDict(
-        {"catalog-show": ("ddd.catalog.commands.show", None),
-        "catalog-export": ("ddd.catalog.commands.export", None),
-        "catalog-clear": ("ddd.catalog.commands.clear", None),
+        {"catalog-show": ("ddd.catalog.commands.show", "Show catalog"),
+        "catalog-export": ("ddd.catalog.commands.export", "Export catalog to file"),
+        "catalog-clear": ("ddd.catalog.commands.clear", "Clear catalog"),
         "osm-build": ("ddd.osm.commands.build.OSMBuildCommand", "Build a scene or tile using the OSM Builder"),
         "osm-query": ("ddd.osm.commands.query", None),
         "run": ("ddd.core.commands.run", "Runs a user-given script (default)"),  # default
@@ -171,14 +171,20 @@ class D1D2D3Bootstrap():
                 modulename = ".".join(command.split(".")[:-1])
                 classname = command.split(".")[-1]
                 if modulename:
-                    modul = importlib.import_module(modulename)
-                    clazz = getattr(modul, classname)
-                    cliobj = clazz()
-                    cliobj.parse_args(self._unparsed_args)
-                    cliobj.run()
+                    try:
+                        modul = importlib.import_module(modulename)
+                        clazz = getattr(modul, classname)
+                        cliobj = clazz()
+                        cliobj.parse_args(self._unparsed_args)
+                        cliobj.run()
+                        result = True
+                    except AttributeError as e:
+                        pass
 
-                else:
-                    raise DDDException("Cannot import module: %s" % command)
+                if not result:
+                    modulename = command
+                    importlib.import_module(modulename)
+                    result = True
 
             # Try to import as class
 

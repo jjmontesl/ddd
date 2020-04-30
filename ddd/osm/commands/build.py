@@ -14,6 +14,8 @@ from functools import partial
 import pyproj
 from shapely import ops
 import subprocess
+from ddd.geo import terrain
+import geojson
 
 
 # Get instance of logger for this module
@@ -84,6 +86,40 @@ class OSMBuildCommand(DDDCommand):
         with open(outputgeojsonfile, "w") as outfile:
             command = [osmtogeojson_path, "-m", selectedpbffile]
             subprocess.run(command, stdout=outfile)
+
+    def areainfo(self):
+
+        # GeoJSON with info
+        # TODO: Move to OSM generation
+        # python osm.py > ~/Documentos/DrivingGame/QGISProj/salamanca-availability.geojson
+        features = []
+        for (idx, (x, y)) in enumerate(range_around([-64, -64, 64, 64])):
+
+            bbox_crop = [x * self.chunk_size, y * self.chunk_size, (x + 1) * self.chunk_size, (y + 1) * self.chunk_size]
+            bbox_filter = [bbox_crop[0] - self.chunk_size_extra_filter, bbox_crop[1] - self.chunk_size_extra_filter,
+                           bbox_crop[2] + self.chunk_size_extra_filter, bbox_crop[3] + self.chunk_size_extra_filter]
+            filename = 'output/%s_%d_%d,%d.glb' % (self.name, abs(x) + abs(y), bbox_crop[0], bbox_crop[1])
+            area_crop = ddd.rect(bbox_crop).geom
+            area_filter = ddd.rect(bbox_filter).geom
+
+            if not self.area.intersects(area_crop):
+                continue
+
+            exists = os.path.exists(filename) and os.stat(filename).st_size > 0
+
+            p1 = terrain.transform_ddd_to_geo(self.ddd_proj, [bbox_crop[0], bbox_crop[1]])
+            p2 = terrain.transform_ddd_to_geo(self.ddd_proj, [bbox_crop[2], bbox_crop[1]])
+            p3 = terrain.transform_ddd_to_geo(self.ddd_proj, [bbox_crop[2], bbox_crop[3]])
+            p4 = terrain.transform_ddd_to_geo(self.ddd_proj, [bbox_crop[0], bbox_crop[3]])
+            rect = geojson.Polygon([ [p1, p2, p3, p4] ])
+            feature = geojson.Feature(geometry=rect,
+                                      properties={"available": exists > 0,
+                                                  "name": filename,
+                                                  "size": os.stat(filename).st_size if os.path.exists(filename) else 0} )
+            features.append(feature)
+        feature_collection = geojson.FeatureCollection(features)
+        dump = geojson.dumps(feature_collection, sort_keys=True, indent=4)
+        print(dump + "\n")
 
 
     def run(self):
@@ -156,7 +192,8 @@ class OSMBuildCommand(DDDCommand):
             bbox_filter = [bbox_crop[0] - self.chunk_size_extra_filter, bbox_crop[1] - self.chunk_size_extra_filter,
                            bbox_crop[2] + self.chunk_size_extra_filter, bbox_crop[3] + self.chunk_size_extra_filter]
             shortname = '%s_%d_%d,%d' % (name, abs(x) + abs(y), bbox_crop[0], bbox_crop[1])
-            filename = 'output/%s.glb' % shortname
+            filenamebase = 'output/%s/%s' % (name, shortname)
+            filename = filenamebase + ".glb"
 
             area_crop = ddd.rect(bbox_crop).geom
             area_filter = ddd.rect(bbox_filter).geom
@@ -196,6 +233,9 @@ class OSMBuildCommand(DDDCommand):
                         #scene.dump()
                         scene.save(filename)
                         scene.save("/tmp/dddosm.json")
+
+                        osmbuilder.save_tile_2d(filenamebase + ".png")
+
                         #sys.exit(0)
 
                         tasks_count += 1
