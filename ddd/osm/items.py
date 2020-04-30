@@ -31,9 +31,9 @@ class ItemsOSMBuilder():
     def generate_items_1d(self):
         logger.info("Generating 1D items")
 
-        for feature in self.osm.features:
+        for feature in self.osm.features_2d.children:
 
-            if feature['geometry']['type'] == 'Point':
+            if feature.geom.type == 'Point':
                 item = self.generate_item_1d(feature)
                 if item:
                     #logger.debug("Item: %s", item)
@@ -42,20 +42,8 @@ class ItemsOSMBuilder():
                 #logger.warn("Unknown item geometry type: %s", feature['geometry']['type'])
                 pass
 
-    def generate_item_1d(self, feature):
-        item = ddd.shape(feature['geometry'], name="Item: %s" % feature['properties'].get('name', feature['properties'].get('id', None)))
-        item.extra['osm:feature'] = feature
-        item.extra['name'] = feature['properties'].get('name', None)
-        item.extra['amenity'] = feature['properties'].get('amenity', None)
-        item.extra['barrier'] = feature['properties'].get('barrier', None)
-        item.extra['natural'] = feature['properties'].get('natural', None)
-        item.extra['tourism'] = feature['properties'].get('tourism', None)
-        item.extra['highway'] = feature['properties'].get('highway', None)
-        item.extra['historic'] = feature['properties'].get('historic', None)
-        item.extra['artwork_type'] = feature['properties'].get('artwork_type', None)
-        item.extra['man_made'] = feature['properties'].get('man_made', None)
-        item.extra['power'] = feature['properties'].get('power', None)
-        item.extra['traffic_sign'] = feature['properties'].get('traffic_sign', None)
+    def generate_item_1d(self, feature_2d):
+        item = feature_2d.copy(name="Item: %s" % feature_2d.name)
         return item
 
     def generate_items_3d(self):
@@ -80,23 +68,23 @@ class ItemsOSMBuilder():
         #        print(item_2d)
 
         item_3d = None
-        if item_2d.extra.get('amenity', None) == 'fountain':
+        if item_2d.extra.get('osm:amenity', None) == 'fountain':
             item_3d = self.generate_item_3d_fountain(item_2d)
-        elif item_2d.extra.get('amenity', None) == 'bench':
+        elif item_2d.extra.get('osm:amenity', None) == 'bench':
             item_3d = self.generate_item_3d_bench(item_2d)
-        elif item_2d.extra.get('amenity', None) == 'post_box':
+        elif item_2d.extra.get('osm:amenity', None) == 'post_box':
             item_3d = self.generate_item_3d_post_box(item_2d)
-        #elif item_2d.extra.get('amenity', None) == 'taxi':
+        #elif item_2d.extra.get('osm:amenity', None) == 'taxi':
         #    item_3d = self.generate_item_3d_taxi(item_2d)
-        #elif item_2d.extra.get('amenity', None) == 'toilets':
+        #elif item_2d.extra.get('osm:amenity', None) == 'toilets':
         #    item_3d = self.generate_item_3d_taxi(item_2d)
-        elif item_2d.extra.get('amenity', None) == 'waste_basket':
+        elif item_2d.extra.get('osm:amenity', None) == 'waste_basket':
             item_3d = self.generate_item_3d_waste_basket(item_2d)
-        #elif item_2d.extra.get('amenity', None) == 'waste_disposal':
+        #elif item_2d.extra.get('osm:amenity', None) == 'waste_disposal':
         #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
-        #elif item_2d.extra.get('amenity', None) == 'recycling':
+        #elif item_2d.extra.get('osm:amenity', None) == 'recycling':
         #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
-        #elif item_2d.extra.get('amenity', None) == 'bicycle_parking':
+        #elif item_2d.extra.get('osm:amenity', None) == 'bicycle_parking':
         #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
 
         elif item_2d.extra.get('natural', None) == 'tree':
@@ -108,28 +96,28 @@ class ItemsOSMBuilder():
 
                 item_3d = self.generate_item_3d_tree(item_2d)
 
-        elif item_2d.extra.get('tourism', None) == 'artwork' and item_2d.extra.get('artwork_type', None) == 'sculpture':
+        elif item_2d.extra.get('osm:tourism', None) == 'artwork' and item_2d.extra.get('artwork_type', None) == 'sculpture':
             item_3d = self.generate_item_3d_sculpture(item_2d)
-        elif item_2d.extra.get('historic', None) == 'monument':  # Large monument
+        elif item_2d.extra.get('osm:historic', None) == 'monument':  # Large monument
             item_3d = self.generate_item_3d_monument(item_2d)
-        elif item_2d.extra.get('historic', None) == 'memorial':
+        elif item_2d.extra.get('osm:historic', None) == 'memorial':
             item_3d = self.generate_item_3d_monument(item_2d)
-        elif item_2d.extra.get('historic', None) == 'wayside_cross':
+        elif item_2d.extra.get('osm:historic', None) == 'wayside_cross':
             item_3d = self.generate_item_3d_wayside_cross(item_2d)
-        elif item_2d.extra.get('man_made', None) == 'lighthouse':
+        elif item_2d.extra.get('osm:man_made', None) == 'lighthouse':
             item_3d = self.generate_item_3d_lighthouse(item_2d)
 
-        elif item_2d.extra.get('highway', None) == 'bus_stop':
+        elif item_2d.extra.get('osm:highway', None) == 'bus_stop':
             item_3d = self.generate_item_3d_bus_stop(item_2d)
 
-        elif item_2d.extra.get('power', None) == 'tower':
+        elif item_2d.extra.get('osm:power', None) == 'tower':
             item_3d = self.generate_item_3d_powertower(item_2d)
-        elif item_2d.extra.get('power', None) == 'pole':
+        elif item_2d.extra.get('osm:power', None) == 'pole':
             item_3d = self.generate_item_3d_powerpole(item_2d)
 
-        elif item_2d.extra.get('barrier', None) == 'fence':
+        elif item_2d.extra.get('osm:barrier', None) == 'fence':
             item_3d = self.generate_item_3d_fence(item_2d)
-        elif item_2d.extra.get('barrier', None) == 'hedge':
+        elif item_2d.extra.get('osm:barrier', None) == 'hedge':
             item_3d = self.generate_item_3d_hedge(item_2d)
 
         elif item_2d.extra.get('ddd_osm', None) == 'way_lamppost':
@@ -302,10 +290,10 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_bus_stop(self, item_2d):
-        busways = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('highway', None) not in ('path', 'track', 'footway', None))
+        busways = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('osm:highway', None) not in ('path', 'track', 'footway', None))
         item_2d = ddd.snap.project(item_2d, busways, penetrate=-0.5)
         coords = item_2d.geom.coords[0]
-        text = item_2d.extra.get("name", None)
+        text = item_2d.extra.get("osm:name", None)
         item_3d = urban.busstop_small(text=text)
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])

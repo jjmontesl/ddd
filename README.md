@@ -84,8 +84,35 @@ ddd osm-build --center=41.224, 1.725 --radius=2000
 
 ## Documentation
 
+TODO: Introduce doc here and move sections to where appropriate.
 
-##
+###
+
+### Metadata
+
+(?)
+
+_*		Used internally? (not exported?)
+    _last_extr?		Extrusion info... etc?
+
+
+osm:*		OpenStreetMap schema metadata
+    osm:item:*	Item
+    osm:way:*	Way
+    osm:area:*	Area
+    + layer + area/way raised vs base + base_height (osm, ddd...)
+
+**
+
+    ddd:map:way:width ??
+
+**Properties understood by... (?)**
+
+ddd:*	DDD metadata
+    ddd:crop:*			Cropping
+    ddd:elevation:*		Elevation applying
+    ddd:align:*			Align type
+    ddd:area:raising?	?
 
 ### OSM data import (preprocessing)
 

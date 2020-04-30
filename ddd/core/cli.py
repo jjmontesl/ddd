@@ -27,9 +27,9 @@ class D1D2D3Bootstrap():
         {"catalog-show": ("ddd.catalog.commands.show", None),
         "catalog-export": ("ddd.catalog.commands.export", None),
         "catalog-clear": ("ddd.catalog.commands.clear", None),
-        "osm-build": ("ddd.osm.commands.build.OSMBuildCommand", None),
-        "run": ("ddd.core.commands.run", None),  # default
+        "osm-build": ("ddd.osm.commands.build.OSMBuildCommand", "Build a scene or tile using the OSM Builder"),
         "osm-query": ("ddd.osm.commands.query", None),
+        "run": ("ddd.core.commands.run", "Runs a user-given script (default)"),  # default
         })
 
     def __init__(self):
@@ -79,6 +79,8 @@ class D1D2D3Bootstrap():
         parser.add_argument("-v", "--visualize-errors", action="store_true", default=False, help="visualize objects that caused exceptions")
         parser.add_argument("-o", "--overwrite", action="store_true", default=False, help="overwrite output files")
 
+        parser.add_argument("-c", "--config", action="append", help="load config file before running")
+
         parser.add_argument("--export-meshes", action="store_true", default=False, help="export instance meshes")
         parser.add_argument("--export-markers", action="store_true", default=False, help="export instance markers (default)")
         parser.add_argument("--export-normals", action="store_true", default=False, help="export normals")
@@ -112,6 +114,7 @@ class D1D2D3Bootstrap():
 
         self.debug = args.debug
         self.command = args.command
+        self.configs = args.config if args.config else []
         self.visualize_errors = args.visualize_errors
         self.overwrite = args.overwrite
 
@@ -134,45 +137,52 @@ class D1D2D3Bootstrap():
 
         self._unparsed_args = unparsed_args
 
-    def runcommand(self):
+    def runconfig(self):
+        for configname in self.configs:
+            logger.info("Running config file: %s", configname)
+            self.runcommand(configname)
+
+    def runcommand(self, command):
         #data =
         #compiled = compile()
 
-        if not self.command:
+        if not command:
             return
-
-        logger.info("Running %s", self.command)
 
         try:
 
             D1D2D3Bootstrap._instance = self
-            if self.command.endswith(".py"):
-                self.command = self.command[:-3]
+            if command.endswith(".py"):
+                command = command[:-3]
 
             # Try to import as module
             result = None
 
             try:
-                script_abspath = os.path.abspath(self.command)
+                script_abspath = os.path.abspath(command)
                 script_dirpath = os.path.dirname(script_abspath)
                 sys.path.append(script_dirpath)
-                importlib.import_module(self.command)  #, globals={'ddd_bootstrap': self})
+                importlib.import_module(command)  #, globals={'ddd_bootstrap': self})
                 result = True
             except ModuleNotFoundError as e:
                 result = False
 
             if not result:
-                modulename = ".".join(self.command.split(".")[:-1])
-                classname = self.command.split(".")[-1]
-                modul = importlib.import_module(modulename)
-                clazz = getattr(modul, classname)
-                cliobj = clazz()
-                cliobj.parse_args(self._unparsed_args)
-                cliobj.run()
+                modulename = ".".join(command.split(".")[:-1])
+                classname = command.split(".")[-1]
+                if modulename:
+                    modul = importlib.import_module(modulename)
+                    clazz = getattr(modul, classname)
+                    cliobj = clazz()
+                    cliobj.parse_args(self._unparsed_args)
+                    cliobj.run()
+
+                else:
+                    raise DDDException("Cannot import module: %s" % command)
 
             # Try to import as class
 
-            #__import__(self.command[:-3], globals={'ddd_bootstrap': self})
+            #__import__(command[:-3], globals={'ddd_bootstrap': self})
 
         except DDDException as e:
             logger.error("Error: %s (obj: %s)" % (e, e.ddd_obj))
@@ -189,7 +199,10 @@ def main():
     ddd_bootstrap = D1D2D3Bootstrap()
     ddd_bootstrap.parse_args(sys.argv)
     D1D2D3Bootstrap.initialize_logging(debug=ddd_bootstrap.debug)
-    ddd_bootstrap.runcommand()
+    ddd_bootstrap.runconfig()
+
+    logger.info("Running %s", ddd_bootstrap.command)
+    ddd_bootstrap.runcommand(ddd_bootstrap.command)
 
 
 if __name__ == "__main__":

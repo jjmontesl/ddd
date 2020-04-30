@@ -38,7 +38,7 @@ class CustomsOSMBuilder():
     def generate_custom_1d(self, feature):
 
         otype = 'checkpoint'
-        layer = feature.properties.get('layer')
+        layer = feature.properties.get('ddd:layer')
 
         if otype == 'checkpoint':
             race = layer

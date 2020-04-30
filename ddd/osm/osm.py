@@ -210,6 +210,7 @@ class OSMBuilder():
                 name = "%s_(%s)" % (name, osmid)
 
             feature_2d = ddd.shape(f.geometry, name=name)
+            feature_2d.extra['osm:feature'] = f
             for k, v in f.properties.items():
                 feature_2d.extra['osm:' + k] = v
 
@@ -233,6 +234,7 @@ class OSMBuilder():
 
         # Roads sorted + intersections + metadata
         self.ways.generate_ways_1d()
+        #self.ways.generate_ways_1d_pipelined()
 
         # Generate buildings
         self.buildings.generate_buildings_2d()

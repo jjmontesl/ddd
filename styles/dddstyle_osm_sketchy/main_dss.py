@@ -1,5 +1,11 @@
 #
 
+
+
+# Mark roundabouts as one way roads by default
+        if junction == "roundabout": oneway = True
+
+
 # DDD style for OSM 3D generation.
 
 STYLES = {}

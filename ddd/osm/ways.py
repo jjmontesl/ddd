@@ -27,6 +27,7 @@ JoinConnection = namedtuple("JoinConnection", "way way_idx")
 
 class WaysOSMBuilder():
 
+    """
     config_ways = {
         '_default': {'lanes': None,
                      'width': None,
@@ -43,11 +44,10 @@ class WaysOSMBuilder():
                      'traffic_lights': True },
 
         'highway': {},
-
         'stairs': {'lanes': None, 'width': None, 'material': None},
         'pedestrian': {'lanes': None, 'width': None, 'material': None},
-
     }
+    """
 
     def __init__(self, osmbuilder):
 
@@ -66,8 +66,8 @@ class WaysOSMBuilder():
         # FIXME: Requires tagging the depth to account for nodes visited multiuple times through different ways
         # if way in visited: return []
 
-        # logger.debug("Way: %s (connections: %s)", way, len(way.extra['connections']))
-        for other, way_idx, other_idx in way.extra['connections']:
+        # logger.debug("Way: %s (connections: %s)", way, len(way.extra['ddd:connections']))
+        for other, way_idx, other_idx in way.extra['ddd:connections']:
             # if other in visited: continue
             # logger.debug(indent_string + "  from %d/%d to %d/%d:", way_idx, len(way.geom.coords), other_idx, len(other.geom.coords))
             self.follow_way(other, depth - 1, visited)
@@ -81,11 +81,11 @@ class WaysOSMBuilder():
         # Generate paths
         logger.info("Generating 1D way path objects.")
 
-        for feature in self.osm.features:
-            if feature['geometry']['type'] != 'LineString': continue
+        for feature in self.osm.features_2d.children:
+            if feature.geom.type != 'LineString': continue
             way = self.generate_way_1d(feature)
             if way and not way.extra['ddd:item']:
-                way.extra['connections'] = []
+                way.extra['ddd:connections'] = []
                 self.osm.ways_1d.append(way)
             elif way and way.extra['ddd:item']:
                 self.osm.items_1d.append(way)
@@ -170,7 +170,7 @@ class WaysOSMBuilder():
                 vertex_cache[cidx].append(way)
                 for other in vertex_cache[cidx]:
                     if other == way: continue
-                    # way.extra['connections'].append(WayConnection(other, way_idx, 0))
+                    # way.extra['ddd:connections'].append(WayConnection(other, way_idx, 0))
                     self.connect_ways_1d(way, other)  # , way_idx)
         vertex_cache = None
 
@@ -181,10 +181,10 @@ class WaysOSMBuilder():
         while split:
             split = False
             for way in self.osm.ways_1d.children:
-                for other, way_idx, other_idx in way.extra['connections']:
-                    #if other.extra['layer'] == way.extra['layer']: continue
+                for other, way_idx, other_idx in way.extra['ddd:connections']:
+                    #if other.extra['ddd:layer'] == way.extra['ddd:layer']: continue
                     if (other_idx > 0 and other_idx != len(other.geom.coords) - 1):
-                        #if not way.extra['layer_transition']: continue
+                        #if not way.extra['ddd:layer_transition']: continue
                         #logger.info("Mid point connection: %s <-> %s", way, other)
                         self.split_way_1d(other, other_idx)
                         # Restart after each split
@@ -197,31 +197,32 @@ class WaysOSMBuilder():
 
         # Find transitions between more than one layer (ie tunnel to bridge) and split
         for way in self.osm.ways_1d.children:
-            way.extra['layer_transition'] = False
-            way.extra['layer_int'] = int(way.extra['layer'])
-            way.extra['layer_min'] = int(way.extra['layer'])
-            way.extra['layer_max'] = int(way.extra['layer'])
-            # way.extra['layer_height'] = self.layer_height(str(way.extra['layer_min']))
+            way.extra['ddd:layer_transition'] = False
+            way.extra['ddd:layer'] = way.extra['osm:layer']
+            way.extra['ddd:layer_int'] = int(way.extra['osm:layer'])
+            way.extra['ddd:layer_min'] = int(way.extra['osm:layer'])
+            way.extra['ddd:layer_max'] = int(way.extra['osm:layer'])
+            # way.extra['ddd:layer_height'] = self.layer_height(str(way.extra['ddd:layer_min']))
 
         # Search transitions between layers
         for way in self.osm.ways_1d.children:
-            for other, way_idx, other_idx in way.extra['connections']:
-                way.extra['layer_min'] = min(way.extra['layer_min'], int(other.extra['layer_int']))
-                way.extra['layer_max'] = max(way.extra['layer_max'], int(other.extra['layer_int']))
+            for other, way_idx, other_idx in way.extra['ddd:connections']:
+                way.extra['ddd:layer_min'] = min(way.extra['ddd:layer_min'], int(other.extra['ddd:layer_int']))
+                way.extra['ddd:layer_max'] = max(way.extra['ddd:layer_max'], int(other.extra['ddd:layer_int']))
 
                 '''
                 # Hack, we should follow paths and propagate heights
-                if other.extra['layer_int'] == way.extra['layer_max']:
-                    way.extra['layer_dir_up'] = 1 if (way_idx == 0) else -1
+                if other.extra['ddd:layer_int'] == way.extra['ddd:layer_max']:
+                    way.extra['ddd:layer_dir_up'] = 1 if (way_idx == 0) else -1
                 else:
-                    way.extra['layer_dir_up'] = -1 if (way_idx == 0) else 1
+                    way.extra['ddd:layer_dir_up'] = -1 if (way_idx == 0) else 1
                 '''
 
             # FIXME: This shall be done below possibly (when processing connections ?)
-            if way.extra['layer_min'] != way.extra['layer_max'] and way.extra['layer_int'] == 0:
-                # logger.debug("Layer transition (%s <-> %s): %s <-> %s", way.extra['layer_min'],other.extra['layer_max'], way, other)
-                # way.extra['layer_transition'] = True
-                way.extra['layer'] = str(way.extra['layer_min']) + "a"
+            if way.extra['ddd:layer_min'] != way.extra['ddd:layer_max'] and way.extra['ddd:layer_int'] == 0:
+                # logger.debug("Layer transition (%s <-> %s): %s <-> %s", way.extra['ddd:layer_min'],other.extra['ddd:layer_max'], way, other)
+                # way.extra['ddd:layer_transition'] = True
+                way.extra['ddd:layer'] = str(way.extra['ddd:layer_min']) + "a"
 
         # Propagate height across connections for transitions
         # self.generate_ways_1d_heights()
@@ -240,7 +241,8 @@ class WaysOSMBuilder():
 
     def generate_way_1d(self, feature):
 
-        highway = feature['properties'].get('highway', None)
+        '''
+        highway = feature['properties'].get('osm:highway', None)
         footway = feature['properties'].get('footway', None)
         barrier = feature['properties'].get('barrier', None)
         railway = feature['properties'].get('railway', None)
@@ -258,14 +260,21 @@ class WaysOSMBuilder():
         route = feature['properties'].get('route', None)
         indoor = feature['properties'].get('indoor', None)
         disused = feature['properties'].get('disused', None)
+        '''
 
-        if junction == "roundabout": oneway = True
+        path = feature.copy()
 
-        path = ddd.shape(feature['geometry'])
+        # Mark roundabouts as one way roads by default
+        if path.extra.get('osm:junction', None) == "roundabout":
+            if path.extra.get('osm:oneway', None) is None: path.extra['osm:oneway ']= True
+
         # path.geom = path.geom.simplify(tolerance=self.simplify_tolerance)
 
-        name_id = (feature['properties'].get('name', feature['properties'].get('id')))
+        name_id = (feature.extra.get('osm:name', feature.extra.get('id')))
         name = "Way: %s" % name_id
+
+        path.name = name
+
         width = None  # if not set will be discarded
         material = ddd.mats.asphalt
         extra_height = 0.0
@@ -282,76 +291,76 @@ class WaysOSMBuilder():
 
         create_as_item = False
 
-        if highway in ('proposed', 'construction', ):
+        if path.extra.get('osm:highway', None) in ('proposed', 'construction', ):
             return None
 
-        elif highway == "motorway":
+        elif path.extra.get('osm:highway', None) == "motorway":
             lane_width = 3.6
             lane_width_right = 1.5
             lane_width_left = 0.8
             lanes = 2
             roadlines = True
-        elif highway == "motorway_link":
+        elif path.extra.get('osm:highway', None) == "motorway_link":
             lanes = 1
             lane_width = 3.6
             lane_width_right = 1.5
             lane_width_left = 0.8
             roadlines = True
-        elif highway == "trunk":
+        elif path.extra.get('osm:highway', None) == "trunk":
             lanes = 1
             lane_width = 3.4
             lane_width_right = 1.4
             lane_width_left = 0.5
             roadlines = True
-        elif highway == "trunk_link":
+        elif path.extra.get('osm:highway', None) == "trunk_link":
             lanes = 1
             lane_width = 3.4
             lane_width_right = 1.4
             lane_width_left = 0.5
             roadlines = True
 
-        elif highway == "primary":
+        elif path.extra.get('osm:highway', None) == "primary":
             lanes = 2
             lane_width = 3.4
             lane_width_right = 1.0
             lane_width_left = 0.5
             roadlines = True
-        elif highway == "primary_link":
+        elif path.extra.get('osm:highway', None) == "primary_link":
             lanes = 2
             lane_width = 3.4
             lane_width_right = 1.0
             lane_width_left = 0.5
             roadlines = True
-        elif highway == "secondary":
-            lanes = 2 if oneway else 3
+        elif path.extra.get('osm:highway', None) == "secondary":
+            lanes = 2 if path.extra.get('oneway', False) else 3
             lane_width = 3.4
             lamps = True
             trafficlights = True
             roadlines = True
-        elif highway in ("tertiary", "road"):
+        elif path.extra.get('osm:highway', None) in ("tertiary", "road"):
             lanes = 2
             lane_width = 3.4
             lamps = True  # shall be only in city?
             trafficlights = True
             roadlines = True
-        elif highway == "service":
+        elif path.extra.get('osm:highway', None) == "service":
             lanes = 1
             lamps = True  # shall be only in city?
             roadlines = True
-        elif highway in ("residential", "living_street"):
+        elif path.extra.get('osm:highway', None) in ("residential", "living_street"):
             # lanes = 1.0  # Using 1 lane for residential/living causes too small roads
             # extra_height = 0.1
             lanes = 2
             lamps = True  # shall be only in city?
             trafficlights = False
             roadlines = True
-        elif highway in ("footway",):
+        elif path.extra.get('osm:highway', None) in ("footway",):
             lanes = 0
             material = ddd.mats.dirt
             extra_height = 0.0
             width = 0.6 * 3.3
-            if footway == 'sidewalk': return None
-        elif highway in ("path", "track"):
+            if path.extra.get('footway', None) == 'sidewalk': return None
+        elif path.extra.get('osm:highway', None) in ("path", "track"):
             lanes = 0
             material = ddd.mats.dirt
             # extra_height = 0.2
@@ -359,41 +368,41 @@ class WaysOSMBuilder():
             path.extra['ddd:way:elevated:border'] = 'fence'
             path.extra['ddd:way:elevated:material'] = ddd.mats.pathwalk
 
-        elif highway in ("steps", "stairs"):
+        elif path.extra.get('osm:highway', None) in ("steps", "stairs"):
             lanes = 0
             material = ddd.mats.pathwalk
             extra_height = 0.2  # 0.2 allows easy car driving
             width = 0.6 * 3.3
-        elif highway == "pedestrian":
+        elif path.extra.get('osm:highway', None) == "pedestrian":
             lanes = 0
             material = ddd.mats.pathwalk
             extra_height = 0.2
             width = 2 * 3.30
             lamps = True  # shall be only in city?
-        elif highway == "cycleway":
+        elif path.extra.get('osm:highway', None) == "cycleway":
             lanes = 1
             lane_width = 1.5
             material = ddd.mats.pitch_blue
             #extra_height = 0.0
             roadlines = True
-        elif highway == "unclassified":
+        elif path.extra.get('osm:highway', None) == "unclassified":
             lanes = 1
             material = ddd.mats.dirt
 
-        elif highway == "raceway":
+        elif path.extra.get('osm:highway', None) == "raceway":
             lanes = 1
             lane_width = 10.0
             material = ddd.mats.dirt
             # extra_height = 0.2
 
-        elif natural == "coastline":
+        elif path.extra.get('natural', None) == "coastline":
             lanes = None
             name = "Coastline: %s" % name_id
             width = 0.5
             material = ddd.mats.terrain
             extra_height = 5.0  # FIXME: Things could cross othis, height shall reach sea precisely
 
-        elif waterway == "river":
+        elif path.extra.get('osm:waterway', None) == "river":
             lanes = None
             name = "River: %s" % name_id
             width = 6.0
@@ -401,27 +410,27 @@ class WaysOSMBuilder():
             path.extra['ddd:area:type'] = 'water'
             path.extra['ddd:baseheight'] = -0.5
 
-        elif railway:
+        elif path.extra.get('osm:railway', None):
             lanes = None
             width = 3.6
             material = ddd.mats.dirt
             name = "Railway: %s" % name_id
             #extra_height = 0.0
 
-        elif barrier == 'city_wall':
+        elif path.extra.get('osm:barrier', None) == 'city_wall':
             width = 1.0
             material = ddd.mats.stone
             extra_height = 2.0
             name = "City Wall: %s" % name_id
             path.extra['ddd:subtract_buildings'] = True
-        elif historic == 'castle_wall':
+        elif path.extra.get('osm:historic', None) == 'castle_wall':
             width = 3.0
             material = ddd.mats.stone
             extra_height = 3.5
             name = "Castle Wall: %s" % name_id
             path.extra['ddd:subtract_buildings'] = True
 
-        elif barrier == 'hedge':
+        elif path.extra.get('osm:barrier', None)== 'hedge':
             width = 0.6
             lanes = None
             material = ddd.mats.treetop
@@ -430,7 +439,7 @@ class WaysOSMBuilder():
             name = "Hedge: %s" % name_id
             path.extra['ddd:subtract_buildings'] = True
 
-        elif barrier == 'fence':
+        elif path.extra.get('osm:barrier', None) == 'fence':
             width = 0.05
             lanes = None
             material = ddd.mats.fence
@@ -439,21 +448,21 @@ class WaysOSMBuilder():
             name = "Fence: %s" % name_id
             path.extra['ddd:subtract_buildings'] = True
 
-        elif barrier == 'kerb':
+        elif path.extra.get('osm:kerb', None) == 'kerb':
             logger.debug("Ignoring kerb")
             return None
 
-        elif man_made == 'pier':
+        elif path.extra.get('osm:man_made', None) == 'pier':
             width = 1.8
             material = ddd.mats.wood
 
-        elif barrier == 'retaining_wall':
+        elif path.extra.get('osm:barrier', None) == 'retaining_wall':
             width = 0.7
             material = ddd.mats.stone
             extra_height = 1.5
             name = "Wall Retaining: %s" % name_id
             path.extra['ddd:subtract_buildings'] = True
-        elif barrier == 'wall':
+        elif path.extra.get('osm:barrier', None) == 'wall':
             # TODO: Get height and material from metadata
             width = 0.35
             material = ddd.mats.bricks
@@ -461,27 +470,27 @@ class WaysOSMBuilder():
             name = "Wall: %s" % name_id
             path.extra['ddd:subtract_buildings'] = True
 
-        elif power == 'line':
+        elif path.extra.get('osm:power', None) == 'line':
             width = 0.1
             material = ddd.mats.steel
             layer = "3"
             create_as_item = True
 
-        elif route:
+        elif path.extra.get('osm:route', None):
             # Ignore routes
             return None
 
-        elif highway:
-            logger.info("Unknown highway type: %s (%s)", highway, feature['properties'])
+        elif path.extra.get('osm:highway', None):
+            logger.info("Unknown highway type: %s (%s)", path.extra.get('osm:highway', None), path.extra)
             lanes = 2.0
 
         else:
-            logger.debug("Unknown way (discarding): %s", feature['properties'])
+            logger.debug("Unknown way (discarding): %s", path.extra)
             return None
 
         # Calculated properties
 
-        flanes = feature['properties'].get('lanes', None)
+        flanes = path.extra.get('osm:lanes', None)
         if flanes:
             lanes = int(float(flanes))
 
@@ -489,7 +498,7 @@ class WaysOSMBuilder():
         if lanes is None or lanes < 1:
             roadlines = False
 
-        if not oneway:
+        if not path.extra.get('osm:oneway', None):
             lane_width_left = lane_width_right
 
         if width is None:
@@ -502,33 +511,32 @@ class WaysOSMBuilder():
 
         path = path.material(material)
         path.name = name
-        path.extra['osm:feature'] = feature
-        path.extra['highway'] = highway
-        path.extra['barrier'] = barrier
-        path.extra['railway'] = railway
-        path.extra['historic'] = historic
-        path.extra['natural'] = natural
-        path.extra['tunnel'] = tunnel
-        path.extra['bridge'] = bridge
-        path.extra['junction'] = junction
-        path.extra['waterway'] = waterway
-        path.extra['ref'] = ref
-        path.extra['maxspeed'] = maxspeed
-        path.extra['man_made'] = man_made
-        path.extra['power'] = power
-        path.extra['width'] = width
-        path.extra['lanes'] = lanes
-        path.extra['layer'] = layer if layer is not None else feature['properties']['layer']
-        path.extra['extra_height'] = extra_height
-        path.extra['ddd_trafficlights'] = trafficlights
+
+        '''
+        path.extra['osm:highway'] = highway
+        path.extra['osm:barrier'] = barrier
+        path.extra['osm:railway'] = railway
+        path.extra['osm:historic'] = historic
+        path.extra['osm:natural'] = natural
+        path.extra['osm:tunnel'] = tunnel
+        path.extra['osm:bridge'] = bridge
+        path.extra['osm:junction'] = junction
+        path.extra['osm:waterway'] = waterway
+        path.extra['osm:lanes'] = lanes
+        '''
+        path.extra['ddd:layer'] = layer if layer is not None else path.extra['osm:layer']
+        path.extra['ddd:extra_height'] = extra_height
+        path.extra['ddd:trafficlights'] = trafficlights  # It's an augmenting property over osm, but applied to a road... where to put?
         path.extra['ddd:width'] = width
         path.extra['ddd:height'] = extra_height
+        path.extra['ddd:way:width'] = width
+        path.extra['ddd:way:lanes'] = lanes
         path.extra['ddd:way:lane_width'] = lane_width
         path.extra['ddd:way:lane_width_left'] = lane_width_left
         path.extra['ddd:way:lane_width_right'] = lane_width_right
         path.extra['ddd:way:lamps'] = lamps
-        path.extra['ddd:way:weight'] = self.road_weight(feature)
-        path.extra['ddd:way:oneway'] = oneway
+        path.extra['ddd:way:weight'] = self.road_weight(path)
+        path.extra['ddd:way:oneway'] = path.extra.get('osm:oneway', None)
         path.extra['ddd:way:roadlines'] = roadlines  # should be ddd:road:roadlines ?
         path.extra['ddd:item'] = create_as_item
         path.extra['ddd:item:height'] = extra_height
@@ -566,8 +574,8 @@ class WaysOSMBuilder():
         for way in self.osm.ways_1d.children:
 
             # For each vertex (start / end), evaluate the connection
-            connections_start = [c for c in way.extra['connections'] if c.self_idx == 0]
-            connections_end = [c for c in way.extra['connections'] if c.self_idx == len(way.geom.coords) - 1]
+            connections_start = [c for c in way.extra['ddd:connections'] if c.self_idx == 0]
+            connections_end = [c for c in way.extra['ddd:connections'] if c.self_idx == len(way.geom.coords) - 1]
 
             joins_start = [JoinConnection(way, 0)] + [JoinConnection(c.other, c.other_idx) for c in connections_start]
             joins_end = [JoinConnection(way, len(way.geom.coords) - 1)] + [JoinConnection(c.other, c.other_idx) for c in connections_end]
@@ -605,40 +613,40 @@ class WaysOSMBuilder():
             elif way.extra['bridge']:
                 height = 6
             '''
-            height = self.layer_height(way.extra['layer'])
+            height = self.layer_height(way.extra['ddd:layer'])
 
-            way.extra['way_height'] = height
-            way.extra['way_height_start'] = height
-            way.extra['way_height_end'] = height
+            way.extra['ddd:way_height'] = height
+            way.extra['ddd:way_height_start'] = height
+            way.extra['ddd:way_height_end'] = height
 
-            # way.extra['way_height_low_min'] = height - 1
-            # way.extra['way_height_low_max'] = height + 1
-            # way.extra['way_height_high_min'] = height - 1
-            # way.extra['way_height_high_max'] = height + 1
-            way.extra['way_height_min'] = height - 1
-            way.extra['way_height_max'] = height + 1
-            way.extra['way_height_weight'] = 0.001  # do not affect height
-            # way.extra['way_height_start_min'] = height - 1
-            # way.extra['way_height_start_max'] = height + 1
-            # way.extra['way_height_end_min'] = height - 1
-            # way.extra['way_height_end_max'] = height + 1
+            # way.extra['ddd:way_height_low_min'] = height - 1
+            # way.extra['ddd:way_height_low_max'] = height + 1
+            # way.extra['ddd:way_height_high_min'] = height - 1
+            # way.extra['ddd:way_height_high_max'] = height + 1
+            way.extra['ddd:way_height_min'] = height - 1
+            way.extra['ddd:way_height_max'] = height + 1
+            way.extra['ddd:way_height_weight'] = 0.001  # do not affect height
+            # way.extra['ddd:way_height_start_min'] = height - 1
+            # way.extra['ddd:way_height_start_max'] = height + 1
+            # way.extra['ddd:way_height_end_min'] = height - 1
+            # way.extra['ddd:way_height_end_max'] = height + 1
 
-            if way.extra['tunnel']:
-                way.extra['way_height_min'] = height - 3
-                way.extra['way_height_weight'] = 1.0
-            elif way.extra['bridge']:
-                way.extra['way_height_min'] = height - 2
-                way.extra['way_height_max'] = height + 3
-                way.extra['way_height_weight'] = 1.0
-            elif way.extra['junction'] == "roundabout":
-                # way.extra['way_leveling'] = height - 2
-                way.extra['way_height_min'] = height - 2
-                way.extra['way_height_max'] = height + 3
-                way.extra['way_height_weight'] = 0.001  # Actually height could move, but altogether
-                # way.extra['way_height_leveling'] = 0.9  # Actually height could move, but altogether
+            if way.extra.get('osm:tunnel', None):
+                way.extra['ddd:way_height_min'] = height - 3
+                way.extra['ddd:way_height_weight'] = 1.0
+            elif way.extra.get('osm:bridge', None):
+                way.extra['ddd:way_height_min'] = height - 2
+                way.extra['ddd:way_height_max'] = height + 3
+                way.extra['ddd:way_height_weight'] = 1.0
+            elif way.extra.get('osm:roundabout', None) == "roundabout":
+                # way.extra['ddd:way_leveling'] = height - 2
+                way.extra['ddd:way_height_min'] = height - 2
+                way.extra['ddd:way_height_max'] = height + 3
+                way.extra['ddd:way_height_weight'] = 0.001  # Actually height could move, but altogether
+                # way.extra['ddd:way_height_leveling'] = 0.9  # Actually height could move, but altogether
             else:
-                way.extra['way_height_max'] = height + 5
-                way.extra['way_height_min'] = height - 5  # (take from settings / next layer)
+                way.extra['osm:way_height_max'] = height + 5
+                way.extra['ddd:way_height_min'] = height - 5  # (take from settings / next layer)
 
             # way.geom = LineString([(c[0], c[1], 0.0) for c in way.geom.coords])
 
@@ -649,8 +657,8 @@ class WaysOSMBuilder():
         end_vertex_idx = len(way.geom.coords) - 1
 
         # For each vertex (start / end), evaluate the connection
-        connections_start = [c for c in way.extra['connections'] if c.self_idx == 0]
-        connections_end = [c for c in way.extra['connections'] if c.self_idx == end_vertex_idx]
+        connections_start = [c for c in way.extra['ddd:connections'] if c.self_idx == 0]
+        connections_end = [c for c in way.extra['ddd:connections'] if c.self_idx == end_vertex_idx]
 
         self_idx = None
         for cons in (connections_start, connections_end):
@@ -659,23 +667,23 @@ class WaysOSMBuilder():
             vertex_coords = way.geom.coords[self_idx]
             if vertex_coords in visited_vertexes: continue
             visited_vertexes.add(vertex_coords)
-            # heights = [way.extra['way_height']] + [c.other.extra['way_height'] for c in cons]
-            heights_weighted = [way.extra['way_height'] * way.extra['way_height_weight']] + [c.other.extra['way_height'] * c.other.extra['way_height_weight'] for c in cons]
-            heights_span = [way.extra['way_height_weight']] + [c.other.extra['way_height_weight'] for c in cons]
-            heights_weighted_avg = (sum(heights_weighted) / sum(heights_span)) if sum(heights_span) > 0 else way.extra['way_height']
+            # heights = [way.extra['ddd:way_height']] + [c.other.extra['ddd:way_height'] for c in cons]
+            heights_weighted = [way.extra['ddd:way_height'] * way.extra['ddd:way_height_weight']] + [c.other.extra['ddd:way_height'] * c.other.extra['ddd:way_height_weight'] for c in cons]
+            heights_span = [way.extra['ddd:way_height_weight']] + [c.other.extra['ddd:way_height_weight'] for c in cons]
+            heights_weighted_avg = (sum(heights_weighted) / sum(heights_span)) if sum(heights_span) > 0 else way.extra['ddd:way_height']
 
-            # logger.debug("Connections at %s (height=%.5f, heights_avg=%.5f)", way, way.extra['way_height'], heights_weighted_avg)
+            # logger.debug("Connections at %s (height=%.5f, heights_avg=%.5f)", way, way.extra['ddd:way_height'], heights_weighted_avg)
 
             if self_idx == 0:
-                way.extra['way_height_start'] = heights_weighted_avg
+                way.extra['ddd:way_height_start'] = heights_weighted_avg
             else:
-                way.extra['way_height_end'] = heights_weighted_avg
+                way.extra['ddd:way_height_end'] = heights_weighted_avg
 
             for con in cons:
                 if con.other_idx == 0:
-                    con.other.extra['way_height_start'] = heights_weighted_avg
+                    con.other.extra['ddd:way_height_start'] = heights_weighted_avg
                 else:
-                    con.other.extra['way_height_end'] = heights_weighted_avg
+                    con.other.extra['ddd:way_height_end'] = heights_weighted_avg
 
     def ways_1d_heights_connections(self):
         """
@@ -700,12 +708,12 @@ class WaysOSMBuilder():
 
         for way in self.osm.ways_1d.children:
 
-            # if not way.extra['layer_transition']: continue
+            # if not way.extra['ddd:layer_transition']: continue
 
-            height_start = way.extra['way_height_start']
-            height_end = way.extra['way_height_end']
+            height_start = way.extra['ddd:way_height_start']
+            height_end = way.extra['ddd:way_height_end']
 
-            if way.extra['natural'] == "coastline": continue
+            if way.extra.get('osm:natural', None) == "coastline": continue
 
             # if height_start == height_end: continue
 
@@ -736,16 +744,16 @@ class WaysOSMBuilder():
     def generate_ways_1d_heights(self):
 
         for way in self.osm.ways_1d.children:
-            if not way.extra['layer_transition']: continue
+            if not way.extra['ddd:layer_transition']: continue
 
-            height_start = self.layer_height(str(way.extra['layer_min']))
-            height_end = self.layer_height(str(way.extra['layer_max']))
-            #for other, way_idx, other_idx in way.extra['connections']:
+            height_start = self.layer_height(str(way.extra['ddd:layer_min']))
+            height_end = self.layer_height(str(way.extra['ddd:layer_max']))
+            #for other, way_idx, other_idx in way.extra['ddd:connections']:
 
             #logger.info("Transition from %s to %s", height_start, height_end)
 
             coords = way.geom.coords
-            if way.extra['layer_dir_up'] == 1:
+            if way.extra['ddd:layer_dir_up'] == 1:
                 height_start, height_end = height_end, height_start
 
             # Walk segment
@@ -784,7 +792,7 @@ class WaysOSMBuilder():
                     closest_in_path = p
                     closest_dist = pd
             # logger.debug("Closest in path: %s", closest_in_path)
-            return (x, y, z + (closest_in_path[2] if way.extra['natural'] != "coastline" else 0.0))  #  if len(closest_in_path) > 2 else 0.0
+            return (x, y, z + (closest_in_path[2] if way.extra.get('natural', None) != "coastline" else 0.0))  #  if len(closest_in_path) > 2 else 0.0
 
         return height_apply_func
 
@@ -799,13 +807,13 @@ class WaysOSMBuilder():
         part2.geom = LineString(way.geom.coords[coord_idx:])
 
         # Update related ways to point to the new parts
-        for connection in way.extra['connections']:
+        for connection in way.extra['ddd:connections']:
             # Remove old way from every connection
-            #print(len(connection.other.extra['connections']))
-            connection.other.extra['connections'] = [c for c in connection.other.extra['connections'] if c.other != way]
-            #print(len(connection.other.extra['connections']))
-            part1.extra['connections'] = [c for c in part1.extra['connections'] if c.other != connection.other]
-            part2.extra['connections'] = [c for c in part2.extra['connections'] if c.other != connection.other]
+            #print(len(connection.other.extra['ddd:connections']))
+            connection.other.extra['ddd:connections'] = [c for c in connection.other.extra['ddd:connections'] if c.other != way]
+            #print(len(connection.other.extra['ddd:connections']))
+            part1.extra['ddd:connections'] = [c for c in part1.extra['ddd:connections'] if c.other != connection.other]
+            part2.extra['ddd:connections'] = [c for c in part2.extra['ddd:connections'] if c.other != connection.other]
 
             # Find to which new part it's connected
             for part in (part1, part2):
@@ -836,15 +844,15 @@ class WaysOSMBuilder():
 
         part1 = way.copy()
         part1.geom = LineString(way.geom.coords[:coord_idx + 1])
-        part1.extra['connections'] = []
+        part1.extra['ddd:connections'] = []
         part2 = way.copy()
         part2.geom = LineString(way.geom.coords[coord_idx:])
-        part2.extra['connections'] = []
+        part2.extra['ddd:connections'] = []
         '''
         part1 = DDDObject2(name=way.name + "/1", geom=LineString(way.geom.coords[:coord_idx + 1]), extra=copy.deepcopy(way.extra))
-        part1.extra['connections'] = []
+        part1.extra['ddd:connections'] = []
         part2 = DDDObject2(name=way.name + "/2", geom=LineString(way.geom.coords[coord_idx:]), extra=copy.deepcopy(way.extra))
-        part2.extra['connections'] = []
+        part2.extra['ddd:connections'] = []
         '''
 
         self.osm.ways_1d.children.remove(way)
@@ -861,11 +869,11 @@ class WaysOSMBuilder():
                 if wc == oc:
                     found = True
                     other_con = WayConnection(other, way_idx, other_idx)
-                    if other_con not in way.extra['connections']:
-                        way.extra['connections'].append(other_con)
+                    if other_con not in way.extra['ddd:connections']:
+                        way.extra['ddd:connections'].append(other_con)
                     way_con = WayConnection(way, other_idx, way_idx)
-                    if way_con not in other.extra['connections']:
-                        other.extra['connections'].append(way_con)
+                    if way_con not in other.extra['ddd:connections']:
+                        other.extra['ddd:connections'].append(way_con)
                 if found: break
             if found: break
 
@@ -914,12 +922,12 @@ class WaysOSMBuilder():
         return connected
     '''
 
-    def road_weight(self, feature):
+    def road_weight(self, way):
         """
         Primary roads weight is 1. Lower weights are more important roads.
         """
-        highway = feature['properties'].get('highway', None)
-        junction = feature['properties'].get('junction', None)
+        highway = way.extra.get('osm:highway', None)
+        junction = way.extra.get('osm:junction', None)
 
         weight = 99
         if highway == "motorway": weight = 5
@@ -1020,7 +1028,7 @@ class WaysOSMBuilder():
 
                 # Cut line at the specified point.
                 if max_o:
-                    perpendicular = max_o.perpendicular(distance=max_d, length=way_1d.extra['width'] + 0.1, double=True)
+                    perpendicular = max_o.perpendicular(distance=max_d, length=way_1d.extra['ddd:way:width'] + 0.1, double=True)
                     join_way_splits = ops.split(join_way.geom, perpendicular.geom)
                     #logger.info("Split: %s", join_way_splits)
 
@@ -1090,10 +1098,10 @@ class WaysOSMBuilder():
                     sys.exit(1)
                 """
 
-                intersection_2d.extra['connections'] = []
+                intersection_2d.extra['ddd:connections'] = []
                 if len(intersection) > 3 or len(intersection) == len(highest_ways):  # 2
                     intersection_2d.extra['ddd:way:lamps'] = False
-                    intersection_2d.extra['ddd_trafficlights'] = False
+                    intersection_2d.extra['ddd:trafficlights'] = False
                     intersection_2d.extra['ddd:way:roadlines'] = False
 
                 intersection_2d.geom = intersection_shape.geom  # ddd.shape(intersection_shape, name="Intersection")
@@ -1112,7 +1120,7 @@ class WaysOSMBuilder():
         # Add intersections to respective layers
         for int_2d in intersections_2d.children:
             # print(int_2d.extra)
-            self.osm.ways_2d[int_2d.extra['layer']].children.append(int_2d)
+            self.osm.ways_2d[int_2d.extra['ddd:layer']].children.append(int_2d)
 
         # Subtract intersections from ways
         for layer_idx in self.osm.ways_2d.keys():  # ["-1a", "0a", "1a"]
@@ -1210,7 +1218,7 @@ class WaysOSMBuilder():
         - Add metadata (road name, surface type, connections?)
         - Consider elevation and level roads on the transversal axis
         '''
-        ways_1d = [w for w in self.osm.ways_1d.children if w.extra['layer'] == layer_idx]
+        ways_1d = [w for w in self.osm.ways_1d.children if w.extra['ddd:layer'] == layer_idx]
         logger.info("Generating 2D ways for layer %s (%d ways)", layer_idx, len(ways_1d))
 
         ways_1d.sort(key=lambda w: w.extra['ddd:way:weight'])
@@ -1220,7 +1228,7 @@ class WaysOSMBuilder():
             f = w.extra['osm:feature']
             way_2d = self.generate_way_2d(w)
             if way_2d:
-                weight = self.road_weight(f)
+                weight = self.road_weight(w)
                 ways_2d[weight].append(way_2d)
 
         '''
@@ -1253,7 +1261,7 @@ class WaysOSMBuilder():
         """
         logger.info("Generating 2D roads for layer %d", layer_idx)
 
-        features = [f for f in self.osm.features if int(f['properties'].get('layer', 0)) == layer_idx]
+        features = [f for f in self.osm.features if int(f['properties'].get('ddd:layer', 0)) == layer_idx]
 
         features.sort(key=lambda f: self.road_weight(f))
 
@@ -1286,12 +1294,12 @@ class WaysOSMBuilder():
 
         feature = way_1d.extra['osm:feature']
 
-        # highway = feature['properties'].get('highway', None)
+        # highway = feature['properties'].get('osm:highway', None)
         # if highway is None: return
 
         path = way_1d
 
-        width = path.extra['width']
+        width = path.extra['ddd:way:width']
         way_2d = path.buffer(distance=width / 2.0, cap_style=2, join_style=2)
 
         # Avoid gaps and eliminate small polygons
@@ -1362,7 +1370,7 @@ class WaysOSMBuilder():
             # if way_2d.extra['natural'] == "coastline": continue
             #layer_height = self.layer_height(layer_idx)
             try:
-                if way_2d.extra['railway']:
+                if way_2d.extra.get('osm:railway', None):
                     way_3d = self.generate_way_3d_railway(way_2d)
                 else:
                     way_3d = self.generate_way_3d_common(way_2d)
@@ -1381,13 +1389,13 @@ class WaysOSMBuilder():
         nways = []
         for way in ways_3d.children:
             # logger.debug("3D layer transition: %s", way)
-            # if way.extra['layer_transition']:
+            # if way.extra['ddd:layer_transition']:
             if 'way_1d' in way.extra['way_2d'].extra:
                 path = way.extra['way_2d'].extra['way_1d']
                 vertex_func = self.get_height_apply_func(path)
                 nway = way.vertex_func(vertex_func)
             else:
-                nway = way.translate([0, 0, self.layer_height(way.extra['layer'])])
+                nway = way.translate([0, 0, self.layer_height(way.extra['ddd:layer'])])
             nways.append(nway)
 
         self.osm.ways_3d[layer_idx] = ddd.group(nways, empty=3, name="Ways (%s)" % layer_idx)
@@ -1398,7 +1406,7 @@ class WaysOSMBuilder():
 
         way_2d = way_2d.individualize()
 
-        extra_height = way_2d.extra['extra_height']
+        extra_height = way_2d.extra['ddd:extra_height']
         if extra_height:
             try:
                 way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
@@ -1413,7 +1421,7 @@ class WaysOSMBuilder():
             way_3d = ddd.uv.map_cubic(way_3d)
             way_3d.extra['ddd:shadows'] = False  # Should come from style
 
-        if way_2d.extra['natural'] == "coastline": way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
+        if way_2d.extra.get('osm:natural', None) == "coastline": way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
         if way_2d.extra.get('ddd:area:type') == "water": way_3d = way_3d.translate([0, 0, -0.5])
         return way_3d
 
@@ -1598,7 +1606,7 @@ class WaysOSMBuilder():
                         continue
 
                     if p[2] > 1.0:  # If no height, no pilar, but should be a margin and also corrected by base_height
-                        item = ddd.rect([-way.extra['width'] * 0.3, -0.5, way.extra['width'] * 0.3, 0.5], name="Bridge Post %s" % way.name)
+                        item = ddd.rect([-way.extra['ddd:way:width'] * 0.3, -0.5, way.extra['ddd:way:width'] * 0.3, 0.5], name="Bridge Post %s" % way.name)
                         item = item.extrude(-(math.fabs(p[2]) - 0.5)).material(ddd.mats.cement)
                         item = ddd.uv.map_cubic(item)
                         item = item.rotate([0, 0, angle - math.pi / 2]).translate([p[0], p[1], 0])
@@ -1659,7 +1667,7 @@ class WaysOSMBuilder():
                 self.generate_props_2d_way(way_2d)
             except Exception as e:
                 #raise DDDException("Could not generate props for way: %s" % e, ddd_obj=way_2d)
-                pass
+                logger.error("ERror generating props for way %s: %s", way_2d, e)
 
     def generate_props_2d_way(self, way_2d):
 
@@ -1678,7 +1686,7 @@ class WaysOSMBuilder():
         # Generate lines
         if way_2d.extra['ddd:way:roadlines']:
 
-            lanes = path.extra['lanes']
+            lanes = path.extra['ddd:way:lanes']
             numlines = lanes - 1 + 2
             for lineind in range(numlines):
 
@@ -1731,7 +1739,7 @@ class WaysOSMBuilder():
                 self.osm.roadlines_3d.children.append(line_3d)
 
         # Check if to generate lamps
-        if path.extra['ddd:way:lamps'] and path.extra['layer'] == "0":
+        if path.extra['ddd:way:lamps'] and path.extra['ddd:layer'] == "0":
 
             # Generate lamp posts
             interval = 25.0
@@ -1760,7 +1768,7 @@ class WaysOSMBuilder():
                     dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
                     dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
                     perpendicular_vec = (-dir_vec[1], dir_vec[0])
-                    lightlamp_dist = path.extra['width'] * 0.5 + 0.5
+                    lightlamp_dist = path.extra['ddd:way:width'] * 0.5 + 0.5
                     left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
                     right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 
@@ -1805,7 +1813,7 @@ class WaysOSMBuilder():
                 dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
 
                 #perpendicular_vec = (-dir_vec[1], dir_vec[0])
-                #lightlamp_dist = path.extra['width'] * 0.5 + 0.5
+                #lightlamp_dist = path.extra['ddd:way:width'] * 0.5 + 0.5
                 #left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
                 #right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 
@@ -1820,7 +1828,7 @@ class WaysOSMBuilder():
         '''
 
         # Generate trafficlights
-        if path.geom.length > 45.0 and path.extra['ddd_trafficlights'] and path.extra['layer'] == "0":
+        if path.geom.length > 45.0 and path.extra['ddd:trafficlights'] and path.extra['ddd:layer'] == "0":
 
             for end in (1, -1):
 
@@ -1836,7 +1844,7 @@ class WaysOSMBuilder():
                 dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
                 dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
                 perpendicular_vec = (-dir_vec[1], dir_vec[0])
-                lightlamp_dist = path.extra['width'] * 0.5 + 0.5
+                lightlamp_dist = path.extra['ddd:way:width'] * 0.5 + 0.5
                 left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
                 right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 
@@ -1856,7 +1864,7 @@ class WaysOSMBuilder():
 
 
         # Generate traffic signs
-        if path.geom.length > 20.0 and path.extra['ddd_trafficlights'] and path.extra['layer'] == "0":
+        if path.geom.length > 20.0 and path.extra['ddd:trafficlights'] and path.extra['ddd:layer'] == "0":
 
             # End right
             p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 11.5 - random.uniform(0.0, 10.0))
@@ -1868,7 +1876,7 @@ class WaysOSMBuilder():
                 dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
                 dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
                 perpendicular_vec = (-dir_vec[1], dir_vec[0])
-                lightlamp_dist = path.extra['width'] * 0.5 + 0.5
+                lightlamp_dist = path.extra['ddd:way:width'] * 0.5 + 0.5
                 left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
                 right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
 

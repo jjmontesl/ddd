@@ -37,6 +37,7 @@ from ddd.exchange.dddjson import DDDJSON
 import hashlib
 import webbrowser
 import cairosvg
+from trimesh.visual.color import ColorVisuals
 
 
 # Get instance of logger for this module
@@ -364,7 +365,7 @@ class DDDObject():
 
         node_name = self.uniquename() + name_suffix
 
-        ignore_keys = ('uv', 'osm:feature', 'connections')
+        ignore_keys = ('uv', 'osm:feature', 'ddd:connections')
         metadata = dict(self.extra)
         metadata['ddd:path'] = path_prefix + node_name
         if self.mat and self.mat.name:
@@ -1389,8 +1390,9 @@ class DDDObject3(DDDObject):
     def __repr__(self):
         return "<DDDObject3 (name=%s, faces=%d, children=%d)>" % (self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
 
-    def copy(self):
-        obj = DDDObject3(name=self.name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
+    def copy(self, name=None):
+        if name is None: name = self.name
+        obj = DDDObject3(name=name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
         return obj
 
     def replace(self, obj):
@@ -1559,7 +1561,7 @@ class DDDObject3(DDDObject):
     '''
     def metadata(self, path_prefix, name_suffix):
         node_name = self.uniquename() + name_suffix
-        ignore_keys = ('uv', 'osm:feature', 'connections')
+        ignore_keys = ('uv', 'osm:feature', 'ddd:connections')
         metadata = dict(self.extra)
         metadata['ddd:path'] = path_prefix + node_name
         if self.mat and self.mat.name:
@@ -1632,10 +1634,21 @@ class DDDObject3(DDDObject):
         #    self.mesh.visual.uv = uvs
 
         if self.mat:
+
+
+            # Material + UVs
             mat = SimpleMaterial(diffuse=self.mat.color_rgba)
-            self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
             #mat = PBRMaterial(doubleSided=True)  # , emissiveFactor= [0.5 for v in self.mesh.vertices])
-            #self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
+            self.mesh.visual = TextureVisuals(uv=uvs, material=mat)  # Material + UVs
+
+            # Vertex Colors
+            cvs = ColorVisuals(mesh=self.mesh, face_colors=[self.mat.color_rgba for f in self.mesh.faces])  # , material=material
+            # Hack vertex_colors into TextureVisuals
+            # WARN: Trimehs GLTF export modified to suppot this:
+            #  gltf.py:542:      if mesh.visual.kind in ['vertex', 'face'] or hasattr(mesh.visual, 'vertex_colors'):
+            #  gltf.py:561       remove elif, use if
+            self.mesh.visual.vertex_colors = cvs.vertex_colors
+
         else:
             #logger.debug("No material set for mesh: %s", self)
             pass

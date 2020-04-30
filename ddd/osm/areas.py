@@ -206,7 +206,7 @@ class AreasOSMBuilder():
 
         feature = area.extra['osm:feature']
         item = area.centroid()
-        item.extra['historic'] = "monument"
+        item.extra['osm:historic'] = "monument"
 
         area.name = "Artwork: %s" % feature['properties'].get('name', None)
         area.extra['ddd:area:type'] = 'steps'
@@ -365,7 +365,7 @@ class AreasOSMBuilder():
         # Remove paths from some areas (sidewalks), and reincorporate to them
         #to_remove = []
         for way_2d in self.osm.ways_2d['0'].children:
-            if way_2d.extra.get('highway', None) not in ('footway', 'path', 'track', None): continue
+            if way_2d.extra.get('osm:highway', None) not in ('footway', 'path', 'track', None): continue
 
             for area in areas_2d_original.children:  #self.osm.areas_2d.children:  # self.osm.areas_2d.children:
 
@@ -431,7 +431,7 @@ class AreasOSMBuilder():
         coastlines = []
         coastlines_1d = []
         for way in self.osm.ways_1d.children:
-            if way.extra['natural'] == 'coastline':
+            if way.extra.get('osm:natural') == 'coastline':
                 coastlines_1d.append(way)
                 coastlines.append(way.buffer(0.1))
 
@@ -595,6 +595,22 @@ class AreasOSMBuilder():
 
                 area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, base=False)
                 area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), 0.1)
+
+                # Grass
+                if True:
+                    # For volumetric grass, as described by: https://www.bruteforce-games.com/post/grass-shader-devblog-04
+                    grass_layers = ddd.group3()
+                    colors = ['#000000', '#222222', '#444444', '#666666', '#888888', '#aaaaaa', '#cccccc', '#eeeeee']
+                    for i in range(8):
+                        grass_layer = area_3d.copy(name="Grass %d: %s" % (i, area_3d.name))
+                        grass_layer = grass_layer.material(ddd.material(color=colors[i]))
+                        grass_layer = grass_layer.translate([0, 0, 0.05 * i])
+                        grass_layer = terrain.terrain_geotiff_elevation_apply(grass_layer, self.osm.ddd_proj)
+                        grass_layer.extra['ddd:shadows'] = False
+                        grass_layer.extra['ddd:collider'] = False
+                        grass_layers.append(grass_layer)
+                    self.osm.other_3d.append(grass_layers)  #ddd.group3([area_3d, grass_layers])
+
 
                 #area_3d = ddd.group([area_2d.triangulate().translate([0, 0, 0.0]),
                 #                     area_2d.buffer(-1.0).triangulate().translate([0, 0, 0.2]),
