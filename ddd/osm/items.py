@@ -7,7 +7,7 @@ import math
 import random
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import plants, urban, landscape
+from ddd.pack.sketchy import plants, urban, landscape, industrial
 from ddd.geo import terrain
 import sys
 
@@ -68,6 +68,8 @@ class ItemsOSMBuilder():
         #        print(item_2d)
 
         item_3d = None
+
+
         if item_2d.extra.get('osm:amenity', None) == 'fountain':
             item_3d = self.generate_item_3d_fountain(item_2d)
         elif item_2d.extra.get('osm:amenity', None) == 'bench':
@@ -87,7 +89,10 @@ class ItemsOSMBuilder():
         #elif item_2d.extra.get('osm:amenity', None) == 'bicycle_parking':
         #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
 
-        elif item_2d.extra.get('natural', None) == 'tree':
+        #elif item_2d.extra.get('osm:natural', None) == 'coastline':
+        #    item_3d = self.generate_item_3d_coastline(item_2d)
+
+        elif item_2d.extra.get('osm:natural', None) == 'tree':
             self.tree_decimate_idx += 1
             if self.tree_decimate <= 1 or self.tree_decimate_idx % self.tree_decimate == 0:
                 #item_3d = random.choice(self.pool['tree']).instance()
@@ -106,6 +111,8 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_wayside_cross(item_2d)
         elif item_2d.extra.get('osm:man_made', None) == 'lighthouse':
             item_3d = self.generate_item_3d_lighthouse(item_2d)
+        elif item_2d.extra.get('osm:man_made', None) == 'crane':
+            item_3d = self.generate_item_3d_crane(item_2d)
 
         elif item_2d.extra.get('osm:highway', None) == 'bus_stop':
             item_3d = self.generate_item_3d_bus_stop(item_2d)
@@ -289,6 +296,15 @@ class ItemsOSMBuilder():
         item_3d.name = 'Lighthouse: %s' % item_2d.name
         return item_3d
 
+    def generate_item_3d_crane(self, item_2d):
+        coords = item_2d.geom.coords[0]
+        oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])  # FIXME: Align to coastline if any?
+        item_3d = industrial.crane_vertical()
+        item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+        item_3d.name = 'Crane: %s' % item_2d.name
+        return item_3d
+
     def generate_item_3d_bus_stop(self, item_2d):
         busways = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('osm:highway', None) not in ('path', 'track', 'footway', None))
         item_2d = ddd.snap.project(item_2d, busways, penetrate=-0.5)
@@ -349,6 +365,20 @@ class ItemsOSMBuilder():
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
         item_3d.name = 'Hedge: %s' % item_2d.name
         return item_3d
+
+    '''
+    def generate_item_3d_coastline(self, item_2d):
+        """
+        Expects a line.
+        """
+        #height = item_2d.extra['ddd:item:height']
+        sys.exit(1)
+        item_3d = item_2d.extrude(10.0).translate([0, 0, -10])
+        item_3d = ddd.uv.map_cubic(item_3d)
+        item_3d.extra['_height_mapping'] = item_3d.extra.get('_height_mapping', 'terrain_geotiff_elevation_apply')
+        item_3d.name = 'Coastline: %s' % item_2d.name
+        return item_3d
+    '''
 
     def generate_item_3d_lamppost(self, item_2d):
 

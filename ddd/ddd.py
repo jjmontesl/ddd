@@ -99,7 +99,7 @@ class D1D2D3():
 
     @staticmethod
     def regularpolygon(sides, r=1.0, name=None):
-        coords = [[math.cos(i * math.pi * 2 / sides) * r, math.sin(i * math.pi * 2 / sides) * r] for i in range(sides)]
+        coords = [[math.cos(-i * math.pi * 2 / sides) * r, math.sin(-i * math.pi * 2 / sides) * r] for i in range(sides)]
         return D1D2D3.polygon(coords, name=name)
 
     @staticmethod
@@ -590,6 +590,25 @@ class DDDObject2(DDDObject):
         result.children = [c.scale(coords) for c in self.children]
         return result
 
+    def bounds(self):
+        xmin, ymin, xmax, ymax = (float("-inf"), float("-inf"), float("inf"), float("inf"))
+        if self.geom:
+            xmin, ymin, xmax, ymax = self.geom.bounds
+        for c in self.children:
+            cxmin, cymin, cxmax, cymax = c.bounds()
+            xmin = min(xmin, cxmin)
+            ymin = min(ymin, cymin)
+            xmax = max(xmax, cxmax)
+            ymax = max(ymax, cymax)
+
+        return (xmin, ymin, xmax, ymax)
+
+    def recenter(self):
+        xmin, ymin, xmax, ymax = self.bounds()
+        center = ((xmin + xmax) / 2, (ymin + ymax) / 2)
+        result = self.translate([-center[0], -center[1], 0])
+        return result
+
     def clean(self, eps=None, remove_empty=True, validate=True):
         result = self.copy()
         if result.geom and not self.children and eps:
@@ -770,8 +789,8 @@ class DDDObject2(DDDObject):
                 raise DDDException("Invalid polygon: polygon is invalid for Shapely.")
             if self.geom.is_empty:
                 raise DDDException("Invalid polygon: empty.")
-            if not self.geom.is_simple:
-                raise DDDException("Invalid polygon: polygon is not simple.")
+            #if not self.geom.is_simple:
+            #    raise DDDException("Invalid polygon: polygon is not simple.")
             if self.geom.type == "Polygon":
                 if len(list(self.geom.exterior.coords)) < 3:
                     raise AssertionError()

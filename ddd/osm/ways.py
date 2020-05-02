@@ -110,7 +110,7 @@ class WaysOSMBuilder():
             for c, ways in vertex_cache.items():
                 if len(ways) > 1:
                     for w in ways:
-                        #if w.extra['natural'] == 'coastline': continue
+                        #if w.extra['osm:natural'] == 'coastline': continue
                         split1, split2 = self.split_way_1d_vertex(w, c)
                         if split1 and split2:
                             for way_coords in w.geom.coords:
@@ -141,7 +141,6 @@ class WaysOSMBuilder():
                 for way_idx, c in enumerate(way.geom.coords[1:-1]):
                     # If vertex is shared (in cache and more than one feature uses it)
                     if c in vertex_cache and len(vertex_cache[c]) > 1:
-                        # if w.extra['natural'] == 'coastline': continue
                         split1, split2 = self.split_way_1d_vertex(way, c)
                         if split1 and split2:
                             for way_coords in (way.geom.coords[0], way.geom.coords[-1]):
@@ -365,6 +364,8 @@ class WaysOSMBuilder():
             material = ddd.mats.dirt
             # extra_height = 0.2
             width = 0.6 * 3.3
+
+            # TODO: Do later, after applying elevations, in a select ("add fences to elevated ways")
             path.extra['ddd:way:elevated:border'] = 'fence'
             path.extra['ddd:way:elevated:material'] = ddd.mats.pathwalk
 
@@ -395,12 +396,13 @@ class WaysOSMBuilder():
             material = ddd.mats.dirt
             # extra_height = 0.2
 
-        elif path.extra.get('natural', None) == "coastline":
+        elif path.extra.get('osm:natural', None) == "coastline":
             lanes = None
             name = "Coastline: %s" % name_id
-            width = 0.5
+            create_as_item = True
+            width = 0.01
             material = ddd.mats.terrain
-            extra_height = 5.0  # FIXME: Things could cross othis, height shall reach sea precisely
+            #extra_height = 5.0  # FIXME: Things could cross othis, height shall reach sea precisely
 
         elif path.extra.get('osm:waterway', None) == "river":
             lanes = None
@@ -792,7 +794,7 @@ class WaysOSMBuilder():
                     closest_in_path = p
                     closest_dist = pd
             # logger.debug("Closest in path: %s", closest_in_path)
-            return (x, y, z + (closest_in_path[2] if way.extra.get('natural', None) != "coastline" else 0.0))  #  if len(closest_in_path) > 2 else 0.0
+            return (x, y, z + (closest_in_path[2] if way.extra.get('osm:natural', None) != "coastline" else 0.0))  #  if len(closest_in_path) > 2 else 0.0
 
         return height_apply_func
 
@@ -1367,7 +1369,7 @@ class WaysOSMBuilder():
 
         ways_3d = []
         for way_2d in ways_2d.children:
-            # if way_2d.extra['natural'] == "coastline": continue
+            # if way_2d.extra['oms:natural'] == "coastline": continue
             #layer_height = self.layer_height(layer_idx)
             try:
                 if way_2d.extra.get('osm:railway', None):
@@ -1421,7 +1423,7 @@ class WaysOSMBuilder():
             way_3d = ddd.uv.map_cubic(way_3d)
             way_3d.extra['ddd:shadows'] = False  # Should come from style
 
-        if way_2d.extra.get('osm:natural', None) == "coastline": way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
+        #if way_2d.extra.get('osm:natural', None) == "coastline": way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
         if way_2d.extra.get('ddd:area:type') == "water": way_3d = way_3d.translate([0, 0, -0.5])
         return way_3d
 
@@ -1731,6 +1733,7 @@ class WaysOSMBuilder():
                 line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
                 line_3d.extra['ddd:collider'] = False
                 line_3d.extra['ddd:shadows'] = False
+                line_3d.extra['ddd:occluder'] = False
                 # print(line)
                 # print(line.geom)
                 uvmapping.map_3d_from_2d(line_3d, line)

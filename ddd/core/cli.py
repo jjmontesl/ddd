@@ -171,15 +171,13 @@ class D1D2D3Bootstrap():
                 modulename = ".".join(command.split(".")[:-1])
                 classname = command.split(".")[-1]
                 if modulename:
-                    try:
-                        modul = importlib.import_module(modulename)
+                    modul = importlib.import_module(modulename)
+                    if hasattr(modul, classname):
                         clazz = getattr(modul, classname)
                         cliobj = clazz()
                         cliobj.parse_args(self._unparsed_args)
                         cliobj.run()
                         result = True
-                    except AttributeError as e:
-                        pass
 
                 if not result:
                     modulename = command

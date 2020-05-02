@@ -182,7 +182,7 @@ class AreasOSMBuilder():
 
         # Add trees if necesary
         # FIXME: should not check for None in intersects, filter shall not return None (empty group)
-        trees = self.osm.items_1d.filter(lambda o: o.extra.get('natural') == 'tree')
+        trees = self.osm.items_1d.filter(lambda o: o.extra.get('osm:natural') == 'tree')
         has_trees = area.intersects(trees)
         add_trees = not has_trees # and area.geom.area > 100
 
@@ -197,7 +197,7 @@ class AreasOSMBuilder():
                 #plant = plants.plant().translate([p[0], p[1], 0.0])
                 #self.osm.items_3d.children.append(plant)
                 tree = ddd.point(p, name="Tree")
-                tree.extra['natural'] = 'tree'
+                tree.extra['osm:natural'] = 'tree'
                 self.osm.items_1d.children.append(tree)
 
         return area
@@ -430,10 +430,15 @@ class AreasOSMBuilder():
         water = ddd.rect(area_crop.bounds, name="Ground")
         coastlines = []
         coastlines_1d = []
-        for way in self.osm.ways_1d.children:
+
+        for way in self.osm.items_1d.children:
             if way.extra.get('osm:natural') == 'coastline':
                 coastlines_1d.append(way)
-                coastlines.append(way.buffer(0.1))
+                coastlines.append(way.buffer(0.01))
+        #for way in self.osm.features.children:
+        #    if way.properties.get('natural') == 'coastline':
+        #        coastlines_1d.append(ddd.shape(way.geometry))
+        #        coastlines.append(ddd.shape(way.geometry).buffer(0.1))
 
         logger.debug("Coastlines: %s", (coastlines_1d, ))
         if not coastlines:
@@ -442,10 +447,19 @@ class AreasOSMBuilder():
 
         coastlines = ddd.group(coastlines)
         coastlines_1d = ddd.group(coastlines_1d)
-
         coastline_areas = water.subtract(coastlines)
         #coastline_areas.save("/tmp/test.svg")
         #coastline_areas.dump()
+
+        # Generate coastline
+        if coastlines_1d.children:
+            coastlines_3d = coastlines_1d.intersection(water)
+            coastlines_3d = coastlines_3d.individualize().extrude(10.0).translate([0, 0, -10.0])
+            coastlines_3d = terrain.terrain_geotiff_elevation_apply(coastlines_3d, self.osm.ddd_proj)
+            coastlines_3d = ddd.uv.map_cubic(coastlines_3d)
+            coastlines_3d.name = 'Coastline: %s' % coastlines_3d.name
+            self.osm.other_3d.append(coastlines_3d)
+
 
         areas = []
         areas_2d = []
@@ -464,12 +478,14 @@ class AreasOSMBuilder():
 
             if not pol.is_ccw:
                 #area_3d = area_2d.extrude(-0.2)
-                area_2d = ddd.shape(water_area_geom).clean(eps=0.01)
+                area_2d = ddd.shape(water_area_geom).buffer(0.10).clean(eps=0.01)
                 area_2d.validate()
-                area_3d = area_2d.triangulate()
-                area_3d = area_3d.material(ddd.mats.sea)
+                area_2d = area_2d.material(ddd.mats.sea)
+
+                area_3d = area_2d.triangulate().translate([0, 0, -0.5])
                 area_3d.extra['ddd:collider'] = False
                 area_3d.extra['ddd:shadows'] = False
+                area_3d.extra['ddd:occluder'] = False
                 areas_2d.append(area_2d)
                 areas.append(area_3d)
 
@@ -504,20 +520,24 @@ class AreasOSMBuilder():
         terr = terr.subtract(self.osm.ways_2d['0'].clean(eps=0.01))
         terr = terr.clean(eps=0.01)
 
-        terr = terr.subtract(self.osm.ways_2d['-1a'])
+        terr = terr.subtract(self.osm.ways_2d['-1a'].clean(eps=0.01))
         terr = terr.clean(eps=0.01)
 
         #terr = terr.subtract(self.osm.ways_2d['0a'])  # added to avoid floor, but shall be done better, by layers spawn and base_height,e tc
         #terr = terr.clean(eps=0.01)
 
         try:
-            terr = terr.subtract(self.osm.areas_2d)
+            terr = terr.subtract(self.osm.areas_2d.clean(eps=0.01))
             terr = terr.clean(eps=0.01)
         except Exception as e:
             logger.error("Could not subtract areas_2d from terrain.")
+            return
 
         terr = terr.subtract(self.osm.water_2d)
         terr = terr.clean(eps=0.01)
+        terr = terr.material(ddd.mats.terrain)
+
+        self.osm.ground_2d.append(terr)
 
         # The buffer is fixing a core segment violation :/
         #terr.save("/tmp/test.svg")
@@ -542,9 +562,8 @@ class AreasOSMBuilder():
             raise DDDException("Coould not generate terrain: %s" % e, ddd_obj=terr)
 
         terr = terrain.terrain_geotiff_elevation_apply(terr, self.osm.ddd_proj)
-        terr = terr.material(ddd.mats.terrain)
 
-        self.osm.ground_3d = terr
+        self.osm.ground_3d.append(terr)
 
     def generate_areas_3d(self):
         logger.info("Generating 3D areas (%d)", len(self.osm.areas_2d.children))
@@ -603,11 +622,12 @@ class AreasOSMBuilder():
                     colors = ['#000000', '#222222', '#444444', '#666666', '#888888', '#aaaaaa', '#cccccc', '#eeeeee']
                     for i in range(8):
                         grass_layer = area_3d.copy(name="Grass %d: %s" % (i, area_3d.name))
-                        grass_layer = grass_layer.material(ddd.material(color=colors[i]))
+                        grass_layer = grass_layer.material(ddd.material(name="VolumetricGrass", color=colors[i]))
                         grass_layer = grass_layer.translate([0, 0, 0.05 * i])
                         grass_layer = terrain.terrain_geotiff_elevation_apply(grass_layer, self.osm.ddd_proj)
                         grass_layer.extra['ddd:shadows'] = False
                         grass_layer.extra['ddd:collider'] = False
+                        grass_layer.extra['ddd:occluder'] = False
                         grass_layers.append(grass_layer)
                     self.osm.other_3d.append(grass_layers)  #ddd.group3([area_3d, grass_layers])
 

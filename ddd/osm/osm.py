@@ -19,6 +19,7 @@ from ddd.osm.ways import WaysOSMBuilder
 from shapely.geometry.geo import shape
 from ddd.catalog.catalog import PrefabCatalog
 from ddd.osm.osmops.osmops import OSMBuilderOps
+import sys
 
 
 # Get instance of logger for this module
@@ -98,6 +99,7 @@ class OSMBuilder():
         self.water_2d = DDDObject2(name="Water 2D")
         self.water_3d = DDDObject3(name="Water")
 
+        self.ground_2d = DDDObject2(name="Ground 2D")
         self.ground_3d = DDDObject3(name="Ground")
 
         self.other_3d = DDDObject3(name="Other")
@@ -221,15 +223,20 @@ class OSMBuilder():
                 logger.info("Invalid feature '%s': %s", name, e)
 
         #self.features_2d.save("/tmp/dddosm2d.json")
-        #self.features_2d.show()
+
+        # Coastlines?
+        #for f in self.features_2d.children:
+        #    if f.extra.get('osm:natural', None) == 'coastline':
+        #        print(f)
+        #sys.exit(1)
 
     def save_tile_2d(self, path):
         tile = ddd.group2([
                     ddd.shape(self.area_crop).material(ddd.material(color='#ffffff')),
+                    self.ground_2d, self.water_2d,
                     self.areas_2d, self.ways_2d['0'], self.roadlines_2d,
                     self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f', opacity=0.6)),
-                    self.items_2d, self.items_1d.buffer(0.5).material(ddd.mats.highlight),
-                    self.water_2d])
+                    self.items_2d, self.items_1d.buffer(0.5).material(ddd.mats.highlight), ])
         tile = tile.intersection(ddd.shape(self.area_crop))
         tile.save(path)
 

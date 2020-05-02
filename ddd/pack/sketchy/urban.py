@@ -194,6 +194,7 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=N
         textobj.extra['ddd:text:height'] = height * 0.9
         textobj.extra['ddd:collider'] = False
         textobj.extra['ddd:shadows'] = False
+        textobj.extra['ddd:occluder'] = False
         #textobj.extra['ddd:layer'] = "Texts"
     if text_back:
         textbackobj = ddd.marker(name="Panel Text Marker").rotate([0, 0, math.pi]).translate([0, + depth - 0.02, 0])
@@ -202,6 +203,7 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=N
         textbackobj.extra['ddd:text:height'] = height * 0.9
         textbackobj.extra['ddd:collider'] = False
         textbackobj.extra['ddd:shadows'] = False
+        textbackobj.extra['ddd:occluder'] = False
 
     panel = ddd.group3([panel])
     if text: panel.append(textobj)
@@ -293,6 +295,8 @@ def fountain(r=1.5):
     # Water
     water = ddd.disc(r=r-0.2, resolution=2).triangulate().translate([0, 0, 1.1]).material(ddd.mats.water)
     water.extra['ddd:collider'] = False
+    water.extra['ddd:occluder'] = False
+    water.extra['ddd:shadows'] = False
 
     item = ddd.group([base, fountain, water])
     return item

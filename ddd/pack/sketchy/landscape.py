@@ -64,10 +64,6 @@ def lighthouse(height=10, r=1.5):
 
     return obj
 
-# TODO: Move to industrial
-def crane():
-    raise NotImplementedError()
-
 
 def powertower(height=14.0):
     obj_pole = ddd.rect([-0.5, -0.5, 0.5, 0.5]).extrude(height)

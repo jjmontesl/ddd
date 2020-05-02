@@ -51,6 +51,7 @@ class DefaultMaterials(MaterialsCollection):
         self.metal_paint_red = ddd.material("PaintRed", color='#d01010')
         self.metal_paint_green = ddd.material("PaintGreen", color='#265e13')
         self.metal_paint_yellow = ddd.material("PaintYellow", color='#ebe015')
+        self.metal_paint_black = ddd.material("PaintYellow", color='#000a17')
 
         # Lights
         self.lightbulb = ddd.material(color='e8e0e4')
@@ -63,9 +64,13 @@ class DefaultMaterials(MaterialsCollection):
         self.treetop = ddd.material(name="Treetop", color='#1da345')
 
         # Urban props materials
-        self.lightbulb = ddd.material(color='e8e0e4')
         self.fence = ddd.material(name="Fence", color='282024', extra={'ddd:transparent': True})
         self.railing = ddd.material(name="Fence", color='282024', extra={'ddd:transparent': True})
+        self.metallic_grid = ddd.material(name="Fence", color='#28281e', extra={'ddd:transparent': True})  # Floors
+
+        self.lightbulb = ddd.material(color='e8e0e4')
+        self.cable_metal = ddd.material(name="CableMetal", color='#28282e')
+        self.rope = ddd.material(name="Rope", color='#28282e')
 
         # Buildings
         self.building_1 = ddd.material(color='#f7f0be')
