@@ -2,42 +2,47 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
+from _collections_abc import Iterable
+import base64
+import copy
+import hashlib
+import json
 import logging
 import math
 import random
+import sys
+import webbrowser
 
+import PIL
+import cairosvg
 from csg import geom as csggeom
 from csg.core import CSG
-import numpy as np
+from matplotlib import colors
 from shapely import geometry, affinity, ops
 from shapely.geometry import shape, polygon
+from shapely.geometry.linestring import LineString
+from shapely.geometry.polygon import orient
 from trimesh import creation, primitives, boolean, transformations
 import trimesh
 from trimesh.base import Trimesh
 from trimesh.path import segments
+from trimesh.path.entities import Line
 from trimesh.path.path import Path, Path3D, Path2D
 from trimesh.scene.scene import Scene, append_scenes
-from trimesh.visual.material import SimpleMaterial, PBRMaterial
 from trimesh.scene.transforms import TransformForest
-import copy
-from trimesh.visual.texture import TextureVisuals
-from matplotlib import colors
-import json
-import base64
-from shapely.geometry.polygon import orient
-from ddd.ops import extrusion
 from trimesh.transformations import quaternion_from_euler
-from trimesh.path.entities import Line
+from trimesh.visual.color import ColorVisuals
+from trimesh.visual.material import SimpleMaterial, PBRMaterial
+from trimesh.visual.texture import TextureVisuals
+
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
-from shapely.geometry.linestring import LineString
-from _collections_abc import Iterable
-import sys
 from ddd.exchange.dddjson import DDDJSON
-import hashlib
-import webbrowser
-import cairosvg
-from trimesh.visual.color import ColorVisuals
+from ddd.materials.atlas import TextureAtlas
+from ddd.ops import extrusion
+from ddd.ops.align import DDDAlign
+
+import numpy as np
 
 
 # Get instance of logger for this module
@@ -69,10 +74,11 @@ class D1D2D3():
         D1D2D3Bootstrap.initialize_logging(debug)
 
     @staticmethod
-    def material(name=None, color=None, extra=None, opacity=1.0):
+    def material(name=None, color=None, extra=None, texture_path=None, atlas_path=None, opacity=1.0):
         #material = SimpleMaterial(diffuse=color, )
         #return (0.3, 0.9, 0.3)
-        material = DDDMaterial(name=name, color=color, extra=extra, opacity=1.0)
+        material = DDDMaterial(name=name, color=color, extra=extra,
+                               texture_path=texture_path, atlas_path=atlas_path, opacity=opacity)
         return material
 
     @staticmethod
@@ -119,7 +125,14 @@ class D1D2D3():
         return DDDObject2(geom=geom)
 
     @staticmethod
-    def rect(bounds, name=None):
+    def rect(bounds=None, name=None):
+        """
+        Returns a 2D rectangular polygon for the given bounds [xmin, ymin, xmax, ymax].
+
+        If no bounds are provided, returns a unitary square with corner at 0, 0 along the positive axis.
+        """
+
+        if bounds is None: bounds = [0, 0, 1, 1]
         cmin, cmax = ((bounds[0], bounds[1]), (bounds[2], bounds[3]))
         geom = geometry.Polygon([(cmin[0], cmin[1], 0.0), (cmax[0], cmin[1], 0.0),
                                  (cmax[0], cmax[1], 0.0), (cmin[0], cmax[1], 0.0)])
@@ -292,7 +305,7 @@ class D1D2D3():
 
 class DDDMaterial():
 
-    def __init__(self, name=None, color=None, extra=None, opacity=1.0):
+    def __init__(self, name=None, color=None, extra=None, texture_path=None, atlas_path=None, opacity=1.0):
         """
         Color is hex color.
         """
@@ -305,11 +318,36 @@ class DDDMaterial():
         if self.color:
             self.color_rgba = trimesh.visual.color.hex_to_rgba(self.color)
 
+        self.texture = texture_path
+        self.atlas = None
+        if atlas_path:
+            self.load_atlas(atlas_path)
+
+        self._trimesh_material_cached = None
+
     def __repr__(self):
         return "DDDMaterial(name=%s, color=%s)" % (self.name, self.color)
 
     def __hash__(self):
         return abs(hash((self.name, self.color, sorted(self.extra.values()))))
+
+    def _trimesh_material(self):
+        """
+        Returns a Trimesh material for this DDDMaterial.
+        Materials are cached to avoid repeated materials and image loading (which may crash the app).
+        """
+        if self._trimesh_material_cached is None:
+            if self.texture:
+                im = PIL.Image.open(self.texture)  #.convert("RGBA")
+                mat = SimpleMaterial(image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
+            else:
+                mat = SimpleMaterial(diffuse=self.color_rgba)
+            #mat = PBRMaterial(doubleSided=True)  # , emissiveFactor= [0.5 for v in self.mesh.vertices])
+            self._trimesh_material_cached = mat
+        return self._trimesh_material_cached
+
+    def load_atlas(self, filepath):
+        self.atlas = TextureAtlas.load_atlas(filepath)
 
 
 class DDDObject():
@@ -1469,6 +1507,15 @@ class DDDObject3(DDDObject):
         obj.children = [c.rotate(v) for c in obj.children]
         return obj
 
+    def rotate_quaternion(self, quaternion):
+        obj = self.copy()
+        if obj.mesh:
+            rot = transformations.quaternion_matrix(quaternion)
+            obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
+        obj.apply_components("rotate_quaternion", quaternion)
+        obj.children = [c.rotate_quaternion(quaternion) for c in obj.children]
+        return obj
+
     def scale(self, v):
         obj = self.copy()
         if obj.mesh:
@@ -1657,10 +1704,8 @@ class DDDObject3(DDDObject):
 
         if self.mat:
 
-
             # Material + UVs
-            mat = SimpleMaterial(diffuse=self.mat.color_rgba)
-            #mat = PBRMaterial(doubleSided=True)  # , emissiveFactor= [0.5 for v in self.mesh.vertices])
+            mat = self.mat._trimesh_material()
             self.mesh.visual = TextureVisuals(uv=uvs, material=mat)  # Material + UVs
 
             # Vertex Colors
@@ -1842,28 +1887,28 @@ class DDDObject3(DDDObject):
 
 ddd = D1D2D3
 
-from ddd.materials.materials import MaterialsCollection
+from ddd.ops.collision import DDDCollision
+from ddd.ops.geometry import DDDGeometry
+from ddd.ops.helper import DDDHelper
+from ddd.ops.snap import DDDSnap
+from ddd.ops.uvmapping import DDDUVMapping
 from ddd.pack.mats.defaultmats import DefaultMaterials
+from ddd.materials.materials import MaterialsCollection
+
 ddd.mats = MaterialsCollection()
 ddd.mats.highlight = D1D2D3.material(color='#ff00ff')
 ddd.mats.load_from(DefaultMaterials())
 
-from ddd.ops.geometry import DDDGeometry
 ddd.geomops = DDDGeometry()
 
-from ddd.ops.align import DDDAlign
 ddd.align = DDDAlign()
 
-from ddd.ops.snap import DDDSnap
 ddd.snap = DDDSnap()
 
-from ddd.ops.collision import DDDCollision
 ddd.collision = DDDCollision()
 
-from ddd.ops.uvmapping import DDDUVMapping
 ddd.uv = DDDUVMapping()
 
-from ddd.ops.helper import DDDHelper
 ddd.helper = DDDHelper()
 
 

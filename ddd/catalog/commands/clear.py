@@ -4,9 +4,9 @@
 
 
 from ddd.ddd import ddd
-from ddd.prefab.catalog import PrefabCatalog
 import os
 import logging
+from ddd.catalog.catalog import PrefabCatalog
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)

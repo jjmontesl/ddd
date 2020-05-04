@@ -7,6 +7,7 @@ import math
 
 from shapely import geometry, affinity, ops
 from ddd.ddd import ddd
+import sys
 
 
 # Get instance of logger for this module
@@ -22,6 +23,34 @@ class OSMBuilderOps():
         # Should use joins and intersections
         #return ddd.geomops.extend_line(obj, 2, 2)
         pass
+
+    def position_along_way(self, obj, way_1d, penetrate=-0.5):
+        """
+        Positions an item in a way, according to item and way direction,
+        and according to way width.
+        """
+
+        closest_seg = way_1d.closest_segment(obj)
+        (coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d) = closest_seg
+        #dist = ddd.point(coords_p).distance(ddd.point(intersection_shape.geom.centroid.coords))
+
+        dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+        dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+        dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+
+        perpendicular_vec = (-dir_vec[1], dir_vec[0])
+
+        item_dist = way_1d.extra['ddd:way:width'] * 0.5 - penetrate
+        left = (coords_p[0] - perpendicular_vec[0] * item_dist, coords_p[1] - perpendicular_vec[1] * item_dist)
+        right = (coords_p[0] + perpendicular_vec[0] * item_dist, coords_p[1] + perpendicular_vec[1] * item_dist)
+
+        angle = math.atan2(dir_vec[1], dir_vec[0])
+        obj.geom.coords = right if obj.extra.get('osm:direction', 'forward') == 'forward' else left
+        obj.extra['ddd:angle'] = (angle + math.pi) if obj.extra.get('osm:direction', 'forward') == 'forward' else angle
+        #print (obj.extra)
+
+        return obj
+
 
     def placement_valid(self, obj, valid=None, invalid=None):
 

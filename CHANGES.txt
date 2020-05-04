@@ -1,5 +1,7 @@
 [0.4.4]
 
+  * Added texture and texture atlas support.
+  * Added textured traffic signs.
   * Introduced command line script form OSM build (accepts center coordinates).
   * Initial features wishlist resolved.
   * Added SVG and PNG export support for 2D.

@@ -97,7 +97,7 @@ def char(ch):
         start = end + 1
 
     path = Path(*paths)
-    wsvg(path, filename="/tmp/test.svg")
+    #wsvg(path, filename="/tmp/test.svg")
     path_d = path.d()
 
     # https://gis.stackexchange.com/questions/301605/how-to-create-shape-in-shapely-from-an-svg-path-element

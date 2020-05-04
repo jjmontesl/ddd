@@ -25,11 +25,10 @@ class DDDGeoTerrain():
     def __init__(self, ):
         self.path_data = 'data/dem/'
         self.path_egm = 'data/dem/egm/egm2008-2_5.tif'
-        #self.path_egm = 'data/dem/egm/egm2008-2_5.tif'
 
 
-dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'
-#dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40e000.tif'
+#dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'
+dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40e000.tif'
 
 
 def terrain_grid(bounds, detail=1.0, height=1.0, scale=0.025):
@@ -74,7 +73,7 @@ def transform_ddd_to_geo(ddd_proj, point):
 
 def terrain_geotiff(bounds, ddd_proj, detail=1.0):
     # TODO: we should load the chunk as a heightmap, and load via terrain_heightmap for reuse
-    #elevation = ElevationChunk.load('/home/jjmontes/git/ddd-baseline/data/elevation/eudem/eudem_dem_5deg_n40w010.tif')
+    #elevation = ElevationChunk.load('/home/jjmontes/git/ddd/data/elevation/eudem/eudem_dem_5deg_n40w010.tif')
     elevation = ElevationChunk.load(dem_file)
 
     mesh = terrain_grid(bounds, detail=detail)

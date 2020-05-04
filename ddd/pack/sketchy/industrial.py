@@ -8,8 +8,14 @@ import numpy as np
 
 from ddd.ddd import ddd
 from ddd.pack.sketchy.urban import post, lamp_ball
+import math
+from trimesh import transformations
 
 def crane_vertical():
+    """
+    Large vertical crane (such as those seen in cargo ports).
+    Inspired by: https://commons.wikimedia.org/wiki/File:Port_crane_of_Mammoet,_Schiedam-8054.jpg
+    """
 
     base_width = 7
     base_length = 6
@@ -67,13 +73,13 @@ def crane_vertical():
 
     # Cabin
     cabin_width = block_width * 0.6
-    cabin_length = 4
+    cabin_length = 3
     cabin_height = block_height
     cabin_shape = ddd.rect([-block_width * 0.5, 0, block_width * 0.5, cabin_length])
     cabin_shape_top = ddd.rect([-block_width * 0.5, 1, block_width * 0.5, cabin_length])
     cabin = cabin_shape.extrude_step(cabin_shape, 1)
     cabin = cabin.extrude_step(cabin_shape_top, cabin_height - 1)
-    cabin = cabin.extrude_step(cabin_shape_top.buffer(-0.4), 0.4)
+    cabin = cabin.extrude_step(cabin_shape_top.buffer(-0.4), 0.3)
     cabin = cabin.material(ddd.mats.metal_paint_yellow)
     cabin = cabin.translate([0, -2.5 - cabin_length, block_base_height])
     cabin = ddd.uv.map_cubic(cabin)
@@ -101,19 +107,76 @@ def crane_vertical():
     def cable(a, b, thick=0.20):
         a = np.array(a)
         b = np.array(b)
-        length = np.linalg.norm(a-b)
+
+        #path = ddd.line([a, b])
+        #path_section = ddd.point(name="Cable").buffer(thick * 0.5, resolution=1, cap_style=ddd.CAP_ROUND)
+        #cable = path_section.extrude_path(path)
+
+        length = np.linalg.norm(b - a)
         cable = ddd.point(name="Cable").buffer(thick * 0.5, resolution=1, cap_style=ddd.CAP_ROUND).extrude(length + thick).translate([0, 0, -thick * 0.5])
         cable = ddd.uv.map_cylindrical(cable)
+
+        vector_up = [0, 0, 1]
+        vector_dir = (b - a) / length
+        rot_axis = np.cross(vector_up, vector_dir)
+        rot_angle = math.asin(np.linalg.norm(rot_axis))
+        if rot_angle > 0.00001:
+            rotation = transformations.quaternion_about_axis(rot_angle, rot_axis / np.linalg.norm(rot_axis))
+            cable = cable.rotate_quaternion(rotation)
         cable = cable.translate(a)
+
         return cable
 
-    maincable1 = cable([0, block_length - 3, mainsupport_base_height], [0, -mainsupport_skew, mainsupport_base_height + mainsupport_height - 0.2])
+    maincable1 = cable([-block_width * 0.4, block_length - 3, mainsupport_base_height], [-mainsupport_width * 0.2, -mainsupport_skew, mainsupport_base_height + mainsupport_height - 0.2])
     maincable1 = maincable1.material(ddd.mats.cable_metal)
+    maincable2 = cable([block_width * 0.4, block_length - 3, mainsupport_base_height], [mainsupport_width * 0.2, -mainsupport_skew, mainsupport_base_height + mainsupport_height - 0.2])
+    maincable2 = maincable2.material(ddd.mats.cable_metal)
+
+    seccable1 = cable([0, -mainsupport_skew, mainsupport_base_height + mainsupport_height], [0, -1.5 - secsupport_skew, mainsupport_base_height + secsupport_height - 0.2])
+    seccable1 = seccable1.material(ddd.mats.cable_metal)
+
+    # Drag cable
+    dragcable_length = 20
+    dragcable_point = [0, -1.5 - secsupport_skew, mainsupport_base_height + secsupport_height - 0.2]
+    dragcable_endpoint = [0, -1.5 - secsupport_skew, mainsupport_base_height + secsupport_height - 0.2 - dragcable_length]
+    dragcable = cable(dragcable_endpoint, dragcable_point)
+    dragcable = dragcable.material(ddd.mats.cable_metal)
+
+    # Pulley block
+    pulley_block_width = 0.5
+    pulley_block_thick = 0.3
+    pulley_block_height = 0.8
+    pulley_block_profile = ddd.polygon([[-pulley_block_width * 0.25, 0],
+                                        [pulley_block_width * 0.25, 0],
+                                        [pulley_block_width / 2, pulley_block_height],
+                                        [-pulley_block_width / 2, pulley_block_height]], name="Pulley block")
+    pulley_block_profile = pulley_block_profile.buffer(0.2, resolution=3, join_style=ddd.JOIN_ROUND)
+
+    pulley_block = pulley_block_profile.extrude(pulley_block_thick).translate([0, 0, -pulley_block_thick / 2])
+    pulley_block = pulley_block.rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CW)
+    pulley_block = pulley_block.material(ddd.mats.metal_paint_yellow)
+    pulley_block = ddd.uv.map_cubic(pulley_block)
+    pulley_block = pulley_block.translate(dragcable_endpoint)
+
+    # Hook
+    hook_radius = 0.6
+    hook_radius_inner = 0.35
+    hook = ddd.sphere(r=hook_radius, name="Hook")
+    hook = hook.scale([0.2, 1.0, 1.0])
+
+    hole = ddd.point().buffer(hook_radius_inner, resolution=3, cap_style=ddd.CAP_ROUND).extrude(4.0).translate([0, 0, -2])
+    hole = hole.rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CW)
+    hook = hook.subtract(hole)
+    hook = hook.material(ddd.mats.steel)
+    #hook = ddd.uv.map_cubic(hook)
+    hook = hook.translate(dragcable_endpoint)
+
 
     item = ddd.group3([piers, base, column, platform,
                        block, cabin,
-                       mainsupport, maincable1,
-                       secsupport], name="Crane Vertical")
+                       mainsupport, maincable1, maincable2,
+                       secsupport, seccable1,
+                       dragcable, pulley_block, hook], name="Crane Vertical")
     return item
 
 

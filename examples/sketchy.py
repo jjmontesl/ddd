@@ -1,6 +1,6 @@
 # Jose Juan Montes 2019-2020
 
-from ddd.pack.sketchy import urban, landscape
+from ddd.pack.sketchy import urban, landscape, industrial
 from ddd.ddd import ddd
 import math
 
@@ -50,13 +50,46 @@ items.append(item)
 # Road signs
 item = urban.traffic_sign('stop')
 items.append(item)
-item.show()
-
+#item.show()
 item = urban.traffic_sign('give_way')
 items.append(item)
-item.show()
+#item.show()
+item = urban.traffic_sign('es:s13')
+items.append(item)
+#item.show()
+item = urban.traffic_sign('es:p1')
+items.append(item)
+item = urban.traffic_sign('es:r101')
+items.append(item)
+item = urban.traffic_sign('es:r1')
+items.append(item)
+item = urban.traffic_sign('es:r2')
+items.append(item)
+item = urban.traffic_sign('es:r3')
+items.append(item)
+item = urban.traffic_sign('es:r6')
+items.append(item)
+item = urban.traffic_sign('es:r402')
+items.append(item)
+item = urban.traffic_sign('es:r500')
+items.append(item)
+item = urban.traffic_sign('es:r504')
+items.append(item)
+#item = urban.traffic_sign('es:r505-b')
+#items.append(item)
+item = urban.traffic_sign('es:r505')
+items.append(item)
+item = urban.traffic_sign('es:r506')
+items.append(item)
+
+
+
+
+#item.show()
 
 
 items = ddd.align.grid(items)
 items.append(ddd.helper.all())
 items.show()
+items.save("/tmp/test.glb")
+

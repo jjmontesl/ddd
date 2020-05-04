@@ -23,8 +23,12 @@ class DefaultMaterials(MaterialsCollection):
         self.pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
         self.pathwalk = ddd.material(name="WayPedestrian", color='#78281e')
 
+        # Ways/roads special
         self.roadline = ddd.material(name="Roadline", color='#e8e8e8', extra={'ddd:collider': False, 'ddd:shadows': False})
         self.railway = ddd.material(name="RoadRailway", color="#47443e")
+        self.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
+                                          texture_path="../data/materials/traffic_signs/traffic_signs_es_0.png",
+                                          atlas_path="../data/materials/traffic_signs/traffic_signs_es_0.plist")
 
         # Areas
         self.sea = ddd.material(name="Water4Advanced", color='#3d43b5', extra={'ddd:collider': False, 'ddd:shadows': False, 'ddd:transparent': True})
@@ -51,6 +55,8 @@ class DefaultMaterials(MaterialsCollection):
         self.metal_paint_red = ddd.material("PaintRed", color='#d01010')
         self.metal_paint_green = ddd.material("PaintGreen", color='#265e13')
         self.metal_paint_yellow = ddd.material("PaintYellow", color='#ebe015')
+        self.metal_paint_blue = ddd.material("PaintBlue", color='#184794')
+        self.metal_paint_white = ddd.material("PaintWhite", color='#f8fbff')
         self.metal_paint_black = ddd.material("PaintYellow", color='#000a17')
 
         # Lights

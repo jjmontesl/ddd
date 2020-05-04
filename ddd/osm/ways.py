@@ -134,6 +134,16 @@ class WaysOSMBuilder():
             for c in list(way.geom.coords):
                 vertex_cache[c].append(way)
 
+        # Assign item nodes
+        # TODO: this shall better come from osm node-names/relations directly, but supporting geojson is also nice
+        for item in self.osm.items_1d.children:
+            if item.geom.coords[0] in vertex_cache:
+                #logger.debug("Associating item to ways: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
+                item.extra['osm:item:way'] = vertex_cache[item.geom.coords[0]][0]
+                item.extra['osm:item:ways'] = vertex_cache[item.geom.coords[0]]
+                #if len(vertex_cache[item.geom.coords[0]]):
+                #    raise NotImplementedError()
+
         split = True
         while split:
             split = False
@@ -279,7 +289,7 @@ class WaysOSMBuilder():
         extra_height = 0.0
         lanes = None
         lamps = False
-        trafficlights = False
+        traffic_signals = False
         roadlines = False
 
         layer = None
@@ -334,13 +344,13 @@ class WaysOSMBuilder():
             lanes = 2 if path.extra.get('oneway', False) else 3
             lane_width = 3.4
             lamps = True
-            trafficlights = True
+            traffic_signals = True
             roadlines = True
         elif path.extra.get('osm:highway', None) in ("tertiary", "road"):
             lanes = 2
             lane_width = 3.4
             lamps = True  # shall be only in city?
-            trafficlights = True
+            traffic_signals = True
             roadlines = True
         elif path.extra.get('osm:highway', None) == "service":
             lanes = 1
@@ -351,7 +361,7 @@ class WaysOSMBuilder():
             # extra_height = 0.1
             lanes = 2
             lamps = True  # shall be only in city?
-            trafficlights = False
+            traffic_signals = False
             roadlines = True
         elif path.extra.get('osm:highway', None) in ("footway",):
             lanes = 0
@@ -528,7 +538,6 @@ class WaysOSMBuilder():
         '''
         path.extra['ddd:layer'] = layer if layer is not None else path.extra['osm:layer']
         path.extra['ddd:extra_height'] = extra_height
-        path.extra['ddd:trafficlights'] = trafficlights  # It's an augmenting property over osm, but applied to a road... where to put?
         path.extra['ddd:width'] = width
         path.extra['ddd:height'] = extra_height
         path.extra['ddd:way:width'] = width
@@ -536,7 +545,8 @@ class WaysOSMBuilder():
         path.extra['ddd:way:lane_width'] = lane_width
         path.extra['ddd:way:lane_width_left'] = lane_width_left
         path.extra['ddd:way:lane_width_right'] = lane_width_right
-        path.extra['ddd:way:lamps'] = lamps
+        path.extra['ddd:way:augment_lamps'] = lamps  # Add via augmenting as well, adding metadata for this shall be avoided
+        path.extra['ddd:way:augment_traffic_signals'] = traffic_signals  # It's an augmenting property over osm, but applied to a road... where to put?
         path.extra['ddd:way:weight'] = self.road_weight(path)
         path.extra['ddd:way:oneway'] = path.extra.get('osm:oneway', None)
         path.extra['ddd:way:roadlines'] = roadlines  # should be ddd:road:roadlines ?
@@ -1046,9 +1056,9 @@ class WaysOSMBuilder():
                         elif len(join_way_splits) > 2 and join_way_splits[2].intersects(intersection_shape.geom):
                             join_way_split = join_way_splits[1]
                         else:
-                            logger.error("Coud not find split side for intersection extension: %s", join_way)
+                            logger.error("Could not find split side for intersection extension: %s", join_way)
                         #else:
-                        #    logger.error("Coud not find split side for intersection extension (no splits): %s", join_way)
+                        #    logger.error("Could not find split side for intersection extension (no splits): %s", join_way)
                         #    #raise AssertionError()
                     '''
                     if join_way_splits[0].overlaps(intersection_shape.buffer(-0.05).geom):
@@ -1058,7 +1068,7 @@ class WaysOSMBuilder():
                     elif len(join_way_splits) > 2 and join_way_splits[2].overlaps(intersection_shape.buffer(-0.05).geom):
                         join_way_split = join_way_splits[1]
                     else:
-                        logger.error("Coud not find split side for intersection extension: %s", join_way)
+                        logger.error("Could not find split side for intersection extension: %s", join_way)
                         #raise AssertionError()
 
                     if join_way_split:
@@ -1102,8 +1112,8 @@ class WaysOSMBuilder():
 
                 intersection_2d.extra['ddd:connections'] = []
                 if len(intersection) > 3 or len(intersection) == len(highest_ways):  # 2
-                    intersection_2d.extra['ddd:way:lamps'] = False
-                    intersection_2d.extra['ddd:trafficlights'] = False
+                    intersection_2d.extra['ddd:way:augment_lamps'] = False
+                    intersection_2d.extra['ddd:way:augment_traffic_signals'] = False
                     intersection_2d.extra['ddd:way:roadlines'] = False
 
                 intersection_2d.geom = intersection_shape.geom  # ddd.shape(intersection_shape, name="Intersection")
@@ -1742,7 +1752,7 @@ class WaysOSMBuilder():
                 self.osm.roadlines_3d.children.append(line_3d)
 
         # Check if to generate lamps
-        if path.extra['ddd:way:lamps'] and path.extra['ddd:layer'] == "0":
+        if path.extra['ddd:way:augment_lamps'] and path.extra['ddd:layer'] == "0":
 
             # Generate lamp posts
             interval = 25.0
@@ -1789,7 +1799,7 @@ class WaysOSMBuilder():
                         # Check type of area point is on
 
                         item.extra['way_2d'] = way_2d
-                        item.extra['ddd_osm'] = 'way_lamppost'
+                        item.extra['osm:highway'] = 'street_lamp'
                         self.osm.items_1d.children.append(item)
 
         '''
@@ -1830,8 +1840,8 @@ class WaysOSMBuilder():
                 self.osm.items_1d.children.append(item)
         '''
 
-        # Generate trafficlights
-        if path.geom.length > 45.0 and path.extra['ddd:trafficlights'] and path.extra['ddd:layer'] == "0":
+        # Generate traffic lights
+        if False and path.geom.length > 45.0 and path.extra['ddd:way:augment_traffic_signals'] and path.extra['ddd:layer'] == "0":
 
             for end in (1, -1):
 
@@ -1861,13 +1871,13 @@ class WaysOSMBuilder():
                 # area = self.osm.areas_2d.intersect(item)
                 # Check type of area point is on
                 item.extra['way_2d'] = way_2d
-                item.extra['ddd_osm'] = 'way_trafficlights'
+                item.extra['osm:highway'] = 'traffic_signals'
                 item.extra['ddd:angle'] = angle
                 self.osm.items_1d.children.append(item)
 
 
         # Generate traffic signs
-        if path.geom.length > 20.0 and path.extra['ddd:trafficlights'] and path.extra['ddd:layer'] == "0":
+        if False and path.geom.length > 20.0 and path.extra['ddd:way:augment_traffic_signals'] and path.extra['ddd:layer'] == "0":
 
             # End right
             p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 11.5 - random.uniform(0.0, 10.0))
@@ -1891,6 +1901,7 @@ class WaysOSMBuilder():
                 # Check type of area point is on
                 item.extra['way_2d'] = way_2d
                 item.extra['ddd:angle'] = angle
-                item.extra['traffic_sign'] = random.choice(['give_way', 'stop'])
+                item.extra['osm:traffic_sign'] = random.choice(['es:r1', 'es:r2', 'es:p1', 'es:r101', 'es:r301-50', 'es:r303', 'es:r305',
+                                                                'es:r308', 'es:r400c', 'es:r500', 'es:s13'])
                 self.osm.items_1d.children.append(item)
 

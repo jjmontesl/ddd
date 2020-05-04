@@ -127,12 +127,11 @@ class ItemsOSMBuilder():
         elif item_2d.extra.get('osm:barrier', None) == 'hedge':
             item_3d = self.generate_item_3d_hedge(item_2d)
 
-        elif item_2d.extra.get('ddd_osm', None) == 'way_lamppost':
-            item_3d = self.generate_item_3d_lamppost(item_2d)
-        elif item_2d.extra.get('ddd_osm', None) == 'way_trafficlights':
-            item_3d = self.generate_item_3d_trafficlights(item_2d)
-
-        elif item_2d.extra.get('traffic_sign', None) is not None:
+        elif item_2d.extra.get('osm:highway', None) == 'street_lamp':
+            item_3d = self.generate_item_3d_street_lamp(item_2d)
+        elif item_2d.extra.get('osm:highway', None) == 'traffic_signals':
+            item_3d = self.generate_item_3d_traffic_signals(item_2d)
+        elif item_2d.extra.get('osm:traffic_sign', None) is not None or any([k.startswith('osm:traffic_sign:') for k in item_2d.extra.keys()]):
             item_3d = self.generate_item_3d_traffic_sign(item_2d)
 
         else:
@@ -380,7 +379,7 @@ class ItemsOSMBuilder():
         return item_3d
     '''
 
-    def generate_item_3d_lamppost(self, item_2d):
+    def generate_item_3d_street_lamp(self, item_2d):
 
         coords = item_2d.geom.coords[0]
 
@@ -402,7 +401,7 @@ class ItemsOSMBuilder():
 
         return item_3d
 
-    def generate_item_3d_trafficlights(self, item_2d):
+    def generate_item_3d_traffic_signals(self, item_2d):
 
         key = "trafficlights-default-1"
         item_3d = self.osm.catalog.instance(key)
@@ -410,26 +409,55 @@ class ItemsOSMBuilder():
             item_3d = urban.trafficlights()
             item_3d = self.osm.catalog.add(key, item_3d)
 
+        osm_way = item_2d.extra.get('osm:item:way', None)
+        osm_ways = item_2d.extra.get('osm:item:ways', None)
+        if osm_way:
+            item_2d = self.osm.osmops.position_along_way(item_2d, osm_way)
+            if len(osm_ways) > 1:
+                logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
         coords = item_2d.geom.coords[0]
+        print(item_2d.extra)
+
+        if 'osm:angle' in item_2d.extra: item_2d.extra['ddd:angle'] = item_2d.extra['osm_angle'] * (math.pi / 180)
+        #if item_2d.extra.get('ddd:angle', None) is None: item_2d.extra['ddd:angle'] = 0
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
+
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_min_elevation_apply'
         return item_3d
 
     def generate_item_3d_traffic_sign(self, item_2d):
 
-        coords = item_2d.geom.coords[0]
-        signtype = item_2d.extra['traffic_sign']
+        # TODO: Do this in preprocessing (different OSM conventions, also make lowercase)
+        for k, v in item_2d.extra.items():
+            if k.startswith('osm:traffic_sign:'):
+                item_2d.extra['osm:traffic_sign'] = v
+                item_2d.extra['osm:direction'] = k[len('osm:traffic_sign:'):]
+                break
+
+        signtype = item_2d.extra['osm:traffic_sign'].lower()
 
         key = "traffic_sign-%s-1" % (signtype)
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
             item_3d = urban.traffic_sign(signtype)
+            if not item_3d:
+                logger.warn("Could not generate traffic sign: %s", item_2d)
+                return None
             item_3d = self.osm.catalog.add(key, item_3d)
 
+        osm_way = item_2d.extra.get('osm:item:way', None)
+        osm_ways = item_2d.extra.get('osm:item:ways', None)
+        if osm_way:
+            item_2d = self.osm.osmops.position_along_way(item_2d, osm_way)
+            if len(osm_ways) > 1:
+                logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
+        coords = item_2d.geom.coords[0]
+        print(item_2d.extra)
+
         item_3d.prop_set('ddd:static', False, children=False)  # TODO: Make static or not via styling
-        item_3d.extra['yc:layer'] = 'DynamicObjects'  # TODO: Assign layers via styling
-        item_3d = item_3d.rotate([0, 0, item_2d.extra.get('ddd:angle', 0) - math.pi / 2])
+        item_3d.extra['ddd:layer'] = 'DynamicObjects'  # TODO: Assign layers via styling
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
         return item_3d

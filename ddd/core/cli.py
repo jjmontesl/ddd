@@ -27,6 +27,7 @@ class D1D2D3Bootstrap():
         {"catalog-show": ("ddd.catalog.commands.show", "Show catalog"),
         "catalog-export": ("ddd.catalog.commands.export", "Export catalog to file"),
         "catalog-clear": ("ddd.catalog.commands.clear", "Clear catalog"),
+        "texture-pack": ("ddd.materials.commands.texturepack", "Pack textures into texture atlases."),
         "osm-build": ("ddd.osm.commands.build.OSMBuildCommand", "Build a scene or tile using the OSM Builder"),
         "osm-query": ("ddd.osm.commands.query", None),
         "run": ("ddd.core.commands.run", "Runs a user-given script (default)"),  # default
