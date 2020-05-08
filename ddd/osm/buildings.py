@@ -26,155 +26,97 @@ class BuildingOSMBuilder():
 
     def generate_buildings_2d(self):
 
+        logger.info("Preprocessing buildings and bulding parts (2D)")
+
+        # Assign each building part to a building, or transform it into a building if needed
+        for feature in list(self.osm.features_2d.children):
+            if feature.geom.type == 'Point': continue
+            if feature.extra.get('osm:building:part', None) is None: continue
+
+            # Find building
+            buildings = self.osm.features_2d.select(lambda o: o.extra.get('osm:building', None) and o.contains(feature))
+            if len(buildings.children) == 0:
+                logger.warn("Building part with no building: %s", feature)
+                building = feature.copy()
+                building.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')
+                building.extra['ddd:building:parts'] = [feature]
+                self.osm.features_2d.append(building)
+                feature.extra['ddd:building:feature'] = building
+
+            elif len(buildings.children) > 1:
+                logger.warn("Building part with multiple buildings: %s -> %s", feature, buildings.children)
+
+            else:
+                logger.debug("Associating building part to building: %s -> %s", feature, buildings.children[0])
+                feature.extra['ddd:building:feature'] = buildings.children[0]
+                if 'ddd:building:parts' not in buildings.children[0].extra:
+                    buildings.children[0].extra['ddd:building:parts'] = []
+                buildings.children[0].extra['ddd:building:parts'].append(feature)
+
+
         logger.info("Generating buildings (2D)")
 
-        buildings = []
-        for feature in self.osm.features:
-            building = feature['properties'].get('building', None)
-            if building is None: continue
-            if feature['geometry']['type'] == 'Point': continue
-            building_2d = self.generate_building_2d(feature)
+        for feature in self.osm.features_2d.children:
+            if feature.geom.type == 'Point': continue
+
+            building_2d = None
+
+            if feature.extra.get('osm:building', None) is not None:
+                building_2d = self.generate_building_2d(feature)
+            #if feature.extra.get('osm:building:part', None) is not None:
+            #    building_2d = self.generate_building_2d(feature)
 
             if building_2d:
                 self.osm.buildings_2d.append(building_2d)
 
-    def generate_building_2d(self, feature):
-        building_2d = ddd.shape(feature["geometry"], name="Building (%s)" % (feature['properties'].get("name", None)))
+        #self.osm.buildings_2d.show()
 
+    def generate_building_2d(self, feature):
+        building_2d = feature.copy(name="Building (%s)" % (feature.extra.get("name", None)))
+
+        '''
         try:
             building_2d.validate()
         except DDDException as e:
             logger.warn("Invalid geometry for building: %s", e)
             return None
+        '''
 
-        building_2d.extra['osm:feature'] = feature
-        building_2d.extra['building'] = feature['properties'].get('building', None)
-        building_2d.extra['amenities'] = []
+        building_2d.extra['ddd:building:items'] = []
+        if 'ddd:building:parts' not in building_2d.extra:
+            building_2d.extra['ddd:building:parts'] = []
 
         # Generate info: segment_facing_way + sidewalk, pricipal facade, secondary (if any) facades, portal entry...
 
         # Augment building (roof type, facade type, portals ?)
 
-        if building_2d.extra['building'] == 'church':
-            building_2d = self.generate_building_2d_church(building_2d)
 
         return building_2d
-
-    def generate_building_2d_church(self, building_2d):
-
-        # Add cross to principal and secondary facades if all building is church
-
-        return building_2d
-
-    def generate_buildings_3d(self):
-        logger.info("Generating 3D buildings (%d)", len(self.osm.buildings_2d.children))
-
-        buildings = []
-        for building_2d in self.osm.buildings_2d.children:
-
-            if building_2d.extra['building'] == 'church':
-                building_3d = self.generate_building_3d_church(building_2d)
-            else:
-                building_3d = self.generate_building_3d_basic(building_2d)
-
-            if building_3d:
-                self.osm.buildings_3d.append(building_3d)
-
-    def generate_building_3d_basic(self, building_2d):
-
-        feature = building_2d.extra['osm:feature']
-
-        floors = feature.properties.get('building:levels', None)
-        if not floors:
-            floors = random.randint(2, 8)
-        floors = int(floors)
-
-        if floors == 0:
-            logger.error("Building with 0 floors (setting to 1): %s", floors)
-            floors = 1
-
-        building_3d = None
-        try:
-
-            # Generate building procedurally (use library)
-            building_3d = building_2d.extrude(floors * 3.00)
-            building_3d = building_3d.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3]))
-            if random.uniform(0, 1) < 0.2:
-                base = building_2d.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
-                base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.roof_tiles]))
-                building_3d.children.append(base)
-            if random.uniform(0, 1) < 0.4:
-                roof = None
-                roof_type = random.choice([1, 2, 3])
-                roof_buffer = random.uniform(0.5, 1.5) if random.uniform(0, 1) < 0.5 else 0.0
-                if roof_type == 1:
-                    # Flat
-                    roof = building_2d.buffer(roof_buffer, cap_style=2, join_style=2).extrude(0.75).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
-                elif roof_type == 2:
-                    # Pointy
-                    height = floors * 0.2 + random.uniform(2.0, 5.0)
-                    try:
-                        roof = building_2d.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(building_2d.buffer(-10), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
-                    except DDDException as e:
-                        logger.debug("Could not generate roof: %s", e)
-                elif roof_type == 3:
-                    # Attic
-                    height = random.uniform(3.0, 4.0)
-                    try:
-                        roof = building_2d.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(building_2d.buffer(-2), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
-                    except DDDException as e:
-                        logger.debug("Could not generate roof: %s", e)
-
-                if roof: building_3d.children.append(roof)
-
-        except ValueError as e:
-            logger.warning("Cannot generate building: %s (geom: %s)" % (e, building_2d.geom))
-            return None
-
-        # UV Mapping
-        building_3d = ddd.uv.map_cubic(building_3d)
-
-        building_3d.extra['building_2d'] = building_2d
-        building_3d = terrain.terrain_geotiff_min_elevation_apply(building_3d, self.osm.ddd_proj)
-        building_3d = building_3d.translate([0, 0, -0.20])  # temporary hack floor snapping
-
-        self.generate_building_3d_amenities(building_3d)
-
-        return building_3d
-
-    def generate_building_3d_church(self, building_2d):
-
-        building_3d = self.generate_building_3d_basic(building_2d)
-        return building_3d
 
     def link_features_2d(self):
 
         logger.info("Linking features to buildings.")
+        logger.warn("SHOULD LINK FEATURES TO BUILDING PARTS.")
 
-        for feature in self.osm.features:
-            if feature['geometry']['type'] != "Point": continue
+        for feature in self.osm.features_2d.children:
+            if feature.geom.type != "Point": continue
             # Find closest building
-            point = ddd.shape(feature['geometry'], name="Point: %s" % (feature['properties'].get('name', None)))
-            point.extra['osm:feature'] = feature
-            point.extra['amenity'] = feature['properties'].get('amenity', None)
-            point.extra['shop'] = feature['properties'].get('shop', None)
-            point.extra['name'] = feature['properties'].get('name', None)
-
+            point = feature.copy(name="Point: %s" % (feature.extra.get('name', None)))
             building, distance = self.closest_building(point)
             if not building:
                 continue
 
             point.extra['osm:building'] = building
 
-            if point.extra['amenity'] or point.extra['shop']:
+            if point.extra.get('osm:amenity', None) or point.extra.get('osm:shop', None):
                 #logger.debug("Point: %s  Building: %s  Distance: %s", point, building, distance)
 
                 # TODO: Do the opposite, create items we are interested in
-                if point.extra['amenity'] in ('waste_disposal', 'waste_basket',
-                                              'recycling', 'bicycle_parking'):
+                if point.extra.get('osm:amenity', None) in ('waste_disposal', 'waste_basket',
+                                                            'recycling', 'bicycle_parking'):
                     continue
 
-                building.extra['amenities'].append(point)
+                building.extra['ddd:building:items'].append(point)
                 #logger.debug("Amenity: %s" % point)
 
     def closest_building(self, point):
@@ -187,10 +129,98 @@ class BuildingOSMBuilder():
                 closest_distance = distance
         return closest_building, closest_distance
 
+    def generate_buildings_3d(self):
+        logger.info("Generating 3D buildings (%d)", len(self.osm.buildings_2d.children))
+
+        for building_2d in self.osm.buildings_2d.children:
+            building_3d = self.generate_building_3d_generic(building_2d)
+            if building_3d:
+                self.osm.buildings_3d.append(building_3d)
+
+    def generate_building_3d_generic(self, building_2d):
+        """
+        Buildings 2D may contain references to building parts.
+        """
+
+        floors = building_2d.extra.get('osm:building:levels', None)
+        if not floors:
+            floors = random.randint(2, 8)
+        floors = int(floors)
+        base_floors = floors
+
+        material = random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3])
+
+        entire_building_2d = ddd.group2()
+        entire_building_3d = building_2d.copy3(name="Building: %s" % (building_2d.name))
+
+        for part in (building_2d.extra['ddd:building:parts'] + [building_2d]):
+
+            building_3d = None
+            try:
+
+                floors = int(part.extra.get('osm:building:levels', base_floors))
+                if floors == 0:
+                    logger.warn("Building with 0 floors (setting to 1): %s", floors)
+                    floors = 1
+
+                # Remove building so far
+                part = part.subtract(entire_building_2d)
+                if part.geom.is_empty:
+                    continue
+
+                # Generate building procedurally (use library)
+                building_3d = part.extrude(floors * 3.00)
+                building_3d = building_3d.material(material)
+                if random.uniform(0, 1) < 0.2:
+                    base = part.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
+                    base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.roof_tiles]))
+                    building_3d.children.append(base)
+                if random.uniform(0, 1) < 0.4:
+                    roof = None
+                    roof_type = random.choice([1, 2, 3])
+                    roof_buffer = random.uniform(0.5, 1.5) if random.uniform(0, 1) < 0.5 else 0.0
+                    if roof_type == 1:
+                        # Flat
+                        roof = part.buffer(roof_buffer, cap_style=2, join_style=2).extrude(0.75).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
+                    elif roof_type == 2:
+                        # Pointy
+                        height = floors * 0.2 + random.uniform(2.0, 5.0)
+                        try:
+                            roof = part.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(part.buffer(-10), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
+                        except DDDException as e:
+                            logger.debug("Could not generate roof: %s", e)
+                    elif roof_type == 3:
+                        # Attic
+                        height = random.uniform(3.0, 4.0)
+                        try:
+                            roof = part.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(part.buffer(-2), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
+                        except DDDException as e:
+                            logger.debug("Could not generate roof: %s", e)
+
+                    if roof: building_3d.children.append(roof)
+
+            except ValueError as e:
+                logger.warning("Cannot generate building: %s (geom: %s)" % (e, part.geom))
+                return None
+
+            # UV Mapping
+            building_3d = ddd.uv.map_cubic(building_3d)
+
+            entire_building_2d.append(part)
+            entire_building_3d.append(building_3d)
+
+        entire_building_3d = terrain.terrain_geotiff_min_elevation_apply(entire_building_3d, self.osm.ddd_proj)
+        entire_building_3d = entire_building_3d.translate([0, 0, -0.20])  # temporary hack floor snapping
+        entire_building_3d.extra['building_2d'] = building_2d
+
+        self.generate_building_3d_amenities(entire_building_3d)
+
+        return entire_building_3d
+
     def snap_to_building(self, item_3d, building_3d):
 
         # Find building segment to snap
-        amenity = item_3d.extra['amenity']
+        item_1d = item_3d.extra.get('ddd:item', None)
         building_2d = building_3d.extra['building_2d']
 
         if building_2d.geom.type == "MultiPolygon":
@@ -198,7 +228,7 @@ class BuildingOSMBuilder():
             return None
 
         line = building_2d.geom.exterior
-        closest_distance_to_closest_point_in_exterior = line.project(amenity.geom.centroid)
+        closest_distance_to_closest_point_in_exterior = line.project(item_1d.geom.centroid)
         #closest_point, closest_segment = self.closest_building_2d_segment(amenity, building_2d)
         #closest_point = line.interpolate(closest_distance_to_closest_point_in_exterior)
         closest_point, segment_idx, segment_coords_a, segment_coords_b = DDDObject2(geom=line).interpolate_segment(closest_distance_to_closest_point_in_exterior)
@@ -223,9 +253,9 @@ class BuildingOSMBuilder():
 
     def generate_building_3d_amenities(self, building_3d):
 
-        for item_1d in building_3d.extra['amenities']:
+        for item_1d in building_3d.extra['ddd:building:items']:
 
-            if item_1d.extra['amenity'] == 'pharmacy':
+            if item_1d.extra.get('osm:amenity', None) == 'pharmacy':
 
                 coords = item_1d.geom.centroid.coords[0]
 
@@ -236,22 +266,22 @@ class BuildingOSMBuilder():
                 item = urban.sign_pharmacy(size=1.2)
                 item = item.translate([0, -0.25, 2.0])  # no post
                 '''
-                item.extra['amenity'] = item_1d
+                item.extra['ddd:item'] = item_1d
                 item = self.snap_to_building(item, building_3d)
                 item = item.translate([0, 0, 3.0])  # no post
                 item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
                 building_3d.children.append(item)
 
-            elif item_1d.extra['amenity'] and item_1d.extra['amenity'] not in ('fountain', 'taxi', 'post_box', 'bench', 'toilets', 'parking_entrance'):
+            elif item_1d.extra.get('osm:amenity', None) and item_1d.extra.get('osm:amenity', None) not in ('fountain', 'taxi', 'post_box', 'bench', 'toilets', 'parking_entrance'):
                 # Except parking?
 
                 #coords = amenity.geom.centroid.coords[0]
                 #panel_text = amenity.extra['amenity'] if amenity.extra['amenity'] else None
-                panel_text = item_1d.extra['name'] if item_1d.extra['name'] else (item_1d.extra['amenity'].upper() if item_1d.extra['amenity'] else None)
+                panel_text = item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else (item_1d.extra['osm:amenity'].upper() if item_1d.extra['osm:amenity'] else None)
                 item = urban.panel(width=3.2, height=0.9, text=panel_text)
-                item.extra['amenity'] = item_1d
+                item.extra['ddd:item'] = item_1d
                 item.extra['text'] = panel_text
-                item.name = "Panel: %s %s" % (item_1d.extra['amenity'], item_1d.extra['name'])
+                item.name = "Panel: %s %s" % (item_1d.extra['osm:amenity'], item_1d.extra.get('osm:name', None))
                 item = self.snap_to_building(item, building_3d)
                 if item:
                     item = item.translate([0, 0, 3.2])  # no post
@@ -262,13 +292,13 @@ class BuildingOSMBuilder():
                     logger.info("Could not snap item to building (skipping item): %s", item)
                 #building_3d.show()
 
-            elif item_1d.extra['shop']:
+            elif item_1d.extra.get('osm:shop', None):
                 #coords = item_1d.geom.centroid.coords[0]
-                panel_text = ((item_1d.extra['name']) if item_1d.extra['name'] else item_1d.extra['shop'])
+                panel_text = ((item_1d.extra['osm:name']) if item_1d.extra.get('osm:name', None) else item_1d.extra['shop'])
                 item = urban.panel(width=2.5, height=0.8, text=panel_text)
-                item.extra['amenity'] = item_1d
+                item.extra['ddd:item'] = item_1d
                 item.extra['text'] = panel_text
-                item.name = "Panel: %s %s" % (item_1d.extra['shop'], item_1d.extra['name'])
+                item.name = "Panel: %s %s" % (item_1d.extra['osm:shop'], item_1d.extra.get('osm:name', None))
                 item = self.snap_to_building(item, building_3d)
                 if item:
                     item = item.translate([0, 0, 2.8])  # no post
@@ -280,7 +310,7 @@ class BuildingOSMBuilder():
                     logger.info("Could not snap item to building (skipping item): %s", item)
 
             else:
-                logger.debug("Unknown building-related item (%s): %s", item_1d.extra['amenity'], item_1d)
+                logger.debug("Unknown building-related item (%s): %s", item_1d)
 
 
 

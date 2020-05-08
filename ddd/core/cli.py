@@ -85,6 +85,7 @@ class D1D2D3Bootstrap():
         parser.add_argument("--export-meshes", action="store_true", default=False, help="export instance meshes")
         parser.add_argument("--export-markers", action="store_true", default=False, help="export instance markers (default)")
         parser.add_argument("--export-normals", action="store_true", default=False, help="export normals")
+        parser.add_argument("--export-textures", action="store_true", default=False, help="export textures")
 
         parser.add_argument("command", help="script or command to run", nargs="?")
 
@@ -132,6 +133,7 @@ class D1D2D3Bootstrap():
             D1D2D3Bootstrap.export_marker = True
 
         D1D2D3Bootstrap.export_normals = args.export_normals
+        D1D2D3Bootstrap.export_textures = args.export_textures
 
         if self.command in self.commands:
             self.command = self.commands[self.command][0]

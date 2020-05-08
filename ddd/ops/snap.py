@@ -31,8 +31,7 @@ class DDDSnap():
                 exterior = -1
 
         if penetrate:
-
-            coords_p = [coords_p[0] + dirvec[0] * penetrate, coords_p[1] + dirvec[1] * penetrate * exterior]
+            coords_p = [coords_p[0] + dirvec[0] * penetrate * exterior, coords_p[1] + dirvec[1] * penetrate * exterior]
 
         result = point.copy()
         result.geom.coords = coords_p

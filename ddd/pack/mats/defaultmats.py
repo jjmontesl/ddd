@@ -35,8 +35,10 @@ class DefaultMaterials(MaterialsCollection):
         self.water = ddd.material(name="WaterBasicDaytime", color='#4d53c5', extra={'ddd:collider': False, 'ddd:shadows': False, 'ddd:transparent': True})
 
         self.terrain = ddd.material(name="Ground", color='#e6821e')
-
         self.park = ddd.material(name="Park", color='#1db345')
+
+        self.grass = ddd.material(name="VolumetricGrass", color='#2dd355', extra={'ddd:export-as-marker': True})
+
         self.pitch = ddd.material(name="Pitch", color='#196118')
         self.pitch_blue = ddd.material(name="Pitch Blue", color='#2a69b0')  # Eg. cycleways
 
@@ -76,7 +78,7 @@ class DefaultMaterials(MaterialsCollection):
 
         self.lightbulb = ddd.material(color='e8e0e4')
         self.cable_metal = ddd.material(name="CableMetal", color='#28282e')
-        self.rope = ddd.material(name="Rope", color='#28282e')
+        self.rope = ddd.material(name="Rope", color='#c7b01c')
 
         # Buildings
         self.building_1 = ddd.material(color='#f7f0be')

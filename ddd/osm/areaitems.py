@@ -44,33 +44,61 @@ class AreaItemsOSMBuilder():
         logger.info("Generating 2D area items (fountains, playgrounds...)")
 
 
-        for feature in self.osm.features:
+        for feature in self.osm.features_2d.children:
 
-            if feature['geometry']['type'] == 'Point': continue
+            if feature.geom.type == 'Point': continue
 
             area = None
-            amenity = feature['properties'].get('amenity', None)
-            water = feature['properties'].get('water', None)
 
-            if amenity in ('fountain', ):
+            if feature.extra.get('osm:amenity', None) in ('fountain', ):
                 area = self.generate_item_2d_fountain(feature)
-            if water in ('pond', ):
+            elif feature.extra.get('osm:water', None) in ('pond', ):
                 area = self.generate_item_2d_pond(feature)
 
+            elif feature.extra.get('osm:leisure', None) == 'outdoor_seating':
+                area = self.generate_item_2d_outdoor_seating(feature)
+
             if area:
-                area.extra['amenity'] = amenity
-                area.extra['water'] = water
                 #union = union.union(area)
                 self.osm.items_2d.children.append(area)
                 logger.debug("Area Object: %s", area)
 
     def generate_item_2d_fountain(self, feature):
-        area = ddd.shape(feature["geometry"], name="Area Fountain: %s" % feature['properties'].get('name', None))
+        area = feature.copy(name="Area Fountain: %s" % feature.extra.get('name', None))
         return area
 
     def generate_item_2d_pond(self, feature):
-        area = ddd.shape(feature["geometry"], name="Pond: %s" % feature['properties'].get('name', None))
+        area = feature.copy(name="Pond: %s" % feature.extra.get('name', None))
         return area
+
+    def generate_item_2d_outdoor_seating(self, feature):
+
+        # Distribute centers for seating (ideally, grid if shape is almost square, sampled if not)
+        # For now, using center:
+
+        center = feature.centroid()
+
+        table = center.copy(name="Outdoor seating table")
+        table.extra['osm:amenity'] = 'table'
+        table.extra['osm:seats'] = random.randint(0, 3)
+
+        umbrella = ddd.group2()
+        if random.uniform(0, 1) < 0.8:
+            umbrella = center.copy(name="Outdoor seating umbrella")
+            umbrella.extra['osmext:amenity'] = 'umbrella'
+
+        chairs = ddd.group2(name="Outdoor seating seats")
+        for i in range(table.extra['osm:seats']):
+            chair = ddd.point([0, random.uniform(0.7, 1.1)], name="Outdoor seating seat").rotate((2 * math.pi / table.extra['osm:seats']) * i + random.uniform(-0.1, 0.1)).translate(center.geom.coords[0])
+            chair.extra['osm:amenity'] = 'seat'
+            chairs.append(chair)
+
+        item = ddd.group2([table, umbrella, chairs], "Outdoor seating")
+
+        for i in item.flatten().children:
+            if i.geom: self.osm.items_1d.append(i)
+
+        return None
 
     def generate_items_3d(self):
         logger.info("Generating 3D area items")
@@ -88,9 +116,9 @@ class AreaItemsOSMBuilder():
 
     def generate_item_3d(self, item_2d):
         item_3d = None
-        if item_2d.extra.get('amenity', None) == 'fountain':
+        if item_2d.extra.get('osm:amenity', None) == 'fountain':
             item_3d = self.generate_item_3d_fountain(item_2d)
-        if item_2d.extra.get('water', None) == 'pond':
+        if item_2d.extra.get('osm:water', None) == 'pond':
             item_3d = self.generate_item_3d_pond(item_2d)
 
         return item_3d
@@ -100,7 +128,7 @@ class AreaItemsOSMBuilder():
         exterior = item_2d.subtract(item_2d.buffer(-0.3)).extrude(1.0).material(ddd.mats.stone)
         exterior = ddd.uv.map_cylindrical(exterior)
 
-        water =  item_2d.buffer(-0.3).extrude(.7).material(ddd.mats.water)
+        water =  item_2d.buffer(-0.15).triangulate().material(ddd.mats.water).translate([0, 0, .7])
 
         #coords = item_2d.geom.centroid.coords[0]
         #insidefountain = urban.fountain(r=item_2d.geom).translate([coords[0], coords[1], 0.0])
@@ -115,12 +143,12 @@ class AreaItemsOSMBuilder():
         exterior = item_2d.subtract(item_2d.buffer(-0.4)).extrude(0.4).material(ddd.mats.dirt)
         exterior = ddd.uv.map_cylindrical(exterior)
 
-        water = item_2d.buffer(-0.4).extrude(.25).material(ddd.mats.water)
+        water = item_2d.buffer(-0.2).triangulate().material(ddd.mats.water)
 
         #coords = item_2d.geom.centroid.coords[0]
         #insidefountain = urban.fountain(r=item_2d.geom).translate([coords[0], coords[1], 0.0])
 
-        item_3d = ddd.group([exterior, water]).translate([0, 0, 0.3])
+        item_3d = ddd.group([exterior, water])  # .translate([0, 0, 0.3])
 
         item_3d.name = 'Pond: %s' % item_2d.name
         return item_3d

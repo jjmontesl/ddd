@@ -1,5 +1,7 @@
 [0.4.4]
 
+  * Added initial support for building parts.
+  * Added tables and patio umbrellas.
   * Added texture and texture atlas support.
   * Added textured traffic signs.
   * Introduced command line script form OSM build (accepts center coordinates).

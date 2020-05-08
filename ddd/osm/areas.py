@@ -187,7 +187,7 @@ class AreasOSMBuilder():
         add_trees = not has_trees # and area.geom.area > 100
 
         if add_trees and area.geom:
-             # decimation would affect after
+            # Decimation would affect after
             num_trees = int((area.geom.area * tree_density_m2))
             if num_trees == 0 and random.uniform(0, 1) < 0.5: num_trees = 1
             num_trees = min(num_trees, 20)
@@ -622,7 +622,8 @@ class AreasOSMBuilder():
                     colors = ['#000000', '#222222', '#444444', '#666666', '#888888', '#aaaaaa', '#cccccc', '#eeeeee']
                     for i in range(8):
                         grass_layer = area_3d.copy(name="Grass %d: %s" % (i, area_3d.name))
-                        grass_layer = grass_layer.material(ddd.material(name="VolumetricGrass", color=colors[i]))
+                        grass_layer = grass_layer.material(ddd.material(name="VolumetricGrass", color=colors[i], extra={'ddd:export-as-marker': True}))
+                        #grass_layer.extra['ddd:vertex_colors'] =
                         grass_layer = grass_layer.translate([0, 0, 0.05 * i])
                         grass_layer = terrain.terrain_geotiff_elevation_apply(grass_layer, self.osm.ddd_proj)
                         grass_layer.extra['ddd:shadows'] = False

@@ -558,3 +558,76 @@ def trash_bin_post(height = 1.30):
     item = trash_bin_hung()
     item_post = post(height=height, side=item, mat_post=ddd.mats.steel)
     return item_post
+
+
+def patio_table(width=0.8, length=0.8, height=0.73):
+    table_thick = 0.05
+    tabletop = ddd.rect([0, 0, width, length], name="Table top").recenter().extrude(table_thick)
+    tabletop = ddd.uv.map_cubic(tabletop)
+    tabletop = tabletop.translate([0, 0, height-table_thick])
+
+    table = ddd.group3([tabletop], name="Table")
+
+    leg_thick = 0.05
+    leg_padding = 0.1
+    for c in [(1, 1), (-1, 1), (-1, -1), (1, -1)]:
+        leg = ddd.point([c[0] * (width / 2 - leg_padding), c[1] * (length / 2 - leg_padding)]).buffer(leg_thick / 2).extrude(height - table_thick)
+        leg = ddd.uv.map_cylindrical(leg)
+        table.append(leg)
+
+    table = table.material(ddd.mats.steel)
+    table = ddd.collision.aabox_from_aabb(table)
+    table.extra['ddd:mass'] = 5.0
+    return table
+
+def patio_chair(width=0.45, length=0.45, seat_height=0.40):
+    seat_thick = 0.05
+    seat = ddd.rect([0, 0, width, length], name="Chair seat").recenter().extrude(seat_thick)
+    seat = ddd.uv.map_cubic(seat)
+    seat = seat.translate([0, 0, seat_height - seat_thick])
+
+    stool = ddd.group3([seat], name="Chair stool")
+
+    leg_thick = 0.05
+    leg_padding = leg_thick
+    for c in [(1, 1), (-1, 1), (-1, -1), (1, -1)]:
+        leg = ddd.point([c[0] * (width / 2 - leg_padding), c[1] * (length / 2 - leg_padding)]).buffer(leg_thick / 2).extrude(seat_height - seat_thick)
+        leg = ddd.uv.map_cylindrical(leg)
+        stool.append(leg)
+
+    stool = stool.material(ddd.mats.steel)
+    stool = ddd.collision.aabox_from_aabb(stool)
+
+    back_height = 0.3
+    back = ddd.rect([width, seat_thick], name="Chair Back").recenter().extrude(back_height)
+    back = ddd.uv.map_cubic(back)
+    back = back.translate([0, length / 2 - seat_thick, seat_height])
+    back = ddd.collision.aabox_from_aabb(back)
+
+    chair = ddd.group3([stool, back], name="Chair")
+    chair.extra['ddd:mass'] = 2.5
+    return chair
+
+def patio_umbrella(side=2.5, height=2.5):
+    base_height = 0.04
+    base_side = 0.4
+    base_weight = ddd.rect([base_side, base_side], name="Base weight").recenter()
+    base_weight = base_weight.extrude(base_height).material(ddd.mats.metal_paint_white)
+    base_weight = ddd.uv.map_cubic(base_weight)
+
+    pole_r = 0.04
+    pole = ddd.point(name="Pole").buffer(pole_r).extrude(height - base_height).translate([0, 0, base_height])
+    pole = pole.material(ddd.mats.metal_paint_white)
+    pole = ddd.uv.map_cylindrical(pole)
+
+    umbrella_height = height - 1.8
+    umbrella = ddd.rect([side, side], name="Umbrella").recenter().material(ddd.mats.rope)
+    umbrella = umbrella.extrude_step(ddd.point(), umbrella_height, base=False, cap=False)
+    umbrella = umbrella.twosided().translate([0, 0, height - umbrella_height - 0.02])
+    umbrella = ddd.uv.map_cubic(umbrella)
+
+    item = ddd.group([base_weight, pole, umbrella])
+    return item
+
+
+

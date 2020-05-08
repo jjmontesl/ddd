@@ -246,6 +246,8 @@ class OSMBuilder():
 
         self.preprocess_features()
 
+        #self.features_2d.filter(lambda o: o.extra.get('osm:building:part', None) is not None).dump()
+
         # Generate items for point features
         self.items.generate_items_1d()
 

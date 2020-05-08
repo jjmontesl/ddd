@@ -6,6 +6,16 @@ import math
 
 items = ddd.group3()
 
+item = urban.patio_table()
+items.append(item)
+
+item = urban.patio_chair()
+items.append(item)
+item.show()
+
+item = urban.patio_umbrella()
+items.append(item)
+
 item = landscape.lighthouse()
 items.append(item)
 #item.show()

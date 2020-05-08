@@ -43,6 +43,9 @@ from ddd.ops import extrusion
 from ddd.ops.align import DDDAlign
 
 import numpy as np
+from trimesh.util import concatenate
+from shapely.ops import unary_union
+from geojson.feature import FeatureCollection
 
 
 # Get instance of logger for this module
@@ -133,6 +136,7 @@ class D1D2D3():
         """
 
         if bounds is None: bounds = [0, 0, 1, 1]
+        if len(bounds) == 2: bounds = [0, 0, bounds[0], bounds[1]]
         cmin, cmax = ((bounds[0], bounds[1]), (bounds[2], bounds[3]))
         geom = geometry.Polygon([(cmin[0], cmin[1], 0.0), (cmax[0], cmin[1], 0.0),
                                  (cmax[0], cmax[1], 0.0), (cmin[0], cmax[1], 0.0)])
@@ -180,6 +184,19 @@ class D1D2D3():
         return cube
 
     @staticmethod
+    def trimesh(mesh=None, name=None):
+        """
+        """
+        result = DDDObject3(name=name, mesh=mesh)
+        return result
+
+    @staticmethod
+    def mesh(mesh=None, name=None):
+        """
+        """
+        return D1D2D3.trimesh(mesh=mesh, name=name)
+
+    @staticmethod
     def marker(pos=None, name=None, extra=None):
         marker = D1D2D3.box(name=name)
         if pos: marker = marker.translate(pos)
@@ -197,7 +214,7 @@ class D1D2D3():
         return DDDObject3(*args, **kwargs)
 
     @staticmethod
-    def grid2(bounds, detail=1.0):
+    def grid2(bounds, detail=1.0, name=None):
         rects = []
         cmin, cmax = bounds[:2], bounds[2:]
         pointsx = list(np.linspace(cmin[0], cmax[0], 1 + int((cmax[0] - cmin[0]) / detail)))
@@ -212,11 +229,11 @@ class D1D2D3():
         #DDDObject2(geom=geom).show()
         #geom = geom.buffer(0.0)  # Sanitize, but this destroys the grid
         #DDDObject2(geom=geom).show()
-        return DDDObject2(geom=geom)
+        return DDDObject2(name=name, geom=geom)
 
     @staticmethod
-    def grid3(bounds2, detail=1.0):
-        grid2 = D1D2D3.grid2(bounds2, detail)
+    def grid3(bounds2, detail=1.0, name=None):
+        grid2 = D1D2D3.grid2(bounds2, detail, name=name)
         cmin, cmax = bounds2[:2], bounds2[2:]
         #grid2 = D1D2D3.rect(cmin, cmax)
         vertices = []
@@ -246,7 +263,7 @@ class D1D2D3():
         mesh = Trimesh(vertices, faces)
         #mesh.fix_normals()
         mesh.merge_vertices()
-        return DDDObject3(mesh=mesh)
+        return DDDObject3(name=name, mesh=mesh)
 
     @staticmethod
     def group2(children=None, name=None, empty=None):
@@ -337,7 +354,7 @@ class DDDMaterial():
         Materials are cached to avoid repeated materials and image loading (which may crash the app).
         """
         if self._trimesh_material_cached is None:
-            if self.texture:
+            if self.texture and D1D2D3Bootstrap.export_textures:
                 im = PIL.Image.open(self.texture)  #.convert("RGBA")
                 mat = SimpleMaterial(image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
             else:
@@ -395,7 +412,7 @@ class DDDObject():
         # TODO: Study if the system shall modify instances and let user handle cloning, this method would be unnecessary
         self.name = obj.name
         self.extra = obj.extra
-        self.material = obj.material
+        self.mat = obj.mat
         self.children = obj.children
         return self
 
@@ -531,6 +548,10 @@ class DDDObject2(DDDObject):
         obj = DDDObject2(name=name if name else self.name, children=[c.copy() for c in self.children], geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
         return obj
 
+    def copy3(self, name=None):
+        obj = DDDObject3(name=name if name else self.name, children=[], mesh=None, extra=dict(self.extra), material=self.mat)
+        return obj
+
     def replace(self, obj):
         """
         Replaces self data with data from other object. Serves to "replace"
@@ -608,7 +629,7 @@ class DDDObject2(DDDObject):
 
     def rotate(self, angle, origin=None):  # center (bb center), centroid, point
         """
-        Angle is in degrees
+        Angle is in radians.
         """
         if origin is None: origin = (0, 0)
         result = self.copy()
@@ -735,6 +756,17 @@ class DDDObject2(DDDObject):
 
         return result
 
+    def recurse_geom(self):
+
+        geoms = []
+        if self.geom:
+            geoms.append(self.geom)
+
+        for c in self.children:
+            geoms.extend(c.recurse_geom())
+
+        return geoms
+
     def union(self, other=None):
         """
         Returns a copy of this object to which geometry from other object has been unioned.
@@ -743,8 +775,16 @@ class DDDObject2(DDDObject):
         If the second object is None, all children of this are unioned.
         """
         result = self.copy()
-        result.children = []
 
+        '''
+        thisgeom = self.recurse_geom()
+        othergeom = [] if other is None else other.recurse_geom()
+        uniongeom = unary_union(MultiPolygon(thisgeom + othergeom))
+        result.geom = uniongeom
+        return result
+        '''
+
+        result.children = []
         objs = self.children
         while len(objs) > 1:
             newo = objs[0].union().union(objs[1].union())
@@ -1647,6 +1687,19 @@ class DDDObject3(DDDObject):
         return metadata
     '''
 
+    def twosided(self):
+        result = self.copy()
+
+        result.children = [c.twosided() for c in result.children]
+
+        if result.mesh:
+            inverted = self.mesh.copy()
+            inverted.invert()
+            #result.append(ddd.mesh(inverted))
+            result.mesh = concatenate(result.mesh, inverted)
+
+        return result
+
     def _recurse_scene(self, path_prefix, name_suffix, instance_mesh, instance_marker):
 
         scene = Scene()
@@ -1659,6 +1712,12 @@ class DDDObject3(DDDObject):
             #print(json.dumps(metadata))
             serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
             encoded_node_name = node_name + "_" + str(serialized_metadata)
+
+        # Do not export nodes indicated 'ddd:export-as-marker' if not exporting markers
+        if metadata.get('ddd:export-as-marker', False) and not instance_marker:
+            return scene
+        if metadata.get('ddd:marker', False) and not instance_marker:
+            return scene
 
         # UV coords test
         if self.mesh:
@@ -1709,6 +1768,7 @@ class DDDObject3(DDDObject):
             self.mesh.visual = TextureVisuals(uv=uvs, material=mat)  # Material + UVs
 
             # Vertex Colors
+            #if self.mat.extra.get('ddd:vertex_colors', False):
             cvs = ColorVisuals(mesh=self.mesh, face_colors=[self.mat.color_rgba for f in self.mesh.faces])  # , material=material
             # Hack vertex_colors into TextureVisuals
             # WARN: Trimehs GLTF export modified to suppot this:

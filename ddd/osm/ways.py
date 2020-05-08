@@ -17,6 +17,7 @@ from ddd.ops import uvmapping
 from ddd.core.exception import DDDException
 import sys
 from shapely import ops
+from shapely.ops import linemerge
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -134,16 +135,6 @@ class WaysOSMBuilder():
             for c in list(way.geom.coords):
                 vertex_cache[c].append(way)
 
-        # Assign item nodes
-        # TODO: this shall better come from osm node-names/relations directly, but supporting geojson is also nice
-        for item in self.osm.items_1d.children:
-            if item.geom.coords[0] in vertex_cache:
-                #logger.debug("Associating item to ways: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
-                item.extra['osm:item:way'] = vertex_cache[item.geom.coords[0]][0]
-                item.extra['osm:item:ways'] = vertex_cache[item.geom.coords[0]]
-                #if len(vertex_cache[item.geom.coords[0]]):
-                #    raise NotImplementedError()
-
         split = True
         while split:
             split = False
@@ -165,6 +156,21 @@ class WaysOSMBuilder():
         vertex_cache = None
 
         logger.debug("Ways after splitting mid connections: %d", len(self.osm.ways_1d.children))
+
+        # Assign item nodes
+        # TODO: this shall better come from osm node-names/relations directly, but supporting geojson is also nice
+        # TODO: Before or after splitting?
+        vertex_cache = defaultdict(list)
+        for way in self.osm.ways_1d.children:
+            for c in list(way.geom.coords):
+                vertex_cache[c].append(way)
+        for item in self.osm.items_1d.children:
+            if item.geom.coords[0] in vertex_cache:
+                #logger.debug("Associating item to ways: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
+                item.extra['osm:item:way'] = vertex_cache[item.geom.coords[0]][0]
+                item.extra['osm:item:ways'] = vertex_cache[item.geom.coords[0]]
+                #if len(vertex_cache[item.geom.coords[0]]):
+                #    raise NotImplementedError()
 
         # Find connections
         # TODO: this shall possibly come from OSM relations (or maybe not, or optional)
@@ -291,6 +297,7 @@ class WaysOSMBuilder():
         lamps = False
         traffic_signals = False
         roadlines = False
+        path.extra['ddd:way:weight'] = 100  # Lowest
 
         layer = None
 
@@ -309,6 +316,7 @@ class WaysOSMBuilder():
             lane_width_left = 0.8
             lanes = 2
             roadlines = True
+            path.extra['ddd:way:weight'] = 5
         elif path.extra.get('osm:highway', None) == "motorway_link":
             lanes = 1
             lane_width = 3.6
@@ -321,6 +329,7 @@ class WaysOSMBuilder():
             lane_width_right = 1.4
             lane_width_left = 0.5
             roadlines = True
+            path.extra['ddd:way:weight'] = 10
         elif path.extra.get('osm:highway', None) == "trunk_link":
             lanes = 1
             lane_width = 3.4
@@ -334,6 +343,7 @@ class WaysOSMBuilder():
             lane_width_right = 1.0
             lane_width_left = 0.5
             roadlines = True
+            path.extra['ddd:way:weight'] = 11
         elif path.extra.get('osm:highway', None) == "primary_link":
             lanes = 2
             lane_width = 3.4
@@ -346,29 +356,41 @@ class WaysOSMBuilder():
             lamps = True
             traffic_signals = True
             roadlines = True
+            path.extra['ddd:way:weight'] = 12
         elif path.extra.get('osm:highway', None) in ("tertiary", "road"):
             lanes = 2
             lane_width = 3.4
             lamps = True  # shall be only in city?
             traffic_signals = True
             roadlines = True
+            path.extra['ddd:way:weight'] = 13
         elif path.extra.get('osm:highway', None) == "service":
             lanes = 1
             lamps = True  # shall be only in city?
             roadlines = True
-        elif path.extra.get('osm:highway', None) in ("residential", "living_street"):
+            path.extra['ddd:way:weight'] = 21
+        elif path.extra.get('osm:highway', None) in ("residential", ):
             # lanes = 1.0  # Using 1 lane for residential/living causes too small roads
-            # extra_height = 0.1
-            lanes = 2
-            lamps = True  # shall be only in city?
+            lanes = 2 if path.extra.get('osm:oneway', False) else 2
+            lamps = path.extra.get('osm:lit', True)  # shall be only in city?
             traffic_signals = False
             roadlines = True
+            path.extra['ddd:way:weight'] = 22
+        elif path.extra.get('osm:highway', None) in ("living_street", ):
+            # extra_height = 0.1
+            lanes = 1 if path.extra.get('osm:oneway', False) else 2
+            lane_width = lane_width * 1.2 if path.extra.get('osm:oneway', False) else lane_width
+            lamps = path.extra.get('osm:lit', True)  # shall be only in city?
+            traffic_signals = False
+            roadlines = True
+            path.extra['ddd:way:weight'] = 23
         elif path.extra.get('osm:highway', None) in ("footway",):
+            if path.extra.get('osm:footway', None) == 'sidewalk': return None  # Dropping sidewalks!
             lanes = 0
             material = ddd.mats.dirt
             extra_height = 0.0
             width = 0.6 * 3.3
-            if path.extra.get('footway', None) == 'sidewalk': return None
+            path.extra['ddd:way:weight'] = 31
         elif path.extra.get('osm:highway', None) in ("path", "track"):
             lanes = 0
             material = ddd.mats.dirt
@@ -378,18 +400,21 @@ class WaysOSMBuilder():
             # TODO: Do later, after applying elevations, in a select ("add fences to elevated ways")
             path.extra['ddd:way:elevated:border'] = 'fence'
             path.extra['ddd:way:elevated:material'] = ddd.mats.pathwalk
+            path.extra['ddd:way:weight'] = 42
 
         elif path.extra.get('osm:highway', None) in ("steps", "stairs"):
             lanes = 0
             material = ddd.mats.pathwalk
             extra_height = 0.2  # 0.2 allows easy car driving
             width = 0.6 * 3.3
+            path.extra['ddd:way:weight'] = 31
         elif path.extra.get('osm:highway', None) == "pedestrian":
             lanes = 0
             material = ddd.mats.pathwalk
             extra_height = 0.2
             width = 2 * 3.30
             lamps = True  # shall be only in city?
+            path.extra['ddd:way:weight'] = 32
         elif path.extra.get('osm:highway', None) == "cycleway":
             lanes = 1
             lane_width = 1.5
@@ -501,6 +526,8 @@ class WaysOSMBuilder():
             return None
 
         # Calculated properties
+        if path.extra.get('osm:junction', None) == "roundabout":
+            path.extra['ddd:way:weight'] = 1
 
         flanes = path.extra.get('osm:lanes', None)
         if flanes:
@@ -547,7 +574,6 @@ class WaysOSMBuilder():
         path.extra['ddd:way:lane_width_right'] = lane_width_right
         path.extra['ddd:way:augment_lamps'] = lamps  # Add via augmenting as well, adding metadata for this shall be avoided
         path.extra['ddd:way:augment_traffic_signals'] = traffic_signals  # It's an augmenting property over osm, but applied to a road... where to put?
-        path.extra['ddd:way:weight'] = self.road_weight(path)
         path.extra['ddd:way:oneway'] = path.extra.get('osm:oneway', None)
         path.extra['ddd:way:roadlines'] = roadlines  # should be ddd:road:roadlines ?
         path.extra['ddd:item'] = create_as_item
@@ -793,13 +819,14 @@ class WaysOSMBuilder():
 
         def height_apply_func(x, y, z, idx):
             # Find nearest point in path, and return its height
-            path = way
+            coords = way.geom.coords if way.geom.type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
+
             closest_in_path = None  # path.geom.coords[0]
             closest_dist = math.inf
-            for idx, p in enumerate(path.geom.coords):
+            for idx, p in enumerate(coords):
                 pd = math.sqrt((x - p[0]) ** 2 + (y - p[1]) ** 2)
                 if idx == 0: pd = pd - 20.0
-                if idx == len(path.geom.coords) - 1: pd = pd - 20.0
+                if idx == len(coords) - 1: pd = pd - 20.0
                 if pd < closest_dist:
                     closest_in_path = p
                     closest_dist = pd
@@ -934,31 +961,6 @@ class WaysOSMBuilder():
         return connected
     '''
 
-    def road_weight(self, way):
-        """
-        Primary roads weight is 1. Lower weights are more important roads.
-        """
-        highway = way.extra.get('osm:highway', None)
-        junction = way.extra.get('osm:junction', None)
-
-        weight = 99
-        if highway == "motorway": weight = 5
-        elif highway == "trunk": weight = 10
-        elif highway == "primary": weight = 11
-        elif highway == "secondary": weight = 12
-        elif highway == "tertiary": weight = 13
-        elif highway == "service": weight = 21
-        elif highway == "living_street": weight = 22
-        elif highway == "residential": weight = 23
-        elif highway == "steps": weight = 31
-        elif highway == "pedestrian": weight = 32
-        elif highway == "footway": weight = 33
-        elif highway == "path": weight = 34
-
-        if junction == "roundabout": weight = 1
-
-        return weight
-
     def get_way_2d(self, way_1d):
         for l in self.osm.ways_2d.values():
             for way_2d in l.children:
@@ -985,11 +987,19 @@ class WaysOSMBuilder():
                         logger.warn("Discarding intersection (way contained multiple times)")
                         continue
 
-            join_ways = ddd.group([self.get_way_2d(j.way) for j in intersection])
+            # Get intersection way type by vote
+            votes = defaultdict(list)
+            for join in intersection:
+                votes[join.way.extra['ddd:way:weight']].append(join.way)
+            max_voted_ways_weight = list(reversed(sorted(votes.items(), key=lambda w: len(w[1]))))[0][0]
+            highest_ways = votes[max_voted_ways_weight]
 
+            # Generate intersection geometry
+
+            join_ways = ddd.group([self.get_way_2d(j.way) for j in intersection])
             # print(join_ways.children)
-            join_geoms = join_ways.geom_recursive()
-            join_points = []
+            #join_geoms = join_ways.geom_recursive()
+            #join_points = []
             join_shapes = []
             # Calculate intersection points as lines
             for i in range(len(join_ways.children)):
@@ -1011,13 +1021,18 @@ class WaysOSMBuilder():
 
             #intersection_shape.show()
 
-            # Perpendicularize intersection towards paths
+            # Retract intersection: perpendicularize intersection towards paths
             #logger.info("Intersection: %s", join_ways)
             #join_ways.show()
             join_splits = ddd.group2()
             for join_way in join_ways.children:
-                # Project each intersection point to the line
+
                 way_1d = join_way.extra['way_1d']
+
+                # Do not retract way if it is not part of the main ways (highest count) of the intersection
+                if way_1d not in highest_ways: continue
+
+                # Project each intersection point to the line
                 #logger.info("Way 2D: %s", join_way)
                 #logger.info("Way 1D: %s", way_1d)
                 max_dist = 0
@@ -1028,7 +1043,6 @@ class WaysOSMBuilder():
                     #    for intersection_point in list(intersection_g.coords):
                     #        #intersection_point = intersection_point[0]
                     #        if not intersection_point: continue
-
                     closest_seg = way_1d.closest_segment(ddd.point(intersection_point))
                     (coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d) = closest_seg
                     dist = ddd.point(coords_p).distance(ddd.point(intersection_shape.geom.centroid.coords))
@@ -1040,7 +1054,7 @@ class WaysOSMBuilder():
 
                 # Cut line at the specified point.
                 if max_o:
-                    perpendicular = max_o.perpendicular(distance=max_d, length=way_1d.extra['ddd:way:width'] + 0.1, double=True)
+                    perpendicular = max_o.perpendicular(distance=max_d, length=way_1d.extra['ddd:way:width'], double=True)  # + 0.1
                     join_way_splits = ops.split(join_way.geom, perpendicular.geom)
                     #logger.info("Split: %s", join_way_splits)
 
@@ -1083,26 +1097,35 @@ class WaysOSMBuilder():
             # print(intersection_shape)
             if intersection_shape and intersection_shape.geom and intersection_shape.geom.type in ('Polygon', 'MultiPolygon') and not intersection_shape.geom.is_empty:
 
+                '''
                 # Get intersection way type by vote
                 votes = defaultdict(list)
                 for join in intersection:
                     votes[join.way.extra['ddd:way:weight']].append(join.way)
                 max_voted_ways_weight = list(reversed(sorted(votes.items(), key=lambda w: len(w[1]))))[0][0]
                 highest_ways = votes[max_voted_ways_weight]
-                highest_way = highest_ways[0]
-
                 '''
+
                 # Createintersection from highest way value from joins
+                '''
                 highest_way = None
                 for join in intersection:
                     if highest_way is None or join.way.extra['ddd:way:weight'] < highest_way.extra['ddd:way:weight'] :
                         highest_way = join.way
                 '''
 
+                # Prepare way_1d (joining ways if needed)
+                highest_way = highest_ways[0].copy()
+                if len(highest_ways) == 2:
+                    #highest_way.geom = ddd.group(highest_ways).union().geom  # Leaves multilinestrings
+                    highest_way.geom = linemerge(ddd.group(highest_ways).union().geom)  # Merges multilinestrings into linestrings if possible
+
                 intersection_2d = highest_way.copy(name="Intersection (%s)" % highest_way.name)
-                intersection_2d.extra['way_1d'] = highest_way.copy()
+                intersection_2d.extra['way_1d'] = highest_way
                 # intersection_2d.extra['way_1d'].geom = ddd.group2(highest_ways).union().geom
-                intersection_2d.extra['way_1d'].children = highest_ways
+                #intersection_2d.extra['way_1d'].children = highest_ways
+                #intersection_2d.extra['way_1d_highest'] = highest_ways
+                # Combine highest paths and their elevations
 
                 """
                 if ('666643710' in intersection_2d.name):
@@ -1240,7 +1263,7 @@ class WaysOSMBuilder():
             f = w.extra['osm:feature']
             way_2d = self.generate_way_2d(w)
             if way_2d:
-                weight = self.road_weight(w)
+                weight = way_2d.extra['ddd:way:weight']
                 ways_2d[weight].append(way_2d)
 
         '''
@@ -1698,7 +1721,7 @@ class WaysOSMBuilder():
         # Generate lines
         if way_2d.extra['ddd:way:roadlines']:
 
-            lanes = path.extra['ddd:way:lanes']
+            lanes = way_2d.extra['ddd:way:lanes']
             numlines = lanes - 1 + 2
             for lineind in range(numlines):
 
@@ -1709,7 +1732,7 @@ class WaysOSMBuilder():
 
                 line_continuous = False
                 if lineind in [0, numlines - 1]: line_continuous = True
-                if lanes > 2 and lineind == int(numlines / 2) and not path.extra.get('oneway', False): line_continuous = True
+                if lanes >= 2 and lineind == int(numlines / 2) and not path.extra.get('osm:oneway', False): line_continuous = True
                 line_x_offset = 0.076171875 if line_continuous else 0.5
 
                 line_0_distance = -(width / 2) + lane_width_right
@@ -1723,7 +1746,7 @@ class WaysOSMBuilder():
                 line.extra['way_1d'] = pathline
 
                 # FIXME: Move cropping to generic site, use itermediate osm.something for storage
-                # Also, cropping shall interpolate UVs
+                # Also, cropping shall interpolate UVs (and propagated heights?)
                 line = line.intersection(crop)
                 line = line.intersection(way_2d)
                 line = line.individualize()

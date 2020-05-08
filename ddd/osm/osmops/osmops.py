@@ -41,12 +41,12 @@ class OSMBuilderOps():
         perpendicular_vec = (-dir_vec[1], dir_vec[0])
 
         item_dist = way_1d.extra['ddd:way:width'] * 0.5 - penetrate
-        left = (coords_p[0] - perpendicular_vec[0] * item_dist, coords_p[1] - perpendicular_vec[1] * item_dist)
-        right = (coords_p[0] + perpendicular_vec[0] * item_dist, coords_p[1] + perpendicular_vec[1] * item_dist)
+        right = (coords_p[0] - perpendicular_vec[0] * item_dist, coords_p[1] - perpendicular_vec[1] * item_dist)
+        left = (coords_p[0] + perpendicular_vec[0] * item_dist, coords_p[1] + perpendicular_vec[1] * item_dist)
 
         angle = math.atan2(dir_vec[1], dir_vec[0])
         obj.geom.coords = right if obj.extra.get('osm:direction', 'forward') == 'forward' else left
-        obj.extra['ddd:angle'] = (angle + math.pi) if obj.extra.get('osm:direction', 'forward') == 'forward' else angle
+        obj.extra['ddd:angle'] = (angle) if obj.extra.get('osm:direction', 'forward') == 'forward' else (angle + math.pi)
         #print (obj.extra)
 
         return obj

@@ -10,6 +10,7 @@ from ddd.ddd import ddd
 from ddd.pack.sketchy import plants, urban, landscape, industrial
 from ddd.geo import terrain
 import sys
+from ddd.pack.sketchy.urban import patio_table
 
 
 # Get instance of logger for this module
@@ -72,10 +73,17 @@ class ItemsOSMBuilder():
 
         if item_2d.extra.get('osm:amenity', None) == 'fountain':
             item_3d = self.generate_item_3d_fountain(item_2d)
-        elif item_2d.extra.get('osm:amenity', None) == 'bench':
+        elif item_2d.extra.get('osm:amenity', None) == 'bench':  # not to be confused with seat
             item_3d = self.generate_item_3d_bench(item_2d)
         elif item_2d.extra.get('osm:amenity', None) == 'post_box':
             item_3d = self.generate_item_3d_post_box(item_2d)
+
+        elif item_2d.extra.get('osm:amenity', None) == 'table':
+            item_3d = self.generate_item_3d_generic(item_2d, urban.patio_table, "Table")
+        elif item_2d.extra.get('osm:amenity', None) == 'seat':  # not to be confused with bench
+            item_3d = self.generate_item_3d_generic(item_2d, urban.patio_chair, "Seat")
+        elif item_2d.extra.get('osmext:amenity', None) == 'umbrella':
+            item_3d = self.generate_item_3d_generic(item_2d, urban.patio_umbrella, "Umbrella")
         #elif item_2d.extra.get('osm:amenity', None) == 'taxi':
         #    item_3d = self.generate_item_3d_taxi(item_2d)
         #elif item_2d.extra.get('osm:amenity', None) == 'toilets':
@@ -210,6 +218,26 @@ class ItemsOSMBuilder():
         item_3d.name = 'Bench: %s' % item_2d.name
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
         return item_3d
+
+    def generate_item_3d_generic(self, item_2d, gen_func, name):
+
+        coords = item_2d.geom.coords[0]
+
+        #invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d]).clean(eps=0.01)
+        item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
+        #if not self.osm.osmops.placement_valid(item_2d.buffer(0.2), invalid=invalid): return None
+
+        item_3d = gen_func()
+
+        if item_3d is None:
+            return None
+
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+        #item_3d.prop_set('ddd:static', False, children=True)  # TODO: Make static or not via styling
+        item_3d.name = '%s: %s' % (name, item_2d.name)
+        return item_3d
+
 
     def generate_item_3d_post_box(self, item_2d):
 
@@ -423,7 +451,7 @@ class ItemsOSMBuilder():
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
 
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
-        item_3d.extra['_height_mapping'] = 'terrain_geotiff_min_elevation_apply'
+        item_3d.name = 'Traffic Signals: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_traffic_sign(self, item_2d):
@@ -460,6 +488,7 @@ class ItemsOSMBuilder():
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
+        item_3d.name = 'Traffic Sign: %s' % item_2d.name
         return item_3d
 
 
