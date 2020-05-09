@@ -588,7 +588,8 @@ class AreasOSMBuilder():
                     logger.warning("Area type undefined: %s", area_2d.extra.get('ddd:area:type', None))
                     raise AssertionError("Area type undefined: %s" % (area_2d.extra.get('ddd:area:type', None)))
 
-                self.osm.areas_3d.children.append(area_3d)
+                if area_3d:
+                    self.osm.areas_3d.children.append(area_3d)
             except ValueError as e:
                 logger.warn("Could not generate area %s: %s", area_2d, e)
                 raise
@@ -675,13 +676,16 @@ class AreasOSMBuilder():
 
     def generate_area_3d_pitch(self, area_2d):
 
+        if area_2d.geom is None:
+            return None
+
         logger.debug("Pitch: %s", area_2d)
         area_3d = self.generate_area_3d(area_2d)
 
         # TODO: pass size then adapt to position and orientation, easier to construct and reuse
         # TODO: get area uncropped (create a cropping utility that stores the original area)
 
-        sport = area_2d.extra['osm:feature'].get('sport', None)
+        sport = area_2d.extra.get('osm:sport', None)
 
         if sport == 'tennis':
             lines = sports.field_lines_area(area_2d, sports.tennis_field_lines, padding=3.0)

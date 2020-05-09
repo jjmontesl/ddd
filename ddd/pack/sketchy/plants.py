@@ -57,19 +57,31 @@ def treetop(r=1.75, flatness=0.3, subdivisions=1):
     treetop = treetop.scale([1.0, 1.0, (1.0 - flatness) * random.uniform(0.85, 1.15)])
     treetop = filters.noise_random(treetop, scale=0.25)
     treetop = ddd.uv.map_spherical(treetop)
-    treetop.extra['foliage'] = True
+    treetop.extra['ddd:collider'] = False
     treetop.name = "Treetop"
     return treetop
 
 def palm_leaf(length=3.5):
     # Create grid, curve, bend along, bend gravity, make two sided
-    obj = ddd.grid2([0, -1, 1, 1], 0.2, name="Palm leaf").triangulate()
+    obj = ddd.grid3([0, -1, 1, 1], [0.2, 0.5], name="Palm leaf")
+
     f1 = lambda x: math.sin(x * math.pi)
     f2 = lambda x: f1(x * f1(x)) * 0.1
-    leafshape = lambda x, y, z, i: [x, y * (f2(x)), z]
-
+    leafshape = lambda x, y, z, i: [x, y * (f2(1 - x)), z]
     obj = obj.vertex_func(leafshape)
-    obj = obj.scale([length, length, length])
+
+    f1 = lambda x: math.log(abs(x) + 1) * 0.25
+    leafshape = lambda x, y, z, i: [x, y, f1(y)]
+    obj = obj.vertex_func(leafshape)
+
+    f1 = lambda x: 1 - math.gamma(x + 1)
+    leafshape = lambda x, y, z, i: [x, y, z + f1(x)]
+    obj = obj.vertex_func(leafshape)
+
+    obj = obj.scale([length, length, length]).twosided()
+    obj = ddd.uv.map_cubic(obj)
+    obj.extra['ddd:collider'] = False
+
     return obj
 
 def plant(height=3.5, r=0.40, fork_height_ratio=0.7, fork_iters=3):
@@ -113,7 +125,8 @@ def tree_palm(height=8.5, r=0.50):
         section = section.material(ddd.mats.bark)
         return section
     def leave_callback():
-        tt = palm_leaf(length=3.5).material(ddd.mats.treetop)
+        tt = palm_leaf(length=2.5 + height / 2).material(ddd.mats.treetop)
+        tt = ddd.align.matrix_polar(tt, 5)
         return tt
 
     obj = recursivetree(height=height, r=r, fork_iters=1,

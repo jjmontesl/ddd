@@ -6,6 +6,8 @@ import logging
 import math
 
 from shapely import geometry, affinity, ops
+from ddd.ddd import ddd
+import numpy as np
 
 
 # Get instance of logger for this module
@@ -30,5 +32,22 @@ class DDDAlign():
 
         return obj
 
+    def matrix_polar(self, obj, count=None, angle_interval=None, span=math.pi * 2):
+        """
+        Clones the object and positions it radially.
+        """
 
+        result = ddd.group3(name="Matrix of: %s" % obj.name)
+
+        if count is None:
+            count = span / angle_interval
+
+        idx = 0
+        for angle in np.linspace(0, span, count, endpoint=False):
+            oc = obj.copy().rotate([0, 0, angle])
+            oc.name = oc.name + (" (%d)" % idx)
+            result.append(oc)
+            idx += 1
+
+        return result
 

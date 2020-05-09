@@ -40,7 +40,6 @@ from ddd.core.exception import DDDException
 from ddd.exchange.dddjson import DDDJSON
 from ddd.materials.atlas import TextureAtlas
 from ddd.ops import extrusion
-from ddd.ops.align import DDDAlign
 
 import numpy as np
 from trimesh.util import concatenate
@@ -217,8 +216,10 @@ class D1D2D3():
     def grid2(bounds, detail=1.0, name=None):
         rects = []
         cmin, cmax = bounds[:2], bounds[2:]
-        pointsx = list(np.linspace(cmin[0], cmax[0], 1 + int((cmax[0] - cmin[0]) / detail)))
-        pointsy = list(np.linspace(cmin[1], cmax[1], 1 + int((cmax[1] - cmin[1]) / detail)))
+        if isinstance(detail, int): detail= float(detail)
+        if isinstance(detail, float): detail = [detail, detail]
+        pointsx = list(np.linspace(cmin[0], cmax[0], 1 + int((cmax[0] - cmin[0]) / detail[0])))
+        pointsy = list(np.linspace(cmin[1], cmax[1], 1 + int((cmax[1] - cmin[1]) / detail[1])))
 
         for (idi, (i, ni)) in enumerate(zip(pointsx[:-1], pointsx[1:])):
             for (idj, (j, nj)) in enumerate(zip(pointsy[:-1], pointsy[1:])):
@@ -380,7 +381,7 @@ class DDDObject():
 
         for c in self.children:
             if not isinstance(c, self.__class__) and not (isinstance(c, DDDInstance) and isinstance(self, DDDObject3)):
-                raise ValueError("Invalid children type (not %s): %s" % (self.__class__, c))
+                raise DDDException("Invalid children type on %s (not %s): %s" % (self, self.__class__, c), ddd_obj=self)
 
     def __repr__(self):
         return "<DDDObject (name=%s, children=%d)>" % (self.name, len(self.children) if self.children else 0)
@@ -1060,7 +1061,7 @@ class DDDObject2(DDDObject):
         # Triangulate and store info for 3D extrude_step
 
         if obj_2d.children:
-            raise DDDException("Cannot extrude_step with children.")
+            raise DDDException("Cannot extrude_step with children: %s" % obj_2d, ddd_obj=obj_2d)
 
         if base:
             result = self.triangulate()
@@ -1484,8 +1485,8 @@ class DDDTransform():
 class DDDObject3(DDDObject):
 
     def __init__(self, name=None, children=None, mesh=None, extra=None, material=None):
-        super().__init__(name, children, extra, material)
         self.mesh = mesh
+        super().__init__(name, children, extra, material)
 
     def __repr__(self):
         return "<DDDObject3 (name=%s, faces=%d, children=%d)>" % (self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
@@ -1952,6 +1953,7 @@ from ddd.ops.geometry import DDDGeometry
 from ddd.ops.helper import DDDHelper
 from ddd.ops.snap import DDDSnap
 from ddd.ops.uvmapping import DDDUVMapping
+from ddd.ops.align import DDDAlign
 from ddd.pack.mats.defaultmats import DefaultMaterials
 from ddd.materials.materials import MaterialsCollection
 

@@ -18,4 +18,4 @@ items = ddd.align.grid(items)
 items.append(ddd.helper.all())
 items.show()
 items.save("/tmp/test.glb")
-
+items.save("/tmp/test.json")

@@ -55,7 +55,12 @@ class WaysOSMBuilder():
         self.osm = osmbuilder
 
     def layer_height(self, layer_idx):
-        return self.osm.layer_heights[layer_idx]
+        lh = self.osm.layer_heights.get(layer_idx, None)
+        if lh is None:
+            if layer_idx.endswith("a"): layer_idx = layer_idx[:-1]
+            lh = 5 * int(layer_idx)
+
+        return lh
 
     def follow_way(self, way, depth=1, visited=None):
 
@@ -1027,7 +1032,10 @@ class WaysOSMBuilder():
             join_splits = ddd.group2()
             for join_way in join_ways.children:
 
-                way_1d = join_way.extra['way_1d']
+                way_1d = join_way.extra.get('way_1d', None)
+
+                if way_1d is None:
+                    logger.warn("No way 1D found for join_way: %s", join_way)
 
                 # Do not retract way if it is not part of the main ways (highest count) of the intersection
                 if way_1d not in highest_ways: continue
@@ -1468,9 +1476,13 @@ class WaysOSMBuilder():
         result = ddd.group3()
 
         for way_2d in way_2d.individualize().flatten().children:
-            way_2d_interior = way_2d.buffer(-0.3).individualize()
-            #way_3d = way_2d.extrude(-0.2 - extra_height).translate([0, 0, extra_height])  # + layer_height
-            way_3d = way_2d.extrude_step(way_2d_interior, rail_height, base=False, cap=False)
+
+            way_2d_interior = way_2d.buffer(-0.3)  # .individualize()
+            if (len(way_2d_interior.individualize().children) > 1):
+                way_3d = way_2d.triangulate()
+            else:
+                way_3d = way_2d.extrude_step(way_2d_interior, rail_height, base=False, cap=False)
+
             way_3d = way_3d.material(ddd.mats.dirt)
             way_3d = ddd.uv.map_cubic(way_3d)
             way_3d.extra['ddd:shadows'] = False
@@ -1706,9 +1718,9 @@ class WaysOSMBuilder():
 
     def generate_props_2d_way(self, way_2d):
 
-        if 'way_1d' not in way_2d.extra:
-            # May be an intersection, should generate roadlines too
-            return
+        #if 'way_1d' not in way_2d.extra:
+        #    # May be an intersection, should generate roadlines too
+        #    return
 
         path = way_2d.extra['way_1d']
 

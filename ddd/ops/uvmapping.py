@@ -115,7 +115,9 @@ def map_2d_path(obj, path, line_x_offset=0.0, line_x_width=0.1):
 
     result = obj
     if obj.geom:
-        if obj.geom.exterior:
+        if obj.geom.type == "MultiPolygon":
+            logger.error("Geometry to map 2D path to does not have exterior coordinates: %s" % obj)
+        elif obj.geom.exterior:
             result.extra['uv'] = [uv_apply_func(v[0], v[1], 0.0, idx) for idx, v in enumerate(obj.geom.exterior.coords)]
         else:
             logger.error("Geometry to map 2D path to does not have exterior coordinates: %s" % obj)

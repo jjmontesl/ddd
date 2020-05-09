@@ -78,22 +78,22 @@ class AreaItemsOSMBuilder():
 
         center = feature.centroid()
 
-        table = center.copy(name="Outdoor seating table")
+        table = center.copy(name="Outdoor seating table: %s" % feature.name)
         table.extra['osm:amenity'] = 'table'
         table.extra['osm:seats'] = random.randint(0, 3)
 
         umbrella = ddd.group2()
         if random.uniform(0, 1) < 0.8:
-            umbrella = center.copy(name="Outdoor seating umbrella")
+            umbrella = center.copy(name="Outdoor seating umbrella: %s" % feature.name)
             umbrella.extra['osmext:amenity'] = 'umbrella'
 
         chairs = ddd.group2(name="Outdoor seating seats")
         for i in range(table.extra['osm:seats']):
-            chair = ddd.point([0, random.uniform(0.7, 1.1)], name="Outdoor seating seat").rotate((2 * math.pi / table.extra['osm:seats']) * i + random.uniform(-0.1, 0.1)).translate(center.geom.coords[0])
+            chair = ddd.point([0, random.uniform(0.7, 1.1)], name="Outdoor seating seat %d: %s" % (i, feature.name)).rotate((2 * math.pi / table.extra['osm:seats']) * i + random.uniform(-0.1, 0.1)).translate(center.geom.coords[0])
             chair.extra['osm:amenity'] = 'seat'
             chairs.append(chair)
 
-        item = ddd.group2([table, umbrella, chairs], "Outdoor seating")
+        item = ddd.group2([table, umbrella, chairs], "Outdoor seating: %s" % feature.name)
 
         for i in item.flatten().children:
             if i.geom: self.osm.items_1d.append(i)

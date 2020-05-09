@@ -280,7 +280,6 @@ class BuildingOSMBuilder():
                 panel_text = item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else (item_1d.extra['osm:amenity'].upper() if item_1d.extra['osm:amenity'] else None)
                 item = urban.panel(width=3.2, height=0.9, text=panel_text)
                 item.extra['ddd:item'] = item_1d
-                item.extra['text'] = panel_text
                 item.name = "Panel: %s %s" % (item_1d.extra['osm:amenity'], item_1d.extra.get('osm:name', None))
                 item = self.snap_to_building(item, building_3d)
                 if item:
@@ -294,10 +293,9 @@ class BuildingOSMBuilder():
 
             elif item_1d.extra.get('osm:shop', None):
                 #coords = item_1d.geom.centroid.coords[0]
-                panel_text = ((item_1d.extra['osm:name']) if item_1d.extra.get('osm:name', None) else item_1d.extra['shop'])
+                panel_text = (item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else item_1d.extra['osm:shop'])
                 item = urban.panel(width=2.5, height=0.8, text=panel_text)
                 item.extra['ddd:item'] = item_1d
-                item.extra['text'] = panel_text
                 item.name = "Panel: %s %s" % (item_1d.extra['osm:shop'], item_1d.extra.get('osm:name', None))
                 item = self.snap_to_building(item, building_3d)
                 if item:

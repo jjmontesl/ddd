@@ -600,6 +600,7 @@ def patio_chair(width=0.45, length=0.45, seat_height=0.40):
 
     back_height = 0.3
     back = ddd.rect([width, seat_thick], name="Chair Back").recenter().extrude(back_height)
+    back = back.material(ddd.mats.steel)
     back = ddd.uv.map_cubic(back)
     back = back.translate([0, length / 2 - seat_thick, seat_height])
     back = ddd.collision.aabox_from_aabb(back)

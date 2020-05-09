@@ -173,15 +173,23 @@ class ItemsOSMBuilder():
         #if not self.osm.osmops.placement_valid(ddd.disc(coords, r=0.4), invalid=invalid):
         #    return None
 
-        key = "tree-default-%d" % (random.choice([1, 2, 3, 4, 5, 6, 7, 8]))
+        tree_type = random.choice(['default', 'palm'])
+
+        key = "tree-%s-%d" % (tree_type, random.choice([1, 2, 3, 4, 5, 6, 7, 8]))
+
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
             plant_height = random.normalvariate(8.0, 3.0)
             if plant_height < 3.0: plant_height=random.uniform(3.0, 5.5)
             if plant_height > 15.0: plant_height=random.uniform(12.0, 15.0)
-            item_3d = plants.plant(height=plant_height)
-            for i in item_3d.filter(lambda o: o.extra.get('foliage', None)).children:
-                i.extra['ddd:collider'] = False  # TODO: generation details shall be optional
+
+            if tree_type == 'default':
+                item_3d = plants.plant(height=plant_height)
+            elif tree_type == 'palm':
+                item_3d = plants.tree_palm(height=plant_height)
+            else:
+                raise AssertionError()
+
             item_3d = self.osm.catalog.add(key, item_3d)
 
         item_3d = item_3d.rotate([0.0, 0.0, random.uniform(0, math.pi * 2)])
@@ -363,7 +371,7 @@ class ItemsOSMBuilder():
         """
         Expects a line.
         """
-        height = item_2d.extra['ddd:item:height']
+        height = item_2d.extra.get('ddd:item:height')
         item_3d = item_2d.extrude(height)
         item_3d = ddd.uv.map_cubic(item_3d)
 
@@ -446,7 +454,7 @@ class ItemsOSMBuilder():
         coords = item_2d.geom.coords[0]
         print(item_2d.extra)
 
-        if 'osm:angle' in item_2d.extra: item_2d.extra['ddd:angle'] = item_2d.extra['osm_angle'] * (math.pi / 180)
+        if 'osm:direction' in item_2d.extra: item_2d.extra['ddd:angle'] = item_2d.extra['osm:direction'] * (math.pi / 180)
         #if item_2d.extra.get('ddd:angle', None) is None: item_2d.extra['ddd:angle'] = 0
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
 
@@ -478,10 +486,14 @@ class ItemsOSMBuilder():
         osm_ways = item_2d.extra.get('osm:item:ways', None)
         if osm_way:
             item_2d = self.osm.osmops.position_along_way(item_2d, osm_way)
+            coords = item_2d.geom.coords[0]
             if len(osm_ways) > 1:
                 logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
-        coords = item_2d.geom.coords[0]
-        print(item_2d.extra)
+        else:
+            # Project point to have an orientation angle
+            ways = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('osm:highway', None) not in ('path', 'track', 'footway', None))
+            coords = item_2d.geom.coords[0]
+            item_2d = ddd.snap.project(item_2d, ways, penetrate=-0.5)
 
         item_3d.prop_set('ddd:static', False, children=False)  # TODO: Make static or not via styling
         item_3d.extra['ddd:layer'] = 'DynamicObjects'  # TODO: Assign layers via styling
