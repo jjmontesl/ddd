@@ -451,6 +451,13 @@ class WaysOSMBuilder():
             material = ddd.mats.sea
             path.extra['ddd:area:type'] = 'water'
             path.extra['ddd:baseheight'] = -0.5
+        elif path.extra.get('osm:waterway', None) == "stream":
+            lanes = None
+            name = "Stream: %s" % name_id
+            width = 3.5
+            material = ddd.mats.sea
+            path.extra['ddd:area:type'] = 'water'
+            path.extra['ddd:baseheight'] = -0.5
 
         elif path.extra.get('osm:railway', None):
             lanes = None

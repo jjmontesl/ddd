@@ -1173,6 +1173,7 @@ class DDDObject2(DDDObject):
             l += pl
             if l >= d:
                 return (self.geom.interpolate(d).coords[0], idx, p, pn)
+        return (self.geom.interpolate(d).coords[0], idx, p, pn)
         return None
 
     def closest_segment(self, other):

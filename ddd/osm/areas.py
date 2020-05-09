@@ -121,6 +121,16 @@ class AreasOSMBuilder():
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_park(narea)
+
+            elif feature['properties'].get('landuse', None) in ('forest', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_forest(narea)
+            elif feature['properties'].get('landuse', None) in ('vineyard', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_vineyard(narea)
+
             elif feature['properties'].get('natural', None) in ('wood', ):
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
@@ -153,7 +163,7 @@ class AreasOSMBuilder():
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_school(narea)
-            elif (feature['properties'].get('waterway', None) in ('riverbank', ) or
+            elif (feature['properties'].get('waterway', None) in ('riverbank', 'stream') or
                   feature['properties'].get('natural', None) in ('water', ) or
                   feature['properties'].get('water', None) in ('river', )):
                 #narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
@@ -225,6 +235,15 @@ class AreasOSMBuilder():
 
     def generate_area_2d_wetland(self, area):
         return self.generate_area_2d_park(area, tree_density_m2=0.0010)
+
+    def generate_area_2d_vineyard(self, area):
+        area.name = "Vineyard: %s" % area.name
+        area = area.material(ddd.mats.terrain)
+
+        # Generate crops
+
+
+        return area
 
     def generate_area_2d_pitch(self, area):
         feature = area.extra['osm:feature']
@@ -599,7 +618,7 @@ class AreasOSMBuilder():
 
     def generate_area_3d(self, area_2d):
 
-        if area_2d.geom is not None:
+        if area_2d.geom is not None and area_2d.geom.type != "LineString":
 
             if area_2d.geom.type in ('GeometryCollection', 'MultiPolygon'):
                 logger.debug("Generating area 3d as separate areas as it is a GeometryCollection: %s", area_2d)
@@ -748,7 +767,7 @@ class AreasOSMBuilder():
                 area_3d = area_3d.extrude_step(area_2d.buffer(-0.3), -0.5)
                 area_3d = area_3d.extrude_step(area_2d.buffer(-1.0), -0.5)
             if area_3d.extra['_extrusion_steps'] < 1:
-                logger.warn("COuld not extrude underwater area: %s", area_3d)
+                logger.warn("Could not extrude underwater area: %s", area_3d)
                 area_3d = area_3d.translate([0, 0, -1.0])
             if area_3d: result.append(area_3d)
 

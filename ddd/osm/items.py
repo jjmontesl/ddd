@@ -11,6 +11,7 @@ from ddd.pack.sketchy import plants, urban, landscape, industrial
 from ddd.geo import terrain
 import sys
 from ddd.pack.sketchy.urban import patio_table
+from collections import defaultdict
 
 
 # Get instance of logger for this module
@@ -437,6 +438,23 @@ class ItemsOSMBuilder():
 
         return item_3d
 
+    def select_way(self, item_2d):
+
+        #osm_way = item_2d.extra.get('osm:item:way', None)
+        osm_ways = item_2d.extra.get('osm:item:ways', [])
+
+        votes = defaultdict(list)
+        for way in osm_ways:
+            votes[way.extra['ddd:way:weight']].append(way)
+        max_voted_ways_weight = list(votes.items())
+        max_voted_ways_weight = reversed(sorted(max_voted_ways_weight, key=lambda w: w[0]))
+        max_voted_ways_weight = sorted(max_voted_ways_weight, key=lambda w: len(w[1]))
+        max_voted_ways_weight = list(reversed(max_voted_ways_weight))[0][0]
+        highest_ways = votes[max_voted_ways_weight]
+
+        osm_way = highest_ways[0]
+        return osm_way
+
     def generate_item_3d_traffic_signals(self, item_2d):
 
         key = "trafficlights-default-1"
@@ -445,12 +463,13 @@ class ItemsOSMBuilder():
             item_3d = urban.trafficlights()
             item_3d = self.osm.catalog.add(key, item_3d)
 
-        osm_way = item_2d.extra.get('osm:item:way', None)
-        osm_ways = item_2d.extra.get('osm:item:ways', None)
+        #osm_way = item_2d.extra.get('osm:item:way', None)
+        #osm_ways = item_2d.extra.get('osm:item:ways', None)
+        osm_way = self.select_way(item_2d)
         if osm_way:
             item_2d = self.osm.osmops.position_along_way(item_2d, osm_way)
-            if len(osm_ways) > 1:
-                logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
+        #    if len(osm_ways) > 1:
+        #        logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
         coords = item_2d.geom.coords[0]
         print(item_2d.extra)
 
@@ -482,13 +501,16 @@ class ItemsOSMBuilder():
                 return None
             item_3d = self.osm.catalog.add(key, item_3d)
 
-        osm_way = item_2d.extra.get('osm:item:way', None)
-        osm_ways = item_2d.extra.get('osm:item:ways', None)
+        osm_way = self.select_way(item_2d)
+        #osm_way = item_2d.extra.get('osm:item:way', None)
+        #osm_ways = item_2d.extra.get('osm:item:ways', None)
         if osm_way:
-            item_2d = self.osm.osmops.position_along_way(item_2d, osm_way)
+            offset = 0
+            if len(item_2d.extra.get('osm:item:ways', [])) > 3: offset = -5
+            item_2d = self.osm.osmops.position_along_way(item_2d, osm_way, offset=offset)
             coords = item_2d.geom.coords[0]
-            if len(osm_ways) > 1:
-                logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
+            #if len(osm_ways) > 1:
+            #    logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
         else:
             # Project point to have an orientation angle
             ways = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('osm:highway', None) not in ('path', 'track', 'footway', None))

@@ -6,11 +6,17 @@ import math
 
 items = ddd.group3()
 
-item = plants.tree_default()
-items.append(item)
+for h in (3.0, 5.0, 10.0, 15.0):
+    item = plants.tree_default(height=h)
+    items.append(item)
 
-item = plants.tree_palm()
-items.append(item)
+for h in (3.0, 5.0, 10.0, 15.0):
+    item = plants.tree_palm(height=h)
+    items.append(item)
+
+for h in (3.0, 5.0, 10.0, 15.0):
+    item = plants.tree_fir(height=h)
+    items.append(item)
 
 #item.show()
 

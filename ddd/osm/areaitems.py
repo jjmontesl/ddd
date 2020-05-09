@@ -89,8 +89,10 @@ class AreaItemsOSMBuilder():
 
         chairs = ddd.group2(name="Outdoor seating seats")
         for i in range(table.extra['osm:seats']):
-            chair = ddd.point([0, random.uniform(0.7, 1.1)], name="Outdoor seating seat %d: %s" % (i, feature.name)).rotate((2 * math.pi / table.extra['osm:seats']) * i + random.uniform(-0.1, 0.1)).translate(center.geom.coords[0])
+            ang = (2 * math.pi / table.extra['osm:seats']) * i + random.uniform(-0.1, 0.1)
+            chair = ddd.point([0, random.uniform(0.7, 1.1)], name="Outdoor seating seat %d: %s" % (i, feature.name)).rotate(ang).translate(center.geom.coords[0])
             chair.extra['osm:amenity'] = 'seat'
+            chair.extra['ddd:angle'] = ang * (180 / math.pi)
             chairs.append(chair)
 
         item = ddd.group2([table, umbrella, chairs], "Outdoor seating: %s" % feature.name)

@@ -45,6 +45,11 @@ def road(path):
 def bridge(path):
     pass
 
+
+def traffic_cam():
+    pass
+
+
 def lines_line(path, line_distance = 0.0):
     # Create line
     pathline = path.copy()

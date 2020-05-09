@@ -233,10 +233,15 @@ class OSMBuilder():
     def save_tile_2d(self, path):
         tile = ddd.group2([
                     ddd.shape(self.area_crop).material(ddd.material(color='#ffffff')),
-                    self.ground_2d, self.water_2d,
-                    self.areas_2d, self.ways_2d['0'], self.roadlines_2d,
-                    self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f', opacity=0.6)),
-                    self.items_2d, self.items_1d.buffer(0.5).material(ddd.mats.highlight), ])
+                    self.ground_2d,
+                    self.areas_2d.select(lambda o: o.extra.get('ddd:area:type') != 'underwater'),
+                    self.water_2d,
+                    #self.ways_2d['-1a'], self.ways_2d['0'], self.areas_2d, self.ways_2d['0a'],
+                    #self.ways_2d['1'], self.roadlines_2d,
+                    #self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f', opacity=0.6)),
+                    self.items_2d,
+                    self.items_1d.buffer(0.5)
+                    ])
         tile = tile.intersection(ddd.shape(self.area_crop))
         tile.save(path)
 
