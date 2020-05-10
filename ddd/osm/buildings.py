@@ -12,6 +12,7 @@ from ddd.ddd import ddd
 from ddd.pack.sketchy import plants, urban
 from ddd.geo import terrain
 from ddd.core.exception import DDDException
+from ddd.util.dddrandom import weighted_choice
 
 
 # Get instance of logger for this module
@@ -47,7 +48,7 @@ class BuildingOSMBuilder():
                 logger.warn("Building part with multiple buildings: %s -> %s", feature, buildings.children)
 
             else:
-                logger.debug("Associating building part to building: %s -> %s", feature, buildings.children[0])
+                #logger.debug("Associating building part to building: %s -> %s", feature, buildings.children[0])
                 feature.extra['ddd:building:feature'] = buildings.children[0]
                 if 'ddd:building:parts' not in buildings.children[0].extra:
                     buildings.children[0].extra['ddd:building:parts'] = []
@@ -140,6 +141,8 @@ class BuildingOSMBuilder():
     def generate_building_3d_generic(self, building_2d):
         """
         Buildings 2D may contain references to building parts.
+
+        TODO: Do a lot more in tags in 2D and here, and generalize tasks to styles and tags.
         """
 
         floors = building_2d.extra.get('osm:building:levels', None)
@@ -153,6 +156,15 @@ class BuildingOSMBuilder():
         entire_building_2d = ddd.group2()
         entire_building_3d = building_2d.copy3(name="Building: %s" % (building_2d.name))
 
+        roof_type = weighted_choice({'none': 2,
+                                     'flat': 1,
+                                     'pointy': 0.5,
+                                     'attic': 0.5,
+                                     'terrace': 1})
+        roof_buffered = weighted_choice({True: 1, False: 5})
+        roof_buffer = random.uniform(0.5, 1.2)
+        roof_wall_material = weighted_choice({'stone': 3, 'brick': 1})
+
         for part in (building_2d.extra['ddd:building:parts'] + [building_2d]):
 
             building_3d = None
@@ -160,7 +172,7 @@ class BuildingOSMBuilder():
 
                 floors = int(part.extra.get('osm:building:levels', base_floors))
                 if floors == 0:
-                    logger.warn("Building with 0 floors (setting to 1): %s", floors)
+                    logger.warn("Building part with 0 floors (setting to 1): %s", floors)
                     floors = 1
 
                 # Remove building so far
@@ -171,43 +183,66 @@ class BuildingOSMBuilder():
                 # Generate building procedurally (use library)
                 building_3d = part.extrude(floors * 3.00)
                 building_3d = building_3d.material(material)
+
+                pbuffered = roof_buffered
+                ptype = roof_type
+                if floors < 2:
+                    ptype = 'none'
+                if floors < base_floors:
+                    pbuffered = False
+                    if (random.uniform(0, 1) < 0.8): ptype = random.choice(['terrace', 'none'])
+
+                # Base
                 if random.uniform(0, 1) < 0.2:
                     base = part.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
                     base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.roof_tiles]))
                     building_3d.children.append(base)
-                if random.uniform(0, 1) < 0.4:
+
+                # Roof
+                try:
                     roof = None
-                    roof_type = random.choice([1, 2, 3])
-                    roof_buffer = random.uniform(0.5, 1.5) if random.uniform(0, 1) < 0.5 else 0.0
-                    if roof_type == 1:
+                    if ptype == 'flat':
                         # Flat
-                        roof = part.buffer(roof_buffer, cap_style=2, join_style=2).extrude(0.75).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
-                    elif roof_type == 2:
+                        roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude(0.75).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
+                    if ptype == 'terrace':
+                        # Flat
+                        usefence = random.uniform(0, 1) < 0.8
+                        if usefence:
+                            terrace = part.subtract(part.buffer(-0.4)).extrude(0.6).translate([0, 0, floors * 3.00]).material(getattr(ddd.mats, roof_wall_material))
+                            fence = part.buffer(-0.2).outline().extrude(0.7).twosided().translate([0, 0, floors * 3.00 + 0.6]).material(ddd.mats.railing)
+                            roof = ddd.group3([terrace, fence], name="Roof")
+                        else:
+                            terrace = part.subtract(part.buffer(-0.4)).extrude(random.uniform(0.40, 1.20)).translate([0, 0, floors * 3.00]).material(ddd.mats.stone)
+                            roof = ddd.group3([terrace], name="Roof")
+
+                    elif ptype == 'pointy':
                         # Pointy
                         height = floors * 0.2 + random.uniform(2.0, 5.0)
                         try:
-                            roof = part.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(part.buffer(-10), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
+                            roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.buffer(-10), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
                         except DDDException as e:
                             logger.debug("Could not generate roof: %s", e)
-                    elif roof_type == 3:
+                    elif ptype == 'attic':
                         # Attic
                         height = random.uniform(3.0, 4.0)
                         try:
-                            roof = part.buffer(roof_buffer, cap_style=2, join_style=2).extrude_step(part.buffer(-2), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
+                            roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.buffer(-2), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
                         except DDDException as e:
                             logger.debug("Could not generate roof: %s", e)
 
                     if roof: building_3d.children.append(roof)
+                except Exception as e:
+                    logger.warning("Cannot generate roof: %s (geom: %s)" % (e, part.geom))
+
+                # UV Mapping
+                building_3d = ddd.uv.map_cubic(building_3d)
+
+                entire_building_2d.append(part)
+                entire_building_3d.append(building_3d)
 
             except ValueError as e:
                 logger.warning("Cannot generate building: %s (geom: %s)" % (e, part.geom))
                 return None
-
-            # UV Mapping
-            building_3d = ddd.uv.map_cubic(building_3d)
-
-            entire_building_2d.append(part)
-            entire_building_3d.append(building_3d)
 
         entire_building_3d = terrain.terrain_geotiff_min_elevation_apply(entire_building_3d, self.osm.ddd_proj)
         entire_building_3d = entire_building_3d.translate([0, 0, -0.20])  # temporary hack floor snapping
@@ -308,7 +343,7 @@ class BuildingOSMBuilder():
                     logger.info("Could not snap item to building (skipping item): %s", item)
 
             else:
-                logger.debug("Unknown building-related item (%s): %s", item_1d)
+                logger.debug("Unknown building-related item: %s", item_1d)
 
 
 

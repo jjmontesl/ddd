@@ -185,7 +185,7 @@ class ItemsOSMBuilder():
             if plant_height > 15.0: plant_height=random.uniform(12.0, 15.0)
 
             if tree_type == 'default':
-                item_3d = plants.plant(height=plant_height)
+                item_3d = plants.tree_default(height=plant_height)
             elif tree_type == 'palm':
                 item_3d = plants.tree_palm(height=plant_height)
             else:

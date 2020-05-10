@@ -201,9 +201,11 @@ class OSMBuildCommand(DDDCommand):
         if self.area:
             trans_func = partial(pyproj.transform, osm_proj, ddd_proj)
             area_ddd = ops.transform(trans_func, self.area)
-            logger.info("Polygon area: %.1f km2 (%d at 500, %d at 250, %d at 200)", (area_ddd.area / (1000 * 1000)), (area_ddd.area / (500 * 500)), (area_ddd.area / (250 * 250)), (area_ddd.area / (200 * 200)))
+            logger.info("Complete polygon area: %.1f km2 (%d at 500, %d at 250, %d at 200)", (area_ddd.area / (1000 * 1000)), (area_ddd.area / (500 * 500)), (area_ddd.area / (250 * 250)), (area_ddd.area / (200 * 200)))
 
         # TODO: organise tasks and locks in pipeline, not here
+        skipped = 0
+        existed = 0
         for (idx, (x, y)) in enumerate(range_around([-64, -64, 64, 64])):
         #for x, y in range_around([-8, -8, 8, 8]):  # -8, 3
 
@@ -222,14 +224,16 @@ class OSMBuildCommand(DDDCommand):
             area_filter = ddd.rect(bbox_filter).geom
 
             if area_ddd and not area_ddd.intersects(area_crop):
-                logger.debug("Skipping: %s (cropped area not contained in greater filtering area)", filename)
+                skipped += 1
+                #logger.debug("Skipping: %s (cropped area not contained in greater filtering area)", filename)
                 #if os.path.exists(filename):
                 #    logger.info("Deleting: %s", filename)
                 #    os.unlink(filename)
                 continue
 
             if not D1D2D3Bootstrap._instance.overwrite and os.path.exists(filename):
-                logger.debug("Skipping: %s (already exists)", filename)
+                #logger.debug("Skipping: %s (already exists)", filename)
+                existed += 1
                 continue
 
             # Try to lock
@@ -277,6 +281,10 @@ class OSMBuildCommand(DDDCommand):
             except FileExistsError as e:
                 logger.info("Skipping: %s (lock file exists)", filename)
 
+        if existed > 0:
+            logger.info("Skipped %d tiles that already existed.", skipped)
+        if skipped > 0:
+            logger.info("Skipped %d tiles not contained in greater filtering area.", skipped)
 
 
 #self = OSMDDDBootstrap()

@@ -230,19 +230,24 @@ class OSMBuilder():
         #        print(f)
         #sys.exit(1)
 
-    def save_tile_2d(self, path):
+    def tile_2d(self):
         tile = ddd.group2([
                     ddd.shape(self.area_crop).material(ddd.material(color='#ffffff')),
-                    self.ground_2d,
-                    self.areas_2d.select(lambda o: o.extra.get('ddd:area:type') != 'underwater'),
-                    self.water_2d,
-                    #self.ways_2d['-1a'], self.ways_2d['0'], self.areas_2d, self.ways_2d['0a'],
-                    #self.ways_2d['1'], self.roadlines_2d,
-                    #self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f', opacity=0.6)),
+                    self.ground_2d, self.water_2d,
+                    self.areas_2d,
+                    self.ways_2d['-1a'], self.ways_2d['0'], self.ways_2d['0a'], self.ways_2d['1'],
+                    self.roadlines_2d,
+                    self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f', opacity=0.6)),
                     self.items_2d,
-                    self.items_1d.buffer(0.5)
-                    ])
+                    self.items_1d.buffer(0.5).material(ddd.mats.highlight),
+                    ]).flatten().select(lambda o: o.extra.get('ddd:area:type') != 'underwater')
         tile = tile.intersection(ddd.shape(self.area_crop))
+        return tile
+
+    def save_tile_2d(self, path):
+        tile = self.tile_2d()
+        #tile.save("/tmp/tile.json")
+        #tile.dump()
         tile.save(path)
 
     def generate(self):
@@ -266,6 +271,7 @@ class OSMBuilder():
         # Ways depend on buildings
         self.ways.generate_ways_2d()
 
+        self.save_tile_2d("/tmp/tile.svg")
         self.areas.generate_areas_2d()
         self.areas.generate_areas_2d_interways()  # and assign types
 
@@ -327,7 +333,6 @@ class OSMBuilder():
                  #self.sidewalks_3d_l1, self.walls_3d_l1, self.floor_3d_l1,
                  self.buildings_3d, self.items_3d,
                  self.other_3d, self.roadlines_3d]
-
         scene = ddd.group(scene + list(self.ways_3d.values()), name="Scene")
 
         return scene

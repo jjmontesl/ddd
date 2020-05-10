@@ -62,6 +62,9 @@ def extrude_step(obj, shape, offset, cap=True):
     elif geom_b.is_empty:
         logger.debug("Extruding to point (should be using line too).")
         geom_b = geom_a.centroid
+    elif geom_b.type == "LineString":
+        logger.debug("Extruding to line as point (should be using line).")
+        geom_b = geom_b.centroid
 
     vertices = list(result.mesh.vertices) if result.mesh else []
     faces = list(result.mesh.faces) if result.mesh else []
@@ -112,7 +115,7 @@ def extrude_between_geoms(geom_a, geom_b, offset, base_height):
     # Ensure winding
     if (geom_a.type == "Polygon" and geom_b.type == "Polygon"):
         if (geom_a.exterior.is_ccw != geom_b.exterior.is_ccw):
-            logger.debug("Cannot extrude between polygons with different winding. Orienting polygons.")
+            logger.warn("Cannot extrude between polygons with different winding. Orienting polygons.")
             geom_a = orient(geom_a, -1)
             geom_b = orient(geom_b, -1)
 

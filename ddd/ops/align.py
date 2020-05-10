@@ -35,6 +35,8 @@ class DDDAlign():
     def matrix_polar(self, obj, count=None, angle_interval=None, span=math.pi * 2):
         """
         Clones the object and positions it radially.
+
+        TODO: Should be polar really, and copies made by another method.
         """
 
         result = ddd.group3(name="Matrix of: %s" % obj.name)

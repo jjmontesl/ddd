@@ -130,7 +130,7 @@ class AreaItemsOSMBuilder():
         exterior = item_2d.subtract(item_2d.buffer(-0.3)).extrude(1.0).material(ddd.mats.stone)
         exterior = ddd.uv.map_cylindrical(exterior)
 
-        water =  item_2d.buffer(-0.15).triangulate().material(ddd.mats.water).translate([0, 0, .7])
+        water =  item_2d.buffer(-0.20).triangulate().material(ddd.mats.water).translate([0, 0, .7])
 
         #coords = item_2d.geom.centroid.coords[0]
         #insidefountain = urban.fountain(r=item_2d.geom).translate([coords[0], coords[1], 0.0])

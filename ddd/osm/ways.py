@@ -420,12 +420,21 @@ class WaysOSMBuilder():
             width = 2 * 3.30
             lamps = True  # shall be only in city?
             path.extra['ddd:way:weight'] = 32
+
         elif path.extra.get('osm:highway', None) == "cycleway":
             lanes = 1
             lane_width = 1.5
             material = ddd.mats.pitch_blue
             #extra_height = 0.0
             roadlines = True
+            path.extra['ddd:way:weight'] = 10
+        elif path.extra.get('osm:highway', None) == "corridor":
+            lanes = 0
+            material = ddd.mats.pathwalk
+            extra_height = 0.35  # 0.2 allows easy car driving
+            width = 2.2
+            path.extra['ddd:way:weight'] = 41
+
         elif path.extra.get('osm:highway', None) == "unclassified":
             lanes = 1
             material = ddd.mats.dirt
@@ -1275,7 +1284,7 @@ class WaysOSMBuilder():
 
         ways_2d = defaultdict(list)
         for w in ways_1d:
-            f = w.extra['osm:feature']
+            #f = w.extra['osm:feature']
             way_2d = self.generate_way_2d(w)
             if way_2d:
                 weight = way_2d.extra['ddd:way:weight']
@@ -1472,7 +1481,7 @@ class WaysOSMBuilder():
             way_3d.extra['ddd:shadows'] = False  # Should come from style
 
         #if way_2d.extra.get('osm:natural', None) == "coastline": way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
-        if way_2d.extra.get('ddd:area:type') == "water": way_3d = way_3d.translate([0, 0, -0.5])
+        if way_2d.extra.get('ddd:area:type') == 'water': way_3d = way_3d.translate([0, 0, -0.5])
         return way_3d
 
     def generate_way_3d_railway(self, way_2d):

@@ -23,7 +23,7 @@ def recursivetree(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, 
         azimuth = 0
         num_items = fork_spawn + random.randint(-1, +1)
 
-        if fork_level > 0:
+        if fork_level > 1:
             stop_prob = 0.1
             if random.uniform(0.0, 1.0) < stop_prob: num_items = 0
 
@@ -62,10 +62,10 @@ def treetop(r=1.75, flatness=0.3, subdivisions=1):
     treetop.name = "Treetop"
     return treetop
 
-def tree_default(height=3.5, r=0.40, fork_iters=3, fork_height_ratio=0.66):
+def tree_default(height=3.5, r=0.40, fork_iters=2, fork_height_ratio=0.66):
 
-    def trunk_callback():
-        section = ddd.regularpolygon(sides=5, r=r).extrude(height * fork_height_ratio)
+    def trunk_callback(height):
+        section = ddd.regularpolygon(sides=5, r=r).extrude(height)
         section = ddd.uv.map_cylindrical(section)
         section = section.material(ddd.mats.bark)
         return section
@@ -87,7 +87,7 @@ def tree_default(height=3.5, r=0.40, fork_iters=3, fork_height_ratio=0.66):
     obj = obj.material(mat_leaves)
     '''
 
-    obj.name = "Plant"
+    obj.name = "Tree Default"
 
     return obj
 
@@ -134,10 +134,10 @@ def tree_palm(height=14, r=0.30):
     The palms generally grow with 4–9 stems per clump, but up to 25 stems is possible.
     """
 
-    def trunk_callback():
-        section = ddd.regularpolygon(sides=5, r=r).extrude_step(ddd.regularpolygon(sides=5, r=r*0.8), height * 0.15 * 0.66)
-        section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.8).translate([random.uniform(-0.4, 0.4), random.uniform(-0.4, 0.4)]), height * 0.35 * 0.66)
-        section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.7).translate([random.uniform(-0.3, 0.3), random.uniform(-0.3, 0.3)]), height * 0.5 * 0.66)
+    def trunk_callback(height):
+        section = ddd.regularpolygon(sides=5, r=r).extrude_step(ddd.regularpolygon(sides=5, r=r*0.8), height * 0.15)
+        section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.8).translate([random.uniform(-0.4, 0.4), random.uniform(-0.4, 0.4)]), height * 0.35)
+        section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.7).translate([random.uniform(-0.3, 0.3), random.uniform(-0.3, 0.3)]), height * 0.5)
         section = ddd.uv.map_cylindrical(section)
         section = section.material(ddd.mats.bark)
         return section
@@ -158,6 +158,8 @@ def tree_palm(height=14, r=0.30):
 
     obj = recursivetree(height=height, r=r, fork_iters=1, fork_angle=10.0,
                         trunk_callback=trunk_callback, leaves_callback=leaves_callback)
+    obj.name = "Tree Palm"
+
     #obj.show()
     return obj
 

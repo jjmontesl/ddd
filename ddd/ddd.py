@@ -442,31 +442,35 @@ class DDDObject():
         for c in self.children:
             c.dump(indent_level=indent_level + 1)
 
-    def select(self, func=None, remove=False):
+    def select(self, func=None, recurse=True):
         """
+        Returns copies of objects!
         """
 
         if func is None: func = lambda o: True
 
         result = []
-        if func(self):
+        selected = func(self)
+        if selected:
             result.append(self)
 
-        for c in self.children:
-            cr = c.select(func, remove=remove)
-            if cr: result.extend(cr.children)
+        if not selected or recurse:
+            for c in self.children:
+                cr = c.select(func)
+                if cr: result.extend(cr.children)
 
-        if remove:
-            self.children = [c for c in self.children if c not in result]
+        #self.children = [c for c in self.children if c not in result]
 
         return self.grouptyped(result)
 
     def filter(self, func):
         return self.select(func)
 
+    '''
     def apply(self, func):
         for obj in self.select().children:
             func(obj)
+    '''
 
     def apply_components(self, methodname, *args, **kwargs):
         """
