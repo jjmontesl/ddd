@@ -400,10 +400,12 @@ def post_box(height=1.10, r=0.35):
     return obj
 
 
-def statue():
-    pass
+def pedestal(obj=None, d=1.0):
+    '''
+    A pedestal with an optional object on top.
+    Sits centered on its base.
+    '''
 
-def pedestal(d=1.0, obj=None):
     pedestal = ddd.cube(d=d / 2.0).material(ddd.mats.bronze)
     pedestal = ddd.uv.map_cubic(pedestal)
 
@@ -411,6 +413,9 @@ def pedestal(d=1.0, obj=None):
 
     item = ddd.group([pedestal, obj], name="Pedestal: %s" % obj.name)
     return item
+
+def statue():
+    pass
 
 def sculpture(d=1.0, height=4.0):
     """
@@ -510,13 +515,6 @@ def plaque():
     '''
     A plaque, just the square form with text.
     Lays centered with its back on the vertical plane.
-    '''
-    pass
-
-def pedestal():
-    '''
-    A pedestal with an optional plaque position, and an optional object on top.
-    Sits centered on its base.
     '''
     pass
 

@@ -52,6 +52,7 @@ item = urban.sculpture()
 items.append(item)
 
 item = urban.sculpture_text("Test")
+item = urban.pedestal(item)
 items.append(item)
 
 item = urban.sculpture_text("Monumental test string", vertical=True, height=12)

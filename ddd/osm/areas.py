@@ -35,6 +35,7 @@ from ddd.pack.sketchy import plants, urban, sports
 from ddd.geo import terrain
 from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
+from _ast import Or
 
 
 # Get instance of logger for this module
@@ -50,7 +51,6 @@ class AreasOSMBuilder():
 
     def generate_areas_2d(self):
         logger.info("Generating 2D areas.")
-        logger.warning("BRING AREAITEMS here and sort them too. Possibly remove areaitems, and refactor from here (2D -> shapes).")
 
         areas = []
         for feature in self.osm.features_2d.children:
@@ -148,6 +148,17 @@ class AreasOSMBuilder():
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_park(narea)
 
+            elif narea.extra.get('osm:amenity', None) in ('parking', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_parking(narea)
+
+            elif (narea.extra.get('osm:public_transport', None) in ('platform', ) or
+                  narea.extra.get('osm:railway', None) in ('platform', )):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_platform(narea)
+
             elif narea.extra.get('osm:tourism', None) in ('artwork', ):
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
@@ -229,7 +240,7 @@ class AreasOSMBuilder():
     def generate_area_2d_artwork(self, area):
 
         feature = area.extra['osm:feature']
-        item = area.centroid()
+        item = area.extra['osm:feature_2d'].centroid()    # area.centroid()
         item.extra['osm:historic'] = "monument"
 
         area.name = "Artwork: %s" % feature['properties'].get('name', None)
@@ -237,10 +248,13 @@ class AreasOSMBuilder():
         area.extra['ddd:steps:count'] = 2
         area.extra['ddd:steps:height'] = 0.16
         area.extra['ddd:steps:depth'] = 0.38
-        area = area.material(ddd.mats.sidewalk)
+        area = area.material(ddd.mats.stone)
 
         # Add artwork in center as point
-        self.osm.items_1d.append(item)
+        if item.geom:
+            self.osm.items_1d.append(item)
+        else:
+            logger.warn("Cannot generate area 2D artwork item: %s", area)
 
         return area
 
@@ -254,6 +268,17 @@ class AreasOSMBuilder():
     def generate_area_2d_beach(self, area):
         area.name = "Beach: %s" % area.name
         area = area.material(ddd.mats.sand)
+        return area
+
+    def generate_area_2d_parking(self, area):
+        area.name = "Parking: %s" % area.name
+        area = area.material(ddd.mats.asphalt)
+        return area
+
+    def generate_area_2d_platform(self, area):
+        area.name = "Platform: %s" % area.name
+        area = area.material(ddd.mats.pavement)
+        area.extra['ddd:height'] = 0.3
         return area
 
     def generate_area_2d_vineyard(self, area):
@@ -633,11 +658,13 @@ class AreasOSMBuilder():
                 if area_3d:
                     self.osm.areas_3d.children.append(area_3d)
             except ValueError as e:
-                logger.warn("Could not generate area %s: %s", area_2d, e)
+                logger.error("Could not generate area %s: %s", area_2d, e)
                 raise
             except IndexError as e:
-                logger.warn("Could not generate area %s: %s", area_2d, e)
+                logger.error("Could not generate area %s: %s", area_2d, e)
                 raise
+            except DDDException as e:
+                logger.warn("Could not generate area (ignoring) %s: %s", area_2d, e)
 
     def generate_area_3d(self, area_2d):
 
@@ -698,7 +725,7 @@ class AreasOSMBuilder():
                 area_3d = ddd.uv.map_cubic(area_3d)
 
                 if True:
-                    interior = area_2d.buffer(-0.2)
+                    interior = area_2d.buffer(-0.3)
                     area_3d = interior.extrude(-0.5 - height).translate([0, 0, height])
                     kerb_3d = area_2d.subtract(interior).extrude(-0.5 - height).translate([0, 0, height])
                     kerb_3d = ddd.uv.map_cubic(kerb_3d).material(ddd.mats.cement)

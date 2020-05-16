@@ -7,7 +7,7 @@ import random
 import numpy as np
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy.urban import post, lamp_ball
+from ddd.pack.sketchy.urban import post, lamp_ball, cable
 import math
 from trimesh import transformations
 

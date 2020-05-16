@@ -213,6 +213,7 @@ class OSMBuilder():
 
             feature_2d = ddd.shape(f.geometry, name=name)
             feature_2d.extra['osm:feature'] = f
+            feature_2d.extra['osm:feature_2d'] = feature_2d
             for k, v in f.properties.items():
                 feature_2d.extra['osm:' + k] = v
 
@@ -226,7 +227,7 @@ class OSMBuilder():
 
         # Coastlines?
         #for f in self.features_2d.children:
-        #    if f.extra.get('osm:natural', None) == 'coastline':
+        #    if f.extra.get('osm:tourism', None) != None:
         #        print(f)
         #sys.exit(1)
 

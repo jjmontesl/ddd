@@ -46,16 +46,15 @@ class AreaItemsOSMBuilder():
     def generate_items_2d(self):
         logger.info("Generating 2D area items (fountains, playgrounds...)")
 
-
         for feature in self.osm.features_2d.children:
 
-            if feature.geom.type == 'Point': continue
+            #if feature.geom.type == 'Point': continue
 
             area = None
 
-            if feature.extra.get('osm:amenity', None) in ('fountain', ):
+            if not feature.geom.type == 'Point' and feature.extra.get('osm:amenity', None) in ('fountain', ):
                 area = self.generate_item_2d_fountain(feature)
-            elif feature.extra.get('osm:water', None) in ('pond', ):
+            elif not feature.geom.type == 'Point' and feature.extra.get('osm:water', None) in ('pond', ):
                 area = self.generate_item_2d_pond(feature)
 
             elif feature.extra.get('osm:leisure', None) == 'outdoor_seating':
@@ -116,17 +115,18 @@ class AreaItemsOSMBuilder():
 
         center = feature.centroid()
 
-        items = [ddd.point(name="Swingset", extra={'osm:playground': 'swing'}),
-                 ddd.point(name="Swingset", extra={'osm:playground': 'sandbox'}),
-                 ddd.point(name="Swingset", extra={'osm:playground': 'slide'}),
-                 ddd.point(name="Swingset", extra={'osm:playground': 'monkey_bar'})]
-        items = ddd.group2(items, name="Childrens Playground")
+        items = [ddd.point(name="Swingset Swing", extra={'osm:playground': 'swing'}),
+                 ddd.point(name="Swingset Sandbox", extra={'osm:playground': 'sandbox'}),
+                 ddd.point(name="Swingset Slide", extra={'osm:playground': 'slide'}),
+                 ddd.point(name="Swingset Monkey Bar", extra={'osm:playground': 'monkey_bar'})]
+        items = ddd.group2(items, name="Childrens Playground: %s" % feature.name)
 
-        items = ddd.align.polar(items, 2)
-        items.translate(center)
+        items = ddd.align.polar(items, 3, offset=random.uniform(0, math.pi * 2))
+        items = items.translate(center.geom.coords[0])
 
         for i in items.flatten().children:
-            self.osm.items_1d.append(i)
+            if i.geom:
+                self.osm.items_1d.append(i)
 
         return None
 

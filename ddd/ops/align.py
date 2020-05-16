@@ -32,15 +32,15 @@ class DDDAlign():
 
         return obj
 
-    def polar(self, obj, d):
+    def polar(self, obj, d, offset=0):
         """
         Distribute children around center with distance d.
         """
         for idx, c in enumerate(obj.children):
-            angle = (2 * math.pi) / len(obj.children) * idx
+            angle = offset + (2 * math.pi) / len(obj.children) * idx
             posx, posy = math.cos(angle) * d, math.sin(angle) * d
             newc = c.translate([posx, posy, 0])
-            newc.extra['ddd:angle'] = angle + (math.pi / 2)
+            newc.extra['ddd:angle'] = angle - (math.pi / 2)
             c.replace(newc)
         return obj
 

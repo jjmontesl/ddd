@@ -112,6 +112,8 @@ class ItemsOSMBuilder():
 
         elif item_2d.extra.get('osm:tourism', None) == 'artwork' and item_2d.extra.get('osm:artwork_type', None) == 'sculpture':
             item_3d = self.generate_item_3d_sculpture(item_2d)
+        elif item_2d.extra.get('osm:tourism', None) == 'artwork' and item_2d.extra.get('osm:artwork_type', None) == 'statue':
+            item_3d = self.generate_item_3d_sculpture(item_2d)
         elif item_2d.extra.get('osm:historic', None) == 'monument':  # Large monument
             item_3d = self.generate_item_3d_monument(item_2d)
         elif item_2d.extra.get('osm:historic', None) == 'memorial':
@@ -135,6 +137,8 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_fence(item_2d)
         elif item_2d.extra.get('osm:barrier', None) == 'hedge':
             item_3d = self.generate_item_3d_hedge(item_2d)
+
+        #elif item_2d.extra.get('osm:leisure', None) == 'playground':
 
         elif item_2d.extra.get('osm:playground', None) == 'swing':
             item_3d = self.generate_item_3d_generic(item_2d, urban.childrens_playground_swingset, "Playground Swings")
@@ -328,6 +332,7 @@ class ItemsOSMBuilder():
             item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0)
         else:
             item_3d = urban.sculpture(2.0, 5.0)
+        item_3d = urban.pedestal(item_3d, 2.0)
         item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
         item_3d.name = 'Monument: %s' % item_2d.name
@@ -495,7 +500,6 @@ class ItemsOSMBuilder():
         #    if len(osm_ways) > 1:
         #        logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
         coords = item_2d.geom.coords[0]
-        print(item_2d.extra)
 
         if 'osm:direction' in item_2d.extra: item_2d.extra['ddd:angle'] = item_2d.extra['osm:direction'] * (math.pi / 180)
         #if item_2d.extra.get('ddd:angle', None) is None: item_2d.extra['ddd:angle'] = 0
@@ -539,7 +543,9 @@ class ItemsOSMBuilder():
             # Project point to have an orientation angle
             ways = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('osm:highway', None) not in ('path', 'track', 'footway', None))
             coords = item_2d.geom.coords[0]
+            angle = item_2d.extra.get('ddd:angle', None)
             item_2d = ddd.snap.project(item_2d, ways, penetrate=-0.5)
+            if angle: item_2d.extra['ddd:angle'] = angle
 
         item_3d.prop_set('ddd:static', False, children=False)  # TODO: Make static or not via styling
         item_3d.extra['ddd:layer'] = 'DynamicObjects'  # TODO: Assign layers via styling

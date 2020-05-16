@@ -84,13 +84,13 @@ class D1D2D3():
         return material
 
     @staticmethod
-    def point(coords=None, name=None):
+    def point(coords=None, name=None, extra=None):
         if coords is None:
             coords = [0, 0, 0]
         elif len(coords) == 2:
             coords = [coords[0], coords[1], 0.0]
         geom = geometry.Point(coords)
-        return DDDObject2(geom=geom, name=name)
+        return DDDObject2(geom=geom, name=name, extra=extra)
 
     @staticmethod
     def line(points, name=None):
@@ -931,7 +931,7 @@ class DDDObject2(DDDObject):
             if self.geom.type == 'MultiPolygon' or self.geom.type == 'GeometryCollection':
                 meshes = []
                 for geom in self.geom.geoms:
-                    pol = DDDObject2(geom=geom)
+                    pol = DDDObject2(geom=geom, extra=dict(self.extra), name="Triangulated Multi: %s" % self.name)
                     mesh = pol.triangulate(twosided)
                     meshes.append(mesh)
                 result = ddd.group(children=meshes, name=self.name)
@@ -1676,6 +1676,29 @@ class DDDObject3(DDDObject):
     def union(self, other):
         return self._csg(other, operation='union')
 
+    def combine(self):
+        """
+        Combine geometry for this and all children meshes.
+        """
+        result = self.copy()
+        for c in self.children:
+            cc = c.combine()
+            if result.mat is None and cc.mat is not None: result = result.material(cc.mat)
+            result.mesh = result.mesh + cc.mesh if result.mesh else cc.mesh
+            #result.extra.update(cc.extra)
+            #vertices = list(result.mesh.vertices) + list(cc.mesh.vertices)
+            #result.mesh = Trimesh(vertices, faces)
+            if cc.extra['uv']:
+                if 'uv' not in result.extra: result.extra['uv'] = []
+                #offset = len(result.extra['uv'])
+                result.extra['uv'] = result.extra['uv'] + list(cc.extra['uv'])
+
+        #result.mesh.fix_normals()
+        #result.mesh.merge_vertices()
+
+        result.children = []
+        return result
+
     def extrude_step(self, obj_2d, offset, cap=True):
         if self.children:
             raise DDDException("Cannot extrude_step with children.")
@@ -1769,7 +1792,7 @@ class DDDObject3(DDDObject):
             uvs = [(v[0], v[2]) for v in self.mesh.vertices]
 
         if len(uvs) != len(self.mesh.vertices):
-            logger.warning("Invalid number of UV coordinates: %s (uv: %s)", self, uvs)
+            logger.warning("Invalid number of UV coordinates: %s (vertices: %s, uv: %s)", self, len(self.mesh.vertices), len(uvs))
             #raise DDDException("Invalid number of UV coordinates: %s", self)
             uvs = [(v[0], v[2]) for v in self.mesh.vertices]
 
@@ -1903,7 +1926,7 @@ class DDDObject3(DDDObject):
             #scene.lights = [light]
             scene.show('gl')
 
-        if D1D2D3Bootstrap.renderer == 'pyrender':
+        elif D1D2D3Bootstrap.renderer == 'pyrender':
 
             # PyRender
             import pyrender

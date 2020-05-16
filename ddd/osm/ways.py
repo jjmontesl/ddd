@@ -356,7 +356,7 @@ class WaysOSMBuilder():
             lane_width_left = 0.5
             roadlines = True
         elif path.extra.get('osm:highway', None) == "secondary":
-            lanes = 2 if path.extra.get('oneway', False) else 3
+            lanes = 2 if path.extra.get('osm:oneway', False) else 3
             lane_width = 3.4
             lamps = True
             traffic_signals = True
@@ -378,7 +378,7 @@ class WaysOSMBuilder():
             # lanes = 1.0  # Using 1 lane for residential/living causes too small roads
             lanes = 2 if path.extra.get('osm:oneway', False) else 2
             lamps = path.extra.get('osm:lit', True)  # shall be only in city?
-            traffic_signals = False
+            traffic_signals = True
             roadlines = True
             path.extra['ddd:way:weight'] = 22
         elif path.extra.get('osm:highway', None) in ("living_street", ):
@@ -594,8 +594,7 @@ class WaysOSMBuilder():
         path.extra['ddd:way:lane_width_left'] = lane_width_left
         path.extra['ddd:way:lane_width_right'] = lane_width_right
         path.extra['ddd:way:augment_lamps'] = lamps  # Add via augmenting as well, adding metadata for this shall be avoided
-        path.extra['ddd:way:augment_traffic_signals'] = traffic_signals  # It's an augmenting property over osm, but applied to a road... where to put?
-        path.extra['ddd:way:oneway'] = path.extra.get('osm:oneway', None)
+        path.extra['ddd:way:augment_traffic_signals'] = traffic_signals  # Add via augmenting pipeline, do not add nmetadata here or avoid metadat if possible
         path.extra['ddd:way:roadlines'] = roadlines  # should be ddd:road:roadlines ?
         path.extra['ddd:item'] = create_as_item
         path.extra['ddd:item:height'] = extra_height
@@ -1730,7 +1729,7 @@ class WaysOSMBuilder():
                 self.generate_props_2d_way(way_2d)
             except Exception as e:
                 #raise DDDException("Could not generate props for way: %s" % e, ddd_obj=way_2d)
-                logger.error("ERror generating props for way %s: %s", way_2d, e)
+                logger.error("Error generating props for way %s: %s", way_2d, e)
 
     def generate_props_2d_way(self, way_2d):
 
@@ -1896,6 +1895,8 @@ class WaysOSMBuilder():
 
             for end in (1, -1):
 
+                if end == -1 and path.extra.get('osm:oneway', None): continue
+
                 if end == 1:
                     p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 10.0)
                 else:
@@ -1923,7 +1924,7 @@ class WaysOSMBuilder():
                 # Check type of area point is on
                 item.extra['way_2d'] = way_2d
                 item.extra['osm:highway'] = 'traffic_signals'
-                item.extra['ddd:angle'] = angle + math.pi/2
+                item.extra['ddd:angle'] = angle #+ math.pi/2
                 self.osm.items_1d.children.append(item)
 
         # Generate traffic signs
