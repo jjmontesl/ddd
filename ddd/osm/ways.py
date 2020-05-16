@@ -1760,7 +1760,7 @@ class WaysOSMBuilder():
 
                 line_continuous = False
                 if lineind in [0, numlines - 1]: line_continuous = True
-                if lanes >= 2 and lineind == int(numlines / 2) and not path.extra.get('osm:oneway', False): line_continuous = True
+                if lanes >= 2 and lineind == int(numlines / 2) and not path.extra.get('osm:oneway', False) and path.extra.get('osm:highway', None) != 'roundabout': line_continuous = True
                 line_x_offset = 0.076171875 if line_continuous else 0.5
 
                 line_0_distance = -(width / 2) + lane_width_right
@@ -1892,7 +1892,7 @@ class WaysOSMBuilder():
         '''
 
         # Generate traffic lights
-        if False and path.geom.length > 45.0 and path.extra['ddd:way:augment_traffic_signals'] and path.extra['ddd:layer'] == "0":
+        if True and path.geom.length > 45.0 and path.extra['ddd:way:augment_traffic_signals'] and path.extra['ddd:layer'] == "0":
 
             for end in (1, -1):
 
@@ -1923,12 +1923,11 @@ class WaysOSMBuilder():
                 # Check type of area point is on
                 item.extra['way_2d'] = way_2d
                 item.extra['osm:highway'] = 'traffic_signals'
-                item.extra['ddd:angle'] = angle
+                item.extra['ddd:angle'] = angle + math.pi/2
                 self.osm.items_1d.children.append(item)
 
-
         # Generate traffic signs
-        if False and path.geom.length > 20.0 and path.extra['ddd:way:augment_traffic_signals'] and path.extra['ddd:layer'] == "0":
+        if True and path.geom.length > 20.0 and path.extra['ddd:way:augment_traffic_signals'] and path.extra['ddd:layer'] == "0":
 
             # End right
             p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 11.5 - random.uniform(0.0, 10.0))

@@ -30,6 +30,9 @@ from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial
 from shapely.geometry.linestring import LineString
 from ddd.geo import terrain
+from ddd.pack.sketchy.urban import childrens_playground_swingset,\
+    childrens_playground_sandbox, childrens_playground_slide,\
+    childrens_playground_arc
 
 
 # Get instance of logger for this module
@@ -57,6 +60,8 @@ class AreaItemsOSMBuilder():
 
             elif feature.extra.get('osm:leisure', None) == 'outdoor_seating':
                 area = self.generate_item_2d_outdoor_seating(feature)
+            elif feature.extra.get('osm:leisure', None) == 'playground':
+                area = self.generate_item_2d_childrens_playground(feature)
 
             if area:
                 #union = union.union(area)
@@ -80,7 +85,7 @@ class AreaItemsOSMBuilder():
 
         table = center.copy(name="Outdoor seating table: %s" % feature.name)
         table.extra['osm:amenity'] = 'table'
-        table.extra['osm:seats'] = random.randint(0, 3)
+        table.extra['osm:seats'] = random.randint(0, 4)
 
         umbrella = ddd.group2()
         if random.uniform(0, 1) < 0.8:
@@ -88,17 +93,40 @@ class AreaItemsOSMBuilder():
             umbrella.extra['osmext:amenity'] = 'umbrella'
 
         chairs = ddd.group2(name="Outdoor seating seats")
+        ang_offset = random.choice([0, math.pi / 2, math.pi, math.pi * 3/4])
         for i in range(table.extra['osm:seats']):
-            ang = (2 * math.pi / table.extra['osm:seats']) * i + random.uniform(-0.1, 0.1)
-            chair = ddd.point([0, random.uniform(0.7, 1.1)], name="Outdoor seating seat %d: %s" % (i, feature.name)).rotate(ang).translate(center.geom.coords[0])
+            ang = ang_offset + (2 * math.pi / table.extra['osm:seats']) * i + random.uniform(-0.1, 0.1)
+            chair = ddd.point([0, random.uniform(0.7, 1.1)], name="Outdoor seating seat %d: %s" % (i, feature.name))
+            chair = chair.rotate(ang).translate(center.geom.coords[0])
             chair.extra['osm:amenity'] = 'seat'
-            chair.extra['ddd:angle'] = ang * (180 / math.pi)
+            chair.extra['ddd:angle'] = ang + random.uniform(-0.1, 0.1) # * (180 / math.pi)
             chairs.append(chair)
 
         item = ddd.group2([table, umbrella, chairs], "Outdoor seating: %s" % feature.name)
 
         for i in item.flatten().children:
             if i.geom: self.osm.items_1d.append(i)
+
+        return None
+
+    def generate_item_2d_childrens_playground(self, feature):
+
+        # Distribute centers for seating (ideally, grid if shape is almost square, sampled if not)
+        # For now, using center:
+
+        center = feature.centroid()
+
+        items = [ddd.point(name="Swingset", extra={'osm:playground': 'swing'}),
+                 ddd.point(name="Swingset", extra={'osm:playground': 'sandbox'}),
+                 ddd.point(name="Swingset", extra={'osm:playground': 'slide'}),
+                 ddd.point(name="Swingset", extra={'osm:playground': 'monkey_bar'})]
+        items = ddd.group2(items, name="Childrens Playground")
+
+        items = ddd.align.polar(items, 2)
+        items.translate(center)
+
+        for i in items.flatten().children:
+            self.osm.items_1d.append(i)
 
         return None
 

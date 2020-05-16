@@ -11,11 +11,37 @@ from ddd.text import fonts
 from ddd.lighting.lights import PointLight
 import sys
 import re
+import random
+from trimesh import transformations
+import numpy as np
 
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
+
+def cable(a, b, thick=0.20):
+    a = np.array(a)
+    b = np.array(b)
+
+    #path = ddd.line([a, b])
+    #path_section = ddd.point(name="Cable").buffer(thick * 0.5, resolution=1, cap_style=ddd.CAP_ROUND)
+    #cable = path_section.extrude_path(path)
+
+    length = np.linalg.norm(b - a)
+    cable = ddd.point(name="Cable").buffer(thick * 0.5, resolution=1, cap_style=ddd.CAP_ROUND).extrude(length + thick).translate([0, 0, -thick * 0.5])
+    cable = ddd.uv.map_cylindrical(cable)
+
+    vector_up = [0, 0, 1]
+    vector_dir = (b - a) / length
+    rot_axis = np.cross(vector_up, vector_dir)
+    rot_angle = math.asin(np.linalg.norm(rot_axis))
+    if rot_angle > 0.00001:
+        rotation = transformations.quaternion_about_axis(rot_angle, rot_axis / np.linalg.norm(rot_axis))
+        cable = cable.rotate_quaternion(rotation)
+    cable = cable.translate(a)
+
+    return cable
 
 def post(height=2.00, r=0.075, top=None, side=None, mat_post=None):
     """
@@ -377,43 +403,54 @@ def post_box(height=1.10, r=0.35):
 def statue():
     pass
 
+def pedestal(d=1.0, obj=None):
+    pedestal = ddd.cube(d=d / 2.0).material(ddd.mats.bronze)
+    pedestal = ddd.uv.map_cubic(pedestal)
+
+    obj = obj.translate([0, 0, d])
+
+    item = ddd.group([pedestal, obj], name="Pedestal: %s" % obj.name)
+    return item
+
 def sculpture(d=1.0, height=4.0):
     """
     An urban sculpture, sitting centered on the XY plane.
     """
-    pedestal = ddd.cube(d=d / 2.0)
-    pedestal = ddd.uv.map_cubic(pedestal)
+    #pedestal = ddd.cube(d=d / 2.0)
+    #pedestal = ddd.uv.map_cubic(pedestal)
 
-    item = ddd.sphere(r=1, subdivisions=2)
+    item = ddd.sphere(r=1, subdivisions=2, name="Sculpture")
     item = item.scale([d, d, height / 2])
     item = filters.noise_random(item, scale=0.2)
-    item = item.translate([0, 0, height / 2 + d])
+    item = item.translate([0, 0, height / 2])  # + d
     item = ddd.uv.map_spherical(item)
-
-    item = ddd.group([pedestal, item], name="Urban sculpture")
 
     return item
 
-def sculpture_text(text, d=1.0, height=4.0):
+def sculpture_text(text, d=1.0, height=4.0, vertical=False):
     """
     An urban sculpture, sitting centered on the XY plane.
     """
-    pedestal = ddd.cube(d=d / 2.0)
-    pedestal = ddd.uv.map_cubic(pedestal)
+    #pedestal = ddd.cube(d=d / 2.0)
+    #pedestal = ddd.uv.map_cubic(pedestal)
 
     logger.debug("Generating text for: %s", text)
     item = fonts.text(text)
-    item = item.extrude(0.5).material(ddd.mats.bronze)
-    item = item.rotate([math.pi / 2.0, 0, 0])
+    item = item.extrude(0.5).material(ddd.mats.bronze).recenter()
+
+    if vertical:
+        item = item.rotate(ddd.ROT_TOP_CCW)
+    item = item.rotate(ddd.ROT_FLOOR_TO_FRONT)
 
     item = filters.noise_random(item, scale=0.03)
 
-    item = item.translate([-0.25, 0.25, 0.0])
-    item = item.scale([d, d, height - d])
-    item = item.translate([0, 0, height / 2 + d])
+    bounds = item.bounds()
+    item = item.scale([d, d, (height) / (bounds[1][2] - bounds[0][2])]).recenter(onplane=True)
+    #item = item.translate([0, 0, d])
     item = ddd.uv.map_cubic(item)
 
-    item = ddd.group([pedestal, item], name="Urban sculpture")
+    #item = ddd.group([pedestal, item], name="Urban sculpture: %s" % text)
+    item.name = "Urban sculpture: %s" % text
 
     return item
 
@@ -629,6 +666,156 @@ def patio_umbrella(side=2.5, height=2.5):
 
     item = ddd.group([base_weight, pole, umbrella])
     return item
+
+
+# Childrens playground
+# See: https://wiki.openstreetmap.org/wiki/Key:playground
+
+def childrens_playground_arc(length=3.25, width=1.0, sides=7, height=None):
+
+    arc_thick = 0.08
+    bar_thick = 0.05
+    if height is None:
+        height = length / 2 * 0.9
+
+    circleline = ddd.regularpolygon(sides * 2, name="Childrens Playground Arc Side Arc").rotate(-math.pi / 2).outline().scale([length / 2, height])
+    arcline = circleline.intersection(ddd.rect([-length, 0.1, length, height * 2]))
+    arc = circleline.buffer(arc_thick / 2).intersection(ddd.rect([-length, 0, length, height * 2]))
+    arc = arc.extrude(arc_thick, center=True).material(ddd.mats.metal_paint_red)
+    arc = arc.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    arc = ddd.uv.map_cubic(arc)
+
+    arc1 = arc.copy().translate([0, -width / 2, 0])
+    arc2 = arc.copy().translate([0, +width / 2, 0])
+    item = ddd.group([arc1, arc2])
+
+    bar = ddd.point(name="Childrens Playground Arc Bar").buffer(bar_thick / 2).extrude(width - arc_thick, center=True).rotate(ddd.ROT_FLOOR_TO_FRONT)
+    bar = ddd.uv.map_cubic(bar)
+    mats = [ddd.mats.metal_paint_white, ddd.mats.metal_paint_red]
+    for idx, p in enumerate(arcline.geom.coords[1:-1]):
+        pbar = bar.copy().translate([p[0], 0, p[1]])
+        pbar = pbar.material(mats[idx % 2])
+        item.append(pbar)
+
+    return item
+
+def childrens_playground_slide(length=4.5, height=None, width=0.5):
+
+    slide_thick = 0.03
+    side_thick = 0.06
+    if height is None:
+        height = length * 0.45
+
+    side_mat = random.choice([ddd.mats.metal_paint_red, ddd.mats.metal_paint_green, ddd.mats.metal_paint_yellow])
+
+    slideline = ddd.point([0, 0], name="Slide").line_to([0.5, 0]).line_to([3, 1.5]).line_to([3.5, 1.5])
+    # TODO: slideline.interpolate_cubic(), or slideline.smooth() or similar
+    slideprofile = slideline.buffer(slide_thick / 2, cap_style=ddd.CAP_FLAT)
+    slide = slideprofile.scale([1 / 4.5 * length, 1 / 2.0 * height])
+    slide = slide.extrude(width - side_thick, center=True).rotate(ddd.ROT_FLOOR_TO_FRONT)
+    slide = slide.material(ddd.mats.steel)
+    slide = ddd.uv.map_cubic(slide)
+
+    slidesideprofile = slideline.line_to([3.5, 1.7]).line_to([3, 1.7]).line_to([0.5, 0.2]).line_to([0, 0.2])
+    slidesideprofile = ddd.polygon(list(slidesideprofile.geom.coords), name="Slide profile")
+    stairssideprofile = ddd.polygon([[3.5, 1.5], [3.5, 2], [4, 2], [4, 1.5], [4.5, 0], [4.0, 0], [3.5, 1.5]])
+    stairssideprofile = stairssideprofile.union(ddd.point([3.75, 2]).buffer(0.25, cap_style=ddd.CAP_ROUND))
+    stairssideprofile = stairssideprofile.subtract(ddd.point([3.75, 2]).buffer(0.15, cap_style=ddd.CAP_ROUND, resolution=2))  # Hole
+    stairssideprofile = stairssideprofile.translate([-0.25, 0])
+    slidesideprofile = slidesideprofile.union(stairssideprofile)
+
+    slidesideprofile = slidesideprofile.scale([1 / 4.5 * length, 1 / 2.0 * height])
+    slidesideprofile = slidesideprofile.extrude(side_thick, center=True).rotate(ddd.ROT_FLOOR_TO_FRONT)
+    slidesideprofile = slidesideprofile.material(side_mat)
+    slidesideprofile = ddd.uv.map_cubic(slidesideprofile)
+
+    slidesideprofile1 = slidesideprofile.translate([0, width / 2, 0])
+    slidesideprofile2 = slidesideprofile.translate([0, -width / 2, 0])
+
+    item = ddd.group([slide, slidesideprofile1, slidesideprofile2])
+
+    numsteps = int((height - 1) / 0.3) + 1
+    for i in range(numsteps):
+        step = ddd.box([-0.1, -((width - side_thick) / 2), 0, 0.1, ((width - side_thick) / 2), 0.05], name="Slide Step")
+        step = step.translate([4 - (i + 1) * (0.5 / (numsteps + 1)), 0, (i + 1) * 0.3]).material(ddd.mats.steel)
+        step = ddd.uv.map_cubic(step)
+        item.append(step)
+
+    item = item.translate([-4.5/2, 0, 0]).rotate(ddd.ROT_TOP_CCW)
+
+    return item
+
+def childrens_playground_swingset(length=2.2, num=2, height=2.1, width=1.6):
+    """
+    """
+    frame_thick = 0.06
+    path = ddd.point([-width / 2, 0], name="Swing path").line_to([-width*2/6, height - width*2/6])
+    path = path.arc_to([width*2/6, height - width *2/6], [0, height - width*2/6], ccw=False)
+    path = path.line_to([width / 2, 0])
+
+    side_mat = random.choice([ddd.mats.metal_paint_red, ddd.mats.metal_paint_green, ddd.mats.metal_paint_yellow])
+    frameside = path.buffer(frame_thick / 2).material(side_mat)
+    frameside = frameside.extrude(frame_thick, center=True).rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CCW)
+    frameside = frameside.material(ddd.mats.steel)
+    frameside = ddd.uv.map_cubic(frameside)
+
+    frameside1 = frameside.translate([-length/2, 0, 0])
+    frameside2 = frameside.translate([length/2, 0, 0])
+
+    topbar = ddd.point([(-length + frame_thick) / 2, 0], name="Swing top bar").line_to([(length - frame_thick) / 2, 0])
+    topbar = topbar.buffer(frame_thick / 2).extrude(frame_thick, center=True).translate([0, 0, height])
+    topbar = topbar.material(ddd.mats.steel)
+    topbar = ddd.uv.map_cubic(topbar)
+
+    swingset = ddd.group3([frameside1, frameside2, topbar], name="Playground swingset")
+
+    for i in range(num):
+        posx = -length / 2 + (i + 0.5) * (length / (num))
+        swing = childrens_playground_swing(height=height - 0.4)
+        swing = swing.translate([posx, 0, height])
+        swingset.append(swing)
+
+    return swingset
+
+def childrens_playground_swing(width=0.45, height=1.6, depth=0.2, width_top=None):
+
+    if width_top is None:
+        width_top = width * 1.1
+
+    seat_thick = 0.05
+    seat = ddd.rect([width, depth], name="Playground Swing Seat").recenter().extrude(seat_thick, center=True)
+    seat = ddd.uv.map_cubic(seat)
+    seat = seat.material(ddd.mats.plastic_black)
+
+    chain_thick = 0.02
+    #chain = ddd.point(name="Playground Swing Chain").buffer(chain_thick / 2).extrude(height)
+    #chain.translate([0, ])
+    chain1 = cable([-width / 2, 0, 0], [-width_top / 2, 0, height], thick=chain_thick)
+    chain1 = chain1.material(ddd.mats.chain)
+    chain2 = cable([width / 2, 0, 0], [width_top / 2, 0, height], thick=chain_thick)
+    chain2 = chain2.material(ddd.mats.chain)
+
+    swing = ddd.group3([seat, chain1, chain2], name="Swing")
+    swing = swing.translate([0, 0, -height])
+    return swing
+
+
+def childrens_playground_sandbox(r=1, sides=5, height=0.4, thick=0.1):
+    """
+    """
+    area = ddd.regularpolygon(sides, r, name="Playground Sand")
+    item = area.material(ddd.mats.wood)
+    item = item.outline().buffer(thick / 2).extrude(height)
+    item = ddd.uv.map_cubic(item)
+    item.name = "Playground sandbox border"
+
+    area = area.triangulate().material(ddd.mats.sand).translate([0, 0, height / 3])
+    area = ddd.uv.map_cubic(area)
+
+    item = ddd.group([area, item], name="Playground Sandbox")
+
+    return item
+
 
 
 

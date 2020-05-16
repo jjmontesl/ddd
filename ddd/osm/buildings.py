@@ -163,7 +163,7 @@ class BuildingOSMBuilder():
                                      'terrace': 1})
         roof_buffered = weighted_choice({True: 1, False: 5})
         roof_buffer = random.uniform(0.5, 1.2)
-        roof_wall_material = weighted_choice({'stone': 3, 'brick': 1})
+        roof_wall_material = weighted_choice({"stone": 3, "bricks": 1})
 
         for part in (building_2d.extra['ddd:building:parts'] + [building_2d]):
 
@@ -190,7 +190,9 @@ class BuildingOSMBuilder():
                     ptype = 'none'
                 if floors < base_floors:
                     pbuffered = False
-                    if (random.uniform(0, 1) < 0.8): ptype = random.choice(['terrace', 'none'])
+                    if (random.uniform(0, 1) < 0.5): ptype = random.choice(['terrace', 'none'])
+                    if (floors <= 2):
+                        if (random.uniform(0, 1) < 0.8): ptype = random.choice(['terrace', 'terrace', 'terrace', 'none'])
 
                 # Base
                 if random.uniform(0, 1) < 0.2:

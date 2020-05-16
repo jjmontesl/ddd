@@ -41,8 +41,8 @@ class WikipediaPipeline(DDDConfigurablePipeline):
         self.applyrules(features)
         pass
 
-@stage("generate_scenario", depends=None)
-@stage("generate_articles", depends="generate_scenario")
+#@stage("generate_scenario", depends=None)
+#@stage("generate_articles", depends="generate_scenario")
 
 @dddrule(selector=None, stage="start")
 def start_run(s):
@@ -83,6 +83,10 @@ def generate_scenario_run_plus(s):
     """
     num_articles = s.select(path='/elements/*').count()
     # Create grid
+
+@dddtask(name="", parent=?, after="", before="", select=None, path=None)
+def decorate_something(root, o):
+    pass
 
 @dddrule(path="/articles/*", select="wp:article=*", stage="generate_articles")
 def each(s, o):

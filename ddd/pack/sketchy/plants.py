@@ -12,16 +12,17 @@ from ddd.ops import filters
 #def log(height=3.60, r=0.05):
 #    pass
 # TODO: This is actually the recursive tree builder (not trunk), generalize more, callbacks shall accept level and do their thing, returning followup settings
-def recursivetree(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_scale=0.8, fork_spawn=3, fork_iters=2, fork_level=0, leaves_callback=None, trunk_callback=None):
+def recursivetree(height=2.25, r=0.30, fork_height_ratio=1.0, fork_angle=30.0, fork_r_scale=0.8, fork_spawn=3, fork_iters=2, fork_level=0, leaves_callback=None, trunk_callback=None):
 
     # Create trunk part
     #section = ddd.point([0, 0, 0]).buffer(r, cap_style=ddd.CAP_ROUND, resolution=1).extrude(height * fork_height_ratio)
-    section = trunk_callback()
-    branches = []
 
+    branches = []
     if fork_iters > 0:
+        section = trunk_callback(height * fork_height_ratio)
+
         azimuth = 0
-        num_items = fork_spawn + random.randint(-1, +1)
+        num_items = fork_spawn + random.choice([-1, 0, +1])
 
         if fork_level > 1:
             stop_prob = 0.1
@@ -34,10 +35,10 @@ def recursivetree(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, 
         for i in range(num_items):
             azimuth = offset + (360.0 / fork_spawn) * i + (360.0 / fork_spawn) * random.uniform(-0.15, 0.15)
             if fork_iters > 1:
-                ssection = recursivetree(height=height * fork_height_ratio * random.uniform(0.8, 1.2), r=r * fork_r_scale, fork_height_ratio=fork_height_ratio * random.uniform(0.8, 1.2), fork_r_scale=fork_r_scale,
+                ssection = recursivetree(height=height * (1 - fork_height_ratio) * random.uniform(0.8, 1.2), r=r * fork_r_scale, fork_height_ratio=fork_height_ratio * random.uniform(0.8, 1.2), fork_r_scale=fork_r_scale,
                                          fork_iters=fork_iters - 1, fork_level=fork_level + 1, leaves_callback=leaves_callback, trunk_callback=trunk_callback)
             elif leaves_callback:
-                ssection = leaves_callback()
+                ssection = leaves_callback(height * (1 - fork_height_ratio))
             ssection = ssection.rotate([(fork_angle * random.uniform(0.65, 1.35)) / 180.0 * math.pi, 0.0, 0.0])
             ssection = ssection.rotate([0.0, 0.0, azimuth / 180.0 * math.pi])
             ssection = ssection.translate([0, 0, height * fork_height_ratio])
@@ -49,9 +50,42 @@ def recursivetree(height=2.25, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, 
     # Optionally increase fork_spawn each iteration (golden ratio)
     # Optionally randomize number of branches (fork_spawn)  each iteration
 
-    branches = [section] + branches
+            branches = [section] + branches
 
     return ddd.group(branches)
+
+
+def recursivetree_new(height, spawn=1, levels=1, #fork_height_ratio=2/3,
+                  level=0, angle=0,
+                  node_callback=None,
+
+                  #, r=0.30, fork_height_ratio=0.66, fork_angle=30.0, fork_r_scale=0.8, fork_spawn=3, fork_iters=2, fork_level=0, leaves_callback=None, trunk_callback=None):
+                  ):
+    """
+    """
+    # Generate nodes
+
+    azimuth = 0
+    offset = random.uniform(0, 2 * math.pi)
+
+    branches = []
+    for i in range(spawn):
+        azimuth = offset + (2 * math.pi / spawn) * i + random.uniform(math.pi / 8)
+        ssection = node_callback(height, levels, level)
+
+        #ssection = recursivetree(height=height * fork_height_ratio * random.uniform(0.8, 1.2), r=r * fork_r_scale, fork_height_ratio=fork_height_ratio * random.uniform(0.8, 1.2), fork_r_scale=fork_r_scale,
+        #                         fork_iters=fork_iters - 1, fork_level=fork_level + 1, leaves_callback=leaves_callback, trunk_callback=trunk_callback)
+
+        ssection = ssection.rotate([(angle * random.uniform(0.80, 1.20)), 0.0, 0.0])
+        ssection = ssection.rotate([0.0, 0.0, azimuth])
+        #ssection = ssection.translate([0, 0, height * fork_height_ratio])
+        ssection.name = "Branch (level %d)" % fork_level
+        branches.append(ssection)
+    # Call recursively
+    if level < levels:
+        pass
+
+
 
 def treetop(r=1.75, flatness=0.3, subdivisions=1):
     treetop = ddd.sphere(center=ddd.point([random.uniform(-r * 0.2, r * 0.2), random.uniform(-r * 0.2, r * 0.2), 0]), r=r, subdivisions=subdivisions)
@@ -62,15 +96,17 @@ def treetop(r=1.75, flatness=0.3, subdivisions=1):
     treetop.name = "Treetop"
     return treetop
 
-def tree_default(height=3.5, r=0.40, fork_iters=2, fork_height_ratio=0.66):
+def tree_default(height=3.5, r=0.40, fork_iters=2, fork_height_ratio=0.35):
+
+    height = height * (1 + fork_height_ratio)
 
     def trunk_callback(height):
         section = ddd.regularpolygon(sides=5, r=r).extrude(height)
         section = ddd.uv.map_cylindrical(section)
         section = section.material(ddd.mats.bark)
         return section
-    def leaves_callback():
-        tt = treetop(r=2.5, subdivisions=0).material(ddd.mats.treetop)
+    def leaves_callback(height):
+        tt = treetop(r=0.5 + 0.4 * height, subdivisions=0).material(ddd.mats.treetop)
         return tt
 
     obj = recursivetree(height=height, r=r, leaves_callback=leaves_callback, trunk_callback=trunk_callback,
@@ -141,7 +177,7 @@ def tree_palm(height=14, r=0.30):
         section = ddd.uv.map_cylindrical(section)
         section = section.material(ddd.mats.bark)
         return section
-    def leaves_callback():
+    def leaves_callback(sheight):
         golden = (1 + 5 ** 0.5) / 2
         leaf = ddd.group3(name="Leaf group")
         tt = palm_leaf(length=0.5 + height / 5, fallfactor=1.45).material(ddd.mats.treetop)
@@ -156,7 +192,7 @@ def tree_palm(height=14, r=0.30):
 
         return leaf
 
-    obj = recursivetree(height=height, r=r, fork_iters=1, fork_angle=10.0,
+    obj = recursivetree(height=height, r=r, fork_iters=1, fork_angle=10.0, fork_height_ratio=1.0,
                         trunk_callback=trunk_callback, leaves_callback=leaves_callback)
     obj.name = "Tree Palm"
 

@@ -330,7 +330,7 @@ class DDDMaterial():
         self.name = name
         self.color = color
         self.color_rgba = None
-        self.extra = extra
+        self.extra = extra if extra else {}
         self.opacity = opacity
 
         if self.color:
@@ -347,7 +347,7 @@ class DDDMaterial():
         return "DDDMaterial(name=%s, color=%s)" % (self.name, self.color)
 
     def __hash__(self):
-        return abs(hash((self.name, self.color, sorted(self.extra.values()))))
+        return abs(hash((self.name, self.color)))  #, self.extra)))
 
     def _trimesh_material(self):
         """
@@ -609,7 +609,7 @@ class DDDObject2(DDDObject):
         radius_l = math.sqrt(radius_vec[0] * radius_vec[0] + radius_vec[1] * radius_vec[1])
         if ccw: angle_diff = (math.pi * 2) - angle_diff
 
-        numpoints = math.ceil(angle_diff * (resolution / (math.pi / 2)))
+        numpoints = math.ceil(abs(angle_diff) * (resolution / (math.pi / 2)))
         angles = np.linspace(angle_start, angle_end, numpoints)
         for a in angles:
             linecoords.append([center[0] + math.cos(a) * radius_l, center[1] + math.sin(a) * radius_l, coords[2]])
@@ -1043,6 +1043,11 @@ class DDDObject2(DDDObject):
                 mesh.faces = list(mesh.faces) + [(f[0] + offset, f[1] + offset, f[2] + offset) for f in mesh2.faces]
 
                 result = DDDObject3(mesh=mesh)
+                if center:
+                    result = result.translate([0, 0, -height / 2])
+                elif height < 0:
+                    result = result.translate([0, 0, height])
+
             else:
                 #logger.warn("Cannot extrude (empty polygon)")
                 result = DDDObject3()
@@ -1535,6 +1540,12 @@ class DDDObject3(DDDObject):
 
         return bounds
 
+    def recenter(self, onplane=False):
+        ((xmin, ymin, zmin), (xmax, ymax, zmax)) = self.bounds()
+        center = [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]
+        if onplane: center[2] = zmin
+        result = self.translate([-center[0], -center[1], -center[2]])
+        return result
 
     def translate(self, v):
         obj = self.copy()
@@ -1879,27 +1890,36 @@ class DDDObject3(DDDObject):
 
     def show(self):
 
-        #rotated = self.rotate([-math.pi / 2.0, 0, 0])
-        #scene = rotated._recurse_scene()
-        #scene.show('gl')
+        logger.info("Showing: %s", self)
 
-        # Example code light
-        #light = trimesh.scene.lighting.DirectionalLight()
-        #light.intensity = 10
-        #scene.lights = [light]
+        if D1D2D3Bootstrap.renderer == 'pyglet':
 
-        import pyrender
-        #pr_scene = pyrender.Scene.from_trimesh_scene(rotated)
+            # OpenGL
+            rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            scene = rotated._recurse_scene("", "", instance_mesh=True, instance_marker=False)
+            # Example code light
+            #light = trimesh.scene.lighting.DirectionalLight()
+            #light.intensity = 10
+            #scene.lights = [light]
+            scene.show('gl')
 
-        # Scene not rotated, as pyrender seems to use Z for vertical.
-        meshes = self.recurse_meshes()  # rotated
-        pr_scene = pyrender.Scene()
-        for m in meshes:
-            prm = pyrender.Mesh.from_trimesh(m, smooth=False) #, wireframe=True)
-            pr_scene.add(prm)
+        if D1D2D3Bootstrap.renderer == 'pyrender':
 
-        pyrender.Viewer(pr_scene, lighting="direct")  #, viewport_size=resolution)
-        #pyrender.Viewer(scene, lighting="direct")  #, viewport_size=resolution)
+            # PyRender
+            import pyrender
+            #pr_scene = pyrender.Scene.from_trimesh_scene(rotated)
+            # Scene not rotated, as pyrender seems to use Z for vertical.
+            meshes = self.recurse_meshes()  # rotated
+            pr_scene = pyrender.Scene()
+            for m in meshes:
+                prm = pyrender.Mesh.from_trimesh(m, smooth=False) #, wireframe=True)
+                pr_scene.add(prm)
+            pyrender.Viewer(pr_scene, lighting="direct")  #, viewport_size=resolution)
+            #pyrender.Viewer(scene, lighting="direct")  #, viewport_size=resolution)
+
+        else:
+
+            raise DDDException("Unknown rendering backend: %s" % D1D2D3Bootstrap.renderer)
 
     def save(self, path, instance_marker=None, instance_mesh=None):
         """

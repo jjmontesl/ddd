@@ -11,6 +11,7 @@ from ddd.pack.sketchy.urban import post, lamp_ball
 import math
 from trimesh import transformations
 
+
 def crane_vertical():
     """
     Large vertical crane (such as those seen in cargo ports).
@@ -103,29 +104,6 @@ def crane_vertical():
     secsupport = secsupport.material(ddd.mats.metal_paint_red)
     secsupport = secsupport.translate([0, -1.5, secsupport_base_height])
     secsupport = ddd.uv.map_cubic(secsupport)
-
-    def cable(a, b, thick=0.20):
-        a = np.array(a)
-        b = np.array(b)
-
-        #path = ddd.line([a, b])
-        #path_section = ddd.point(name="Cable").buffer(thick * 0.5, resolution=1, cap_style=ddd.CAP_ROUND)
-        #cable = path_section.extrude_path(path)
-
-        length = np.linalg.norm(b - a)
-        cable = ddd.point(name="Cable").buffer(thick * 0.5, resolution=1, cap_style=ddd.CAP_ROUND).extrude(length + thick).translate([0, 0, -thick * 0.5])
-        cable = ddd.uv.map_cylindrical(cable)
-
-        vector_up = [0, 0, 1]
-        vector_dir = (b - a) / length
-        rot_axis = np.cross(vector_up, vector_dir)
-        rot_angle = math.asin(np.linalg.norm(rot_axis))
-        if rot_angle > 0.00001:
-            rotation = transformations.quaternion_about_axis(rot_angle, rot_axis / np.linalg.norm(rot_axis))
-            cable = cable.rotate_quaternion(rotation)
-        cable = cable.translate(a)
-
-        return cable
 
     maincable1 = cable([-block_width * 0.4, block_length - 3, mainsupport_base_height], [-mainsupport_width * 0.2, -mainsupport_skew, mainsupport_base_height + mainsupport_height - 0.2])
     maincable1 = maincable1.material(ddd.mats.cable_metal)

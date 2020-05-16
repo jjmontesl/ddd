@@ -27,8 +27,8 @@ class DDDGeoTerrain():
         self.path_egm = 'data/dem/egm/egm2008-2_5.tif'
 
 
-#dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'
-dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40e000.tif'
+dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'
+#dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40e000.tif'
 
 
 def terrain_grid(bounds, detail=1.0, height=1.0, scale=0.025):

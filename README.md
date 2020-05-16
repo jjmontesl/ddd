@@ -116,6 +116,8 @@ ddd:*	DDD metadata
 
 ### OSM data import (preprocessing)
 
+Note: latest versions are doing extraction automatically from country-latest.pbf.
+
 Using PBFs:
   osmconvert spain-latest.osm.pbf -b=-5.870,40.760,-5.470,41.160 -o=salamanca-latest.osm.pbf
   osmconvert spain-latest.osm.pbf -b=-8.980,41.980,-8.480,42.480 -o=vigo-latest.osm.pbf
@@ -125,11 +127,20 @@ Then, geojson (TODO: use osmium directly):
   ./osmtogeojson city-latest.osm.pbf > /tmp/city.geojson
 
 
+
+### Converting carto icons to texture atlas
+
+Using:
+
+    for a in $(ls *.svg) ; do inkscape -w 64 -h 64 $a --export-filename ../amenity-$a.png ; done
+
+
 ## FAQ
 
 Q: Why the DDD prefix in all objects? isn't this outdated?
-A: The decision to name classes with the DDD prefix was to avoid name conflicts with
+A: The decision to name classes with the DDD prefix was to avoid naming conflicts with
    the many similarly named types among ddd dependencies.
+
 
 ## License
 

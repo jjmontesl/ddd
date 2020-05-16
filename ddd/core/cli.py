@@ -88,6 +88,12 @@ class D1D2D3Bootstrap():
         parser.add_argument("--export-normals", action="store_true", default=False, help="export normals")
         parser.add_argument("--export-textures", action="store_true", default=False, help="export textures")
 
+        parser.add_argument("--renderer", default="pyrender", nargs="?", choices=('pyrender', 'pyglet'), help="renderer backend (default: %(default)s)")
+
+        parser.add_argument("--catalog-overwrite", action="store_true", default=False, help="overwrite catalog items")
+        parser.add_argument("--catalog-ignore", action="store_true", default=False, help="do not use catalog (read, write or store)")
+
+
         parser.add_argument("command", help="script or command to run", nargs="?")
 
         #sp = parser.add_subparsers(dest="script", description="script or command to run")
@@ -135,6 +141,10 @@ class D1D2D3Bootstrap():
 
         D1D2D3Bootstrap.export_normals = args.export_normals
         D1D2D3Bootstrap.export_textures = args.export_textures
+        D1D2D3Bootstrap.renderer = args.renderer
+
+        D1D2D3Bootstrap.catalog_overwrite = args.catalog_overwrite
+        D1D2D3Bootstrap.catalog_ignore = args.catalog_ignore
 
         if self.command in self.commands:
             self.command = self.commands[self.command][0]

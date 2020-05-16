@@ -22,6 +22,7 @@ class DefaultMaterials(MaterialsCollection):
         self.sidewalk = ddd.material(name="Sidewalk", color='#e0d0d0')
         self.pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
         self.pathwalk = ddd.material(name="WayPedestrian", color='#78281e')
+        self.sand = ddd.material(name="WayPedestrian", color='#fff694')
 
         # Ways/roads special
         self.roadline = ddd.material(name="Roadline", color='#e8e8e8', extra={'ddd:collider': False, 'ddd:shadows': False})
@@ -61,8 +62,11 @@ class DefaultMaterials(MaterialsCollection):
         self.metal_paint_white = ddd.material("PaintWhite", color='#f8fbff')
         self.metal_paint_black = ddd.material("PaintYellow", color='#000a17')
 
+        # Plastics
+        self.plastic_black = ddd.material(color='#2c2936')
+
         # Lights
-        self.lightbulb = ddd.material(color='e8e0e4')
+        self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')
         self.light_green = ddd.material(color='#00ff00')
         self.light_orange = ddd.material(color='#ffff00')
         self.light_red = ddd.material(color='#ff0000')
@@ -76,8 +80,8 @@ class DefaultMaterials(MaterialsCollection):
         self.railing = ddd.material(name="Fence", color='282024', extra={'ddd:transparent': True})
         self.metallic_grid = ddd.material(name="Fence", color='#28281e', extra={'ddd:transparent': True})  # Floors
 
-        self.lightbulb = ddd.material(color='e8e0e4')
         self.cable_metal = ddd.material(name="CableMetal", color='#28282e')
+        self.chain = ddd.material(name="CableMetal", color='#28282e')
         self.rope = ddd.material(name="Rope", color='#c7b01c')
 
         # Buildings

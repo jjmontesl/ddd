@@ -6,6 +6,7 @@ import logging
 from ddd.ddd import ddd
 import pickle
 import os
+from ddd.core.cli import D1D2D3Bootstrap
 
 
 # Get instance of logger for this module
@@ -33,6 +34,9 @@ class PrefabCatalog():
         self.autosave = True
         self.autoload = True
 
+        self.catalog_overwrite = D1D2D3Bootstrap.catalog_overwrite
+        self.catalog_ignore = D1D2D3Bootstrap.catalog_ignore
+
     def add(self, key, obj):
         """
         This method returns an instance of the added object, like 'instance' does,
@@ -44,10 +48,14 @@ class PrefabCatalog():
         obj.extra['ddd:catalog:key'] = key
         self._cache[key] = obj
 
-        if self.autosave:
+        if self.autosave and not self.catalog_ignore:
             self.save(key)
 
         obj = self.instance(key)
+
+        if self.catalog_ignore:
+            del(self._cache[key])
+
         return obj
 
     def instance(self, key):
@@ -83,6 +91,10 @@ class PrefabCatalog():
         """
         Returns an instance or None.
         """
+
+        # If catalog_overwrite, return None on load to force creation of items
+        if self.catalog_overwrite: return None
+
         key = key.replace("_", "-").replace(":", "-").replace(".", "-")
         obj = None
         filename = self.path + "/" + key + ".ddd"
@@ -100,6 +112,7 @@ class PrefabCatalog():
         return obj
 
     def loadall(self):
+        if self.catalog_overwrite: return
         for p in os.listdir(self.path):
             if p.endswith(".ddd"):
                 key = p[:-4]

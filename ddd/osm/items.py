@@ -110,7 +110,7 @@ class ItemsOSMBuilder():
 
                 item_3d = self.generate_item_3d_tree(item_2d)
 
-        elif item_2d.extra.get('osm:tourism', None) == 'artwork' and item_2d.extra.get('artwork_type', None) == 'sculpture':
+        elif item_2d.extra.get('osm:tourism', None) == 'artwork' and item_2d.extra.get('osm:artwork_type', None) == 'sculpture':
             item_3d = self.generate_item_3d_sculpture(item_2d)
         elif item_2d.extra.get('osm:historic', None) == 'monument':  # Large monument
             item_3d = self.generate_item_3d_monument(item_2d)
@@ -135,6 +135,15 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_fence(item_2d)
         elif item_2d.extra.get('osm:barrier', None) == 'hedge':
             item_3d = self.generate_item_3d_hedge(item_2d)
+
+        elif item_2d.extra.get('osm:playground', None) == 'swing':
+            item_3d = self.generate_item_3d_generic(item_2d, urban.childrens_playground_swingset, "Playground Swings")
+        elif item_2d.extra.get('osm:playground', None) == 'sandbox':
+            item_3d = self.generate_item_3d_generic(item_2d, urban.childrens_playground_sandbox, "Playground Sandbox")
+        elif item_2d.extra.get('osm:playground', None) == 'slide':
+            item_3d = self.generate_item_3d_generic(item_2d, urban.childrens_playground_slide, "Playground Slide")
+        elif item_2d.extra.get('osm:playground', None) == 'monkey_bar':
+            item_3d = self.generate_item_3d_generic(item_2d, urban.childrens_playground_arc, "Playground Monkey Bar Arc")
 
         elif item_2d.extra.get('osm:highway', None) == 'street_lamp':
             item_3d = self.generate_item_3d_street_lamp(item_2d)
@@ -231,6 +240,7 @@ class ItemsOSMBuilder():
     def generate_item_3d_generic(self, item_2d, gen_func, name):
 
         coords = item_2d.geom.coords[0]
+        angle = item_2d.extra.get('ddd:angle', None)
 
         #invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d]).clean(eps=0.01)
         item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
@@ -241,7 +251,7 @@ class ItemsOSMBuilder():
         if item_3d is None:
             return None
 
-        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.rotate([0, 0, angle if angle is not None else item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         #item_3d.prop_set('ddd:static', False, children=True)  # TODO: Make static or not via styling
         item_3d.name = '%s: %s' % (name, item_2d.name)
@@ -297,7 +307,13 @@ class ItemsOSMBuilder():
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
         oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
-        item_3d = urban.sculpture(1.5)
+
+        item_name = item_2d.extra['osm:feature']['properties'].get('name', None)
+        if item_name:
+            item_3d = urban.sculpture_text(item_name[:1], 1.5)
+        else:
+            item_3d = urban.sculpture(1.5)
+
         item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0]).material(ddd.mats.steel)  # mat_bronze
         item_3d.name = 'Sculpture: %s' % item_2d.name
@@ -334,7 +350,12 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_crane(self, item_2d):
         coords = item_2d.geom.coords[0]
-        oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])  # FIXME: Align to coastline if any?
+        oriented_point = ddd.point(coords)
+        try:
+            oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])  # FIXME: Align to coastline if any?
+        except Exception as e:
+            logger.error("Could not orient crane: %s", item_2d)
+            oriented_point.extra['ddd:angle'] = 0
         item_3d = industrial.crane_vertical()
         item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
@@ -449,6 +470,9 @@ class ItemsOSMBuilder():
         max_voted_ways_weight = list(votes.items())
         max_voted_ways_weight = reversed(sorted(max_voted_ways_weight, key=lambda w: w[0]))
         max_voted_ways_weight = sorted(max_voted_ways_weight, key=lambda w: len(w[1]))
+
+        if len(max_voted_ways_weight) == 0: return None
+
         max_voted_ways_weight = list(reversed(max_voted_ways_weight))[0][0]
         highest_ways = votes[max_voted_ways_weight]
 

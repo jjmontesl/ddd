@@ -32,11 +32,23 @@ class DDDAlign():
 
         return obj
 
+    def polar(self, obj, d):
+        """
+        Distribute children around center with distance d.
+        """
+        for idx, c in enumerate(obj.children):
+            angle = (2 * math.pi) / len(obj.children) * idx
+            posx, posy = math.cos(angle) * d, math.sin(angle) * d
+            newc = c.translate([posx, posy, 0])
+            newc.extra['ddd:angle'] = angle + (math.pi / 2)
+            c.replace(newc)
+        return obj
+
     def matrix_polar(self, obj, count=None, angle_interval=None, span=math.pi * 2):
         """
         Clones the object and positions it radially.
 
-        TODO: Should be polar really, and copies made by another method.
+        TODO: Should be using polar, and copies made by matrix methods.
         """
 
         result = ddd.group3(name="Matrix of: %s" % obj.name)

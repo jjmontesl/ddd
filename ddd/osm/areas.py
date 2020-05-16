@@ -91,7 +91,7 @@ class AreasOSMBuilder():
             area = areas[idx]
             for larger in areas[idx + 1:]:
                 if larger.contains(area):
-                    logger.debug("Area %s contains %s.", larger, area)
+                    #logger.debug("Area %s contains %s.", larger, area)
                     area.extra['ddd:area:container'] = larger
                     larger.extra['ddd:area:contained'].append(area)
                     break
@@ -139,6 +139,10 @@ class AreasOSMBuilder():
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_wetland(narea)
+            elif narea.extra.get('osm:natural', None) in ('beach', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_beach(narea)
             elif narea.extra.get('osm:landuse', None) in ('grass', ):
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
@@ -185,7 +189,7 @@ class AreasOSMBuilder():
     def generate_area_2d_park(self, area, tree_density_m2=0.0025, tree_types=None):
 
         if tree_types is None:
-            tree_types = {'default': 1, 'palm': 1}
+            tree_types = {'default': 1, 'palm': 0.001}
 
         #area = ddd.shape(feature["geometry"], name="Park: %s" % feature['properties'].get('name', None))
         feature = area.extra['osm:feature']
@@ -246,6 +250,11 @@ class AreasOSMBuilder():
     def generate_area_2d_wetland(self, area):
         # TODO: put smaller trees and juncos
         return self.generate_area_2d_park(area, tree_density_m2=0.0010)
+
+    def generate_area_2d_beach(self, area):
+        area.name = "Beach: %s" % area.name
+        area = area.material(ddd.mats.sand)
+        return area
 
     def generate_area_2d_vineyard(self, area):
         area.name = "Vineyard: %s" % area.name
@@ -681,6 +690,24 @@ class AreasOSMBuilder():
                     area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), area_2d.extra['ddd:steps:height'])
 
                 # TODO: Crop in 3D (or as a workaround fake it as centroid cropping)
+
+            elif area_2d.extra.get('ddd:area:type', None) == 'sidewalk':
+
+                height = area_2d.extra.get('ddd:height', 0.2)
+                area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
+                area_3d = ddd.uv.map_cubic(area_3d)
+
+                if True:
+                    interior = area_2d.buffer(-0.2)
+                    area_3d = interior.extrude(-0.5 - height).translate([0, 0, height])
+                    kerb_3d = area_2d.subtract(interior).extrude(-0.5 - height).translate([0, 0, height])
+                    kerb_3d = ddd.uv.map_cubic(kerb_3d).material(ddd.mats.cement)
+                    #if area_3d.mesh:
+                    #    area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
+                    #    kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj).material(ddd.mats.cement)
+                    #area_3d.append(kerb_3d)
+                    kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj)
+                    self.osm.areas_3d.children.append(kerb_3d)
 
             else:
                 try:

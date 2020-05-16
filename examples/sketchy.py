@@ -6,12 +6,25 @@ import math
 
 items = ddd.group3()
 
+
+item = urban.childrens_playground_swingset()
+items.append(item)
+
+item = urban.childrens_playground_sandbox()
+items.append(item)
+
+item = urban.childrens_playground_slide()
+items.append(item)
+
+item = urban.childrens_playground_arc()
+items.append(item)
+
+
 item = urban.patio_table()
 items.append(item)
 
 item = urban.patio_chair()
 items.append(item)
-item.show()
 
 item = urban.patio_umbrella()
 items.append(item)
@@ -40,6 +53,10 @@ items.append(item)
 
 item = urban.sculpture_text("Test")
 items.append(item)
+
+item = urban.sculpture_text("Monumental test string", vertical=True, height=12)
+items.append(item)
+
 
 item = urban.trafficlights()
 #item = item.rotate([0, 0, (math.pi / 4) - math.pi / 2])
@@ -91,7 +108,6 @@ item = urban.traffic_sign('es:r505')
 items.append(item)
 item = urban.traffic_sign('es:r506')
 items.append(item)
-
 
 
 
