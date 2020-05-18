@@ -664,7 +664,8 @@ class AreasOSMBuilder():
                 logger.error("Could not generate area %s: %s", area_2d, e)
                 raise
             except DDDException as e:
-                logger.warn("Could not generate area (ignoring) %s: %s", area_2d, e)
+                logger.error("Could not generate area %s: %s", area_2d, e)
+                raise
 
     def generate_area_3d(self, area_2d):
 

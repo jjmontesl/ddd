@@ -20,10 +20,10 @@ an axis (eg. time).
 
 # From https://en.wikipedia.org/wiki/List_of_chemical_elements
 # Process features
-pipeline = Pipeline.load(['wikipedia-elements.py'])
+pipeline = Pipeline.load(['wikipedia_elements.py'])
 pipeline.process(features)
 # Show an alternative styling
-pipeline = Pipeline.load(['wikipedia-elements.py', 'wkipedia-elements-variant.py'])
+pipeline = Pipeline.load(['wikipedia_elements.py', 'wkipedia_elements_variant.py'])
 pipeline.process(features)
 
 
@@ -66,17 +66,17 @@ def start_run(s):
     s.append(features)
 
 @dddrule(select=None, stage="generate_scenario")
-def generate_scenario_run(s):
+def generate_scenario_run(root):
     """
     Create a circular platform for articles.
     Hill size according to importance
     """
-    num_articles = s.select(path='/elements/*').count()
+    num_articles = root.select(path='/elements/*').count()
     distance = (num_articles * 10) / (2 * math.pi)
-    s = ddd.align.polar(s. d=distance)
+    root = ddd.align.polar(root, d=distance)
 
 @dddrule(select=None, stage="generate_scenario")
-def generate_scenario_run_plus(s):
+def generate_scenario_run_plus(root):
     """
     Create a periodic table platform for articles.
     Block height size according to importance.

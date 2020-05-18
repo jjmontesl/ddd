@@ -116,9 +116,14 @@ class AreaItemsOSMBuilder():
         center = feature.centroid()
 
         items = [ddd.point(name="Swingset Swing", extra={'osm:playground': 'swing'}),
-                 ddd.point(name="Swingset Sandbox", extra={'osm:playground': 'sandbox'}),
-                 ddd.point(name="Swingset Slide", extra={'osm:playground': 'slide'}),
                  ddd.point(name="Swingset Monkey Bar", extra={'osm:playground': 'monkey_bar'})]
+        if random.uniform(0, 1) < 0.8:
+            items.append(ddd.point(name="Swingset Sandbox", extra={'osm:playground': 'sandbox'}))
+        if random.uniform(0, 1) < 0.8:
+            items.append(ddd.point(name="Swingset Slide", extra={'osm:playground': 'slide'}))
+        if random.uniform(0, 1) < 0.8:
+            items.append(ddd.point(name="Swingset Swing 2", extra={'osm:playground': 'swing'}))
+
         items = ddd.group2(items, name="Childrens Playground: %s" % feature.name)
 
         items = ddd.align.polar(items, 3, offset=random.uniform(0, math.pi * 2))

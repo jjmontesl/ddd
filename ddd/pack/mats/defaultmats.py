@@ -22,7 +22,7 @@ class DefaultMaterials(MaterialsCollection):
         self.sidewalk = ddd.material(name="Sidewalk", color='#e0d0d0')
         self.pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
         self.pathwalk = ddd.material(name="WayPedestrian", color='#78281e')
-        self.sand = ddd.material(name="WayPedestrian", color='#fff694')
+        self.sand = ddd.material(name="Sand", color='#fff694')
 
         # Ways/roads special
         self.roadline = ddd.material(name="Roadline", color='#e8e8e8', extra={'ddd:collider': False, 'ddd:shadows': False})

@@ -264,7 +264,6 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_post_box(self, item_2d):
 
-        logger.warn("TODO: move items outside buldings and consider ground too (possibly making ground an area")
         #item_2d = ddd.snap.project(item_2d, self.osm.areas_2d, penetrate=0.5)
         item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
 

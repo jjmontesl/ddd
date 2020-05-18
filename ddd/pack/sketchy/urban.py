@@ -205,6 +205,10 @@ def traffic_sign_code(signtype, thick=0.1):
         if sign_mat:
             head = head.material(sign_mat)
 
+        # Force steel material
+        # TODO: correctly separate back (metal), side (color) and front, replace front with decal
+        #head = head.material(ddd.mats.steel)
+
         # Get sprite
         sprite = ddd.mats.traffic_signs.atlas.sprite(signtype.replace(":", "_") + ".png")
         #print(sprite)
@@ -222,10 +226,10 @@ def traffic_sign_code(signtype, thick=0.1):
         shape_bounds = shape_aligned.bounds()
         shape_aligned = shape_aligned.translate([shape_bounds[0] * -1, shape_bounds[1] * -1])
         shape_aligned = shape_aligned.scale([1 / (shape_bounds[2] - shape_bounds[0]), 1 / (shape_bounds[3] - shape_bounds[1])])
-        decal = decal.intersection(shape_aligned)
-        decal = decal.triangulate().material(ddd.mats.traffic_signs)
-
+        decal_shape = decal.intersection(shape_aligned)
+        decal = decal_shape.triangulate().material(ddd.mats.traffic_signs)
         decal = ddd.uv.map_cubic(decal)
+
         if sprite.rot:
             decal.extra['uv'] = [(sprite.bounds_norm[0] + (sprite.bounds_norm[3] - sprite.bounds_norm[1]) * v[1],
                                   1.0 - (sprite.bounds_norm[1] + (sprite.bounds_norm[2] - sprite.bounds_norm[0]) * v[0]))
@@ -240,8 +244,11 @@ def traffic_sign_code(signtype, thick=0.1):
         decal.extra['ddd:shadows'] = False
         decal.extra['ddd:collider'] = False
 
+        # TODO: correctly separate back (metal), side (color) and front, replace front with decal
+        decal2 = decal.rotate(ddd.ROT_TOP_HALFTURN).material(ddd.mats.steel)
+
         # Combine
-        head = ddd.group3([head, decal], name="Traffic Sign Textured")
+        head = ddd.group3([head, decal, decal2], name="Traffic Sign Textured")
 
         if sign_shape in ('s', 'e'):
             # Adapt panel size for rectangular signs
@@ -798,7 +805,7 @@ def childrens_playground_swing(width=0.45, height=1.6, depth=0.2, width_top=None
     return swing
 
 
-def childrens_playground_sandbox(r=1, sides=5, height=0.4, thick=0.1):
+def childrens_playground_sandbox(r=1.5, sides=5, height=0.4, thick=0.1):
     """
     """
     area = ddd.regularpolygon(sides, r, name="Playground Sand")

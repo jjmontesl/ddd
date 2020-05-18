@@ -1930,29 +1930,39 @@ class WaysOSMBuilder():
         # Generate traffic signs
         if True and path.geom.length > 20.0 and path.extra['ddd:way:augment_traffic_signals'] and path.extra['ddd:layer'] == "0":
 
-            # End right
-            p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 11.5 - random.uniform(0.0, 10.0))
+            for end in (1, -1):
 
-            # Only for the correct part of the line (since path is not adjusted by intersections)
-            if way_2d.intersects(ddd.point(p)):
+                if end == -1 and path.extra.get('osm:oneway', None): continue
 
-                dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
-                dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
-                dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
-                perpendicular_vec = (-dir_vec[1], dir_vec[0])
-                lightlamp_dist = path.extra['ddd:way:width'] * 0.5 + 0.5
-                left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
-                right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
+                if end == 1:
+                    # End right
+                    p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - 11.5 - random.uniform(0.0, 8.0))
+                else:
+                    p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(11.5 + random.uniform(0.0, 8.0))
 
-                item = ddd.point(right, name="Traffic sign: %s" % way_2d.name)
+                # Only for the correct part of the line (since path is not adjusted by intersections)
+                if way_2d.intersects(ddd.point(p)):
 
-                angle = math.atan2(dir_vec[1], dir_vec[0])
+                    dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+                    dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+                    dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+                    perpendicular_vec = (-dir_vec[1], dir_vec[0])
+                    item_dist = path.extra['ddd:way:width'] * 0.5 + 0.5
+                    left = (p[0] + perpendicular_vec[0] * item_dist, p[1] + perpendicular_vec[1] * item_dist)
+                    right = (p[0] - perpendicular_vec[0] * item_dist, p[1] - perpendicular_vec[1] * item_dist)
 
-                # area = self.osm.areas_2d.intersect(item)
-                # Check type of area point is on
-                item.extra['way_2d'] = way_2d
-                item.extra['ddd:angle'] = angle
-                item.extra['osm:traffic_sign'] = random.choice(['es:r1', 'es:r2', 'es:p1', 'es:r101', 'es:r301-50', 'es:r303', 'es:r305',
-                                                                'es:r308', 'es:r400c', 'es:r500', 'es:s13'])
-                self.osm.items_1d.children.append(item)
+                    if end == 1:
+                        item = ddd.point(right, name="Traffic sign: %s" % way_2d.name)
+                        angle = math.atan2(dir_vec[1], dir_vec[0])
+                    else:
+                        item = ddd.point(left, name="Traffic sign: %s" % way_2d.name)
+                        angle = math.atan2(dir_vec[1], dir_vec[0]) + math.pi
+
+                    # area = self.osm.areas_2d.intersect(item)
+                    # Check type of area point is on
+                    item.extra['way_2d'] = way_2d
+                    item.extra['ddd:angle'] = angle
+                    item.extra['osm:traffic_sign'] = random.choice(['es:r1', 'es:r2', 'es:p1', 'es:r101', 'es:r303', 'es:r305',
+                                                                    'es:r308', 'es:r400c', 'es:r500', 'es:s13'])  # 'es:r301_50',
+                    self.osm.items_1d.children.append(item)
 
