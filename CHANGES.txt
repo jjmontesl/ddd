@@ -1,5 +1,6 @@
 [0.4.5]
 
+  * Added initial pipeline and tasks support.
   * Added mesh combine method (and used to simplify tree structure).
   * Added --catalog-overwrite and --catalog-ignore options.
   * Added --renderer option (pyrender and pyglet options).

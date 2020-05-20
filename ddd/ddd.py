@@ -442,21 +442,51 @@ class DDDObject():
         for c in self.children:
             c.dump(indent_level=indent_level + 1)
 
-    def select(self, func=None, recurse=True):
+    def count(self):
+        # TODO: Is this semantically correct? what about hte root node and children?
+        # This is used for select() set results, so maybe that should be a separate type
+        return len(self.children)
+
+    def one(self):
+        if len(self.children) != 1:
+            raise DDDException("Expected 1 object but found %s." % len(self.children))
+        return self.children[0]
+
+    def find(self, path=None):
+        result = self.select(path=path, recurse=False)
+        if len(result.children) != 1:
+            raise DDDException("Find '%s' expected 1 object but found %s." % (path, len(result.children)), ddd_obj=self)
+        return result.one()
+
+    def select(self, func=None, path=None, recurse=True, _rec_path=None):
         """
         Returns copies of objects!
         """
 
-        if func is None: func = lambda o: True
+        # TODO: Recurse should be false by default
 
         result = []
-        selected = func(self)
+
+        if _rec_path is None:
+            _rec_path = "/"
+        elif _rec_path == "/":
+            _rec_path = _rec_path + str(self.name)
+        else:
+            _rec_path = _rec_path + "/" + str(self.name)
+
+        selected = func(self) if func else True
+        if path:
+            # TODO: Implement path pattern matching (hint: gitpattern lib)
+            path = path.replace("*", "")  # Temporary hack to allow *
+            pathmatches = _rec_path.startswith(path)
+            selected = selected and pathmatches
+
         if selected:
             result.append(self)
 
         if not selected or recurse:
             for c in self.children:
-                cr = c.select(func)
+                cr = c.select(func, path=path, recurse=recurse, _rec_path=_rec_path)
                 if cr: result.extend(cr.children)
 
         #self.children = [c for c in self.children if c not in result]

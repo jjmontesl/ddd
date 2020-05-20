@@ -39,6 +39,7 @@ def project_coordinates(coords, transformer):
 
     return coords
 
+
 class OSMBuilder():
 
     def __init__(self, features=None, area_filter=None, area_crop=None, osm_proj=None, ddd_proj=None, config=None):
