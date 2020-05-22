@@ -6,6 +6,9 @@ import logging
 from ddd.ddd import ddd
 import os
 from ddd.pipeline.decorators import DDDTask
+import sys
+import importlib
+from ddd.core.exception import DDDException
 
 
 # Get instance of logger for this module
@@ -20,8 +23,13 @@ class DDDPipeline():
 
         self.root = ddd.group2()
 
+        self.data = {}
+
         if configfiles:
             self.load(configfiles)
+
+    def __repr__(self):
+        return "Pipeline(name=%r)" % (self.name)
 
     def load(self, configfiles):
 
@@ -33,8 +41,19 @@ class DDDPipeline():
         # Load file
         logger.info("Loading pipeline config: %s", configfiles)
 
+        if configfiles.endswith(".py"): configfiles = configfiles[:-3]
+        try:
+            script_abspath = os.path.abspath(configfiles)
+            script_dirpath = os.path.dirname(configfiles)
+            #sys.path.append(script_dirpath)
+            sys.path.append("..")
+            importlib.import_module(configfiles)  #, globals={'ddd_bootstrap': self})
+        except ModuleNotFoundError as e:
+            raise DDDException("Could not load pipeline definition file: %s" % configfiles)
+
+
     def run(self):
-        logger.info("Running  pipeline: %s", self)
+        logger.info("Running pipeline: %s", self)
         # TODO: Use pydoit to create DAG and run tasks
         for task in DDDTask._tasks:
             task.run(self)

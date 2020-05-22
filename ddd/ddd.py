@@ -12,6 +12,7 @@ import math
 import random
 import sys
 import webbrowser
+from lark import Lark
 
 import PIL
 import cairosvg
@@ -45,6 +46,8 @@ import numpy as np
 from trimesh.util import concatenate
 from shapely.ops import unary_union
 from geojson.feature import FeatureCollection
+from ddd.core.selector_ebnf import selector_ebnf
+from lark.visitors import Transformer
 
 
 # Get instance of logger for this module
@@ -458,10 +461,53 @@ class DDDObject():
             raise DDDException("Find '%s' expected 1 object but found %s." % (path, len(result.children)), ddd_obj=self)
         return result.one()
 
-    def select(self, func=None, path=None, recurse=True, _rec_path=None):
+    def select(self, func=None, select=None, path=None, recurse=True, _rec_path=None):
         """
         Returns copies of objects!
         """
+
+        class TreeToSelector(Transformer):
+            def string(self, s):
+                (s,) = s
+                return s[1:-1]
+            def number(self, n):
+                (n,) = n
+                return float(n)
+
+            list = list
+            pair = tuple
+            dict = dict
+
+            null = lambda self, _: None
+            true = lambda self, _: True
+            false = lambda self, _: False
+
+        def eval_select(select, obj):
+            parser = Lark(selector_ebnf, start="selector", parser='lalr')
+            tree = parser.parse(select)
+            print(tree.pretty())
+            tree = TreeToSelector().transform(tree)
+            #print(tree)
+            #print(tree.pretty())
+
+            datakey = tree.children[0].children[0].children[0].children[0]
+            #print(datakey)
+            dataop = tree.children[0].children[1].data
+            #print(dataop)
+            datavalue = tree.children[0].children[2].children[0]
+            #print(datavalue)
+            logger.info("Eval select: %s %s %s", datakey, dataop, datavalue)
+
+            selected = False
+
+            for k, v in obj.extra.items():
+                if datakey != k: continue
+                if dataop == 'equals':
+                    selected = (v == datavalue)
+                else:
+                    raise DDDException("Unknown selector operation: %s", dataop)
+
+            return selected
 
         # TODO: Recurse should be false by default
 
@@ -474,12 +520,19 @@ class DDDObject():
         else:
             _rec_path = _rec_path + "/" + str(self.name)
 
-        selected = func(self) if func else True
+        selected = True
+
         if path:
             # TODO: Implement path pattern matching (hint: gitpattern lib)
             path = path.replace("*", "")  # Temporary hack to allow *
             pathmatches = _rec_path.startswith(path)
             selected = selected and pathmatches
+
+        if func:
+            selected = selected and func(self)
+        if select:
+            selected = selected and eval_select(select, self)
+
 
         if selected:
             result.append(self)
@@ -958,7 +1011,7 @@ class DDDObject2(DDDObject):
         Returns a triangulated mesh (3D) from this 2D shape.
         """
         if self.geom:
-            if self.geom.type == 'MultiPolygon' or self.geom.type == 'GeometryCollection':
+            if self.geom.type == 'MultiPolygon' or self.geom.type == 'MultiLineString' or self.geom.type == 'GeometryCollection':
                 meshes = []
                 for geom in self.geom.geoms:
                     pol = DDDObject2(geom=geom, extra=dict(self.extra), name="Triangulated Multi: %s" % self.name)
@@ -1343,6 +1396,7 @@ class DDDObject2(DDDObject):
             instance_mesh = D1D2D3Bootstrap.export_mesh
 
         if path.endswith(".svg"):
+            logger.info("Exporting 2D as SVG to: %s", path)
             #data = geom._repr_svg_().encode()
             data = self.svgdoc().encode()
 
@@ -1359,7 +1413,7 @@ class DDDObject2(DDDObject):
             data = DDDJSON.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = data.encode("utf8")
         else:
-            raise ValueError()
+            raise DDDException("Invalid 2D save format (filename=%s)" % path)
 
         with open(path, 'wb') as f:
             f.write(data)

@@ -161,25 +161,25 @@ def show(root):
 
 
 """
-An example of a PSP (Processing and Styling Pipeline) in DDD.
+An example of a configurable processing pipeline in DDD.
 
-This example avoids using OSM or map related topics to show pipeline
-generalization.
-
-This gets an ordered series of articles from wikipedia and displays them
-after several processing and styling steps. Since these features do not
-have an intrinsic positioning in space, they are distributed according to
-an axis (eg. time).
+This gets an list of atomic elements and displays them
+after several processing and styling steps.
 """
 
 # From https://en.wikipedia.org/wiki/List_of_chemical_elements
 # Process features
-pipeline = DDDPipeline(['wikipedia_elements.py'])
+pipeline = DDDPipeline(['periodictable_base.py', 'periodictable_simple.py'])
 pipeline.run()
 
 # Show an alternative styling
-#pipeline = Pipeline.load(['wikipedia_elements.py', 'wkipedia_elements_variant.py'])
-#pipeline.process(features)
+pipeline = DDDPipeline.load(['periodictable_base.py', 'periodictbale_variant.py'])
+pipeline.run
+
+# Style via generation of OSM elements and processing through the OSM pipeline
+pipeline = DDDPipeline.load(['periodictable_base.py', 'periodictable_osm.py', '../osm/osm_sketchy/*.py'])
+pipeline.run()
+
 
 #pipeline.root.show()
 

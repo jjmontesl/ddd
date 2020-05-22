@@ -20,6 +20,7 @@ from shapely.geometry.geo import shape
 from ddd.catalog.catalog import PrefabCatalog
 from ddd.osm.osmops.osmops import OSMBuilderOps
 import sys
+from ddd.pipeline.pipeline import DDDPipeline
 
 
 # Get instance of logger for this module
@@ -57,6 +58,9 @@ class OSMBuilder():
 
         self.area_filter = area_filter
         self.area_crop = area_crop
+
+        self.area_filter2 = ddd.shape(self.area_filter)
+        self.area_crop2 = ddd.shape(self.area_crop)
 
         #self.simplify_tolerance = 0.01
 
@@ -175,7 +179,7 @@ class OSMBuilder():
             try:
                 geom = shape(f['geometry'])
             except Exception as e:
-                logger.warn("Could not load feature with invalid geometry: %s", f.get('name'))
+                logger.warn("Could not load feature with invalid geometry: %s", f.properties.get('id'))
                 continue
 
             #if self.area_filter.contains(geom.centroid):
@@ -252,7 +256,7 @@ class OSMBuilder():
         #tile.dump()
         tile.save(path)
 
-    def generate(self):
+    def generate_old(self):
 
         logger.info("Generating geometry (area_filter=%s, area_crop=%s)", self.area_filter, self.area_crop)
 
@@ -261,7 +265,7 @@ class OSMBuilder():
         #self.features_2d.filter(lambda o: o.extra.get('osm:building:part', None) is not None).dump()
 
         # Generate items for point features
-        self.items.generate_items_1d()
+        #self.items.generate_items_1d()
 
         # Roads sorted + intersections + metadata
         self.ways.generate_ways_1d()

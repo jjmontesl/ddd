@@ -18,6 +18,7 @@ from ddd.geo import terrain
 import geojson
 import json
 from shapely.geometry.geo import shape
+from ddd.pipeline.pipeline import DDDPipeline
 
 
 # Get instance of logger for this module
@@ -49,6 +50,7 @@ class OSMBuildCommand(DDDCommand):
 
         #parser.add_argument("-w", "--worker", default=None, help="worker (i/n)")
         parser.add_argument("-l", "--limit", type=int, default=None, help="tasks limit")
+
         parser.add_argument("--name", type=str, default=None, help="base name for output")
         parser.add_argument("--center", type=str, default=None, help="center of target area")
         parser.add_argument("--area", type=str, default=None, help="target area polygon GeoJSON")
@@ -210,7 +212,7 @@ class OSMBuildCommand(DDDCommand):
         #for x, y in range_around([-8, -8, 8, 8]):  # -8, 3
 
             if self.limit and tasks_count >= self.limit:
-                logger.info("Limit of %d tasks hit.", self.limit)
+                logger.info("Limit of %d tiles hit.", self.limit)
                 break
 
             bbox_crop = [x * self.chunk_size, y * self.chunk_size, (x + 1) * self.chunk_size, (y + 1) * self.chunk_size]
@@ -251,12 +253,29 @@ class OSMBuildCommand(DDDCommand):
                         hdlr.setFormatter(new_formatter)
 
                     logger.info("Generating: %s", filename)
+                    pipeline = DDDPipeline(['pipelines.osm_base.main.py'], name="OSM Build Pipeline")  # todo: use file paths
 
                     try:
 
                         osmbuilder = osm.OSMBuilder(area_crop=area_crop, area_filter=area_filter, osm_proj=osm_proj, ddd_proj=ddd_proj)
                         osmbuilder.load_geojson(files)
+                        osmbuilder.preprocess_features()
+
+                        pipeline.data['osm'] = osmbuilder
+                        pipeline.root.append(osmbuilder.features_2d)
+
+                        #pipeline.root.dump()
+                        #pipeline.root.intersection(osmbuilder.area_crop2).save("/tmp/test.svg")
+                        #pipeline.root.intersection(osmbuilder.area_crop2).buffer(0.01).show()
+                        pipeline.run()
+
+                        '''
                         scene = osmbuilder.generate()
+                        '''
+
+                        osmbuilder = pipeline.data['osm']
+
+                        scene = pipeline.root
                         #scene.dump()
                         scene.save(filename)
                         scene.save("/tmp/dddosm.json")

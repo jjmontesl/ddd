@@ -30,6 +30,7 @@ class ItemsOSMBuilder():
         self.tree_decimate = 1
         self.tree_decimate_idx = 0
 
+    '''
     def generate_items_1d(self):
         logger.info("Generating 1D items")
 
@@ -47,6 +48,7 @@ class ItemsOSMBuilder():
     def generate_item_1d(self, feature_2d):
         item = feature_2d.copy(name="Item: %s" % feature_2d.name)
         return item
+    '''
 
     def generate_items_3d(self):
         logger.info("Generating 3D items (from %d items_1d)", len(self.osm.items_1d.children))

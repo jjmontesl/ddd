@@ -142,7 +142,7 @@ class BuildingOSMBuilder():
         """
         Buildings 2D may contain references to building parts.
 
-        TODO: Do a lot more in tags in 2D and here, and generalize tasks to styles and tags.
+        TODO: Do a lot more in tags in 2D and here, and generalize tasks to pipelines and tags.
         """
 
         floors = building_2d.extra.get('osm:building:levels', None)

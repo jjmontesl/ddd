@@ -141,6 +141,9 @@ Q: Why the DDD prefix in all objects? isn't this outdated?
 A: The decision to name classes with the DDD prefix was to avoid naming conflicts with
    the many similarly named types among ddd dependencies.
 
+Q: Why the pipeline approach is recommended?
+A: Pipelines allow to separate tasks, don't require an explicit entry point, allow
+   being extended, and can cache intermediate results.
 
 ## License
 
