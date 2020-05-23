@@ -88,7 +88,7 @@ class D1D2D3Bootstrap():
         parser.add_argument("--export-normals", action="store_true", default=False, help="export normals")
         parser.add_argument("--export-textures", action="store_true", default=False, help="export textures")
 
-        parser.add_argument("--renderer", default="pyrender", nargs="?", choices=('pyrender', 'pyglet'), help="renderer backend (default: %(default)s)")
+        parser.add_argument("--renderer", default="pyglet", nargs="?", choices=('pyrender', 'pyglet'), help="renderer backend (default: %(default)s)")
 
         parser.add_argument("--catalog-overwrite", action="store_true", default=False, help="overwrite catalog items")
         parser.add_argument("--catalog-ignore", action="store_true", default=False, help="do not use catalog (read, write or store)")

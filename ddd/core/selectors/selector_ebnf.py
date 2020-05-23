@@ -1,5 +1,15 @@
+# ddd - D1D2D3
+# Library for simple scene modelling.
+# Jose Juan Montes 2020
+
+"""
+This file contains the DDDSelector grammar definition in EBNF format.
+"""
 
 selector_ebnf = r"""
+
+TAG_KEY_STRING : /[a-zA-Z][a-zA-Z:_]*/
+SINGLE_QUOTED_STRING  : /'[^']*'/
 
 ?value: dict
       | list
@@ -11,11 +21,12 @@ selector_ebnf = r"""
 
 string: ESCAPED_STRING
 
+
 datafilter: "[" datafilterkeyexpr [ datafilterop datafiltervalueexpr ] "]"
 
 datafilterkeyexprprefix: "!" | "~"
 
-datafilterkeyexprname: string
+datafilterkeyexprname: string | TAG_KEY_STRING
 
 datafilterkeyexpr: datafilterkeyexprprefix? datafilterkeyexprname
 datafiltervalueexpr: value

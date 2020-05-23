@@ -28,82 +28,58 @@ def preprocess_features(pipeline, osm):
     osm.preprocess_features()
 '''
 
-'''
-def preprocess_features(osm):
-    """
-    Corrects inconsistencies and adapts OSM data for generation.
-    """
-
-    # Correct layers
-    for f in self.features:
-        f.properties['id'] = f.properties['id'].replace("/", "-")
-        if f.properties.get('tunnel', None) == 'yes' and f.properties.get('layer', None) is None:
-            f.properties['layer'] = "-1"
-        if f.properties.get('brige', None) == 'yes' and f.properties.get('layer', None) is None:
-            f.properties['layer'] = "1"
-        if f.properties.get('layer', None) is None:
-            f.properties['layer'] = "0"
-
-        # Create feature objects
-        defaultname = f.geometry.type  # "Feature"
-        name = f.properties.get('name', defaultname)
-        osmid = f.properties.get('id', None)
-        if osmid is not None:
-            name = "%s_(%s)" % (name, osmid)
-
-        feature_2d = ddd.shape(f.geometry, name=name)
-        feature_2d.extra['osm:feature'] = f
-        feature_2d.extra['osm:feature_2d'] = feature_2d
-        for k, v in f.properties.items():
-            feature_2d.extra['osm:' + k] = v
-
-        try:
-            feature_2d.validate()
-            self.features_2d.append(feature_2d)
-        except Exception as e:
-            logger.info("Invalid feature '%s': %s", name, e)
-'''
-
 @dddtask(filter=lambda o: o.geom, log=True)  # and o.geom.type in ('Point', 'Polygon', 'MultiPolygon') .. and o.geom.type == 'Polygon' |  ... path="/Features", select=r'["geom:type"="Polygon"]'
-def stage_10_crop_metatile(pipeline, osm, root, obj):
-    """Crops to the metatile size to avoid working with huge areas."""
+def stage_10_crop_extended_area(pipeline, osm, root, obj):
+    """Crops to extended area size to avoid working with huge areas."""
+
     # TODO: Crop centroids of buildings and lines and entire areas...
+
     #pipeline.data['osm'].preprocess_features()
     #osm.preprocess_features()
-    #root.dump()
     obj = obj.intersection(osm.area_filter2)
-    #print(obj)
+
     return obj
 
 @dddtask(log=True)
 def stage_20_preprocess_features(pipeline, osm, root):
     #pipeline.data['osm'].preprocess_features()
     #osm.preprocess_features()
-    root.save("/tmp/test.svg")
     #root.show()
     #sys.exit(1)
+    root.save("/tmp/osm-20-features.svg")
+    root.save("/tmp/osm-20-features.json")
 
 @dddtask(log=True)
 def stage_30_create_nodes(root, osm):
-    items = ddd.group2(name="Items")
+    items = ddd.group2(name="Items")  # 1D
     root.append(items)
-    items = ddd.group2(name="Ways")
+    items = ddd.group2(name="Ways")  # 1D
     root.append(items)
-    items = ddd.group2(name="Areas")
+    items = ddd.group2(name="Areas")  # 2D
     root.append(items)
-    items = ddd.group2(name="Buildings")
+    items = ddd.group2(name="Buildings")  # 2D
     root.append(items)
 
-@dddtask(path="/Features/*", select='[osm:type="Node"]', log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
+    #root.dump(data=True)
+
+@dddtask(path="/Features/*", select='[geom:type="Point"]', log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
 def stage_30_generate_items(root, osm, obj):
     """Generate items for point features."""
     item = obj.copy(name="Item: %s" % obj.name)
+    item = item.material(ddd.mats.highlight)
     root.find("/Items").append(item)
 
-@dddtask(path="/Features/*", select='[osm:type="Way"]', log=True)
+@dddtask(log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
+def stage_31_process_items(root, osm, obj):
+    """Generate items for point features."""
+    root.save("/tmp/osm-31-items.svg")
+
+@dddtask(path="/Features/*", select='[geom:type="LineString"]', log=True)
 def osm_40_generate_ways(root, obj):
     # Ways depend on buildings
-    item = obj.copy(name="Item: %s" % obj.name)
+    item = obj.copy(name="Way: %s" % obj.name)
+
+    item = item.material(ddd.mats.asphalt)
     root.find("/Ways").append(item)
 
     ## ?? osm.ways.generate_ways_1d()
@@ -113,23 +89,42 @@ def osm_45_process_ways(pipeline, osm, root, logger):
     pass
 
 
+@dddtask(path="/Features/*", select='[geom:type="Polygon"]', log=True)
+def osm_50_generate_areas(root, obj):
+    # Ways depend on buildings
+    item = obj.copy(name="Area: %s" % obj.name)
+    root.find("/Features").append(item)
+
+    ## ?? osm.ways.generate_ways_1d()
+
+@dddtask(log=True)
+def osm_55_process_areas(pipeline, osm, root, logger):
+    pass
+
+
+
 @dddtask(log=True)
 def osm_99_rest(pipeline, osm, root, logger):
 
     #self.features_2d.filter(lambda o: o.extra.get('osm:building:part', None) is not None).dump()
 
-    #root.dump()
-    sys.exit(1)
+
+    root.save("/tmp/osm-99.json")
 
     # TODO: Shall already be done earlier
     osm.features_2d = root.find("/Features")
-    osm.items_2d = root.find("/Items")
+    osm.items_1d = root.find("/Items")
+    osm.ways_1d = root.find("/Ways")
 
     # Generate items for point features
     ##osm.items.generate_items_1d()
 
     # Roads sorted + intersections + metadata
     ##osm.ways.generate_ways_1d()
+    osm.ways.split_ways_1d()
+
+    #root.dump()
+    #sys.exit(1)
 
     # Generate buildings
     osm.buildings.generate_buildings_2d()

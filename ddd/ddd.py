@@ -440,10 +440,11 @@ class DDDObject():
 
         return metadata
 
-    def dump(self, indent_level=0):
-        print("  " * indent_level + str(self))
+    def dump(self, indent_level=0, data=False):
+        strdata = str(self.extra) if data else ""
+        print("  " * indent_level + str(self) + strdata)
         for c in self.children:
-            c.dump(indent_level=indent_level + 1)
+            c.dump(indent_level=indent_level + 1, data=data)
 
     def count(self):
         # TODO: Is this semantically correct? what about hte root node and children?
@@ -461,10 +462,12 @@ class DDDObject():
             raise DDDException("Find '%s' expected 1 object but found %s." % (path, len(result.children)), ddd_obj=self)
         return result.one()
 
-    def select(self, func=None, select=None, path=None, recurse=True, _rec_path=None):
+    def select(self, func=None, selector=None, path=None, recurse=True, _rec_path=None):
         """
         Returns copies of objects!
         """
+
+        logger.debug("Select: func=%s selector=%s path=%s recurse=%s _rec_path=%s", func, selector, path, recurse, _rec_path)
 
         class TreeToSelector(Transformer):
             def string(self, s):
@@ -482,10 +485,10 @@ class DDDObject():
             true = lambda self, _: True
             false = lambda self, _: False
 
-        def eval_select(select, obj):
+        def eval_select(selector, obj):
             parser = Lark(selector_ebnf, start="selector", parser='lalr')
-            tree = parser.parse(select)
-            print(tree.pretty())
+            tree = parser.parse(selector)
+            #print(tree.pretty())
             tree = TreeToSelector().transform(tree)
             #print(tree)
             #print(tree.pretty())
@@ -496,11 +499,13 @@ class DDDObject():
             #print(dataop)
             datavalue = tree.children[0].children[2].children[0]
             #print(datavalue)
-            logger.info("Eval select: %s %s %s", datakey, dataop, datavalue)
+            #logger.info("Eval select: %s %s %s", datakey, dataop, datavalue)
 
             selected = False
 
-            for k, v in obj.extra.items():
+            extrameta = {'geom:type': obj.geom.type if obj.geom else None}
+
+            for k, v in (list(obj.extra.items()) + list(extrameta.items())):
                 if datakey != k: continue
                 if dataop == 'equals':
                     selected = (v == datavalue)
@@ -530,16 +535,15 @@ class DDDObject():
 
         if func:
             selected = selected and func(self)
-        if select:
-            selected = selected and eval_select(select, self)
-
+        if selector:
+            selected = selected and eval_select(selector, self)
 
         if selected:
             result.append(self)
 
         if not selected or recurse:
             for c in self.children:
-                cr = c.select(func, path=path, recurse=recurse, _rec_path=_rec_path)
+                cr = c.select(func=func, selector=selector, path=path, recurse=recurse, _rec_path=_rec_path)
                 if cr: result.extend(cr.children)
 
         #self.children = [c for c in self.children if c not in result]
@@ -547,7 +551,7 @@ class DDDObject():
         return self.grouptyped(result)
 
     def filter(self, func):
-        return self.select(func)
+        return self.select(func=func)
 
     '''
     def apply(self, func):

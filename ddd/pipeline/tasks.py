@@ -29,7 +29,7 @@ class DDDTask(object):
         self.log = log
 
         self.path = path
-        self.select = select
+        self.selector = select
         self.filter = filter
         self.replace = True
 
@@ -56,7 +56,10 @@ class DDDTask(object):
                 logger.info("%s (task=%s, obj=%s)", self.log, self, obj)
 
     def run(self, pipeline):
-        if (self.path or self.select or self.filter): return self.run_each(pipeline)
+
+        #logger.info("Task select: filter=%s select=%s path=%s", self.filter, self.selector, self.path)
+
+        if (self.path or self.selector or self.filter): return self.run_each(pipeline)
 
         if self.log:
             self.runlog()
@@ -93,7 +96,7 @@ class DDDTask(object):
             elif arg == 'logger': kwargs['logger'] = logging.getLogger(func.__module__)
             elif arg in pipeline.data: kwargs[arg] = pipeline.data[arg]
 
-        objs = pipeline.root.select(func=self.filter, select=self.select, path=self.path, recurse=False)
+        objs = pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=False)
 
         if self.log:
             self.runlog(objs.count())
@@ -116,7 +119,7 @@ class DDDIterateTask(DDDTask):
     def __init__(self, name=None, path=None, select=None, parent=None, before=None, after=None):
         self.name = name
         self.path = path
-        self.select = select
+        self.selector = select
         self.parent = parent
         self.before = before
         self.after = after

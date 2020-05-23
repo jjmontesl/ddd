@@ -219,6 +219,7 @@ class OSMBuilder():
             feature_2d = ddd.shape(f.geometry, name=name)
             feature_2d.extra['osm:feature'] = f
             feature_2d.extra['osm:feature_2d'] = feature_2d
+            feature_2d.extra['osm:type'] = f.properties['id'].split("-")[0]
             for k, v in f.properties.items():
                 feature_2d.extra['osm:' + k] = v
 

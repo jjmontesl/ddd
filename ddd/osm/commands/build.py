@@ -19,6 +19,7 @@ import geojson
 import json
 from shapely.geometry.geo import shape
 from ddd.pipeline.pipeline import DDDPipeline
+import math
 
 
 # Get instance of logger for this module
@@ -52,11 +53,11 @@ class OSMBuildCommand(DDDCommand):
         parser.add_argument("-l", "--limit", type=int, default=None, help="tasks limit")
 
         parser.add_argument("--name", type=str, default=None, help="base name for output")
-        parser.add_argument("--center", type=str, default=None, help="center of target area")
+        parser.add_argument("--center", type=str, default=None, help="center of target area (lon, lat)")
         parser.add_argument("--area", type=str, default=None, help="target area polygon GeoJSON")
-        #parser.add_argument("--radius", type=float, default=None, help="radius of target area")
+        parser.add_argument("--radius", type=float, default=250, help="radius of target area (m)")
         #parser.add_argument("--area", type=str, help="GeoJSON polygon of target area")
-        #parser.add_argument("--tile", type=float, help="tile size in meters (0 for entire area)")
+        parser.add_argument("--tile", type=float, default=None, help="tile size or 0 (m)")
 
         args = parser.parse_args(args)
         self.limit = args.limit
@@ -65,9 +66,15 @@ class OSMBuildCommand(DDDCommand):
         self.center = (float(center[0]), float(center[1]))
 
         self.name = args.name
-        self.area = shape(json.loads(args.area))
 
-        #self.radius = args.radius
+        if args.area:
+            self.area = shape(json.loads(args.area))
+            self._radius = None
+        else:
+            self.area = None
+            self._radius = args.radius
+
+        self.chunk_size = args.tile
 
 
     def get_data(self, datapath, name, center_wgs84, area):
@@ -109,10 +116,13 @@ class OSMBuildCommand(DDDCommand):
                                towgs84="0,0,0,0,0,0,0",
                                no_defs=True)
 
+        # TODO: Move area resolution outside this method and resolve after processing args
         area_ddd = None
         if self.area:
             trans_func = partial(pyproj.transform, osm_proj, ddd_proj)
             area_ddd = ops.transform(trans_func, self.area)
+        else:
+            area_ddd = ddd.point().buffer(self._radius, cap_style=ddd.CAP_ROUND, resolution=8).geom
 
         # GeoJSON with info
         # TODO: Move to OSM generation
@@ -198,32 +208,49 @@ class OSMBuildCommand(DDDCommand):
                                towgs84="0,0,0,0,0,0,0",
                                no_defs=True)
 
-        # Polygon area
+        # TODO: Move area resolution outside this method and resolve after processing args
         area_ddd = None
         if self.area:
             trans_func = partial(pyproj.transform, osm_proj, ddd_proj)
             area_ddd = ops.transform(trans_func, self.area)
-            logger.info("Complete polygon area: %.1f km2 (%d at 500, %d at 250, %d at 200)", (area_ddd.area / (1000 * 1000)), (area_ddd.area / (500 * 500)), (area_ddd.area / (250 * 250)), (area_ddd.area / (200 * 200)))
+        else:
+            area_ddd = ddd.point().buffer(self._radius, cap_style=ddd.CAP_ROUND, resolution=8).geom
+
+        logger.info("Complete polygon area: %.1f km2 (%d at 500, %d at 250, %d at 200)", area_ddd.area / (1000 * 1000), math.ceil(area_ddd.area / (500 * 500)), math.ceil(area_ddd.area / (250 * 250)), math.ceil(area_ddd.area / (200 * 200)))
 
         # TODO: organise tasks and locks in pipeline, not here
         skipped = 0
         existed = 0
-        for (idx, (x, y)) in enumerate(range_around([-64, -64, 64, 64])):
+
+        tiles = [(0, 0)] if not self.chunk_size else range_around([-64, -64, 64, 64])
+
+        for (idx, (x, y)) in enumerate(tiles):
         #for x, y in range_around([-8, -8, 8, 8]):  # -8, 3
 
             if self.limit and tasks_count >= self.limit:
                 logger.info("Limit of %d tiles hit.", self.limit)
                 break
 
-            bbox_crop = [x * self.chunk_size, y * self.chunk_size, (x + 1) * self.chunk_size, (y + 1) * self.chunk_size]
-            bbox_filter = [bbox_crop[0] - self.chunk_size_extra_filter, bbox_crop[1] - self.chunk_size_extra_filter,
-                           bbox_crop[2] + self.chunk_size_extra_filter, bbox_crop[3] + self.chunk_size_extra_filter]
-            shortname = '%s_%d_%d,%d' % (name, abs(x) + abs(y), bbox_crop[0], bbox_crop[1])
-            filenamebase = 'output/%s/%s' % (name, shortname)
-            filename = filenamebase + ".glb"
+            if self.chunk_size:
 
-            area_crop = ddd.rect(bbox_crop).geom
-            area_filter = ddd.rect(bbox_filter).geom
+                bbox_crop = [x * self.chunk_size, y * self.chunk_size, (x + 1) * self.chunk_size, (y + 1) * self.chunk_size]
+                bbox_filter = [bbox_crop[0] - self.chunk_size_extra_filter, bbox_crop[1] - self.chunk_size_extra_filter,
+                               bbox_crop[2] + self.chunk_size_extra_filter, bbox_crop[3] + self.chunk_size_extra_filter]
+                area_crop = ddd.rect(bbox_crop).geom
+                area_filter = ddd.rect(bbox_filter).geom
+
+                shortname = '%s_%d_%d,%d' % (name, abs(x) + abs(y), bbox_crop[0], bbox_crop[1])
+                filenamebase = 'output/%s/%s' % (name, shortname)
+                filename = filenamebase + ".glb"
+
+            else:
+
+                area_crop = area_ddd
+                area_filter = area_ddd.buffer(self.chunk_size_extra_filter)
+
+                shortname = '%s_%dr_%.3f,%.3f' % (name, 0, self.center[0], self.center[1])
+                filenamebase = 'output/%s/%s' % (name, shortname)
+                filename = filenamebase + ".glb"
 
             if area_ddd and not area_ddd.intersects(area_crop):
                 skipped += 1
@@ -275,12 +302,12 @@ class OSMBuildCommand(DDDCommand):
 
                         osmbuilder = pipeline.data['osm']
 
+                        # TODO: Move inside pipeline (outputs depend on pipeline config)
                         scene = pipeline.root
                         #scene.dump()
-                        scene.save(filename)
                         scene.save("/tmp/dddosm.json")
-
                         osmbuilder.save_tile_2d(filenamebase + ".png")
+                        scene.save(filename)
 
                         #sys.exit(0)
 
@@ -301,9 +328,9 @@ class OSMBuildCommand(DDDCommand):
                 logger.info("Skipping: %s (lock file exists)", filename)
 
         if existed > 0:
-            logger.info("Skipped %d tiles that already existed.", skipped)
+            logger.info("Skipped %d files that already existed.", existed)
         if skipped > 0:
-            logger.info("Skipped %d tiles not contained in greater filtering area.", skipped)
+            logger.info("Skipped %d files not contained in greater filtering area.", skipped)
 
 
 #self = OSMDDDBootstrap()

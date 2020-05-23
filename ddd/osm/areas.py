@@ -232,7 +232,7 @@ class AreasOSMBuilder():
                     #self.osm.items_3d.children.append(plant)
                     tree = ddd.point(p, name="Tree")
                     tree.extra['osm:natural'] = 'tree'
-                    tree.extra['ddd:tree:type'] = tree_type
+                    tree.extra['osm:tree:type'] = tree_type
                     self.osm.items_1d.children.append(tree)
 
         return area
@@ -283,10 +283,8 @@ class AreasOSMBuilder():
 
     def generate_area_2d_vineyard(self, area):
         area.name = "Vineyard: %s" % area.name
-        area = area.material(ddd.mats.terrain)
-
+        area = self.generate_area_2d_park(area, tree_density_m2=0.001, tree_types={'default': 1})
         # Generate crops
-
         return area
 
     def generate_area_2d_pitch(self, area):
@@ -754,11 +752,11 @@ class AreasOSMBuilder():
                 logger.warning("Null area geometry (children?): %s", area_2d)
             area_3d = DDDObject3()
 
-        if area_3d.mesh:
+        if area_3d.mesh or area_3d.children:
             #height = area_2d.extra.get('ddd:height', 0.2)
             area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
 
-        area_3d.children = [self.generate_area_3d(c) for c in area_2d.children]
+        area_3d.children.extend( [self.generate_area_3d(c) for c in area_2d.children] )
 
         return area_3d
 

@@ -189,7 +189,11 @@ class ItemsOSMBuilder():
         #if not self.osm.osmops.placement_valid(ddd.disc(coords, r=0.4), invalid=invalid):
         #    return None
 
-        tree_type = random.choice(['default', 'palm'])
+
+        tree_type = item_2d.extra.get('osm:tree:type')
+        if tree_type is None:
+            tree_type = random.choice(['default', 'palm'])
+
 
         key = "tree-%s-%d" % (tree_type, random.choice([1, 2, 3, 4, 5, 6, 7, 8]))
 

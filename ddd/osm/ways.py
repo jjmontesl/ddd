@@ -82,10 +82,11 @@ class WaysOSMBuilder():
 
         return list(visited)
 
+    '''
     def generate_ways_1d(self):
 
         # Generate paths
-        logger.info("Generating 1D way path objects.")
+        logger.info("Generating 1D way path objects (requires /Items in order to match items to way nodes).")
 
         for feature in self.osm.features_2d.children:
             if feature.geom.type != 'LineString': continue
@@ -97,39 +98,16 @@ class WaysOSMBuilder():
                 self.osm.items_1d.append(way)
             #else:
             #    logger.warn("Ignoring way (unknown feature type): %s", way)
+    '''
+
+    def split_ways_1d(self):
 
         # Splitting
         logger.info("Ways before splitting mid connections: %d", len(self.osm.ways_1d.children))
 
-        '''
-        # Split all
-        vertex_cache = defaultdict(list)
+        # Way schema
         for way in self.osm.ways_1d.children:
-            #start = way.geom.coords[0]
-            #end = way.geom.coords[-1]
-            for way_idx, c in enumerate(way.geom.coords):
-                vertex_cache[c].append(way)
-
-        split = True
-        while split:
-            split = False
-            for c, ways in vertex_cache.items():
-                if len(ways) > 1:
-                    for w in ways:
-                        #if w.extra['osm:natural'] == 'coastline': continue
-                        split1, split2 = self.split_way_1d_vertex(w, c)
-                        if split1 and split2:
-                            for way_coords in w.geom.coords:
-                                vertex_cache[way_coords].remove(w)
-                            for way_coords in split1.geom.coords:
-                                vertex_cache[way_coords].append(split1)
-                            for way_coords in split2.geom.coords:
-                                vertex_cache[way_coords].append(split2)
-                            split = True
-                        if split: break
-                if split: break
-        vertex_cache = None
-        '''
+            way.extra['ddd:connections'] = []
 
         # Split ways on joins
         vertex_cache = defaultdict(list)
@@ -193,27 +171,6 @@ class WaysOSMBuilder():
                     # way.extra['ddd:connections'].append(WayConnection(other, way_idx, 0))
                     self.connect_ways_1d(way, other)  # , way_idx)
         vertex_cache = None
-
-        # Divide end-to-middle connections
-        '''
-        logger.info("Ways before splitting mid connections: %d", len(self.osm.ways_1d.children))
-        split = False
-        while split:
-            split = False
-            for way in self.osm.ways_1d.children:
-                for other, way_idx, other_idx in way.extra['ddd:connections']:
-                    #if other.extra['ddd:layer'] == way.extra['ddd:layer']: continue
-                    if (other_idx > 0 and other_idx != len(other.geom.coords) - 1):
-                        #if not way.extra['ddd:layer_transition']: continue
-                        #logger.info("Mid point connection: %s <-> %s", way, other)
-                        self.split_way_1d(other, other_idx)
-                        # Restart after each split
-                        split = True
-                        break
-                if split: break
-
-        logger.debug("Ways after splitting mid connections: %d", len(self.osm.ways_1d.children))
-        '''
 
         # Find transitions between more than one layer (ie tunnel to bridge) and split
         for way in self.osm.ways_1d.children:
