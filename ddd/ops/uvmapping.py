@@ -40,7 +40,7 @@ class DDDUVMapping():
             # Avoid remapping
             if result.extra.get('uv', None):
                 logger.error("Object already has UV coordinates: %s", result)
-                raise AssertionError()
+                raise DDDException("Object already has UV coordinates: %s" % result)
 
             result.extra['uv'] = [None for idx, v in enumerate(result.mesh.vertices)]
             for face in result.mesh.faces:

@@ -3,6 +3,7 @@
 from ddd.pack.sketchy import urban, landscape, sports
 from ddd.ddd import ddd
 import math
+import random
 
 
 '''
@@ -24,6 +25,15 @@ for m in (sports.basketball_field_lines, sports.tennis_field_lines, sports.footb
         item = ddd.group2([area, lines])
         items.append(item)
     items.show()
+
+    area = ddd.regularpolygon(7, r=random.uniform(12, 20)).scale([random.uniform(0.5, 1.5), random.uniform(0.5, 1.5)]).rotate(random.uniform(0, math.pi * 2))
+    lines = sports.field_lines_area(area, m).translate([0, 0, 0.05])
+    area = area.triangulate().material(ddd.mats.pitch)
+    item = ddd.group2([area, lines])
+    item.show()
+
+
+
 
 '''
 area = ddd.polygon([[0, 0], [10, 0], [10, 5], [0, 5]])

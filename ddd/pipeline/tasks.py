@@ -37,8 +37,6 @@ class DDDTask(object):
 
         self.selector = DDDSelector(select) if select else None
 
-        logger.debug("Task definition: %s", self)
-
         # TODO: Do this in the decorator, not here. Registry shall possisbly be separate.
         DDDTask._tasks.append(self)
 
@@ -53,7 +51,7 @@ class DDDTask(object):
         return "Task(%r)" % self.name
 
     def runlog(self, obj=None):
-        if self.log is True:
+        if self.log in (True, False, None) :
             logger.info("Running task (task=%s, obj=%s)", self, obj)
         else:
             logger.info("%s (task=%s, obj=%s)", self.log, self, obj)
@@ -99,6 +97,7 @@ class DDDTask(object):
             elif arg == 'logger': kwargs['logger'] = logging.getLogger(func.__module__)
             elif arg in pipeline.data: kwargs[arg] = pipeline.data[arg]
 
+        logger.debug("Select: func=%s selector=%s path=%s recurse=%s _rec_path=%s", self.filter, self.selector, self.path)
         objs = pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=False)
 
         #if self.log:
@@ -107,7 +106,7 @@ class DDDTask(object):
         #    logger.debug("Running task %ws for %d objects.", self, objs.count())
 
         for o in objs.children:
-            logger.debug("Running task %s for object: %s", self, o)
+            #logger.debug("Running task %s for object: %s", self, o)
             if 'o' in kwargs: kwargs['o'] = o
             if 'obj' in kwargs: kwargs['obj'] = o
             result = func(**kwargs)

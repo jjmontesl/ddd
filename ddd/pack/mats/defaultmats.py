@@ -63,6 +63,7 @@ class DefaultMaterials(MaterialsCollection):
         self.metal_paint_black = ddd.material("PaintYellow", color='#000a17')
 
         # Plastics
+        self.plastic_transparent = ddd.material(color='e8e0e4', extra={'ddd:transparent': True})  # name="PlasticTransparent",
         self.plastic_black = ddd.material(color='#2c2936')
 
         # Lights

@@ -77,9 +77,10 @@ def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=
     post.name = "Post Curved"
 
     items = []
-    for idx, item in enumerate(arm_items):
-        positem = item.translate([side * (arm_length - (idx + 1) * 0.4), -r, height])
-        items.append(positem)
+    if arm_items:
+        for idx, item in enumerate(arm_items):
+            positem = item.translate([side * (arm_length - (idx + 1) * 0.4), -r, height])
+            items.append(positem)
 
     post = ddd.group([post] + items)
     return post

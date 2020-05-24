@@ -479,23 +479,8 @@ class DDDObject():
         if selector and not isinstance(selector, DDDSelector):
             selector = DDDSelector(selector)
 
-        logger.debug("Select: func=%s selector=%s path=%s recurse=%s _rec_path=%s", func, selector, path, recurse, _rec_path)
-
-        class TreeToSelector(Transformer):
-            def string(self, s):
-                (s,) = s
-                return s[1:-1]
-            def number(self, n):
-                (n,) = n
-                return float(n)
-
-            list = list
-            pair = tuple
-            dict = dict
-
-            null = lambda self, _: None
-            true = lambda self, _: True
-            false = lambda self, _: False
+        #if _rec_path is None:
+        #    logger.debug("Select: func=%s selector=%s path=%s recurse=%s _rec_path=%s", func, selector, path, recurse, _rec_path)
 
         def eval_select(selector, obj):
 
@@ -503,24 +488,32 @@ class DDDObject():
             #print(tree)
             #print(tree.pretty())
 
-            datakey = tree.children[0].children[0].children[0].children[0]
-            #print(datakey)
-            dataop = tree.children[0].children[1].data
-            #print(dataop)
-            datavalue = tree.children[0].children[2].children[0]
-            #print(datavalue)
-            #logger.info("Eval select: %s %s %s", datakey, dataop, datavalue)
-
             selected = False
 
-            extrameta = {'geom:type': obj.geom.type if obj.geom else None}
+            for datafilter in tree.children:
 
-            for k, v in (list(obj.extra.items()) + list(extrameta.items())):
-                if datakey != k: continue
-                if dataop == 'equals':
-                    selected = (v == datavalue)
-                else:
-                    raise DDDException("Unknown selector operation: %s", dataop)
+                dfselected = False
+
+                datakey = datafilter.children[0].children[0].children[0]
+                #print(datakey)
+                dataop = datafilter.children[1].data
+                #print(dataop)
+                datavalue = datafilter.children[2].children[0]
+                #print(datavalue)
+                #logger.info("Eval select: %s %s %s", datakey, dataop, datavalue)
+
+                extrameta = {'geom:type': obj.geom.type if obj.geom else None}
+
+                for k, v in (list(obj.extra.items()) + list(extrameta.items())):
+                    if datakey != k: continue
+                    if dataop == 'equals':
+                        dfselected = (v == datavalue)
+                    else:
+                        raise DDDException("Unknown selector operation: %s", dataop)
+
+                if not dfselected: return False
+
+                selected = dfselected
 
             return selected
 

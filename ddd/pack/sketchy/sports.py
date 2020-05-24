@@ -9,6 +9,7 @@ from ddd.ops import filters
 import logging
 from ddd.text import fonts
 from ddd.pack.sketchy import urban
+from ddd.pack.sketchy.urban import post, curvedpost
 
 
 # Get instance of logger for this module
@@ -143,7 +144,14 @@ def football_field_lines(length=105.0, width=67.5, line_width=0.10):
         largearea.extra['ddd:shadows'] = False
         item.append(largearea)
 
-        goal = football_goal11().rotate(ddd.ROT_TOP_CCW)
+        # TIODO: shall depend on the football type, assign earlier maybe
+        if width > 30: goal = football_goal11()
+        elif width > 15: goal = football_goal9()
+        elif width > 9: goal = football_goal7()
+        else: goal = football_goal_small()
+
+
+        goal = goal.rotate(ddd.ROT_TOP_CCW)
         if side == 1: goal = goal.rotate(ddd.ROT_TOP_HALFTURN)
         goal = goal.translate([side * length_l / 2, 0, 0])
         item.append(goal)
@@ -161,6 +169,9 @@ def football_goal9():
 def football_goal7():
     return football_goal(width=3.66, height=1.83)
 
+def football_goal_small():
+    return football_goal(width=2.8, height=1.6)
+
 def football_goal(width=4.88, height=1.83, thick=0.20):
     line = ddd.point().line_to([0, height]).line_to([width, height]).line_to([width, 0]).translate([-width/2, 0])
     line = line.buffer(thick * 0.5).extrude(-thick)
@@ -177,6 +188,10 @@ def tennis_field_lines(length=23.77, width=10.97, square_length_ratio=6.40 / 23.
     extra_width = 3.65 (/2?)
     extra_length = 6.50 (/2?)
     """
+
+    length = min(length, 23.77)
+    width = min(width, 10.97)
+    (length, width) = enforce_aspect_ratio(length, width, 23.77 / 10.97)
 
     item = ddd.group3(name="Tennis lines")
 
@@ -240,6 +255,46 @@ def tennis_net(width, net_height_center=0.914, net_height_post=1.07):
     return item
 
 
+def basketball_hoop():
+    """
+    """
+
+    ring_r = 0.45 / 2
+    ring = ddd.disc(r=ring_r, name="Basketball hoop ring").outline().buffer(0.015).extrude(-0.03)
+    ring = ring.material(ddd.mats.steel)
+    #ring = ddd.uv.map_cubic(ring)
+
+    board_w = 1.80
+    board_h = 1.20
+    board_ring_h = 0.30
+    board_shape = ddd.rect([board_w, board_h], name="Basketball hoop board").recenter().extrude(-0.05)
+    board_shape = board_shape.material(ddd.mats.plastic_transparent)
+    #board_shape = ddd.uv.map_cubic(board_shape)
+    board_shape = board_shape.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    board_shape = board_shape.translate([0, ring_r + 0.15, board_h / 2 - board_ring_h])
+
+    board = ddd.group3([ring, board_shape], name="Basketball hoop")
+    board = board.translate([0, 0, 3.05])
+
+    pole = curvedpost(3.25, arm_length=1.5, corner_radius=0.4).rotate(ddd.ROT_TOP_CCW)
+    pole = pole.material(ddd.mats.metal_paint_red)
+    pole.prop_set('uv', None, True)
+    pole = pole.translate([0, ring_r + 0.15 + 0.05 + 1.5, 0])
+
+    hoop = ddd.group3([pole, board], name="Basketball hoop with pole")
+
+    return hoop
+
+
+def enforce_aspect_ratio(length, width, ratio):
+    current_ratio = length / width
+    if current_ratio > ratio:
+        length = length / (current_ratio / ratio)
+    else:
+        width = width * (current_ratio / ratio)
+    return length, width
+
+
 def basketball_field_lines(length=28, width=15, line_width=0.075):
     """
     Note that an additional 2m around the field shall be granted.
@@ -248,6 +303,10 @@ def basketball_field_lines(length=28, width=15, line_width=0.075):
     """
 
     item = ddd.group3(name="Basketball lines")
+
+    length = min(length, 28)
+    width = min(width, 15)
+    (length, width) = enforce_aspect_ratio(length, width, 28 / 15)
 
     rectangle = ddd.rect([-length / 2, -width / 2, length / 2, width / 2])
     coords = rectangle.geom.exterior.coords
@@ -282,35 +341,37 @@ def basketball_field_lines(length=28, width=15, line_width=0.075):
 
     # Sides
     for side in (-1, 1):
-        smallarea = ddd.line([[0, -3], [5.80, -(3 - 1.80)]]).arc_to([5.80, 3 - 1.80], center=[5.80, 0], ccw=True).line_to([0, 3])
-        #smallarea = smallarea.scale([smallarea_length_ratio * length, smallarea_width_ratio * width * 0.5])
-        if side == 1: smallarea = smallarea.rotate(math.pi)
-        smallarea = smallarea.translate([side * length_l / 2, 0])
-        smallarea = smallarea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
-        smallarea.extra['ddd:collider'] = False
-        smallarea.extra['ddd:shadows'] = False
-        item.append(smallarea)
+        if width > 12.0:
+            smallarea = ddd.line([[0, -3], [5.80, -(3 - 1.80)]]).arc_to([5.80, 3 - 1.80], center=[5.80, 0], ccw=True).line_to([0, 3])
+            #smallarea = smallarea.scale([smallarea_length_ratio * length, smallarea_width_ratio * width * 0.5])
+            if side == 1: smallarea = smallarea.rotate(math.pi)
+            smallarea = smallarea.translate([side * length_l / 2, 0])
+            smallarea = smallarea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+            smallarea.extra['ddd:collider'] = False
+            smallarea.extra['ddd:shadows'] = False
+            item.append(smallarea)
 
-        smallline = ddd.line([[5.80, -(3 - 1.80)], [5.80, 3 - 1.80]])
-        if side == 1: smallline = smallline.rotate(math.pi)
-        smallline = smallline.translate([side * length_l / 2, 0])
-        smallline = smallline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
-        smallline.extra['ddd:collider'] = False
-        smallline.extra['ddd:shadows'] = False
-        item.append(smallline)
+            smallline = ddd.line([[5.80, -(3 - 1.80)], [5.80, 3 - 1.80]])
+            if side == 1: smallline = smallline.rotate(math.pi)
+            smallline = smallline.translate([side * length_l / 2, 0])
+            smallline = smallline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+            smallline.extra['ddd:collider'] = False
+            smallline.extra['ddd:shadows'] = False
+            item.append(smallline)
 
-        largearea = ddd.line([[0, -6.75], [1.575, -6.75]]).arc_to([1.575, 6.75], center=[1.575, 0], ccw=True).line_to([0, 6.75])
-        if side == 1: largearea = largearea.rotate(math.pi)
-        largearea = largearea.translate([side * length_l / 2, 0])
-        largearea = largearea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
-        largearea.extra['ddd:collider'] = False
-        largearea.extra['ddd:shadows'] = False
-        item.append(largearea)
+        if width > 14.0:
+            largearea = ddd.line([[0, -6.75], [1.575, -6.75]]).arc_to([1.575, 6.75], center=[1.575, 0], ccw=True).line_to([0, 6.75])
+            if side == 1: largearea = largearea.rotate(math.pi)
+            largearea = largearea.translate([side * length_l / 2, 0])
+            largearea = largearea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+            largearea.extra['ddd:collider'] = False
+            largearea.extra['ddd:shadows'] = False
+            item.append(largearea)
 
-        goal = football_goal11().rotate(ddd.ROT_TOP_CCW)
+        goal = basketball_hoop().rotate(ddd.ROT_TOP_CCW)
         if side == 1: goal = goal.rotate(ddd.ROT_TOP_HALFTURN)
-        goal = goal.translate([side * length_l / 2, 0, 0])
-        #item.append(goal)
+        goal = goal.translate([side * (length_l / 2 - 1.22 - 0.15), 0, 0])
+        item.append(goal)
 
 
     item = ddd.uv.map_cubic(item)
