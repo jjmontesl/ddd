@@ -7,6 +7,9 @@ from ddd.ddd import ddd
 import os
 import functools
 import inspect
+from lark.lark import Lark
+from ddd.core.selectors.selector_ebnf import selector_ebnf
+from ddd.core.selectors.selector import DDDSelector
 
 
 # Get instance of logger for this module
@@ -29,9 +32,10 @@ class DDDTask(object):
         self.log = log
 
         self.path = path
-        self.selector = select
         self.filter = filter
         self.replace = True
+
+        self.selector = DDDSelector(select) if select else None
 
         logger.debug("Task definition: %s", self)
 
@@ -49,11 +53,10 @@ class DDDTask(object):
         return "Task(%r)" % self.name
 
     def runlog(self, obj=None):
-        if self.log:
-            if self.log is True:
-                logger.info("Running task (task=%s, obj=%s)", self, obj)
-            else:
-                logger.info("%s (task=%s, obj=%s)", self.log, self, obj)
+        if self.log is True:
+            logger.info("Running task (task=%s, obj=%s)", self, obj)
+        else:
+            logger.info("%s (task=%s, obj=%s)", self.log, self, obj)
 
     def run(self, pipeline):
 
@@ -61,10 +64,10 @@ class DDDTask(object):
 
         if (self.path or self.selector or self.filter): return self.run_each(pipeline)
 
-        if self.log:
-            self.runlog()
-        else:
-            logger.debug("Running task: %s", self)
+        #if self.log:
+        self.runlog()
+        #else:
+        #    logger.debug("Running task: %s", self)
 
         func = self._funcargs[0]
         sig = inspect.signature(func)
@@ -98,18 +101,21 @@ class DDDTask(object):
 
         objs = pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=False)
 
-        if self.log:
-            self.runlog(objs.count())
-        else:
-            logger.debug("Running task %ws for %d objects.", self, objs.count())
+        #if self.log:
+        self.runlog(objs.count())
+        #else:
+        #    logger.debug("Running task %ws for %d objects.", self, objs.count())
 
         for o in objs.children:
             logger.debug("Running task %s for object: %s", self, o)
             if 'o' in kwargs: kwargs['o'] = o
             if 'obj' in kwargs: kwargs['obj'] = o
             result = func(**kwargs)
-            if self.replace and result:
-                o.replace(result)
+            if self.replace:
+                if result:
+                    o.replace(result)
+                elif result is False:
+                    pipeline.root.remove(o)
 
 
 

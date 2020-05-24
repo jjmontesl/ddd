@@ -100,6 +100,10 @@ class ItemsOSMBuilder():
         #elif item_2d.extra.get('osm:amenity', None) == 'bicycle_parking':
         #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
 
+        elif item_2d.extra.get('osm:emergency', None) == 'fire_hydrant':
+            item_3d = self.generate_item_3d_generic(item_2d, urban.fire_hydrant, "Fire Hydrant")
+
+
         #elif item_2d.extra.get('osm:natural', None) == 'coastline':
         #    item_3d = self.generate_item_3d_coastline(item_2d)
 

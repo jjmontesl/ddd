@@ -7,6 +7,11 @@ import math
 items = ddd.group3()
 
 
+item = urban.fire_hydrant()
+item.show()
+items.append(item)
+
+
 item = urban.childrens_playground_swingset()
 items.append(item)
 

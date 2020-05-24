@@ -25,7 +25,7 @@ class BuildingOSMBuilder():
 
         self.osm = osmbuilder
 
-    def generate_buildings_2d(self):
+    def preprocess_buildings_2d(self):
 
         logger.info("Preprocessing buildings and bulding parts (2D)")
 
@@ -54,6 +54,7 @@ class BuildingOSMBuilder():
                     buildings.children[0].extra['ddd:building:parts'] = []
                 buildings.children[0].extra['ddd:building:parts'].append(feature)
 
+    def generate_buildings_2d(self):
 
         logger.info("Generating buildings (2D)")
 

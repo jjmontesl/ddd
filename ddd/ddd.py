@@ -46,8 +46,9 @@ import numpy as np
 from trimesh.util import concatenate
 from shapely.ops import unary_union
 from geojson.feature import FeatureCollection
-from ddd.core.selector_ebnf import selector_ebnf
 from lark.visitors import Transformer
+from ddd.core.selectors.selector_ebnf import selector_ebnf
+from ddd.core.selectors.selector import DDDSelector
 
 
 # Get instance of logger for this module
@@ -70,6 +71,8 @@ class D1D2D3():
     ROT_TOP_CW = (0, 0, -math.pi / 2.0)
     ROT_TOP_CCW = (0, 0, math.pi / 2.0)
     ROT_TOP_HALFTURN = (0, 0, math.pi)
+
+    DEG_TO_RAD = (math.pi / 180.0)
 
     @staticmethod
     def initialize_logging(debug=True):
@@ -184,6 +187,12 @@ class D1D2D3():
         cube = D1D2D3.rect([bounds[0], bounds[1], bounds[3], bounds[4]], name=name)
         cube = cube.extrude(bounds[5] - bounds[2]).translate([0, 0, bounds[2]])
         return cube
+
+    @staticmethod
+    def cylinder(height, r, center=True, resolution=4, name=None):
+        obj = ddd.disc(r=r, resolution=resolution, name=name)
+        obj = obj.extrude(height, center=center)
+        return obj
 
     @staticmethod
     def trimesh(mesh=None, name=None):
@@ -467,6 +476,9 @@ class DDDObject():
         Returns copies of objects!
         """
 
+        if selector and not isinstance(selector, DDDSelector):
+            selector = DDDSelector(selector)
+
         logger.debug("Select: func=%s selector=%s path=%s recurse=%s _rec_path=%s", func, selector, path, recurse, _rec_path)
 
         class TreeToSelector(Transformer):
@@ -486,10 +498,8 @@ class DDDObject():
             false = lambda self, _: False
 
         def eval_select(selector, obj):
-            parser = Lark(selector_ebnf, start="selector", parser='lalr')
-            tree = parser.parse(selector)
-            #print(tree.pretty())
-            tree = TreeToSelector().transform(tree)
+
+            tree = selector._tree
             #print(tree)
             #print(tree.pretty())
 
@@ -607,7 +617,17 @@ class DDDObject():
         return result
 
     def append(self, obj):
+        """
+        Adds an object as a children to this node.
+        """
         self.children.append(obj)
+        return self
+
+    def remove(self, obj):
+        """
+        Removes an object from this node children recursively. Modifies objects in-place.
+        """
+        self.children = [c.remove(obj) for c in self.children if c and c != obj]
         return self
 
 
@@ -1412,6 +1432,7 @@ class DDDObject2(DDDObject):
             # NOTE: Also, using Inkscape: https://stackoverflow.com/questions/6589358/convert-svg-to-png-in-python
 
         elif path.endswith(".json"):
+            logger.info("Exporting 2D as JSON to: %s", path)
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
             #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = DDDJSON.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
@@ -1636,6 +1657,7 @@ class DDDObject3(DDDObject):
         return result
 
     def translate(self, v):
+        if len(v) == 2: v = (v[0], v[1], 0)
         obj = self.copy()
         if obj.mesh:
             obj.mesh.apply_translation(v)
@@ -1897,12 +1919,13 @@ class DDDObject3(DDDObject):
 
             # Vertex Colors
             #if self.mat.extra.get('ddd:vertex_colors', False):
-            cvs = ColorVisuals(mesh=self.mesh, face_colors=[self.mat.color_rgba for f in self.mesh.faces])  # , material=material
-            # Hack vertex_colors into TextureVisuals
-            # WARN: Trimehs GLTF export modified to suppot this:
-            #  gltf.py:542:      if mesh.visual.kind in ['vertex', 'face'] or hasattr(mesh.visual, 'vertex_colors'):
-            #  gltf.py:561       remove elif, use if
-            self.mesh.visual.vertex_colors = cvs.vertex_colors
+            if self.mat.color:
+                cvs = ColorVisuals(mesh=self.mesh, face_colors=[self.mat.color_rgba for f in self.mesh.faces])  # , material=material
+                # Hack vertex_colors into TextureVisuals
+                # WARN: Trimehs GLTF export modified to suppot this:
+                #  gltf.py:542:      if mesh.visual.kind in ['vertex', 'face'] or hasattr(mesh.visual, 'vertex_colors'):
+                #  gltf.py:561       remove elif, use if
+                self.mesh.visual.vertex_colors = cvs.vertex_colors
 
         else:
             #logger.debug("No material set for mesh: %s", self)

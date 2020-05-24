@@ -719,21 +719,26 @@ class AreasOSMBuilder():
 
             elif area_2d.extra.get('ddd:area:type', None) == 'sidewalk':
 
-                height = area_2d.extra.get('ddd:height', 0.2)
-                area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
-                area_3d = ddd.uv.map_cubic(area_3d)
+                try:
+                    height = area_2d.extra.get('ddd:height', 0.2)
+                    #area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
+                    #area_3d = ddd.uv.map_cubic(area_3d)
 
-                if True:
-                    interior = area_2d.buffer(-0.3)
-                    area_3d = interior.extrude(-0.5 - height).translate([0, 0, height])
-                    kerb_3d = area_2d.subtract(interior).extrude(-0.5 - height).translate([0, 0, height])
-                    kerb_3d = ddd.uv.map_cubic(kerb_3d).material(ddd.mats.cement)
-                    #if area_3d.mesh:
-                    #    area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
-                    #    kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj).material(ddd.mats.cement)
-                    #area_3d.append(kerb_3d)
-                    kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj)
-                    self.osm.areas_3d.children.append(kerb_3d)
+                    if True:
+                        interior = area_2d.buffer(-0.3)
+                        area_3d = interior.extrude(-0.5 - height).translate([0, 0, height])
+                        area_3d = ddd.uv.map_cubic(area_3d)
+                        kerb_3d = area_2d.subtract(interior).extrude(-0.5 - height).translate([0, 0, height])
+                        kerb_3d = ddd.uv.map_cubic(kerb_3d).material(ddd.mats.cement)
+                        #if area_3d.mesh:
+                        #    area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
+                        #    kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj).material(ddd.mats.cement)
+                        #area_3d.append(kerb_3d)
+                        kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj)
+                        self.osm.areas_3d.children.append(kerb_3d)
+                except Exception as e:
+                    logger.error("Could not generate area: %s (%s)", e, area_2d)
+                    area_3d = DDDObject3()
 
             else:
                 try:

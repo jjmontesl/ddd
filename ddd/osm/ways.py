@@ -82,7 +82,6 @@ class WaysOSMBuilder():
 
         return list(visited)
 
-    '''
     def generate_ways_1d(self):
 
         # Generate paths
@@ -98,7 +97,6 @@ class WaysOSMBuilder():
                 self.osm.items_1d.append(way)
             #else:
             #    logger.warn("Ignoring way (unknown feature type): %s", way)
-    '''
 
     def split_ways_1d(self):
 

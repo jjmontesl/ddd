@@ -183,8 +183,13 @@ class OSMBuilder():
                 continue
 
             #if self.area_filter.contains(geom.centroid):
-            if self.area_filter.intersects(geom):
-                filtered.append(f)
+            try:
+                if self.area_filter.intersects(geom):
+                    filtered.append(f)
+            except Exception as e:
+                logger.warn("Could not load feature with invalid geometry: %s", f.properties.get('id'))
+                continue
+
 
         features = filtered
         logger.info("Using %d features after filtering to %s" % (len(features), self.area_filter.bounds))
@@ -219,7 +224,7 @@ class OSMBuilder():
             feature_2d = ddd.shape(f.geometry, name=name)
             feature_2d.extra['osm:feature'] = f
             feature_2d.extra['osm:feature_2d'] = feature_2d
-            feature_2d.extra['osm:type'] = f.properties['id'].split("-")[0]
+            feature_2d.extra['osm:element'] = f.properties['id'].split("-")[0]
             for k, v in f.properties.items():
                 feature_2d.extra['osm:' + k] = v
 

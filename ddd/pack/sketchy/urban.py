@@ -407,6 +407,45 @@ def post_box(height=1.10, r=0.35):
     return obj
 
 
+def fire_hydrant(height=0.90, r=0.25):
+    """
+    Ref: https://upload.wikimedia.org/wikipedia/commons/5/5a/Downtown_Charlottesville_fire_hydrant.jpg
+    """
+    circle = ddd.point([0, 0]).buffer(r, resolution=3, cap_style=ddd.CAP_ROUND)
+    obj = circle.scale([0.85, 0.85, 1]).extrude_step(circle.scale([0.85, 0.85, 1]), 0.10)
+    obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), 0.01)
+    obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), height - 0.3)
+    obj = obj.extrude_step(circle.scale([0.82, 0.82, 1]), 0.01)
+    obj = obj.extrude_step(circle.scale([0.85, 0.85, 1]), 0.035)
+    obj = obj.extrude_step(circle.scale([0.82, 0.82, 1]), 0.035)
+    obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), 0.01)
+    obj = obj.extrude_step(circle.scale([0.55, 0.55, 1]), 0.05)
+    obj = obj.extrude_step(circle.scale([0.45, 0.45, 1]), 0.05)
+    obj = obj.extrude_step(circle.scale([0.3, 0.3, 1]), 0.05)
+    obj = obj.extrude_step(circle.scale([0.1, 0.1, 1]), 0.02)
+
+    obj = obj.material(ddd.mats.metal_paint_red)
+    obj = ddd.uv.map_cylindrical(obj)
+
+    barh = ddd.cylinder(height=r * 1.8, r=r * 0.6 * 0.5, center=True, name="Fire hydrant taps")
+    barh = barh .material(ddd.mats.metal_paint_red)
+    barh = ddd.uv.map_cylindrical(barh)
+    barh = barh.rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CCW)
+    barh = barh.translate([0, 0, height * 0.65])
+
+    barf = ddd.cylinder(height=r * 0.8, r=r * 0.6 * 0.7, center=False, name="Fire hydrant front")
+    barf = barf .material(ddd.mats.metal_paint_red)
+    barf = ddd.uv.map_cylindrical(barf)
+    barf = barf.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    barf = barf.translate([0, 0, height * 0.5])
+
+    obj = ddd.group3([obj, barh, barf])
+    obj = obj.combine()
+
+    obj.name = "Fire Hydrant"
+    return obj
+
+
 def pedestal(obj=None, d=1.0):
     '''
     A pedestal with an optional object on top.

@@ -20,9 +20,12 @@ Modifying or extending this pipeline requires understanding these steps.
    Nodes are loaded as Point. Ways are loaded as LineString. Areas are loaded as Polygon.
    All OSM tags are copied with osm: prefix into each node metadata.
 
-2) Separation into /Items /Ways and /Areas
+2) Separation into /Items /Ways /Areas and /Buildings
 
-   Features are copied into their respective groups.
+   Features are copied into their respective groups. These are "major citizens" in the OSM generation process,
+   as extra metadata is generated for them and receive special treatment in some processes (road intersections,
+   area stacking, item-to-buildings associations...)
+
 
 TODO (?): Reverse initial metadata ??? items/ways/areas? areas first, then ways with nodes and containment, then items with nodes and containment.
 
@@ -34,6 +37,8 @@ TODO (?): Reverse initial metadata ??? items/ways/areas? areas first, then ways 
    Ways are split at every intersection with other ways. Each way is therefore a simple line, with no loops.
    For each split way, metadata is copied to the two newly generated
 
+   Requires: X because Y
+
    (?) TODO: Split ways at area intersections in 1D? (seems unnecessary and may introduce cumbersome intersections, or perhaps resolve transitions between kerb/park...
 
 4) Areas processing
@@ -41,4 +46,7 @@ TODO (?): Reverse initial metadata ??? items/ways/areas? areas first, then ways 
    (TODO: NEW)
 
    Areas containment metadata is generated (parent / children).
+
+   Requires: X because Y
+
 
