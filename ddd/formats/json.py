@@ -16,13 +16,13 @@ from ddd.core.cli import D1D2D3Bootstrap
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-class DDDJSON():
+class DDDJSONFormat():
 
     @staticmethod
     def export_json(obj, path_prefix="", instance_mesh=True, instance_marker=False):
 
         from ddd.ddd import D1D2D3
-        data = DDDJSON.export_data(obj, path_prefix, "", instance_mesh, instance_marker)
+        data = DDDJSONFormat.export_data(obj, path_prefix, "", instance_mesh, instance_marker)
         encoded = json.dumps(data, indent=2, default=lambda x: D1D2D3.json_serialize(x))
 
         return encoded
@@ -44,7 +44,7 @@ class DDDJSON():
 
         for idx, c in enumerate(obj.children):
 
-            cdata = DDDJSON.export_data(c, path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx), instance_mesh=instance_mesh, instance_marker=instance_marker)
+            cdata = DDDJSONFormat.export_data(c, path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx), instance_mesh=instance_mesh, instance_marker=instance_marker)
             cpath = cdata['_extra']['ddd:path']
             data[cpath] = cdata
 
@@ -66,12 +66,12 @@ class DDDJSON():
                     #ref = ref.translate(self.transform.position)
 
                     # Export complete references? (too verbose)
-                    refdata = DDDJSON.export_data(ref, path_prefix="", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker)  #, instance_mesh=instance_mesh, instance_marker=instance_marker)
+                    refdata = DDDJSONFormat.export_data(ref, path_prefix="", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker)  #, instance_mesh=instance_mesh, instance_marker=instance_marker)
                     data['_ref'] = refdata
 
             if instance_marker:
                 ref = obj.marker()
-                refdata = DDDJSON.export_data(ref, path_prefix="", name_suffix="#marker", instance_mesh=instance_mesh, instance_marker=instance_marker)
+                refdata = DDDJSONFormat.export_data(ref, path_prefix="", name_suffix="#marker", instance_mesh=instance_mesh, instance_marker=instance_marker)
                 data['_marker'] = refdata
 
         return data

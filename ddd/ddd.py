@@ -38,7 +38,6 @@ from trimesh.visual.texture import TextureVisuals
 
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
-from ddd.exchange.dddjson import DDDJSON
 from ddd.materials.atlas import TextureAtlas
 from ddd.ops import extrusion
 
@@ -49,6 +48,8 @@ from geojson.feature import FeatureCollection
 from lark.visitors import Transformer
 from ddd.core.selectors.selector_ebnf import selector_ebnf
 from ddd.core.selectors.selector import DDDSelector
+from ddd.formats.json import DDDJSONFormat
+from ddd.formats.svg import DDDSVG
 
 
 # Get instance of logger for this module
@@ -82,11 +83,11 @@ class D1D2D3():
         D1D2D3Bootstrap.initialize_logging(debug)
 
     @staticmethod
-    def material(name=None, color=None, extra=None, texture_path=None, atlas_path=None, opacity=1.0):
+    def material(name=None, color=None, extra=None, texture_path=None, atlas_path=None):
         #material = SimpleMaterial(diffuse=color, )
         #return (0.3, 0.9, 0.3)
         material = DDDMaterial(name=name, color=color, extra=extra,
-                               texture_path=texture_path, atlas_path=atlas_path, opacity=opacity)
+                               texture_path=texture_path, atlas_path=atlas_path)
         return material
 
     @staticmethod
@@ -335,7 +336,7 @@ class D1D2D3():
 
 class DDDMaterial():
 
-    def __init__(self, name=None, color=None, extra=None, texture_path=None, atlas_path=None, opacity=1.0):
+    def __init__(self, name=None, color=None, extra=None, texture_path=None, atlas_path=None):
         """
         Color is hex color.
         """
@@ -343,7 +344,6 @@ class DDDMaterial():
         self.color = color
         self.color_rgba = None
         self.extra = extra if extra else {}
-        self.opacity = opacity
 
         if self.color:
             self.color_rgba = trimesh.visual.color.hex_to_rgba(self.color)
@@ -1332,79 +1332,6 @@ class DDDObject2(DDDObject):
                 geoms.extend(cgems)
         return geoms
 
-    def svg(self):
-        #geoms = self.geom_recursive()
-        #geom = geometry.GeometryCollection(geoms)
-
-        color = None
-        if self.mat: color = self.mat.color
-
-        opacity = 0.7
-        if self.mat: opacity = self.mat.opacity
-
-        data = ""
-        if self.children:
-            data = data + '<g>' + ''.join(c.svg() for c in self.children) + '</g>'
-        if self.geom:
-            geom = geometry.GeometryCollection([self.geom])
-            data = data + geom.svg(scale_factor=0.01, color=color)
-
-        if not data:
-            data = '<g />'
-
-        return data
-
-    def svgdoc(self, margin=0.0):
-        """
-        Produces a complete SVG document.
-
-        By default, no margin is produced (margin=0). 0.04 is the
-        default for R plots.
-        """
-
-        geoms = self.geom_recursive()
-        geom = geometry.GeometryCollection(geoms)
-
-        svg_top = '<svg xmlns="http://www.w3.org/2000/svg" ' \
-            'xmlns:xlink="http://www.w3.org/1999/xlink" '
-        if geom.is_empty:
-            return svg_top + '/>'
-        else:
-            # Establish SVG canvas that will fit all the data + small space
-            xmin, ymin, xmax, ymax = geom.bounds
-            if xmin == xmax and ymin == ymax:
-                # This is a point; buffer using an arbitrary size
-                xmin, ymin, xmax, ymax = geom.buffer(1).bounds
-            else:
-                # Expand bounds by a fraction of the data ranges
-                expand = margin  # 0.04 or 4%, same as R plots
-                widest_part = max([xmax - xmin, ymax - ymin])
-                expand_amount = widest_part * expand
-                xmin -= expand_amount
-                ymin -= expand_amount
-                xmax += expand_amount
-                ymax += expand_amount
-            dx = xmax - xmin
-            dy = ymax - ymin
-            width = min([max([100., dx]), 300])
-            height = min([max([100., dy]), 300])
-
-            '''
-            try:
-                scale_factor = max([dx, dy]) / max([width, height])
-            except ZeroDivisionError:
-                scale_factor = 1.
-            '''
-
-            view_box = "{} {} {} {}".format(xmin, ymin, dx, dy)
-            transform = "matrix(1,0,0,-1,0,{})".format(ymax + ymin)
-
-            return svg_top + (
-                'width="{1}" height="{2}" viewBox="{0}" '
-                'preserveAspectRatio="xMinYMin meet">'
-                '<g transform="{3}">{4}</g></svg>'
-                ).format(view_box, width, height, transform, self.svg())
-
     def save(self, path, instance_marker=None, instance_mesh=None, scale=1.0):
 
         if instance_marker is None:
@@ -1415,7 +1342,8 @@ class DDDObject2(DDDObject):
         if path.endswith(".svg"):
             logger.info("Exporting 2D as SVG to: %s", path)
             #data = geom._repr_svg_().encode()
-            data = self.svgdoc().encode()
+            data = DDDSVG.export_svg(self, instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = data.encode()
 
         elif path.endswith(".png"):
             logger.info("Exporting 2D as PNG to: %s", path)
@@ -1428,7 +1356,7 @@ class DDDObject2(DDDObject):
             logger.info("Exporting 2D as JSON to: %s", path)
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
             #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            data = DDDJSON.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDJSONFormat.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = data.encode("utf8")
         else:
             raise DDDException("Invalid 2D save format (filename=%s)" % path)

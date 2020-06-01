@@ -91,3 +91,10 @@ class DefaultMaterials(MaterialsCollection):
         self.building_3 = ddd.material(color='#c49156')
         self.roof_tiles = ddd.material("RoofTiles", color='#f25129')
 
+
+        # Colors
+        self.red = ddd.material(color='#ff0000')
+        self.green = ddd.material(color='#00ff00')
+        self.blue = ddd.material(color='#0000ff')
+
+

@@ -19,7 +19,7 @@ def osm_95_mapillary(pipeline, osm, root, logger):
 
 
     # Add mapillary items
-    # TODO: Move to separate task and rule module, separate point generation from image/metadata generation
+    # TODO: Move to separate task and rule module, separate point generation from image/metadata generation, reuse code, this could be much shorter
     mc = MapillaryClient()
     transformer = pyproj.Transformer.from_proj(osm.osm_proj, osm.ddd_proj)
     transformer2 = pyproj.Transformer.from_proj(osm.ddd_proj, osm.osm_proj)

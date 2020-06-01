@@ -344,6 +344,16 @@ class WaysOSMBuilder():
             traffic_signals = False
             roadlines = True
             path.extra['ddd:way:weight'] = 23
+
+        elif path.extra.get('osm:highway', None) in ("track", ):
+            lanes = 1
+            material = ddd.mats.asphalt
+            extra_height = 0.2  # TODO: Curve along, add noise, add "roderas" inside, add roderas/merge outside...
+            roadlines = False
+            traffic_signals = True  # put signals, not lights
+            lamps = path.extra.get('osm:lit', False)  # shall be only in city?
+            path.extra['ddd:way:weight'] = 26
+
         elif path.extra.get('osm:highway', None) in ("footway",):
             if path.extra.get('osm:footway', None) == 'sidewalk': return None  # Dropping sidewalks!
             lanes = 0
@@ -351,7 +361,7 @@ class WaysOSMBuilder():
             extra_height = 0.0
             width = 0.6 * 3.3
             path.extra['ddd:way:weight'] = 31
-        elif path.extra.get('osm:highway', None) in ("path", "track"):
+        elif path.extra.get('osm:highway', None) in ("path", ):
             lanes = 0
             material = ddd.mats.dirt
             # extra_height = 0.2
@@ -361,6 +371,7 @@ class WaysOSMBuilder():
             path.extra['ddd:way:elevated:border'] = 'fence'
             path.extra['ddd:way:elevated:material'] = ddd.mats.pathwalk
             path.extra['ddd:way:weight'] = 42
+
 
         elif path.extra.get('osm:highway', None) in ("steps", "stairs"):
             lanes = 0

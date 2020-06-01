@@ -249,9 +249,9 @@ class OSMBuilder():
                     self.areas_2d,
                     self.ways_2d['-1a'], self.ways_2d['0'], self.ways_2d['0a'], self.ways_2d['1'],
                     self.roadlines_2d,
-                    self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f', opacity=0.6)),
+                    self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f')),
                     self.items_2d,
-                    self.items_1d.buffer(0.5).material(ddd.mats.highlight),
+                    self.items_1d.buffer(0.5).material(ddd.mats.red),
                     ]).flatten().select(lambda o: o.extra.get('ddd:area:type') != 'underwater')
         tile = tile.intersection(ddd.shape(self.area_crop))
         return tile

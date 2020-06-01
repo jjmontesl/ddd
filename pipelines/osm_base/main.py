@@ -19,6 +19,7 @@ def osm_main(pipeline, root):
     """
     Run at initial stage, load data.
     """
+    #pipeline.run()
     pass
 
 '''
@@ -52,7 +53,8 @@ def osm_init_remove_relations():
     # TEMPORARY ? they shall be simmply not picked
     #obj = obj.material(ddd.mats.outline)
     #obj.extra['ddd:enabled'] = False
-    return False  # TODO: return... ddd.REMOVE APPLY:REMOVE ?... (depends on final api for this)
+    #return False  # TODO: return... ddd.REMOVE APPLY:REMOVE ?... (depends on final api for this)
+    pass
 
 
 '''
@@ -93,6 +95,8 @@ def osm_init_create_root_nodes(root, osm):
     root.append(items)
     items = ddd.group2(name="Buildings")  # 2D
     root.append(items)
+    items = ddd.group2(name="Meta")  # 2D meta information (boundaries, etc...)
+    root.append(items)
 
     #root.dump(data=True)
 
@@ -125,38 +129,38 @@ def osm_generate_ways_process(pipeline, osm, root, logger):
 
 # Generate buildings
 ##osm.buildings.generate_buildings_2d()
-@dddtask(path="/Features/*", select='["geom:type"="Polygon"]', filter=lambda o: o.extra.get("osm:building", None) is not None, log=True)
+@dddtask(path="/Features/*", select='["geom:type"="Polygon"]', filter=lambda o: o.extra.get("osm:building", None) is not None or o.extra.get("osm:building:part", None) is not None, log=True)
 def osm_generate_buildings(root, obj):
     # Ways depend on buildings
     item = obj.copy(name="Building: %s" % obj.name)
     root.find("/Buildings").append(item)
     ## ?? osm.ways.generate_ways_1d()
 
-@dddtask(log=True)
+@dddtask()
 def osm_generate_buildings_preprocess(pipeline, osm, root, logger):
-    osm.buildings.preprocess_buildings_2d()
+    #osm.buildings.preprocess_buildings_2d()
+    pass
 
-@dddtask(log=True)
+@dddtask()
 def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
-    osm.buildings.generate_buildings_2d()
+    #osm.buildings.generate_buildings_2d()
+    pass
 
-@dddtask(path="/Features/*", select='[geom:type="Polygon"]', filter=lambda o: o.extra.get("osm:building", None) is None, log=True)
+@dddtask(path="/Features/*", select='[geom:type="Polygon"]', filter=lambda o: o.extra.get("osm:building", None) is None)
 def osm_generate_areas(root, obj):
     # Ways depend on buildings
     item = obj.copy(name="Area: %s" % obj.name)
     root.find("/Areas").append(item)
     ## ?? osm.ways.generate_ways_1d()
 
-@dddtask(log=True)
+@dddtask()
 def osm_generate_areas_process(pipeline, osm, root, logger):
     pass
 
+@dddtask()
+def osm_generate_export(root):
 
-@dddtask(log=True)
-def osm_finish_rest(pipeline, osm, root, logger):
-
-    #self.features_2d.filter(lambda o: o.extra.get('osm:building:part', None) is not None).dump()
-
+    root = root.copy()
     root = root.remove(root.find("/Features"))  # !Altering
     root.find("/Areas").replace(root.find("/Areas").material(ddd.mats.park))
     root.find("/Buildings").replace(root.find("/Buildings").material(ddd.mats.stone))
@@ -166,6 +170,11 @@ def osm_finish_rest(pipeline, osm, root, logger):
     root.save("/tmp/osm-10-main.svg")
     sys.exit(1)
 
+
+@dddtask(log=True)
+def osm_finish_rest(pipeline, osm, root, logger):
+
+    #self.features_2d.filter(lambda o: o.extra.get('osm:building:part', None) is not None).dump()
 
     # TODO: Shall already be done earlier
     osm.features_2d = root.find("/Features")

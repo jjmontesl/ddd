@@ -2,21 +2,22 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
-import logging
-from ddd.ddd import ddd
-import os
 import functools
 import inspect
+import logging
+import os
+
 from lark.lark import Lark
-from ddd.core.selectors.selector_ebnf import selector_ebnf
+
 from ddd.core.selectors.selector import DDDSelector
+from ddd.core.selectors.selector_ebnf import selector_ebnf
+from ddd.ddd import ddd
 
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
 
-# TODO: Define in a separate file, not in decorators
 class DDDTask(object):
 
     _tasks = []
@@ -37,7 +38,7 @@ class DDDTask(object):
 
         self.selector = DDDSelector(select) if select else None
 
-        # TODO: Do this in the decorator, not here. Registry shall possisbly be separate.
+        # TODO: Do this in the decorator, not here. Registry shall possisbly be separate, what if someone needs an unregistered task
         DDDTask._tasks.append(self)
 
     def __call__(self, *args):
