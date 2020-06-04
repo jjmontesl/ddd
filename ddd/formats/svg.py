@@ -164,7 +164,6 @@ class DDDSVG():
 
     @staticmethod
     def svg_polygon(geom, data, **kwargs):
-        print(kwargs)
         fill_color = kwargs.get('color')
         fill_opacity = kwargs.get('fill_opacity', 0.6)
         stroke_width = kwargs.get('stroke_width', 0.01)

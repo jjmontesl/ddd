@@ -280,7 +280,7 @@ class OSMBuildCommand(DDDCommand):
                         hdlr.setFormatter(new_formatter)
 
                     logger.info("Generating: %s", filename)
-                    pipeline = DDDPipeline(['pipelines.osm_base.main.py'], name="OSM Build Pipeline")  # todo: use file paths
+                    pipeline = DDDPipeline(['pipelines.osm_base.main.py', 'pipelines.osm_base.main_export_2d.py'], name="OSM Build Pipeline")  # todo: use file paths
 
                     try:
 

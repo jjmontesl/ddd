@@ -2,13 +2,18 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
-import logging
-from ddd.ddd import ddd
-import os
-from ddd.pipeline.decorators import DDDTask
-import sys
 import importlib
+import logging
+import os
+import sys
+
+from doit import cmd_run
+import doit
+from doit.task import dict_to_task
+
 from ddd.core.exception import DDDException
+from ddd.ddd import ddd
+from ddd.pipeline.decorators import DDDTask
 
 
 # Get instance of logger for this module
@@ -20,6 +25,7 @@ class DDDPipeline():
     def __init__(self, configfiles=None, name=None):
 
         self.name = name
+        self.tasks = None
 
         self.root = ddd.group2()
 
@@ -51,11 +57,82 @@ class DDDPipeline():
         except ModuleNotFoundError as e:
             raise DDDException("Could not load pipeline definition file: %s" % configfiles)
 
+        self.tasks = DDDTask._tasks
 
-    def run(self):
-        logger.info("Running pipeline: %s", self)
-        # TODO: Use pydoit to create DAG and run tasks
-        for task in DDDTask._tasks:
+    def _find_last_order(self, tasks, order_split):
+
+        last_order = 0
+        idx_track = len(order_split)
+        for t in tasks:
+            if t._order_num[:idx_track] == order_split[:idx_track]:
+                if idx_track < len(t._order_num):
+                    last_order = t._order_num[idx_track]
+        return last_order
+
+    def tasks_sorted(self):
+        tasks = []
+
+        for task in self.tasks:
+            order_split = task.order.split(".") if task.order is not None else ["+"]
+            for (el_idx, el_str) in enumerate(order_split):
+                if el_str == '+':
+                    previous_order_num = self._find_last_order(tasks, order_split[:el_idx])
+                    el = previous_order_num + 1
+                else:
+                    el = int(el_str)
+                order_split[el_idx] = el
+            task._order_num = order_split
+            tasks.append(task)
+
+        tasks.sort(key=lambda t: (t._order_num, ))
+        return tasks
+
+    def run_pipeline_internal(self):
+        tasks = self.tasks_sorted()
+        for task in tasks:
+            print("  " + str(task))
+        for task in tasks:
             task.run(self)
 
+    def run_pipeline_doit(self):
+        from doit.doit_cmd import DoitMain
+        args = {}  # sys.argv[1:]
+        doit_run_cmd = cmd_run.Run(task_loader=DDDDoItTaskLoader(self))
+        doit_run_cmd.parse_execute(args)
+
+    def run(self):
+        logger.info("Running pipeline: %s (%s configured tasks)", self, len(self.tasks))
+        #self.run_pipeline_doit()
+        self.run_pipeline_internal()
+
         return self.root
+
+
+class DDDDoItTaskLoader(doit.cmd_base.TaskLoader2):
+
+    def __init__(self, pipeline, **kwargs):
+        super().__init__(**kwargs)
+        self.pipeline = pipeline
+
+    def load_doit_config(self):
+        return {'verbosity': 2}
+        #return {}
+
+    def load_tasks(self, cmd, pos_args):
+        logger.info("Generating tasks for doit runner (%s)", len(DDDTask._tasks))
+        tasks = []
+        for task in self.pipeline.tasks:
+            taskdef = {'name': task.name,
+                       'actions': [self.run_task(task)]}
+            doittask = dict_to_task(taskdef)
+            tasks.append(doittask)
+        return tasks
+
+    def run_task(self, task):
+        def func():
+            result = task.run(self.pipeline)
+            return True
+        return func
+
+    def setup(self, opt_values):
+        pass

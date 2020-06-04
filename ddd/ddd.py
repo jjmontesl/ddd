@@ -578,12 +578,15 @@ class DDDObject():
                     self.extra[k] = method_to_call(*args, **kwargs)
 
     def prop_set(self, key, value, children=False):
+        """
+        NOTE: This modifies this instance and children.
+        """
         if children:
             for o in self.select().children:
                 o.extra[key]= value
         else:
             self.extra[key] = value
-
+        return self
 
     def grouptyped(self, children=None):
         if isinstance(self, DDDObject2):
@@ -1347,7 +1350,8 @@ class DDDObject2(DDDObject):
 
         elif path.endswith(".png"):
             logger.info("Exporting 2D as PNG to: %s", path)
-            svgdata = self.svgdoc().encode("utf8")
+            data = DDDSVG.export_svg(self, instance_mesh=instance_mesh, instance_marker=instance_marker)
+            svgdata = data.encode("utf8")
             data = cairosvg.svg2png(bytestring=svgdata, scale=scale)  #, write_to=path) parent_width, parent_height, dpi, scale, unsafe.
 
             # NOTE: Also, using Inkscape: https://stackoverflow.com/questions/6589358/convert-svg-to-png-in-python

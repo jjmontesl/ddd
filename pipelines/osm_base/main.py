@@ -13,6 +13,9 @@ from ddd.osm.augment.mapillary import MapillaryClient
 from ddd.osm.osm import project_coordinates
 from ddd.pipeline.decorators import dddtask
 
+"""
+"""
+
 
 @dddtask()
 def osm_main(pipeline, root):
@@ -87,13 +90,13 @@ def osm_init_preprocess_features(pipeline, osm, root):
 
 @dddtask(log=True)
 def osm_init_create_root_nodes(root, osm):
-    items = ddd.group2(name="Items")  # 1D
+    items = ddd.group2(name="Areas")  # 2D
     root.append(items)
     items = ddd.group2(name="Ways")  # 1D
     root.append(items)
-    items = ddd.group2(name="Areas")  # 2D
-    root.append(items)
     items = ddd.group2(name="Buildings")  # 2D
+    root.append(items)
+    items = ddd.group2(name="Items")  # 1D
     root.append(items)
     items = ddd.group2(name="Meta")  # 2D meta information (boundaries, etc...)
     root.append(items)
@@ -157,25 +160,17 @@ def osm_generate_areas(root, obj):
 def osm_generate_areas_process(pipeline, osm, root, logger):
     pass
 
-@dddtask()
-def osm_generate_export(root):
 
-    root = root.copy()
-    root = root.remove(root.find("/Features"))  # !Altering
-    root.find("/Areas").replace(root.find("/Areas").material(ddd.mats.park))
-    root.find("/Buildings").replace(root.find("/Buildings").material(ddd.mats.stone))
-    root.find("/Ways").replace(root.find("/Ways").buffer(1.0).material(ddd.mats.asphalt))
-    root.find("/Items").replace(root.find("/Items").buffer(1.0).material(ddd.mats.highlight))
-    root.save("/tmp/osm-10-main.json")
-    root.save("/tmp/osm-10-main.svg")
-    sys.exit(1)
+@dddtask(order="30.9")
+def osm_30_categories_finished(pipeline, osm, root, logger):
+    pass
 
 
 @dddtask(log=True)
 def osm_finish_rest(pipeline, osm, root, logger):
 
     #self.features_2d.filter(lambda o: o.extra.get('osm:building:part', None) is not None).dump()
-
+    return
     # TODO: Shall already be done earlier
     osm.features_2d = root.find("/Features")
     osm.items_1d = root.find("/Items")

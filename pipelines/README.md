@@ -11,12 +11,30 @@ extended by further pipeline configuration (like the other OSM related examples 
 
 ## Steps
 
+### Summary
+
+10-init
+
+20-osm-features
+20.10-osm-features-load
+
+30-categories (plain?)
+30.10-select-categorize-osm-features
+
+40-structured
+split-ways
+areas-processing
+
+50-3d-generation
+
+### Description
+
 As this is a complex pipeline, it introduces ad-hoc concepts and stages.
 Modifying or extending this pipeline requires understanding these steps.
 
 1) OSM feature loading
 
-   All features are loaded as 2D geometries nder the /Features node.
+   All features are loaded as 2D geometries under the /Features node.
    Nodes are loaded as Point. Ways are loaded as LineString. Areas are loaded as Polygon.
    All OSM tags are copied with osm: prefix into each node metadata.
 

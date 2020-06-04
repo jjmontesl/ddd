@@ -22,9 +22,12 @@ class DDDTask(object):
 
     _tasks = []
 
-    def __init__(self, name=None, path=None, select=None, filter=None, parent=None, before=None, after=None, log=None):
+    def __init__(self, name=None, path=None, select=None, filter=None, order=None, parent=None, before=None, after=None, log=None):
 
         self.name = name
+
+        self.order = order
+        self._order_num = None
 
         self.parent = parent
         self.before = before
@@ -49,7 +52,7 @@ class DDDTask(object):
         #self._module = args[0].__module__
 
     def __repr__(self):
-        return "Task(%r)" % self.name
+        return "Task(%s-%s)" % (".".join([str(n) for n in self._order_num]) if self._order_num else self.order, self.name)
 
     def runlog(self, obj=None):
         if self.log in (True, False, None) :
