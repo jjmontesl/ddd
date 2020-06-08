@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 #@stage("generate_scenario", depends=None)
 #@stage("generate_articles", depends="generate_scenario")
 
-@dddtask("start")
+@dddtask(order="10")
 def start_run(root):
     """
     Run at initial stage, load data.

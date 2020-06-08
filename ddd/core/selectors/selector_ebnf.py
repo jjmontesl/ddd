@@ -22,23 +22,23 @@ SINGLE_QUOTED_STRING  : /'[^']*'/
 string: ESCAPED_STRING
 tagkeystring: TAG_KEY_STRING
 
-datafilter: datafilter_attr_equals | datafilter_attr_undef
-datafilter_old: "[" datafilterkeyexpr [ datafilterop datafiltervalueexpr ] "]"
+datafilter: datafilter_attr_equals
+          | datafilter_attr_regexp
+          | datafilter_attr_def
+          | datafilter_attr_undef
+          | datafilter_attr_ext_in
 
-datafilter_attr_equals: "[" datafilterkeyexprname "=" datafiltervalueexpr "]"
+datafilter_attr_def: "[" datafilterkeyexprname "]"
 datafilter_attr_undef: "[" "!" datafilterkeyexprname "]"
+datafilter_attr_equals: "[" datafilterkeyexprname "=" datafiltervalueexpr "]"
+datafilter_attr_regexp: "[" datafilterkeyexprname "~" datafiltervalueexpr "]"
 
-datafilterkeyexprprefix: "!" | "~"
+datafilter_attr_ext_in: "[" datafilterkeyexprname "in" list "]"
 
 datafilterkeyexprname: string | tagkeystring
 
-datafilterkeyexpr: datafilterkeyexprprefix? datafilterkeyexprname
+datafilterkeyexpr: datafilterkeyexprname
 datafiltervalueexpr: value
-
-datafilterop: "="   -> equals
-            | "!="  -> notequals
-            | "~"   -> matches
-            | "!~"  -> notmatches
 
 list : "[" [value ("," value)*] "]"
 dict : "{" [pair ("," pair)*] "}"

@@ -13,6 +13,7 @@ from ddd.core.selectors.selector import DDDSelector
 from ddd.core.selectors.selector_ebnf import selector_ebnf
 from ddd.ddd import ddd
 from ddd import interactive
+from ddd.core.exception import DDDException
 
 
 # Get instance of logger for this module
@@ -40,7 +41,12 @@ class DDDTask(object):
         self.filter = filter
         self.replace = True
 
-        self.selector = DDDSelector(select) if select else None
+        try:
+            self.selector = DDDSelector(select) if select else None
+        except Exception as e:
+            logger.error("Invalid selector: %s", select)
+            #raise DDDException("Invalid selector: %s", select)
+            raise
 
         # TODO: Do this in the decorator, not here. Registry shall possisbly be separate, what if someone needs an unregistered task
         DDDTask._tasks.append(self)

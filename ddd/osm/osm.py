@@ -254,6 +254,7 @@ class OSMBuilder():
                     self.items_1d.buffer(0.5).material(ddd.mats.red),
                     ]).flatten().select(lambda o: o.extra.get('ddd:area:type') != 'underwater')
         tile = tile.intersection(ddd.shape(self.area_crop))
+        tile.prop_set('svg:stroke-width', 0.01, children=True)
         return tile
 
     def save_tile_2d(self, path):
@@ -293,7 +294,7 @@ class OSMBuilder():
         # Associate features (amenities, etc) to 2D objects (buildings, etc)
         self.buildings.link_features_2d()
 
-        # Coastline and ground
+        # Coastline and ground (do earlier)
         self.areas.generate_coastline_3d(self.area_crop if self.area_crop else self.area_filter)  # must come before ground
         self.areas.generate_ground_3d(self.area_crop if self.area_crop else self.area_filter) # separate in 2d + 3d, also subdivide (calculation is huge - core dump-)
 

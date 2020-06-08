@@ -542,15 +542,19 @@ class DDDObject():
                     method_to_call = getattr(comp, methodname)
                     self.extra[k] = method_to_call(*args, **kwargs)
 
-    def prop_set(self, key, value, children=False):
+    def prop_set(self, key, value=None, children=False, default=None):
         """
-        NOTE: This modifies this instance and children.
         """
         if children:
+            # Apply to select_all
             for o in self.select().children:
-                o.extra[key]= value
+                o.prop_set(key, value, False, default)
         else:
-            self.extra[key] = value
+            if default is None:
+                self.extra[key] = value
+            else:
+                if key not in self.extra:
+                    self.extra[key] = default
         return self
 
     def grouptyped(self, children=None):
@@ -839,6 +843,20 @@ class DDDObject2(DDDObject):
             geoms.extend(c.recurse_geom())
 
         return geoms
+
+    def remove_z(self):
+        result = self.copy()
+        if self.geom:
+            if result.geom.type == "MultiPolygon":
+                for g in result.geom.geoms:
+                    g.coords = [(x, y) for (x, y, _) in g.coords]
+            elif result.geom.type == "MultiLineString":
+                for g in result.geom.geoms:
+                    g.coords = [(x, y) for (x, y, _) in g.coords]
+            else:
+                result.geom.coords = [(x, y) for (x, y, _) in result.geom.coords]
+        result.children = [c.remove_z() for c in result.children]
+        return result
 
     def union(self, other=None):
         """
@@ -1989,7 +2007,7 @@ class DDDObject3(DDDObject):
         elif path.endswith('.json'):
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
             #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            data = DDDJSON.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDJSONFormat.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = data.encode("utf8")
 
         else:

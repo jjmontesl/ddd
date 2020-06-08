@@ -229,6 +229,9 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_base.s30_groups_ways.py',
                                             'pipelines.osm_base.s30_groups_export_2d.py',
                                             'pipelines.osm_base.s40_structured.py',
+                                            'pipelines.osm_base.s40_structured_export_2d.py',
+                                            'pipelines.osm_base.s60_model.py',
+                                            'pipelines.osm_base.s60_model_export_3d.py',
                                             ], name="OSM Build Pipeline")
                     pipeline.data['osmfiles'] = files
                     pipeline.data['filenamebase'] = filenamebase

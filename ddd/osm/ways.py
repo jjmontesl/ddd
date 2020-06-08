@@ -82,6 +82,7 @@ class WaysOSMBuilder():
 
         return list(visited)
 
+    '''
     def generate_ways_1d(self):
 
         # Generate paths
@@ -97,6 +98,7 @@ class WaysOSMBuilder():
                 self.osm.items_1d.append(way)
             #else:
             #    logger.warn("Ignoring way (unknown feature type): %s", way)
+    '''
 
     def split_ways_1d(self):
 
@@ -1073,7 +1075,7 @@ class WaysOSMBuilder():
                     elif len(join_way_splits) > 2 and join_way_splits[2].overlaps(intersection_shape.buffer(-0.05).geom):
                         join_way_split = join_way_splits[1]
                     else:
-                        logger.error("Could not find split side for intersection extension: %s", join_way)
+                        logger.debug("Could not find split side for intersection extension: %s", join_way)
                         #raise AssertionError()
 
                     if join_way_split:
@@ -1109,7 +1111,12 @@ class WaysOSMBuilder():
                 highest_way = highest_ways[0].copy()
                 if len(highest_ways) == 2:
                     #highest_way.geom = ddd.group(highest_ways).union().geom  # Leaves multilinestrings
-                    highest_way.geom = linemerge(ddd.group(highest_ways).union().geom)  # Merges multilinestrings into linestrings if possible
+                    try:
+                        highest_way.geom = linemerge(ddd.group(highest_ways).union().remove_z().geom)  # Merges multilinestrings into linestrings if possible
+                    except ValueError as e:
+                        logger.error("Cannot merge intersection lines: %s", e)
+                        #raise DDDException("Cannot merge intersection lines: %s" % e, ddd_obj=ddd.group(highest_ways).buffer(1).triangulate())
+
 
                 intersection_2d = highest_way.copy(name="Intersection (%s)" % highest_way.name)
                 intersection_2d.extra['way_1d'] = highest_way
@@ -1126,8 +1133,9 @@ class WaysOSMBuilder():
 
                 intersection_2d.extra['ddd:connections'] = []
                 if len(intersection) > 3 or len(intersection) == len(highest_ways):  # 2
-                    intersection_2d.extra['ddd:way:augment_lamps'] = False
-                    intersection_2d.extra['ddd:way:augment_traffic_signals'] = False
+                    intersection_2d.extra['ddd:way:lamps'] = False
+                    intersection_2d.extra['ddd:way:traffic_signals'] = False
+                    intersection_2d.extra['ddd:way:traffic_signs'] = False
                     intersection_2d.extra['ddd:way:roadlines'] = False
 
                 intersection_2d.geom = intersection_shape.geom  # ddd.shape(intersection_shape, name="Intersection")
@@ -1770,7 +1778,7 @@ class WaysOSMBuilder():
                 self.osm.roadlines_3d.children.append(line_3d)
 
         # Check if to generate lamps
-        if path.extra['ddd:way:augment_lamps'] and path.extra['ddd:layer'] == "0":
+        if path.extra['ddd:way:lamps'] and path.extra['ddd:layer'] == "0":
 
             # Generate lamp posts
             interval = 25.0
@@ -1859,7 +1867,7 @@ class WaysOSMBuilder():
         '''
 
         # Generate traffic lights
-        if True and path.geom.length > 45.0 and path.extra['ddd:way:augment_traffic_signals'] and path.extra['ddd:layer'] == "0":
+        if True and path.geom.length > 45.0 and path.extra['ddd:way:traffic_signals'] and path.extra['ddd:layer'] == "0":
 
             for end in (1, -1):
 
@@ -1896,7 +1904,7 @@ class WaysOSMBuilder():
                 self.osm.items_1d.children.append(item)
 
         # Generate traffic signs
-        if True and path.geom.length > 20.0 and path.extra['ddd:way:augment_traffic_signals'] and path.extra['ddd:layer'] == "0":
+        if True and path.geom.length > 20.0 and path.extra['ddd:way:traffic_signs'] and path.extra['ddd:layer'] == "0":
 
             for end in (1, -1):
 

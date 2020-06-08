@@ -10,6 +10,7 @@ from lark.lark import Lark
 from ddd.core.selectors.selector_ebnf import selector_ebnf
 from lark.visitors import Transformer
 from ddd.core.exception import DDDException
+import re
 
 
 # Get instance of logger for this module
@@ -72,18 +73,34 @@ class TreeToSelector(Transformer):
         return t[0]
 
     def datafilter_attr_equals(self, t):
+        datakey = t[0]
+        datavalue = t[1]
         def datafilter_attr_equals_func(obj):
-            datakey = t[0]
-            datavalue = t[1]
             extrameta = {'geom:type': obj.geom.type if obj.geom else None}
-            return (obj.extra.get(datakey) == datavalue or extrameta.get(datakey) == datavalue)
+            return (datakey in obj.extra and obj.extra[datakey] == datavalue or extrameta.get(datakey, None) == datavalue)
         return datafilter_attr_equals_func
 
-    def datafilter_attr_undef(self, t):
+    def datafilter_attr_def(self, t):
+        datakey = t[0]
         def datafilter_attr_undef_func(obj):
-            datakey = t[0]
+            return (datakey in obj.extra)
+        return datafilter_attr_undef_func
+
+    def datafilter_attr_undef(self, t):
+        datakey = t[0]
+        def datafilter_attr_undef_func(obj):
             return (datakey not in obj.extra)
         return datafilter_attr_undef_func
+
+    def datafilter_attr_regexp(self, t):
+        datakey = t[0]
+        datavalue = t[1]
+        regexp = re.compile(datavalue)
+        def datafilter_attr_regexp_func(obj):
+            if datakey in obj.extra:
+                return regexp.match(obj.extra[datakey])
+            return False
+        return datafilter_attr_regexp_func
 
     def datafilter(self, t):
         def datafilter_func(obj):

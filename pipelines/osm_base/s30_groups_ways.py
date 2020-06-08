@@ -25,190 +25,296 @@ def osm_groups_ways(root, osm):
 
     pass
 
-@dddtask(order="30.30.20.+", path="/Ways/*")
-def osm_groups_ways_defaults(obj, osm):
-
-    # Set name
+@dddtask(path="/Ways/*")
+def osm_groups_ways_default_name(obj, osm):
+    """Set way default data."""
     name = "Way: " + (obj.extra.get('osm:name', obj.extra.get('osm:id')))
     obj.name = name
+    #obj.extra['ddd:ignore'] = True
 
-@dddtask(order="30.30.20.+", path="/Ways/*", select='["osm:junction"="roundabout"][!"osm:oneway"]')
+@dddtask(path="/Ways/*")
+def osm_groups_ways_default_material(obj, osm):
+    """Assign asphalt as default material for ways."""
+    obj = obj.material(ddd.mats.asphalt)
+    return obj
+
+@dddtask(path="/Ways/*")
+def osm_groups_ways_default_data(obj, osm):
+    """Sets default data for ways."""
+    obj.extra['ddd:way:weight'] = 100  # Lowest
+    obj.extra['ddd:way:lane_width'] = 3.3
+    obj.extra['ddd:way:lane_width_right'] = 0.3  # Forward direction
+    obj.extra['ddd:way:lane_width_left'] = 0.3  # Reverse direction
+
+    # TODO: rename as ddd:augment: or whatever
+    obj.extra['ddd:way:roadlines'] = False
+    obj.extra['ddd:way:lamps'] = obj.extra.get('osm:lit', False)
+    obj.extra['ddd:way:traffic_signals'] = False
+    obj.extra['ddd:way:traffic_signs'] = False
+
+
+@dddtask(path="/Ways/*", select='["osm:junction" = "roundabout"][!"osm:oneway"]')
 def osm_groups_ways_roundabouts_oneway(obj, osm):
     """Mark roundabouts as one way roads by default."""
     obj.extra['osm:oneway'] = True
 
-@dddtask(order="30.30.20.+", path="/Ways/*")
-def osm_groups_ways_asphalt(obj, osm):
-    """Mark roundabouts as one way roads by default."""
-    obj = obj.material(ddd.mats.asphalt)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "motorway"]')
+def osm_groups_ways_motorway(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 5
+    obj.extra['ddd:way:lane_width'] = 3.6
+    obj.extra['ddd:way:lane_width_right'] = 1.5
+    obj.extra['ddd:way:lane_width_left'] = 0.8
+    obj.extra['ddd:way:roadlines'] = True
+    obj.prop_set('ddd:way:lanes', default=2)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "motorway_link"]')
+def osm_groups_ways_motorway_link(obj, osm):
+    """Define road data."""
+    #obj.extra['ddd:way:weight'] = 5
+    obj.extra['ddd:way:lane_width'] = 3.6
+    obj.extra['ddd:way:lane_width_right'] = 1.5
+    obj.extra['ddd:way:lane_width_left'] = 0.8
+    obj.extra['ddd:way:roadlines'] = True
+    obj.prop_set('ddd:way:lanes', default=1)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "trunk"]')
+def osm_groups_ways_trunk(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 10
+    obj.extra['ddd:way:lane_width'] = 3.4
+    obj.extra['ddd:way:lane_width_right'] = 1.4
+    obj.extra['ddd:way:lane_width_left'] = 0.5
+    obj.extra['ddd:way:roadlines'] = True
+    obj.prop_set('ddd:way:lanes', default=2)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "trunk_link"]')
+def osm_groups_ways_trunk_link(obj, osm):
+    """Define road data."""
+    #obj.extra['ddd:way:weight'] = 10
+    obj.extra['ddd:way:lane_width'] = 3.4
+    obj.extra['ddd:way:lane_width_right'] = 1.4
+    obj.extra['ddd:way:lane_width_left'] = 0.5
+    obj.extra['ddd:way:roadlines'] = True
+    obj.prop_set('ddd:way:lanes', default=1)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "primary"]')
+def osm_groups_ways_primary(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 11
+    obj.extra['ddd:way:lane_width'] = 3.4
+    obj.extra['ddd:way:lane_width_right'] = 1.0
+    obj.extra['ddd:way:lane_width_left'] = 0.5
+    obj.extra['ddd:way:roadlines'] = True
+    obj.prop_set('ddd:way:lanes', default=2)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "primary_link"]')
+def osm_groups_ways_primary_link(obj, osm):
+    """Define road data."""
+    #obj.extra['ddd:way:weight'] = 11
+    obj.extra['ddd:way:lane_width'] = 3.4
+    obj.extra['ddd:way:lane_width_right'] = 1.0
+    obj.extra['ddd:way:lane_width_left'] = 0.5
+    obj.extra['ddd:way:roadlines'] = True
+    obj.prop_set('ddd:way:lanes', default=2)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "secondary"]')
+def osm_groups_ways_secondary(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 12
+    obj.extra['ddd:way:lane_width'] = 3.4
+    obj.extra['ddd:way:roadlines'] = True
+    obj.extra['ddd:way:traffic_signals'] = True
+    obj.extra['ddd:way:traffic_signs'] = True
+    obj.prop_set('ddd:way:lamps', default=True)
+
+    lanes = 2 if obj.extra.get('osm:oneway', False) else 3
+    obj.prop_set('ddd:way:lanes', default=lanes)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "tertiary"]')
+def osm_groups_ways_tertiary(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 13
+    obj.extra['ddd:way:lane_width'] = 3.4
+    obj.extra['ddd:way:roadlines'] = True
+    obj.extra['ddd:way:traffic_signals'] = True
+    obj.extra['ddd:way:traffic_signs'] = True
+    obj.prop_set('ddd:way:lamps', default=True)
+    obj.prop_set('ddd:way:lanes', default=2)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "road"]')
+def osm_groups_ways_road(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 14
+    obj.extra['ddd:way:lane_width'] = 3.3
+    obj.extra['ddd:way:roadlines'] = True
+    obj.extra['ddd:way:traffic_signals'] = True
+    obj.extra['ddd:way:traffic_signs'] = True
+    obj.prop_set('ddd:way:lamps', default=True)
+    obj.prop_set('ddd:way:lanes', default=2)
+
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "service"]')
+def osm_groups_ways_service(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 21
+    obj.extra['ddd:way:roadlines'] = True
+    obj.extra['ddd:way:traffic_signs'] = True
+    obj.prop_set('ddd:way:lamps', default=True)
+    obj.prop_set('ddd:way:lanes', default=1)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "residential"]')
+def osm_groups_ways_residential(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 22
+    obj.extra['ddd:way:roadlines'] = True
+    obj.extra['ddd:way:traffic_signs'] = True
+    obj.extra['ddd:way:traffic_signals'] = False
+    obj.prop_set('ddd:way:lamps', default=True)
+
+    lanes = 2 if obj.extra.get('osm:oneway', False) else 2
+    obj.prop_set('ddd:way:lanes', default=lanes)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "living_street"]')
+def osm_groups_ways_living_street(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 23
+    obj.extra['ddd:way:lane_width'] = 0.3 * 1.2 if obj.extra.get('osm:oneway', False) else 0.3
+    obj.extra['ddd:way:roadlines'] = True
+    obj.extra['ddd:way:traffic_signs'] = True
+    obj.extra['ddd:way:traffic_signals'] = False
+    obj.prop_set('ddd:way:lamps', default=True)
+
+    lanes = 1 if obj.extra.get('osm:oneway', False) else 2
+    obj.prop_set('ddd:way:lanes', default=lanes)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "track"]')
+def osm_groups_ways_track(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 26
+    obj.extra['ddd:way:roadlines'] = False
+    obj.extra['ddd:way:traffic_signs'] = True
+    obj.extra['ddd:way:traffic_signals'] = False
+    obj.prop_set('ddd:way:lamps', default=False)
+    obj.prop_set('ddd:way:lanes', default=1)
+    obj.extra['ddd:way:height'] = 0.2
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "footway"]')
+def osm_groups_ways_footway(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:weight'] = 31
+    obj.extra['ddd:way:height'] = 0.2
+    obj.extra['ddd:way:width'] = 1.5
+    obj.extra['ddd:way:lanes'] = 0
+    obj = obj.material(ddd.mats.dirt)
+    return obj
+
+@dddtask(path="/Ways/*", select='["osm:footway" = "sidewalk"]')
+def osm_groups_ways_footway_sidewalk_remove(obj, osm):
+    """Remove sidewalks."""
+    return False
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "path"]')
+def osm_groups_ways_path(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:lanes'] = 0
+    obj.extra['ddd:way:weight'] = 31
+    obj.extra['ddd:way:height'] = 0.2
+    obj.extra['ddd:way:width'] = 1.5
+    obj = obj.material(ddd.mats.dirt)
+
+    # TODO: Do later, after applying elevations, in a select ("add fences to elevated ways")... improve
+    obj.extra['ddd:way:elevated:border'] = 'fence'
+    obj.extra['ddd:way:elevated:material'] = ddd.mats.pathwalk
+    obj.extra['ddd:way:weight'] = 42
+
+    return obj
+
+@dddtask(path="/Ways/*", select='["osm:highway" ~ "steps|stairs"]')
+def osm_groups_ways_stairs(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:lanes'] = 0
+    obj.extra['ddd:way:weight'] = 31
+    obj.extra['ddd:way:height'] = 0.2
+    obj.extra['ddd:way:width'] = 1.5
+    obj = obj.material(ddd.mats.pathwalk)
+    # TODO: Do later, after applying elevations, in a select ("add fences to elevated ways")... improve
+    #obj.extra['ddd:way:elevated:border'] = 'fence'
+    #obj.extra['ddd:way:elevated:material'] = ddd.mats.pathwalk
+    #obj.extra['ddd:way:weight'] = 42
+    return obj
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "pedestrian"]')
+def osm_groups_ways_pedestrian(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:lanes'] = 0
+    obj.extra['ddd:way:weight'] = 32
+    obj.extra['ddd:way:height'] = 0.2
+    obj.extra['ddd:way:width'] = 6.60
+    obj = obj.material(ddd.mats.pathwalk)
+    obj.prop_set('ddd:way:lamps', default=True)
+    return obj
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "cycleway"]')
+def osm_groups_ways_cycleway(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:lanes'] = 1
+    obj.extra['ddd:way:lane_width'] = 1.5
+    obj.extra['ddd:way:weight'] = 10
+    #obj.extra['ddd:way:height'] = 0.2
+    obj.extra['ddd:way:roadlines'] = True
+    obj = obj.material(ddd.mats.pitch_blue)
+    obj.prop_set('ddd:way:lamps', default=True)
+    return obj
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "corridor"]')
+def osm_groups_ways_corridor(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:lanes'] = 0
+    obj.extra['ddd:way:width'] = 2.2
+    obj.extra['ddd:way:weight'] = 41
+    obj.extra['ddd:way:height'] = 0.35
+    obj = obj.material(ddd.mats.pathwalk)
+    return obj
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "unclassified"]')
+def osm_groups_ways_unclassified(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:lanes'] = 1
+    obj = obj.material(ddd.mats.dirt)
+    return obj
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "raceway"]')
+def osm_groups_ways_raceway(obj, osm):
+    """Define road data."""
+    obj.extra['ddd:way:lanes'] = 1
+    obj.extra['ddd:way:width'] = 8.0
+    #obj = obj.material(ddd.mats.dirt)
+
+@dddtask(path="/Ways/*", select='["osm:highway" = "raceway"]')
+def osm_groups_ways_railway(obj, osm):
+    """Define road data."""
+    obj.name = "Railway: %s" % obj.name
+    obj.extra['ddd:way:lanes'] = 0
+    obj.extra['ddd:way:width'] = 3.6
+    obj = obj.material(ddd.mats.dirt)
     return obj
 
 
-
-
+'''
 def generate_way_1d(feature):
 
 
     width = None  # if not set will be discarded
-    material = ddd.mats.asphalt
     extra_height = 0.0
     lanes = None
-    lamps = False
-    traffic_signals = False
-    roadlines = False
-    path.extra['ddd:way:weight'] = 100  # Lowest
-
     layer = None
-
-    lane_width = 3.3
-    lane_width_right = 0.30
-    lane_width_left = 0.30
-
     create_as_item = False
 
-    if path.extra.get('osm:highway', None) in ('proposed', 'construction', ):
+    if path.extra.get('osm:highway', None) in (None):
         return None
 
-    elif path.extra.get('osm:highway', None) == "motorway":
-        lane_width = 3.6
-        lane_width_right = 1.5
-        lane_width_left = 0.8
-        lanes = 2
-        roadlines = True
-        path.extra['ddd:way:weight'] = 5
-    elif path.extra.get('osm:highway', None) == "motorway_link":
-        lanes = 1
-        lane_width = 3.6
-        lane_width_right = 1.5
-        lane_width_left = 0.8
-        roadlines = True
-    elif path.extra.get('osm:highway', None) == "trunk":
-        lanes = 1
-        lane_width = 3.4
-        lane_width_right = 1.4
-        lane_width_left = 0.5
-        roadlines = True
-        path.extra['ddd:way:weight'] = 10
-    elif path.extra.get('osm:highway', None) == "trunk_link":
-        lanes = 1
-        lane_width = 3.4
-        lane_width_right = 1.4
-        lane_width_left = 0.5
-        roadlines = True
-
-    elif path.extra.get('osm:highway', None) == "primary":
-        lanes = 2
-        lane_width = 3.4
-        lane_width_right = 1.0
-        lane_width_left = 0.5
-        roadlines = True
-        path.extra['ddd:way:weight'] = 11
-    elif path.extra.get('osm:highway', None) == "primary_link":
-        lanes = 2
-        lane_width = 3.4
-        lane_width_right = 1.0
-        lane_width_left = 0.5
-        roadlines = True
-    elif path.extra.get('osm:highway', None) == "secondary":
-        lanes = 2 if path.extra.get('osm:oneway', False) else 3
-        lane_width = 3.4
-        lamps = True
-        traffic_signals = True
-        roadlines = True
-        path.extra['ddd:way:weight'] = 12
-    elif path.extra.get('osm:highway', None) in ("tertiary", "road"):
-        lanes = 2
-        lane_width = 3.4
-        lamps = True  # shall be only in city?
-        traffic_signals = True
-        roadlines = True
-        path.extra['ddd:way:weight'] = 13
-    elif path.extra.get('osm:highway', None) == "service":
-        lanes = 1
-        lamps = True  # shall be only in city?
-        roadlines = True
-        path.extra['ddd:way:weight'] = 21
-    elif path.extra.get('osm:highway', None) in ("residential", ):
-        # lanes = 1.0  # Using 1 lane for residential/living causes too small roads
-        lanes = 2 if path.extra.get('osm:oneway', False) else 2
-        lamps = path.extra.get('osm:lit', True)  # shall be only in city?
-        traffic_signals = True
-        roadlines = True
-        path.extra['ddd:way:weight'] = 22
-    elif path.extra.get('osm:highway', None) in ("living_street", ):
-        # extra_height = 0.1
-        lanes = 1 if path.extra.get('osm:oneway', False) else 2
-        lane_width = lane_width * 1.2 if path.extra.get('osm:oneway', False) else lane_width
-        lamps = path.extra.get('osm:lit', True)  # shall be only in city?
-        traffic_signals = False
-        roadlines = True
-        path.extra['ddd:way:weight'] = 23
-
-    elif path.extra.get('osm:highway', None) in ("track", ):
-        lanes = 1
-        material = ddd.mats.asphalt
-        extra_height = 0.2  # TODO: Curve along, add noise, add "roderas" inside, add roderas/merge outside...
-        roadlines = False
-        traffic_signals = True  # put signals, not lights
-        lamps = path.extra.get('osm:lit', False)  # shall be only in city?
-        path.extra['ddd:way:weight'] = 26
-
-    elif path.extra.get('osm:highway', None) in ("footway",):
-        if path.extra.get('osm:footway', None) == 'sidewalk': return None  # Dropping sidewalks!
-        lanes = 0
-        material = ddd.mats.dirt
-        extra_height = 0.0
-        width = 0.6 * 3.3
-        path.extra['ddd:way:weight'] = 31
-    elif path.extra.get('osm:highway', None) in ("path", ):
-        lanes = 0
-        material = ddd.mats.dirt
-        # extra_height = 0.2
-        width = 0.6 * 3.3
-
-        # TODO: Do later, after applying elevations, in a select ("add fences to elevated ways")
-        path.extra['ddd:way:elevated:border'] = 'fence'
-        path.extra['ddd:way:elevated:material'] = ddd.mats.pathwalk
-        path.extra['ddd:way:weight'] = 42
-
-
-    elif path.extra.get('osm:highway', None) in ("steps", "stairs"):
-        lanes = 0
-        material = ddd.mats.pathwalk
-        extra_height = 0.2  # 0.2 allows easy car driving
-        width = 0.6 * 3.3
-        path.extra['ddd:way:weight'] = 31
-    elif path.extra.get('osm:highway', None) == "pedestrian":
-        lanes = 0
-        material = ddd.mats.pathwalk
-        extra_height = 0.2
-        width = 2 * 3.30
-        lamps = True  # shall be only in city?
-        path.extra['ddd:way:weight'] = 32
-
-    elif path.extra.get('osm:highway', None) == "cycleway":
-        lanes = 1
-        lane_width = 1.5
-        material = ddd.mats.pitch_blue
-        #extra_height = 0.0
-        roadlines = True
-        path.extra['ddd:way:weight'] = 10
-    elif path.extra.get('osm:highway', None) == "corridor":
-        lanes = 0
-        material = ddd.mats.pathwalk
-        extra_height = 0.35  # 0.2 allows easy car driving
-        width = 2.2
-        path.extra['ddd:way:weight'] = 41
-
-    elif path.extra.get('osm:highway', None) == "unclassified":
-        lanes = 1
-        material = ddd.mats.dirt
-
-    elif path.extra.get('osm:highway', None) == "raceway":
-        lanes = 1
-        lane_width = 10.0
-        material = ddd.mats.dirt
-        # extra_height = 0.2
 
     elif path.extra.get('osm:natural', None) == "coastline":
         lanes = None
@@ -233,12 +339,6 @@ def generate_way_1d(feature):
         path.extra['ddd:area:type'] = 'water'
         path.extra['ddd:baseheight'] = -0.5
 
-    elif path.extra.get('osm:railway', None):
-        lanes = None
-        width = 3.6
-        material = ddd.mats.dirt
-        name = "Railway: %s" % name_id
-        #extra_height = 0.0
 
     elif path.extra.get('osm:barrier', None) == 'city_wall':
         width = 1.0
@@ -311,9 +411,8 @@ def generate_way_1d(feature):
         logger.debug("Unknown way (discarding): %s", path.extra)
         return None
 
+
     # Calculated properties
-    if path.extra.get('osm:junction', None) == "roundabout":
-        path.extra['ddd:way:weight'] = 1
 
     flanes = path.extra.get('osm:lanes', None)
     if flanes:
@@ -323,9 +422,6 @@ def generate_way_1d(feature):
     if lanes is None or lanes < 1:
         roadlines = False
 
-    if not path.extra.get('osm:oneway', None):
-        lane_width_left = lane_width_right
-
     if width is None:
         try:
             if lanes == 1: lane_width = lane_width * 1.25
@@ -334,35 +430,45 @@ def generate_way_1d(feature):
             logger.error("Cannot calculate width from lanes: %s", feature['properties'])
             raise
 
-    path = path.material(material)
-    path.name = name
-
-    '''
-    path.extra['osm:highway'] = highway
-    path.extra['osm:barrier'] = barrier
-    path.extra['osm:railway'] = railway
-    path.extra['osm:historic'] = historic
-    path.extra['osm:natural'] = natural
-    path.extra['osm:tunnel'] = tunnel
-    path.extra['osm:bridge'] = bridge
-    path.extra['osm:junction'] = junction
-    path.extra['osm:waterway'] = waterway
-    path.extra['osm:lanes'] = lanes
-    '''
-    path.extra['ddd:layer'] = layer if layer is not None else path.extra['osm:layer']
-    path.extra['ddd:extra_height'] = extra_height
-    path.extra['ddd:width'] = width
-    path.extra['ddd:height'] = extra_height
-    path.extra['ddd:way:width'] = width
-    path.extra['ddd:way:lanes'] = lanes
-    path.extra['ddd:way:lane_width'] = lane_width
-    path.extra['ddd:way:lane_width_left'] = lane_width_left
-    path.extra['ddd:way:lane_width_right'] = lane_width_right
-    path.extra['ddd:way:augment_lamps'] = lamps  # Add via augmenting as well, adding metadata for this shall be avoided
-    path.extra['ddd:way:augment_traffic_signals'] = traffic_signals  # Add via augmenting pipeline, do not add nmetadata here or avoid metadat if possible
-    path.extra['ddd:way:roadlines'] = roadlines  # should be ddd:road:roadlines ?
-    path.extra['ddd:item'] = create_as_item
-    path.extra['ddd:item:height'] = extra_height
-    # print(feature['properties'].get("name", None))
-
     return path
+'''
+
+
+@dddtask(order="30.50.50.+", path="/Ways/*")
+def osm_groups_ways_calculated(osm):
+    # TODO: Tag identified ways
+    pass
+
+@dddtask(path="/Ways/*")
+def osm_groups_ways_calculated_discard_untagged(osm):
+    # TODO: Tag identified ways
+    pass
+
+@dddtask(path="/Ways/*", select='["osm:junction" = "roundabout"]')
+def osm_groups_ways_calculated_roundabout_weight(obj):
+    obj.extra['ddd:way:weight'] = 1
+
+@dddtask(path="/Ways/*", select='["osm:oneway"]')
+def osm_groups_ways_calculated_oneway_lane_margins(obj):
+    obj.extra['ddd:way:lane_width_left'] = obj.extra['ddd:way:lane_width_right']
+
+@dddtask(path="/Ways/*")
+def osm_groups_ways_calculated_data(obj, osm):
+    """Sets calculated data for ways."""
+
+    # Use osm:lanes if set, otherwise use lanes
+    obj.extra['ddd:way:lanes'] = int(obj.extra.get('osm:lanes', obj.extra.get('ddd:way:lanes', 0)))
+    if obj.extra['ddd:way:lanes'] < 1: obj.extra['ddd:way:lanes'] = 1
+
+    if obj.extra.get('ddd:way:width', None) is None:
+        obj.extra['ddd:way:width'] = (obj.extra['ddd:way:lanes'] * obj.extra['ddd:way:lane_width'] +
+                                      obj.extra['ddd:way:lane_width_left'] + obj.extra['ddd:way:lane_width_right'])
+
+    # TODO: use these generic attribs? possibly avoid
+    obj.extra['ddd:height'] = obj.extra.get('ddd:way:height', None)
+    obj.extra['ddd:extra_height'] = obj.extra['ddd:height']
+    obj.extra['ddd:width'] = obj.extra['ddd:way:width']
+
+    #path.extra['ddd:item'] = create_as_item
+    #path.extra['ddd:item:height'] = extra_height
+

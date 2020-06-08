@@ -97,10 +97,10 @@ class DDDSVG():
                 '_material': str(obj.mat)}
 
         color = None
-        fill_opacity = 0.7
         if obj.mat:
             color = obj.mat.color
-            fill_opacity = extra.get('svg:fill-opacity', 1.0)
+        fill_opacity = extra.get('svg:fill-opacity', 0.7)
+        stroke_width = extra.get('svg:stroke-width', 0.1)
 
         data = ""
 
@@ -112,7 +112,7 @@ class DDDSVG():
 
         if obj.geom:
             geom = geometry.GeometryCollection([obj.geom])
-            data = data + DDDSVG.svg_geom(geom, data=metadata, color=color, fill_opacity=fill_opacity)
+            data = data + DDDSVG.svg_geom(geom, data=metadata, color=color, fill_opacity=fill_opacity, stroke_width=stroke_width)
 
         '''
         # FIXME: This code is duplicated from DDDInstance: normalize export / generation
@@ -156,18 +156,35 @@ class DDDSVG():
 
         if geom.type == 'Polygon':
             return DDDSVG.svg_polygon(geom, data, **kwargs)
+        elif geom.type == 'LineString':
+            return DDDSVG.svg_linestring(geom, data, **kwargs)
         elif isinstance(geom, BaseMultipartGeometry):
             return DDDSVG.svg_multipart(geom, data, **kwargs)
         else:
             #return geom.svg(scale_factor=1.00, color=color)
             return geom.svg(scale_factor=1.00)  #, color=kwargs.get('color'))
-            #return geom.svg(stroke_width=0.01, color=kwargs.get('color'))
+            #return geom.svg(stroke_width=0.1, color=kwargs.get('color'))
+
+    @staticmethod
+    def svg_linestring(geom, data, **kwargs):
+        opacity = kwargs.get('fill_opacity', 0.6)
+        stroke_color = kwargs.get('color')
+        stroke_width = kwargs.get('stroke_width', 1.00)
+        if geom.is_empty:
+            return '<g />'
+        if stroke_color is None:
+            stroke_color = "#99ffcc" if geom.is_valid else "#ff6666"
+        pnt_format = " ".join(["{0},{1}".format(*c) for c in geom.coords])
+        return ('<polyline fill="none" stroke="{2}" stroke-width="{1}" '
+                'points="{0}" opacity="{3}" />'
+                ).format(pnt_format, stroke_width, stroke_color, opacity)
+
 
     @staticmethod
     def svg_polygon(geom, data, **kwargs):
         fill_color = kwargs.get('color')
         fill_opacity = kwargs.get('fill_opacity', 0.6)
-        stroke_width = kwargs.get('stroke_width', 0.01)
+        stroke_width = kwargs.get('stroke_width', 0.1)
         if geom.is_empty:
             return '<g />'
         if fill_color is None:
@@ -178,7 +195,7 @@ class DDDSVG():
                          for coords in exterior_coords + interior_coords])
         return ('<path fill-rule="evenodd" fill="{2}" stroke="#555555" '
                 'stroke-width="{0}" opacity="{3}" d="{1}" />'
-                ).format(2. * stroke_width, path, fill_color, fill_opacity)
+                ).format(stroke_width, path, fill_color, fill_opacity)
 
     @staticmethod
     def svg_multipart(geom, data, **kwargs):

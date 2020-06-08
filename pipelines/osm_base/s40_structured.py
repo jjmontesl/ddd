@@ -16,10 +16,22 @@ from ddd.pipeline.decorators import dddtask
 
 @dddtask(order="40.10.+", log=True)
 def osm_structured_init(root, osm):
+    osm.ways_1d = root.find("/Ways")
     pass
+
+@dddtask()
+def osm_structured_split_ways(osm, root):
+    osm.ways.split_ways_1d()  # Where to put?
 
 @dddtask(log=True)
 def osm_structured_rest(root, osm):
+
+    root.find("/Ways").replace(osm.ways_1d)
+
+    #osm.buildings_2d =
+    osm.buildings.preprocess_buildings_2d()
+    osm.buildings.generate_buildings_2d()
+
     osm.ways.generate_ways_2d()
 
     osm.areas.generate_areas_2d()
@@ -31,6 +43,9 @@ def osm_structured_rest(root, osm):
     # Associate features (amenities, etc) to 2D objects (buildings, etc)
     osm.buildings.link_features_2d()
 
+    # Coastline and ground
+    osm.areas.generate_coastline_3d(osm.area_crop if osm.area_crop else osm.area_filter)  # must come before ground
+    osm.areas.generate_ground_3d(osm.area_crop if osm.area_crop else osm.area_filter) # separate in 2d + 3d, also subdivide (calculation is huge - core dump-)
 
 
 @dddtask(order="40.90")
