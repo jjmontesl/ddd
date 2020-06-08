@@ -160,7 +160,8 @@ class DDDSVG():
             return DDDSVG.svg_multipart(geom, data, **kwargs)
         else:
             #return geom.svg(scale_factor=1.00, color=color)
-            return geom.svg(stroke_width=0.01, color=kwargs.get('color'))
+            return geom.svg(scale_factor=1.00)  #, color=kwargs.get('color'))
+            #return geom.svg(stroke_width=0.01, color=kwargs.get('color'))
 
     @staticmethod
     def svg_polygon(geom, data, **kwargs):

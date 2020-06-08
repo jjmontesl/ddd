@@ -214,6 +214,7 @@ class WaysOSMBuilder():
 
         # Soften / subdivide roads if height angle is larger than X (try as alternative to massive subdivision of roads?)
 
+    """
     def generate_way_1d(self, feature):
 
         '''
@@ -567,6 +568,7 @@ class WaysOSMBuilder():
         # print(feature['properties'].get("name", None))
 
         return path
+    """
 
     def ways_1d_intersections(self):
         """

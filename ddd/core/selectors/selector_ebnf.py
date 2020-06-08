@@ -20,13 +20,17 @@ SINGLE_QUOTED_STRING  : /'[^']*'/
       | "null"            -> null
 
 string: ESCAPED_STRING
+tagkeystring: TAG_KEY_STRING
 
+datafilter: datafilter_attr_equals | datafilter_attr_undef
+datafilter_old: "[" datafilterkeyexpr [ datafilterop datafiltervalueexpr ] "]"
 
-datafilter: "[" datafilterkeyexpr [ datafilterop datafiltervalueexpr ] "]"
+datafilter_attr_equals: "[" datafilterkeyexprname "=" datafiltervalueexpr "]"
+datafilter_attr_undef: "[" "!" datafilterkeyexprname "]"
 
 datafilterkeyexprprefix: "!" | "~"
 
-datafilterkeyexprname: string | TAG_KEY_STRING
+datafilterkeyexprname: string | tagkeystring
 
 datafilterkeyexpr: datafilterkeyexprprefix? datafilterkeyexprname
 datafiltervalueexpr: value
@@ -40,7 +44,8 @@ list : "[" [value ("," value)*] "]"
 dict : "{" [pair ("," pair)*] "}"
 pair : string ":" value
 
-selector: datafilter*
+datafilterand: datafilter*
+selector: datafilterand
 
 %import common.ESCAPED_STRING
 %import common.SIGNED_NUMBER

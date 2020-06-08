@@ -14,9 +14,12 @@ from ddd.osm.osm import project_coordinates
 from ddd.pipeline.decorators import dddtask
 
 
-@dddtask(order="30.9.+")
-def osm_generate_export_2d(root):
+@dddtask(order="20.90.+")
+def osm_features_export_2d(root):
 
+    root.find("/Features").save("/tmp/osm-features.svg")
+
+    '''
     root = root.copy()
     root = root.remove(root.find("/Features"))  # !Altering
     root.find("/Areas").replace(root.find("/Areas").material(ddd.mats.park).prop_set('svg:fill-opacity', 0.6, True))
@@ -25,4 +28,4 @@ def osm_generate_export_2d(root):
     root.find("/Items").replace(root.find("/Items").buffer(1.0).material(ddd.mats.highlight))
     root.save("/tmp/osm-10-main.json")
     root.save("/tmp/osm-10-main.svg")
-
+    '''

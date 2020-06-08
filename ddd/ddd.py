@@ -482,41 +482,6 @@ class DDDObject():
         #if _rec_path is None:
         #    logger.debug("Select: func=%s selector=%s path=%s recurse=%s _rec_path=%s", func, selector, path, recurse, _rec_path)
 
-        def eval_select(selector, obj):
-
-            tree = selector._tree
-            #print(tree)
-            #print(tree.pretty())
-
-            selected = False
-
-            for datafilter in tree.children:
-
-                dfselected = False
-
-                datakey = datafilter.children[0].children[0].children[0]
-                #print(datakey)
-                dataop = datafilter.children[1].data
-                #print(dataop)
-                datavalue = datafilter.children[2].children[0]
-                #print(datavalue)
-                #logger.info("Eval select: %s %s %s", datakey, dataop, datavalue)
-
-                extrameta = {'geom:type': obj.geom.type if obj.geom else None}
-
-                for k, v in (list(obj.extra.items()) + list(extrameta.items())):
-                    if datakey != k: continue
-                    if dataop == 'equals':
-                        dfselected = (v == datavalue)
-                    else:
-                        raise DDDException("Unknown selector operation: %s", dataop)
-
-                if not dfselected: return False
-
-                selected = dfselected
-
-            return selected
-
         # TODO: Recurse should be false by default
 
         result = []
@@ -539,7 +504,7 @@ class DDDObject():
         if func:
             selected = selected and func(self)
         if selector:
-            selected = selected and eval_select(selector, self)
+            selected = selected and selector.evaluate(self)
 
         if selected:
             result.append(self)
@@ -1774,6 +1739,11 @@ class DDDObject3(DDDObject):
             result.mesh = concatenate(result.mesh, inverted)
 
         return result
+
+    '''
+    def triangulate(self, twosided=False):
+        return self
+    '''
 
     def _recurse_scene(self, path_prefix, name_suffix, instance_mesh, instance_marker):
 

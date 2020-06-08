@@ -12,6 +12,7 @@ from lark.lark import Lark
 from ddd.core.selectors.selector import DDDSelector
 from ddd.core.selectors.selector_ebnf import selector_ebnf
 from ddd.ddd import ddd
+from ddd import interactive
 
 
 # Get instance of logger for this module
@@ -119,6 +120,8 @@ class DDDTask(object):
                     o.replace(result)
                 elif result is False:
                     pipeline.root.remove(o)
+
+            #interactive.showbg(pipeline.root)
 
 
 

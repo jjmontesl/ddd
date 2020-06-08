@@ -73,7 +73,12 @@ class DDDPipeline():
         tasks = []
 
         for task in self.tasks:
-            order_split = task.order.split(".") if task.order is not None else ["+"]
+            order = task.order
+            if order is None: order = '*.+'
+            if order.startswith('*.'):
+                order = ".".join([str(e) for e in tasks[-1]._order_num[:-1]] + ['+'])
+
+            order_split = order.split(".")
             for (el_idx, el_str) in enumerate(order_split):
                 if el_str == '+':
                     previous_order_num = self._find_last_order(tasks, order_split[:el_idx])

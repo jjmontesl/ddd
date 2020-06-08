@@ -109,7 +109,7 @@ def each(root, obj):
     logger.info("Creating: %s", obj)
 
     if not (obj.extra['element:group'] and obj.extra['element:period']):
-        logger.info("Ignorign element (no group or period): %s", obj)
+        logger.info("Ignoring element (no group or period): %s", obj)
         return
 
     symbol = urban.sculpture_text(obj.extra['element:symbol'], 1, 3)
