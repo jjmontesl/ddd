@@ -434,7 +434,7 @@ def generate_way_1d(feature):
 '''
 
 
-@dddtask(order="30.50.50.+", path="/Ways/*")
+@dddtask(order="30.30.50.+", path="/Ways/*")
 def osm_groups_ways_calculated(osm):
     # TODO: Tag identified ways
     pass

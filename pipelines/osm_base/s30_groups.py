@@ -74,6 +74,7 @@ def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
     #osm.buildings.generate_buildings_2d()
     pass
 
+
 @dddtask(order="30.50.10", path="/Features/*", select='[geom:type="Polygon"]', filter=lambda o: o.extra.get("osm:building", None) is None)
 def osm_generate_areas(root, obj):
     # Ways depend on buildings
@@ -85,7 +86,15 @@ def osm_generate_areas(root, obj):
 def osm_generate_areas_process(pipeline, osm, root, logger):
     pass
 
+@dddtask(order="30.60.+")
+def osm_generate_areas_coastline_2d(osm, root):
+    #osm.areas.generate_coastline_2d(osm.area_crop if osm.area_crop else osm.area_filter)  # must come before ground
+    osm.areas2.generate_coastline_2d(osm.area_filter)  # must come before ground
+    root.find("/Areas").append(osm.water_2d)
 
 @dddtask(order="30.90")
 def osm_groups_finished(pipeline, osm, root, logger):
     pass
+
+
+

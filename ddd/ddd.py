@@ -1935,15 +1935,20 @@ class DDDObject3(DDDObject):
             cobjs.extend(c.recurse_objects())
         return cobjs
 
-    def show(self):
+    def show(self, instance_mesh=None, instance_marker=None):
 
         logger.info("Showing: %s", self)
+
+        if instance_marker is None:
+            instance_marker = D1D2D3Bootstrap.export_marker
+        if instance_mesh is None:
+            instance_mesh = D1D2D3Bootstrap.export_mesh
 
         if D1D2D3Bootstrap.renderer == 'pyglet':
 
             # OpenGL
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
-            scene = rotated._recurse_scene("", "", instance_mesh=True, instance_marker=False)
+            scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             # Example code light
             #light = trimesh.scene.lighting.DirectionalLight()
             #light.intensity = 10

@@ -18,13 +18,10 @@ from ddd.ddd import ddd
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-class MapillaryClient():
+class WMSClient():
 
-    url_api = 'https://a.mapillary.com/v3/'
-    url_images = 'https://images.mapillary.com/'
-
-    def __init__(self, client_id):
-        self.client_id = client_id
+    def __init__(self, url):
+        self.url = url
 
     def request(self, method, params):
 

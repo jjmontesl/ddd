@@ -347,19 +347,19 @@ def sign_pharmacy_side(size=1.0, depth=0.3, arm_length=1.0):
     sign = sign.translate([0, -(arm_length + size * 0.66), 0])
     return ddd.group([sign, arm], name="Pharmacy Side Sign with Arm")
 
-def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=None):
+def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=None, center=False):
     '''
     A panel, like what commerces have either sideways or sitting on the facade. Also
     road panels.
     '''
-    panel = ddd.rect([-width / 2.0, -height / 2.0, width / 2.0, height / 2.0]).extrude(depth)
-    panel = panel.rotate([math.pi / 2.0, 0, 0])
+    panel = ddd.rect([-width / 2.0, -height / 2.0, width / 2.0, height / 2.0]).extrude(depth, center=True)
+    panel = panel.rotate(ddd.ROT_FLOOR_TO_FRONT)
     panel = panel.material(ddd.material(color='#f0f0ff'))
     panel = ddd.uv.map_cubic(panel)
     panel.name = "Panel"
 
     if text:
-        textobj = ddd.marker(name="Panel Text Marker").translate([0, - depth - 0.02, 0])
+        textobj = ddd.marker(name="Panel Text Marker").translate([0, -depth * 0.5 - 0.02, 0])
         textobj.extra['ddd:text'] = text
         textobj.extra['ddd:text:width'] = width * 0.9
         textobj.extra['ddd:text:height'] = height * 0.9
@@ -368,7 +368,7 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=N
         textobj.extra['ddd:occluder'] = False
         #textobj.extra['ddd:layer'] = "Texts"
     if text_back:
-        textbackobj = ddd.marker(name="Panel Text Marker").rotate([0, 0, math.pi]).translate([0, + depth - 0.02, 0])
+        textbackobj = ddd.marker(name="Panel Text Marker").rotate([0, 0, math.pi]).translate([0, +depth * 0.5 + 0.02, 0])
         textbackobj.extra['ddd:text'] = text
         textbackobj.extra['ddd:text:width'] = width * 0.9
         textbackobj.extra['ddd:text:height'] = height * 0.9
@@ -380,13 +380,16 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=N
     if text: panel.append(textobj)
     if text_back: panel.append(textbackobj)
 
+    if not center:
+        panel = panel.translate([0, - depth * 0.5, 0])
+
     return panel
 
 
 def busstop_small(height=2.50, panel_height=1.4, panel_width=0.45, text=None):
     obj_post = post(height=height).material(ddd.mats.metal_paint_green)
-    obj_panel = panel(height=panel_width, width=panel_height, depth=0.05, text=text, text_back=text)
-    obj_panel = obj_panel.rotate([0, -math.pi / 2, 0]).translate([panel_width / 2 + 0.075, 0, height - 0.20 - panel_height / 2])
+    obj_panel = panel(height=panel_width, width=panel_height, depth=0.05, text=text, text_back=text, center=True)
+    obj_panel = obj_panel.rotate([0, math.pi / 2, 0]).translate([panel_width / 2 + 0.075, 0, height - 0.20 - panel_height / 2])
     obj = ddd.group([obj_post, obj_panel])
     return obj
 

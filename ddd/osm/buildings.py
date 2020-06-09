@@ -284,7 +284,7 @@ class BuildingOSMBuilder():
         #logger.debug("Amenity: %s Closest point: %s Closest Segment: %s Angle: %s" % (amenity.geom.centroid, closest_point, closest_segment, angle))
 
         # Align rotation
-        item_3d = item_3d.rotate([0, 0, angle])  # + math.pi / 2.0
+        item_3d = item_3d.rotate([0, 0, angle + math.pi])  # + math.pi / 2.0
         item_3d = item_3d.translate([closest_point[0], closest_point[1], 0])
 
         return item_3d

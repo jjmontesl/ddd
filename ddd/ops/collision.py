@@ -67,7 +67,7 @@ class DDDCollision():
         Adds a box collider to the object, using object AABB for dimensions.
         """
 
-        logger.info("Adding AABox collider to object: %s", obj)
+        #logger.debug("Adding AABox collider to object: %s", obj)
         bounds = obj.bounds()
         collider = AABox.from_bounds(bounds)
 

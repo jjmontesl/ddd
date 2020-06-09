@@ -14,6 +14,7 @@ from doit.task import dict_to_task
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import DDDTask
+import datetime
 
 
 # Get instance of logger for this module
@@ -108,7 +109,15 @@ class DDDPipeline():
     def run(self):
         logger.info("Running pipeline: %s (%s configured tasks)", self, len(self.tasks))
         #self.run_pipeline_doit()
+        time_start = datetime.datetime.now()
         self.run_pipeline_internal()
+        time_end = datetime.datetime.now()
+
+        time_run = (time_end - time_start).total_seconds()
+        time_run_m = int(time_run / 60)
+        time_run_s = time_run - (time_run_m * 60)
+
+        logger.info("Pipeline processing time: %d:%04.1f m" % (time_run_m, time_run_s))
 
         return self.root
 

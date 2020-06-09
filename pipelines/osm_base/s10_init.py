@@ -29,7 +29,7 @@ def osm_init(pipeline, root):
 
 
 @dddtask(order="50.999999", log=True)
-def osm_finish_rest(pipeline, osm, root, logger):
+def osm_finish_rest_before_3d(pipeline, osm, root, logger):
 
     #self.features_2d.filter(lambda o: o.extra.get('osm:building:part', None) is not None).dump()
     # TODO: Shall already be done earlier
@@ -49,7 +49,7 @@ def osm_finish_rest(pipeline, osm, root, logger):
     osm.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
 
     # Road props (traffic lights, lampposts, fountains, football fields...) - needs. roads, areas, coastline, etc... and buildings
-    osm.ways.generate_props_2d()  # Objects related to ways
+    osm.ways2.generate_props_2d()  # Objects related to ways
 
     # 2D output (before cropping, crop here -so buildings and everything is cropped-)
     #self.save_tile_2d("/tmp/osm2d.png")

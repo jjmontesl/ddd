@@ -4,23 +4,25 @@
 
 from collections import defaultdict, namedtuple
 import logging
+import sys
 
 import geojson
 import pyproj
+from shapely.geometry.geo import shape
 
+from ddd.catalog.catalog import PrefabCatalog
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.osm.areaitems import AreaItemsOSMBuilder
-from ddd.osm.areas import AreasOSMBuilder
+from ddd.osm.areas_2d import Areas2DOSMBuilder
+from ddd.osm.areas_3d import Areas3DOSMBuilder
 from ddd.osm.buildings import BuildingOSMBuilder
 from ddd.osm.custom import CustomsOSMBuilder
 from ddd.osm.items import ItemsOSMBuilder
-from ddd.osm.ways import WaysOSMBuilder
-from shapely.geometry.geo import shape
-from ddd.catalog.catalog import PrefabCatalog
 from ddd.osm.osmops.osmops import OSMBuilderOps
-import sys
-from ddd.pipeline.pipeline import DDDPipeline
+from ddd.osm.ways_1d import Ways1DOSMBuilder
+from ddd.osm.ways_2d import Ways2DOSMBuilder
+from ddd.osm.ways_3d import Ways3DOSMBuilder
 
 
 # Get instance of logger for this module
@@ -49,8 +51,11 @@ class OSMBuilder():
 
         self.items = ItemsOSMBuilder(self)
         self.items2 = AreaItemsOSMBuilder(self)
-        self.ways = WaysOSMBuilder(self)
-        self.areas = AreasOSMBuilder(self)
+        self.ways1 = Ways1DOSMBuilder(self)
+        self.ways2 = Ways2DOSMBuilder(self)
+        self.ways3 = Ways3DOSMBuilder(self)
+        self.areas2 = Areas2DOSMBuilder(self)
+        self.areas3 = Areas3DOSMBuilder(self)
         self.buildings = BuildingOSMBuilder(self)
         self.customs = CustomsOSMBuilder(self)
 

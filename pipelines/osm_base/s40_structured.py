@@ -21,7 +21,7 @@ def osm_structured_init(root, osm):
 
 @dddtask()
 def osm_structured_split_ways(osm, root):
-    osm.ways.split_ways_1d()  # Where to put?
+    osm.ways1.split_ways_1d()  # Where to put?
 
 @dddtask(log=True)
 def osm_structured_rest(root, osm):
@@ -32,20 +32,20 @@ def osm_structured_rest(root, osm):
     osm.buildings.preprocess_buildings_2d()
     osm.buildings.generate_buildings_2d()
 
-    osm.ways.generate_ways_2d()
+    osm.ways1.generate_ways_2d()
 
-    osm.areas.generate_areas_2d()
-    osm.areas.generate_areas_2d_interways()  # and assign types
+    osm.areas2.generate_areas_2d()
+    osm.areas2.generate_areas_2d_interways()  # and assign types
 
-    osm.areas.generate_areas_2d_postprocess()
-    osm.areas.generate_areas_2d_postprocess_water()
+    osm.areas2.generate_areas_2d_postprocess()
+    osm.areas2.generate_areas_2d_postprocess_water()
 
     # Associate features (amenities, etc) to 2D objects (buildings, etc)
     osm.buildings.link_features_2d()
 
     # Coastline and ground
-    osm.areas.generate_coastline_3d(osm.area_crop if osm.area_crop else osm.area_filter)  # must come before ground
-    osm.areas.generate_ground_3d(osm.area_crop if osm.area_crop else osm.area_filter) # separate in 2d + 3d, also subdivide (calculation is huge - core dump-)
+    osm.areas3.generate_coastline_3d(osm.area_crop if osm.area_crop else osm.area_filter)  # must come before ground
+    osm.areas3.generate_ground_3d(osm.area_crop if osm.area_crop else osm.area_filter) # separate in 2d + 3d, also subdivide (calculation is huge - core dump-)
 
 
 @dddtask(order="40.90")

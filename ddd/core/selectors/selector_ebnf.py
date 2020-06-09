@@ -16,8 +16,11 @@ SINGLE_QUOTED_STRING  : /'[^']*'/
       | string
       | SIGNED_NUMBER     -> number
       | "true"            -> true
+      | "True"            -> true
       | "false"           -> false
+      | "False"           -> false
       | "null"            -> null
+      | "None"            -> null
 
 string: ESCAPED_STRING
 tagkeystring: TAG_KEY_STRING

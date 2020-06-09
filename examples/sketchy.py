@@ -8,7 +8,6 @@ items = ddd.group3()
 
 
 item = urban.fire_hydrant()
-item.show()
 items.append(item)
 
 
@@ -49,6 +48,7 @@ items.append(item)
 
 item = urban.busstop_small(text="Bus Stop")
 items.append(item)
+item.show()
 
 item = urban.bench()
 items.append(item)
