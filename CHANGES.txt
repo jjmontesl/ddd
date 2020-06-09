@@ -1,5 +1,7 @@
 [0.4.5]
 
+  * Added WMS client.
+  * Added mapillary support.
   * Added initial pipeline and tasks support.
   * Added mesh combine method (and used to simplify tree structure).
   * Added --catalog-overwrite and --catalog-ignore options.

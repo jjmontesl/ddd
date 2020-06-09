@@ -21,6 +21,7 @@ def osm_structured_export_2d(root, osm):
 
     root = root.copy()
     root = root.remove(root.find("/Features"))  # !Altering
+    root.prop_set('svg:fill-opacity', 0.5, children=True)
 
     #root.find("/Areas").replace(root.find("/Areas").material(ddd.mats.park).prop_set('svg:fill-opacity', 0.6, True))
     #root.find("/Ways").replace(root.find("/Ways").buffer(1.0).material(ddd.mats.asphalt).prop_set('svg:fill-opacity', 0.8, True))

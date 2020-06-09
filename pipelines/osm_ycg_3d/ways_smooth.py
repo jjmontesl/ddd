@@ -14,10 +14,7 @@ from ddd.osm.osm import project_coordinates
 from ddd.pipeline.decorators import dddtask
 
 
-@dddtask(order="20.90.+")
-def osm_features_export_2d(root):
+# YCR requires road smoothing to avoid sharp visual angles and improve triangulation,
+# in order to also smooth angled transitions y the vertical axis.
 
-    root = root.copy()
-    root.find("/Features").prop_set('svg:stroke-width', 1.0, children=True)
-    root.find("/Features").save("/tmp/osm-features.svg")
 

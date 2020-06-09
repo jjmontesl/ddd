@@ -41,15 +41,25 @@ def osm_generate_items_process(root, osm, obj):
     #root.save("/tmp/osm-31-items.svg")
     pass
 
-@dddtask(order="30.30.10", path="/Features/*", select='[geom:type="LineString"]', log=True)
-def osm_generate_ways(root, obj):
+
+@dddtask(order="30.30.10.+", path="/Features/*", select='[geom:type="LineString"][osm:highway]', log=True)
+def osm_groups_ways(root, obj, logger):
     # Ways depend on buildings
     item = obj.copy(name="Way: %s" % obj.name)
     root.find("/Ways").append(item)
     ## ?? osm.ways.generate_ways_1d()
 
+
+'''
+@dddtask(order="30.30.?.+", path="/Features/*", select='[geom:type="LineString"][]', log=True)
+def osm_groups_ways_ignored(root, obj, logger):
+    """Collect ignored ways to store, report and visualize."""
+    logger.warn("Ignored ways: %s", obj)
+'''
+
+
 @dddtask(order="30.30.20", log=True)
-def osm_generate_ways_process(pipeline, osm, root, logger):
+def osm_groups_ways_process(pipeline, osm, root, logger):
     osm.ways_1d = root.find("/Ways")
     #osm.ways.generate_ways_1d()
     #root.find("/Ways").replace(osm.ways_1d)
@@ -75,22 +85,30 @@ def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
     pass
 
 
-@dddtask(order="30.50.10", path="/Features/*", select='[geom:type="Polygon"]', filter=lambda o: o.extra.get("osm:building", None) is None)
-def osm_generate_areas(root, obj):
+@dddtask(order="30.50.10", path="/Features/*", select='["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"][!"osm:building"]')
+def osm_groups_areas(root, obj):
     # Ways depend on buildings
     item = obj.copy(name="Area: %s" % obj.name)
     root.find("/Areas").append(item)
     ## ?? osm.ways.generate_ways_1d()
 
 @dddtask(order="30.50.20")
-def osm_generate_areas_process(pipeline, osm, root, logger):
+def osm_groups_areas_process(pipeline, osm, root, logger):
     pass
+
 
 @dddtask(order="30.60.+")
 def osm_generate_areas_coastline_2d(osm, root):
     #osm.areas.generate_coastline_2d(osm.area_crop if osm.area_crop else osm.area_filter)  # must come before ground
     osm.areas2.generate_coastline_2d(osm.area_filter)  # must come before ground
     root.find("/Areas").append(osm.water_2d)
+
+@dddtask(order="30.70.+")
+def osm_generate_areas_ground_2d(osm, root):
+    #osm.areas.generate_coastline_2d(osm.area_crop if osm.area_crop else osm.area_filter)  # must come before ground
+    osm.areas2.generate_ground_2d(osm.area_filter)  # must come before ground
+    for a in osm.ground_2d.children:
+        root.find("/Areas").append(a)
 
 @dddtask(order="30.90")
 def osm_groups_finished(pipeline, osm, root, logger):

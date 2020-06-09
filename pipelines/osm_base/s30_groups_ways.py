@@ -59,6 +59,17 @@ def osm_groups_ways_roundabouts_oneway(obj, osm):
     obj.extra['osm:oneway'] = True
 
 
+@dddtask(path="/Ways/*", select='["osm:footway" = "sidewalk"]')
+def osm_groups_ways_footway_sidewalk_remove(obj, osm):
+    """Remove sidewalks."""
+    return False
+
+@dddtask(path="/Ways/*", select='["osm:route"]')
+def osm_groups_ways_routes_remove(obj, osm):
+    """Remove routes."""
+    return False
+
+
 @dddtask(path="/Ways/*", select='["osm:highway" = "motorway"]')
 def osm_groups_ways_motorway(obj, osm):
     """Define road data."""
@@ -210,10 +221,6 @@ def osm_groups_ways_footway(obj, osm):
     obj = obj.material(ddd.mats.dirt)
     return obj
 
-@dddtask(path="/Ways/*", select='["osm:footway" = "sidewalk"]')
-def osm_groups_ways_footway_sidewalk_remove(obj, osm):
-    """Remove sidewalks."""
-    return False
 
 @dddtask(path="/Ways/*", select='["osm:highway" = "path"]')
 def osm_groups_ways_path(obj, osm):
@@ -398,10 +405,6 @@ def generate_way_1d(feature):
         material = ddd.mats.steel
         layer = "3"
         create_as_item = True
-
-    elif path.extra.get('osm:route', None):
-        # Ignore routes
-        return None
 
     elif path.extra.get('osm:highway', None):
         logger.info("Unknown highway type: %s (%s)", path.extra.get('osm:highway', None), path.extra)

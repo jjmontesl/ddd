@@ -561,9 +561,47 @@ class Areas2DOSMBuilder():
 
         self.osm.water_2d = ddd.group(areas_2d)
 
-
         #if areas:
         #    self.osm.water_3d = ddd.group(areas)
         #else:
         #    logger.debug("No water areas from coastline generated.")
 
+    def generate_ground_2d(self, area_crop):
+
+        logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
+
+        #terr = terrain.terrain_grid(distance=500.0, height=1.0, detail=25.0).translate([0, 0, -0.5]).material(mat_terrain)
+        #terr = terrain.terrain_geotiff(area_crop.bounds, detail=10.0, ddd_proj=self.osm.ddd_proj).material(mat_terrain)
+        #terr2 = terrain.terrain_grid(distance=60.0, height=10.0, detail=5).translate([0, 0, -20]).material(mat_terrain)
+        #terr = ddd.grid2(area_crop.bounds, detail=10.0).buffer(0.0)  # useless, shapely does not keep triangles when operating
+        terr = ddd.rect(area_crop.bounds, name="Ground")
+
+        terr = terr.subtract(self.osm.ways_2d['0'].clean(eps=0.01))
+        terr = terr.clean(eps=0.01)
+
+        terr = terr.subtract(self.osm.ways_2d['-1a'].clean(eps=0.01))
+        terr = terr.clean(eps=0.01)
+
+        #terr = terr.subtract(self.osm.ways_2d['0a'])  # added to avoid floor, but shall be done better, by layers spawn and base_height,e tc
+        #terr = terr.clean(eps=0.01)
+
+        try:
+            terr = terr.subtract(self.osm.areas_2d.clean(eps=0.01))
+            terr = terr.clean(eps=0.01)
+        except Exception as e:
+            logger.error("Could not subtract areas_2d from terrain.")
+            return
+
+        terr = terr.subtract(self.osm.water_2d)
+        terr = terr.clean(eps=0.01)
+        terr = terr.material(ddd.mats.terrain)
+
+        self.osm.ground_2d.append(terr)
+
+        # The buffer is fixing a core segment violation :/
+        #terr.save("/tmp/test.svg")
+        #terr.dump()
+        #terr.show()
+        #terr = ddd.group([DDDObject2(geom=s.buffer(0.5).buffer(-0.5)) for s in terr.geom.geoms if not s.is_empty])
+
+        #terr.save("/tmp/test.svg")

@@ -125,48 +125,11 @@ class Areas3DOSMBuilder():
             logger.debug("No water areas from coastline generated.")
 
     '''
-    def generate_ground_3d_old(self, area_crop):
-
-        logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
-
-        #terr = terrain.terrain_grid(distance=500.0, height=1.0, detail=25.0).translate([0, 0, -0.5]).material(mat_terrain)
-        terr = terrain.terrain_geotiff(area_crop.bounds, detail=10.0, ddd_proj=self.osm.ddd_proj).material(ddd.mats.terrain)
-        #terr2 = terrain.terrain_grid(distance=60.0, height=10.0, detail=5).translate([0, 0, -20]).material(mat_terrain)
-
-        self.osm.ground_3d = terr
-    '''
-
     def generate_ground_3d(self, area_crop):
 
-        logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
+        logger.info("Generating 3D terrain (bounds: %s)", area_crop.bounds)
 
-        #terr = terrain.terrain_grid(distance=500.0, height=1.0, detail=25.0).translate([0, 0, -0.5]).material(mat_terrain)
-        #terr = terrain.terrain_geotiff(area_crop.bounds, detail=10.0, ddd_proj=self.osm.ddd_proj).material(mat_terrain)
-        #terr2 = terrain.terrain_grid(distance=60.0, height=10.0, detail=5).translate([0, 0, -20]).material(mat_terrain)
-        #terr = ddd.grid2(area_crop.bounds, detail=10.0).buffer(0.0)  # useless, shapely does not keep triangles when operating
-        terr = ddd.rect(area_crop.bounds, name="Ground")
-
-        terr = terr.subtract(self.osm.ways_2d['0'].clean(eps=0.01))
-        terr = terr.clean(eps=0.01)
-
-        terr = terr.subtract(self.osm.ways_2d['-1a'].clean(eps=0.01))
-        terr = terr.clean(eps=0.01)
-
-        #terr = terr.subtract(self.osm.ways_2d['0a'])  # added to avoid floor, but shall be done better, by layers spawn and base_height,e tc
-        #terr = terr.clean(eps=0.01)
-
-        try:
-            terr = terr.subtract(self.osm.areas_2d.clean(eps=0.01))
-            terr = terr.clean(eps=0.01)
-        except Exception as e:
-            logger.error("Could not subtract areas_2d from terrain.")
-            return
-
-        terr = terr.subtract(self.osm.water_2d)
-        terr = terr.clean(eps=0.01)
-        terr = terr.material(ddd.mats.terrain)
-
-        self.osm.ground_2d.append(terr)
+        terr = self.osm.ground_2d
 
         # The buffer is fixing a core segment violation :/
         #terr.save("/tmp/test.svg")
@@ -193,6 +156,7 @@ class Areas3DOSMBuilder():
         terr = terrain.terrain_geotiff_elevation_apply(terr, self.osm.ddd_proj)
 
         self.osm.ground_3d.append(terr)
+    '''
 
     def generate_areas_3d(self):
         logger.info("Generating 3D areas (%d)", len(self.osm.areas_2d.children))

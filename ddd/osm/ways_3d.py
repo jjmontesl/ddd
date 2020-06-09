@@ -90,7 +90,7 @@ class Ways3DOSMBuilder():
             # if way.extra['ddd:layer_transition']:
             if 'way_1d' in way.extra['way_2d'].extra:
                 path = way.extra['way_2d'].extra['way_1d']
-                vertex_func = self.get_height_apply_func(path)
+                vertex_func = self.osm.ways1.get_height_apply_func(path)
                 nway = way.vertex_func(vertex_func)
             else:
                 nway = way.translate([0, 0, self.layer_height(way.extra['ddd:layer'])])
@@ -233,8 +233,8 @@ class Ways3DOSMBuilder():
             floor_2d.extra['way_2d'] = way
 
             # Get connected ways
-            connected = self.follow_way(way.extra['way_1d'], 1)
-            connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
+            connected = self.osm.ways1.follow_way(way.extra['way_1d'], 1)
+            connected_2d = ddd.group([self.osm.ways2.get_way_2d(c) for c in connected])
             if 'intersection_start_2d' in way.extra['way_1d'].extra:
                 connected_2d.append(way.extra['way_1d'].extra['intersection_start_2d'])
             if 'intersection_end_2d' in way.extra['way_1d'].extra:
@@ -343,7 +343,7 @@ class Ways3DOSMBuilder():
         for item in elevated_3d:
             # print(item.extra)
             path = item.extra['way_1d']
-            vertex_func = self.get_height_apply_func(path)
+            vertex_func = self.osm.ways1.get_height_apply_func(path)
             nitem = item.vertex_func(vertex_func)
             nitems.append(nitem)
 

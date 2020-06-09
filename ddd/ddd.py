@@ -436,6 +436,8 @@ class DDDObject():
         ignore_keys = ('uv', 'osm:feature', 'ddd:connections')
         metadata = dict(self.extra)
         metadata['ddd:path'] = path_prefix + node_name
+        if hasattr(self, "geom"):
+            metadata['geom:type'] = self.geom.type if self.geom else None
         if self.mat and self.mat.name:
             metadata['ddd:material'] = self.mat.name
         if self.mat and self.mat.color:

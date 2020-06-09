@@ -520,7 +520,7 @@ class Ways2DOSMBuilder():
                 #    logger.error("Could not UV map Way 2D from path: %s %s %s: %s", line, line.geom, pathline.geom, e)
                 #    continue
                 line_3d = line.triangulate().translate([0, 0, 0.05])  # Temporary hack until fitting lines properly
-                vertex_func = self.get_height_apply_func(path)
+                vertex_func = self.osm.ways1.get_height_apply_func(path)
                 line_3d = line_3d.vertex_func(vertex_func)
                 line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
                 line_3d.extra['ddd:collider'] = False

@@ -28,10 +28,10 @@ def osm_model_rest(pipeline, root, osm):
     # 3D Build
 
     # Ways 3D
-    osm.ways.generate_ways_3d()
-    osm.ways.generate_ways_3d_intersections()
+    osm.ways3.generate_ways_3d()
+    osm.ways3.generate_ways_3d_intersections()
     # Areas 3D
-    osm.areas.generate_areas_3d()
+    osm.areas3.generate_areas_3d()
     # Buildings 3D
     osm.buildings.generate_buildings_3d()
 
