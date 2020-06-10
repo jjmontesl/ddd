@@ -9,7 +9,6 @@ import pyproj
 from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.osm import osm
-from ddd.osm.augment.mapillary import MapillaryClient
 from ddd.osm.osm import project_coordinates
 from ddd.pipeline.decorators import dddtask
 
@@ -33,8 +32,8 @@ def osm_finish_rest_before_3d(pipeline, osm, root, logger):
 
     #self.features_2d.filter(lambda o: o.extra.get('osm:building:part', None) is not None).dump()
     # TODO: Shall already be done earlier
-    osm.features_2d = root.find("/Features")
-    osm.items_1d = root.find("/Items")
+    #osm.features_2d = root.find("/Features")
+    #osm.items_1d = root.find("/Items")
     #osm.ways_1d = root.find("/Ways")
     #osm.buildings_2d = root.find("/Buildings")
 

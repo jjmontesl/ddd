@@ -82,19 +82,20 @@ class OSMBuilder():
                               '-2a': 0.0, '-1a': 0.0, '0a': 0.0, '1a': 0.0}
 
 
-        self.features = features if features else []
-        self.features_2d = ddd.group2(name="Features")
-
         self.osm_proj = osm_proj
         self.ddd_proj = ddd_proj
 
+        self.features = features if features else []
+        self.features_2d = ddd.group2(name="Features")
+
+        '''
         self.items_1d = ddd.group2(name="Items 1D")  # Point items
         self.items_2d = ddd.group2(name="Items 2D")  # Area items
         self.items_3d = ddd.group3(name="Items")
 
         self.ways_1d = ddd.group2(name="Ways 1D")  # Line items
-        self.ways_2d = defaultdict(DDDObject2)
-        self.ways_3d = defaultdict(DDDObject3)
+        self.ways_2d = defaultdict(DDDObject2)  # <- big error :D everything can have a layer, removed changed for a group
+        self.ways_3d = defaultdict(DDDObject3)  # <- big error :D everything can have a layer, removed changed for a group
 
         self.roadlines_2d = DDDObject2(name="Roadlines 2D")
         self.roadlines_3d = DDDObject3(name="Roadlines")
@@ -120,26 +121,13 @@ class OSMBuilder():
         #self.sidewalks_3d_l1 = DDDObject3()
         #self.walls_3d_l1 = DDDObject3()
         #self.floor_3d_l1 = DDDObject3()
+        '''
 
-
-    '''
-    # Deprecated, but may be needed (but as preprocessing) if we support attributes without osmimporter in the pipeline
-    def other_tags(sfeature):
-        other_tags = {}
-        other_tags_str = feature['properties'].get('other_tags', None)
-        if other_tags_str:
-            for t in other_tags_str.split(","):
-                try:
-                    k, v = t.split("=>")
-                    other_tags[k.replace('"', "").strip()] = v.replace('"', "").strip()
-                except:
-                    print("Invalid Tag: %s" % t)
-        return other_tags
-    '''
 
     def load_osmium(self, file):
         # See: Examples: https://github.com/osmcode/pyosmium/blob/master/examples/convert.py
         # See: https://osmcode.org/libosmium/manual.html (there's a GeoJSON factory, but possibly...)
+        # Also in ddd example for osmium processing
         pass
 
     def load_geojson(self, files):
@@ -257,7 +245,7 @@ class OSMBuilder():
                     self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f')),
                     self.items_2d,
                     self.items_1d.buffer(0.5).material(ddd.mats.red),
-                    ]).flatten().select(lambda o: o.extra.get('ddd:area:type') != 'underwater')
+                    ]).flatten().select(func=lambda o: o.extra.get('ddd:area:type') != 'underwater')
         tile = tile.intersection(ddd.shape(self.area_crop))
         tile.prop_set('svg:stroke-width', 0.01, children=True)
         return tile

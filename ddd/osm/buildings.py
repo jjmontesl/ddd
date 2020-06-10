@@ -35,7 +35,7 @@ class BuildingOSMBuilder():
             if feature.extra.get('osm:building:part', None) is None: continue
 
             # Find building
-            buildings = self.osm.features_2d.select(lambda o: o.extra.get('osm:building', None) and o.contains(feature))
+            buildings = self.osm.features_2d.select(func=lambda o: o.extra.get('osm:building', None) and o.contains(feature))
             if len(buildings.children) == 0:
                 logger.warn("Building part with no building: %s", feature)
                 building = feature.copy()
@@ -54,7 +54,7 @@ class BuildingOSMBuilder():
                     buildings.children[0].extra['ddd:building:parts'] = []
                 buildings.children[0].extra['ddd:building:parts'].append(feature)
 
-    def generate_buildings_2d(self):
+    def generate_buildings_2d(self, buildings_2d):
 
         logger.info("Generating buildings (2D)")
 
@@ -69,7 +69,7 @@ class BuildingOSMBuilder():
             #    building_2d = self.generate_building_2d(feature)
 
             if building_2d:
-                self.osm.buildings_2d.append(building_2d)
+                buildings_2d.append(building_2d)
 
         #self.osm.buildings_2d.show()
 
@@ -91,7 +91,6 @@ class BuildingOSMBuilder():
         # Generate info: segment_facing_way + sidewalk, pricipal facade, secondary (if any) facades, portal entry...
 
         # Augment building (roof type, facade type, portals ?)
-
 
         return building_2d
 

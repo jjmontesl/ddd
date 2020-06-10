@@ -2,15 +2,8 @@
 # Library for procedural scene modelling.
 # Jose Juan Montes 2020
 
-import sys
-
-import pyproj
 
 from ddd.ddd import ddd
-from ddd.geo import terrain
-from ddd.osm import osm
-from ddd.osm.augment.mapillary import MapillaryClient
-from ddd.osm.osm import project_coordinates
 from ddd.pipeline.decorators import dddtask
 
 
@@ -26,6 +19,10 @@ def osm_model_(osm, root):
 def osm_model_rest(pipeline, root, osm):
 
     # 3D Build
+
+    # Coastline and ground
+    osm.areas3.generate_coastline_3d(osm.area_crop if osm.area_crop else osm.area_filter)  # must come before ground
+    #osm.areas3.generate_ground_3d(osm.area_crop if osm.area_crop else osm.area_filter) # separate in 2d + 3d, also subdivide (calculation is huge - core dump-)
 
     # Ways 3D
     osm.ways3.generate_ways_3d()

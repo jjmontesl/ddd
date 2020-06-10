@@ -473,7 +473,7 @@ class DDDObject():
             raise DDDException("Find '%s' expected 1 object but found %s." % (path, len(result.children)), ddd_obj=self)
         return result.one()
 
-    def select(self, func=None, selector=None, path=None, recurse=True, _rec_path=None):
+    def select(self, selector=None, path=None, func=None, recurse=True, _rec_path=None):
         """
         Returns copies of objects!
         """
@@ -2053,6 +2053,7 @@ ddd.uv = DDDUVMapping()
 ddd.helper = DDDHelper()
 
 
+'''
 # Selectors
 class DDDSelectors():
     def extra_eq(self, k, v):
@@ -2060,5 +2061,6 @@ class DDDSelectors():
     def extra(self, k, v):
         return self.extra_eq(k, v)
 ddd.sel = DDDSelectors()
+'''
 
 

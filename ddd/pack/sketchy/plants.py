@@ -125,8 +125,8 @@ def tree_default(height=3.5, r=0.40, fork_iters=2, fork_height_ratio=0.35):
 
     obj.name = "Tree Default"
 
-    objtrunk = obj.select(lambda o: o.mat == ddd.mats.bark).combine()
-    objleaves = obj.select(lambda o: o.mat == ddd.mats.treetop).combine()
+    objtrunk = obj.select(func=lambda o: o.mat == ddd.mats.bark).combine()
+    objleaves = obj.select(func=lambda o: o.mat == ddd.mats.treetop).combine()
     obj = ddd.group3([objtrunk, objleaves], name="Tree Default")
 
     return obj
@@ -200,8 +200,8 @@ def tree_palm(height=14, r=0.30):
                         trunk_callback=trunk_callback, leaves_callback=leaves_callback)
     obj.name = "Tree Palm"
 
-    objtrunk = obj.select(lambda o: o.mat == ddd.mats.bark).combine()
-    objleaves = obj.select(lambda o: o.mat == ddd.mats.treetop).combine()
+    objtrunk = obj.select(func=lambda o: o.mat == ddd.mats.bark).combine()
+    objleaves = obj.select(func=lambda o: o.mat == ddd.mats.treetop).combine()
     #objleaves.mesh.merge_vertices()
     obj = ddd.group3([objtrunk, objleaves], name="Tree Palm")
 

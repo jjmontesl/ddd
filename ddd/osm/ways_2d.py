@@ -28,20 +28,106 @@ class Ways2DOSMBuilder():
     def __init__(self, osmbuilder):
         self.osm = osmbuilder
 
-    def get_way_2d(self, way_1d):
-        for l in self.osm.ways_2d.values():
+
+    def get_way_2d(self, way_1d, ways_2d):
+        for way_2d in ways_2d.children:
+            if 'way_1d' in way_2d.extra and way_2d.extra['way_1d'] == way_1d:
+                return way_2d
+        logger.warn("Tried to get way 2D for not existing way 1D: %s", way_1d)
+        # raise ValueError("Tried to get way 2D for not existing way 1D: %s" % way_1d)
+        return DDDObject2()
+    '''
+    def get_way_2d(self, way_1d, ways_2d):
+        for l in ways_2d.values():
             for way_2d in l.children:
                 if 'way_1d' in way_2d.extra and way_2d.extra['way_1d'] == way_1d:
                     return way_2d
         logger.warn("Tried to get way 2D for not existing way 1D: %s", way_1d)
         # raise ValueError("Tried to get way 2D for not existing way 1D: %s" % way_1d)
         return DDDObject2()
+    '''
 
-    def generate_ways_2d(self):
+    def generate_ways_2d(self, ways_1d):
+
+        ways_2d = ddd.group2(name="Ways")
 
         # Generate layers
         for layer_idx in self.osm.layer_indexes:
-            self.generate_ways_2d_layer(layer_idx)
+            layerways = self.generate_ways_2d_layer(layer_idx, ways_1d)
+            if layerways:
+                ways_2d.children.extend(layerways.children)
+
+        self.generate_ways_2d_intersections(ways_2d)
+
+        return ways_2d
+
+    def generate_ways_2d_layer(self, layer_idx, ways_1d):
+        '''
+        - Sorts ways (more important first),
+        - Generates 2D shapes
+        '''
+        ways_1d = [w for w in ways_1d.children if w.extra['ddd:layer'] == layer_idx]
+        logger.info("Generating 2D ways for layer %s (%d ways)", layer_idx, len(ways_1d))
+
+        ways_1d.sort(key=lambda w: w.extra['ddd:way:weight'])
+
+        result = None
+
+        ways_2d = defaultdict(list)
+        for w in ways_1d:
+            #f = w.extra['osm:feature']
+            way_2d = self.generate_way_2d(w)
+            if way_2d:
+                weight = way_2d.extra['ddd:way:weight']
+                ways_2d[weight].append(way_2d)
+
+        roads = sum(ways_2d.values(), [])
+        if roads:
+            result = ddd.group(roads, name="Ways (layer: %s)" % layer_idx)  # translate([0, 0, 50])
+
+        return result
+
+    def generate_way_2d(self, way_1d):
+
+        feature = way_1d.extra['osm:feature']
+
+        # highway = feature['properties'].get('osm:highway', None)
+        # if highway is None: return
+
+        path = way_1d
+
+        width = path.extra['ddd:way:width']
+        way_2d = path.buffer(distance=width / 2.0, cap_style=2, join_style=2)
+
+        # Avoid gaps and eliminate small polygons
+        # path = path.buffer(distance=0.05)
+        # FIXME: this should be done by continuating path joins/intersections between roads of same type
+        if width > 2.0:
+            way_2d = way_2d.buffer(distance=1.0, cap_style=2, join_style=2)
+            way_2d = way_2d.buffer(distance=-1.0, cap_style=2, join_style=2)
+            way_2d = way_2d.buffer(distance=0.1, cap_style=2, join_style=2)
+            # way_2d = way_2d.simplify(0.5)
+
+        # Remove buildings
+        if way_2d.extra.get('ddd:subtract_buildings', False):
+            #buildings_2d_union = self.osm.buildings_2d.union()
+            #way_2d = way_2d.subtract(self.osm.buildings_2d_union)
+            way_2d = way_2d.clean(eps=0.05)
+            try:
+                way_2d = way_2d.subtract(self.osm.buildings_2d)
+            except Exception as e:
+                logger.error("Could not subtract buildings %s from way %s: %s", self.osm.buildings_2d, way_2d, e)
+                return None
+
+        # print(feature['properties'].get("name", None))
+        # way_2d.extra['osm:feature'] = feature
+        # way_2d.extra['path'] = path
+        way_2d.extra['way_1d'] = path
+
+        way_2d.name = "Way: %s" % (feature['properties'].get('name', None))
+        return way_2d
+
+    def generate_ways_2d_intersections(self, ways_2d):
 
         # Generate intersections (crossroads)
         intersections_2d = []
@@ -63,7 +149,7 @@ class Ways2DOSMBuilder():
 
             # Generate intersection geometry
 
-            join_ways = ddd.group([self.get_way_2d(j.way) for j in intersection])
+            join_ways = ddd.group([self.get_way_2d(j.way, ways_2d) for j in intersection])
             # print(join_ways.children)
             #join_geoms = join_ways.geom_recursive()
             #join_points = []
@@ -202,12 +288,6 @@ class Ways2DOSMBuilder():
                 #intersection_2d.extra['way_1d_highest'] = highest_ways
                 # Combine highest paths and their elevations
 
-                """
-                if ('666643710' in intersection_2d.name):
-                    print(intersection_2d.extra)
-                    sys.exit(1)
-                """
-
                 intersection_2d.extra['ddd:connections'] = []
                 if len(intersection) > 3 or len(intersection) == len(highest_ways):  # 2
                     intersection_2d.extra['ddd:way:lamps'] = False
@@ -226,237 +306,110 @@ class Ways2DOSMBuilder():
                 intersections_2d.append(intersection_2d)
 
         intersections_2d = ddd.group(intersections_2d, empty="2", name="Intersections")
-        self.osm.intersections_2d = intersections_2d
+        #self.osm.intersections_2d = intersections_2d
 
         # Add intersections to respective layers
         for int_2d in intersections_2d.children:
             # print(int_2d.extra)
-            self.osm.ways_2d[int_2d.extra['ddd:layer']].children.append(int_2d)
+            ways_2d.append(int_2d)
 
         # Subtract intersections from ways
-        for layer_idx in self.osm.ways_2d.keys():  # ["-1a", "0a", "1a"]
-            ways = []
-            for way in self.osm.ways_2d[layer_idx].children:
+        ways = []
+        for way in ways_2d.children:
 
-                if 'intersection' in way.extra:
-                    ways.append(way)
-                    continue
-                # logger.debug("Way: %s  Way 1D: %s  Intersections: %s", way, way.extra['way_1d'], way.extra['way_1d'].extra)
-                if 'intersection_start_2d' in way.extra['way_1d'].extra:
-                    way = way.subtract(way.extra['way_1d'].extra['intersection_start_2d'])
-                if 'intersection_end_2d' in way.extra['way_1d'].extra:
-                    way = way.subtract(way.extra['way_1d'].extra['intersection_end_2d'])
+            if 'intersection' in way.extra:
+                ways.append(way)
+                continue
+            # logger.debug("Way: %s  Way 1D: %s  Intersections: %s", way, way.extra['way_1d'], way.extra['way_1d'].extra)
+            if 'intersection_start_2d' in way.extra['way_1d'].extra:
+                way = way.subtract(way.extra['way_1d'].extra['intersection_start_2d'])
+            if 'intersection_end_2d' in way.extra['way_1d'].extra:
+                way = way.subtract(way.extra['way_1d'].extra['intersection_end_2d'])
+            '''
+            connected = self.follow_way(way.extra['way_1d'], 1)
+            connected.remove(way.extra['way_1d'])
+            connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
+            wayminus = way.subtract(connected_2d).buffer(0.001)
+            '''
+            way = way.buffer(0.001)
+            if True or (way.geom and way.geom.is_valid):
+
+                # print(way)
+                # print(way.geom.type)
                 '''
-                connected = self.follow_way(way.extra['way_1d'], 1)
-                connected.remove(way.extra['way_1d'])
-                connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
-                wayminus = way.subtract(connected_2d).buffer(0.001)
+                if way.geom.type == "Polygon":
+                    #way.geom = way.geom.buffer(0.0)
+                    if way.geom.exterior == None:
+                        way = None
+                    else:
+                        #print(list(way.geom.exterior.coords))
+                        pass
+                    if way.geom.interiors:
+                        #print("INTERIORS:")
+                        #print([list(i.coords) for i in way.geom.interiors])
+                        #print([i.is_valid for i in way.geom.interiors])
+                        pass
+
+                #elif way.geom.type == "MultiPolygon":
+                #    print([list(p.exterior.coords) for p in way.geom])
+                #else:
+                #    print(list(way.geom.coords))
                 '''
-                way = way.buffer(0.001)
-                if True or (way.geom and way.geom.is_valid):
 
-                    # print(way)
-                    # print(way.geom.type)
-                    '''
-                    if way.geom.type == "Polygon":
-                        #way.geom = way.geom.buffer(0.0)
-                        if way.geom.exterior == None:
-                            way = None
-                        else:
-                            #print(list(way.geom.exterior.coords))
-                            pass
-                        if way.geom.interiors:
-                            #print("INTERIORS:")
-                            #print([list(i.coords) for i in way.geom.interiors])
-                            #print([i.is_valid for i in way.geom.interiors])
-                            pass
-
-                    #elif way.geom.type == "MultiPolygon":
-                    #    print([list(p.exterior.coords) for p in way.geom])
-                    #else:
-                    #    print(list(way.geom.coords))
-                    '''
-
-                    if way:
+                if way:
+                    try:
+                        way.extrude(1.0)
+                        ways.append(way)
+                    except Exception as e:
+                        logger.warn("Could not generate way due to exception in extrude check: %s (trying cleanup)", way )
+                        way = way.clean(eps=0.01)
                         try:
                             way.extrude(1.0)
                             ways.append(way)
                         except Exception as e:
-                            logger.warn("Could not generate way due to exception in extrude check: %s (trying cleanup)", way )
-                            way = way.clean(eps=0.01)
-                            try:
-                                way.extrude(1.0)
-                                ways.append(way)
-                            except Exception as e:
-                                logger.error("Could not generate way due to exception in extrude check: %s", way)
+                            logger.error("Could not generate way due to exception in extrude check: %s", way)
 
-            self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2", name="Ways 2D %s" % layer_idx)
+        ways_2d.replace(ddd.group(ways, empty="2", name="Ways 2D"))
 
         # logger.info("Saving intersections 2D.")
-        # ddd.group([self.osm.ways_2d["0"].extrude(1.0), self.osm.intersections_2d.material(ddd.mats.highlight).extrude(1.5)]).save("/tmp/ddd-intersections.glb")
+        # ddd.group([ways_2d["0"].extrude(1.0), self.osm.intersections_2d.material(ddd.mats.highlight).extrude(1.5)]).save("/tmp/ddd-intersections.glb")
 
         # Subtract connected ways
         # TODO: This shall be possibly done when creating ways not after
-        # union_lm1 = self.osm.ways_2d["-1"].union()
-        # union_l0 = self.osm.ways_2d["0"].union()
-        # union_l1 = self.osm.ways_2d["1"].union()
+        # union_lm1 = ways_2d["-1"].union()
+        # union_l0 = ways_2d["0"].union()
+        # union_l1 = ways_2d["1"].union()
         '''
         for layer_idx in ["-1a", "0a", "1a"]:
             ways = []
-            for way in self.osm.ways_2d[layer_idx].children:
+            for way in ways_2d[layer_idx].children:
                 connected = self.follow_way(way.extra['way_1d'], 1)
                 connected.remove(way.extra['way_1d'])
                 connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
                 wayminus = way.subtract(connected_2d).buffer(0.001)
                 ways.append(wayminus)
-            self.osm.ways_2d[layer_idx] = ddd.group(ways, empty="2")
+            ways_2d[layer_idx] = ddd.group(ways, empty="2")
         '''
 
-        # self.osm.ways_2d["-1a"] = self.osm.ways_2d["-1a"].material(ddd.mat_highlight)
-        # self.osm.ways_2d["-1a"].children[0].dump()
-        # print(self.osm.ways_2d["-1a"].children[0].extra)
-        # print(list(self.osm.ways_2d["-1a"].children[0].extra['way_1d'].geom.coords))
+        # ways_2d["-1a"] = ways_2d["-1a"].material(ddd.mat_highlight)
+        # ways_2d["-1a"].children[0].dump()
+        # print(ways_2d["-1a"].children[0].extra)
+        # print(list(ways_2d["-1a"].children[0].extra['way_1d'].geom.coords))
         # sys.exit(0)
 
-        # self.osm.ways_2d["0a"] = self.osm.ways_2d["0a"].subtract(union_l0).subtract(union_l1)
-        # self.osm.ways_2d["1a"] = self.osm.ways_2d["1a"].subtract(union_l1)
-
-    def generate_ways_2d_layer(self, layer_idx):
-        '''
-        - Sorts ways (more important first),
-        - Generates 2D shapes
-        - Resolve intersections
-        - Add metadata (road name, surface type, connections?)
-        - Consider elevation and level roads on the transversal axis
-        '''
-        ways_1d = [w for w in self.osm.ways_1d.children if w.extra['ddd:layer'] == layer_idx]
-        logger.info("Generating 2D ways for layer %s (%d ways)", layer_idx, len(ways_1d))
-
-        ways_1d.sort(key=lambda w: w.extra['ddd:way:weight'])
-
-        ways_2d = defaultdict(list)
-        for w in ways_1d:
-            #f = w.extra['osm:feature']
-            way_2d = self.generate_way_2d(w)
-            if way_2d:
-                weight = way_2d.extra['ddd:way:weight']
-                ways_2d[weight].append(way_2d)
-
-        '''
-        # Trim roads
-        accum_roads = DDDObject2()
-        for weight in sorted(ways_2d.keys()):
-            weight_roads = ways_2d[weight]
-            new_weight_roads = []
-            for r in weight_roads:
-                new_road = r.subtract(accum_roads)  # Higher vertex count, precission issues
-                new_road = new_road.buffer(0.001)    # Avoids precission issues after subtraction
-                accum_roads = accum_roads.union(r)
-                new_weight_roads.append(new_road)
-            ways_2d[weight] = new_weight_roads
-        '''
-
-        roads = sum(ways_2d.values(), [])
-        if roads:
-            roads = ddd.group(roads, name="Ways (layer: %s)" % layer_idx)  # translate([0, 0, 50])
-            self.osm.ways_2d[layer_idx] = roads
-
-    '''
-    def generate_roads_2d(self, layer_idx):
-        """
-        - Sorts ways (more important first),
-        - Generates 2D shapes
-        - Resolve intersections
-        - Add metadata (road name, surface type, connections?)
-        - Consider elevation and level roads on the transversal axis
-        """
-        logger.info("Generating 2D roads for layer %d", layer_idx)
-
-        features = [f for f in self.osm.features if int(f['properties'].get('ddd:layer', 0)) == layer_idx]
-
-        features.sort(key=lambda f: self.road_weight(f))
-
-        roads_2d = defaultdict(list)
-        for f in features:
-            road_2d = self.generate_road_2d(f)
-            weight = self.road_weight(f)
-            if road_2d:
-                roads_2d[weight].append(road_2d)
-
-        # Trim roads
-        accum_roads = DDDObject2()
-        for weight in sorted(roads_2d.keys()):
-            weight_roads = roads_2d[weight]
-            new_weight_roads = []
-            for r in weight_roads:
-                new_road = r.subtract(accum_roads)  # Higher vertex count, precission issues
-                new_road = new_road.buffer(0.001)    # Avoids precission issues after subtraction
-                accum_roads = accum_roads.union(r)
-                new_weight_roads.append(new_road)
-            roads_2d[weight] = new_weight_roads
-
-        roads = sum(roads_2d.values(), [])
-        roads = ddd.group(roads, name="Ways (layer: %s)" % layer_idx)  #translate([0, 0, 50])
-
-        return roads
-    '''
-
-    def generate_way_2d(self, way_1d):
-
-        feature = way_1d.extra['osm:feature']
-
-        # highway = feature['properties'].get('osm:highway', None)
-        # if highway is None: return
-
-        path = way_1d
-
-        width = path.extra['ddd:way:width']
-        way_2d = path.buffer(distance=width / 2.0, cap_style=2, join_style=2)
-
-        # Avoid gaps and eliminate small polygons
-        # path = path.buffer(distance=0.05)
-        # FIXME: this should be done by continuating path joins/intersections between roads of same type
-        if width > 2.0:
-            way_2d = way_2d.buffer(distance=1.0, cap_style=2, join_style=2)
-            way_2d = way_2d.buffer(distance=-1.0, cap_style=2, join_style=2)
-            way_2d = way_2d.buffer(distance=0.1, cap_style=2, join_style=2)
-            # way_2d = way_2d.simplify(0.5)
-
-        # Remove buildings
-        if way_2d.extra.get('ddd:subtract_buildings', False):
-            #buildings_2d_union = self.osm.buildings_2d.union()
-            #way_2d = way_2d.subtract(self.osm.buildings_2d_union)
-            way_2d = way_2d.clean(eps=0.05)
-            try:
-                way_2d = way_2d.subtract(self.osm.buildings_2d)
-            except Exception as e:
-                logger.error("Could not subtract buildings %s from way %s: %s", self.osm.buildings_2d, way_2d, e)
-                return None
-
-        # print(feature['properties'].get("name", None))
-        # way_2d.extra['osm:feature'] = feature
-        # way_2d.extra['path'] = path
-        way_2d.extra['way_1d'] = path
-
-        way_2d.name = "Way: %s" % (feature['properties'].get('name', None))
-        return way_2d
+        # ways_2d["0a"] = ways_2d["0a"].subtract(union_l0).subtract(union_l1)
+        # ways_2d["1a"] = ways_2d["1a"].subtract(union_l1)
 
 
-
-    def generate_props_2d(self):
+    def generate_props_2d(self, ways_2d):
         """
         Road props (traffic lights, lampposts...).
         Need roads, areas, coastline, etc... and buildings
         """
 
-        ways = []
-        for wg in self.osm.ways_2d.values():
-            ways.extend(wg.children)
-        # ways = self.osm.ways_2d["0"].children
-
         logger.info("Generating props linked to ways (%d ways)", len(ways))
 
-        for way_2d in ways:
+        for way_2d in ways_2d:
             try:
                 self.generate_props_2d_way(way_2d)
             except Exception as e:

@@ -6,18 +6,19 @@ from collections import defaultdict, namedtuple
 import logging
 import math
 import random
+import sys
 
 import numpy
+from shapely import ops
 from shapely.geometry.linestring import LineString
+from shapely.ops import linemerge
 
+from ddd.core.exception import DDDException
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.ops import uvmapping
-from ddd.core.exception import DDDException
-import sys
-from shapely import ops
-from shapely.ops import linemerge
+
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -59,36 +60,24 @@ class Ways1DOSMBuilder():
 
         return list(visited)
 
-    '''
-    def generate_ways_1d(self):
 
-        # Generate paths
-        logger.info("Generating 1D way path objects (requires /Items in order to match items to way nodes).")
+    def split_ways_1d(self, ways_1d):
+        """
+        Splits all ways into the minimum pieces that have only an intersection at each end.
 
-        for feature in self.osm.features_2d.children:
-            if feature.geom.type != 'LineString': continue
-            way = self.generate_way_1d(feature)
-            if way and not way.extra['ddd:item']:
-                way.extra['ddd:connections'] = []
-                self.osm.ways_1d.append(way)
-            elif way and way.extra['ddd:item']:
-                self.osm.items_1d.append(way)
-            #else:
-            #    logger.warn("Ignoring way (unknown feature type): %s", way)
-    '''
-
-    def split_ways_1d(self):
+        This method modifies the passed in node, manipulating children to avoid ways with multiple intersections.
+        """
 
         # Splitting
-        logger.info("Ways before splitting mid connections: %d", len(self.osm.ways_1d.children))
+        logger.info("Ways before splitting mid connections: %d", len(ways_1d.children))
 
         # Way schema
-        for way in self.osm.ways_1d.children:
+        for way in ways_1d.children:
             way.extra['ddd:connections'] = []
 
         # Split ways on joins
         vertex_cache = defaultdict(list)
-        for way in self.osm.ways_1d.children:
+        for way in ways_1d.children:
             start = way.geom.coords[0]
             end = way.geom.coords[-1]
             #for c in (start, end):
@@ -98,11 +87,11 @@ class Ways1DOSMBuilder():
         split = True
         while split:
             split = False
-            for way in self.osm.ways_1d.children:
+            for way in ways_1d.children:
                 for way_idx, c in enumerate(way.geom.coords[1:-1]):
                     # If vertex is shared (in cache and more than one feature uses it)
                     if c in vertex_cache and len(vertex_cache[c]) > 1:
-                        split1, split2 = self.split_way_1d_vertex(way, c)
+                        split1, split2 = self.split_way_1d_vertex(ways_1d, way, c)
                         if split1 and split2:
                             for way_coords in (way.geom.coords[0], way.geom.coords[-1]):
                                 vertex_cache[way_coords].remove(way)
@@ -115,28 +104,22 @@ class Ways1DOSMBuilder():
                 if split: break
         vertex_cache = None
 
-        logger.debug("Ways after splitting mid connections: %d", len(self.osm.ways_1d.children))
+        logger.debug("Ways after splitting mid connections: %d", len(ways_1d.children))
 
         # Assign item nodes
         # TODO: this shall better come from osm node-names/relations directly, but supporting geojson is also nice
         # TODO: Before or after splitting?
         vertex_cache = defaultdict(list)
-        for way in self.osm.ways_1d.children:
+        for way in ways_1d.children:
             for c in list(way.geom.coords):
                 vertex_cache[c].append(way)
-        for item in self.osm.items_1d.children:
-            if item.geom.coords[0] in vertex_cache:
-                #logger.debug("Associating item to ways: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
-                item.extra['osm:item:way'] = vertex_cache[item.geom.coords[0]][0]
-                item.extra['osm:item:ways'] = vertex_cache[item.geom.coords[0]]
-                #if len(vertex_cache[item.geom.coords[0]]):
-                #    raise NotImplementedError()
+
 
         # Find connections
         # TODO: this shall possibly come from OSM relations (or maybe not, or optional)
-        logger.info("Resolving connections between ways (%d ways).", len(self.osm.ways_1d.children))
+        logger.info("Resolving connections between ways (%d ways).", len(ways_1d.children))
         vertex_cache = defaultdict(list)
-        for way in self.osm.ways_1d.children:
+        for way in ways_1d.children:
             # start = way.geom.coords[0]
             # end = way.geom.coords[-1]
             for way_idx, c in enumerate(way.geom.coords):
@@ -150,7 +133,7 @@ class Ways1DOSMBuilder():
         vertex_cache = None
 
         # Find transitions between more than one layer (ie tunnel to bridge) and split
-        for way in self.osm.ways_1d.children:
+        for way in ways_1d.children:
             way.extra['ddd:layer_transition'] = False
             way.extra['ddd:layer'] = way.extra['osm:layer']
             way.extra['ddd:layer_int'] = int(way.extra['osm:layer'])
@@ -159,7 +142,7 @@ class Ways1DOSMBuilder():
             # way.extra['ddd:layer_height'] = self.layer_height(str(way.extra['ddd:layer_min']))
 
         # Search transitions between layers
-        for way in self.osm.ways_1d.children:
+        for way in ways_1d.children:
             for other, way_idx, other_idx in way.extra['ddd:connections']:
                 way.extra['ddd:layer_min'] = min(way.extra['ddd:layer_min'], int(other.extra['ddd:layer_int']))
                 way.extra['ddd:layer_max'] = max(way.extra['ddd:layer_max'], int(other.extra['ddd:layer_int']))
@@ -182,23 +165,42 @@ class Ways1DOSMBuilder():
         # self.generate_ways_1d_heights()
 
         # Generate interesections
-        self.ways_1d_intersections()
+        self.ways_1d_intersections(ways_1d)
 
         # Road 1D heights
-        self.ways_1d_heights_initial()
-        self.ways_1d_heights_connections()  # and_layers_and_transitions_etc
-        self.ways_1d_heights_propagate()
+        self.ways_1d_heights_initial(ways_1d)
+        self.ways_1d_heights_connections(ways_1d)  # and_layers_and_transitions_etc
+        self.ways_1d_heights_propagate(ways_1d)
 
         # Propagate height beyond transition layers if gradient is too large?!
 
         # Soften / subdivide roads if height angle is larger than X (try as alternative to massive subdivision of roads?)
 
-    def ways_1d_intersections(self):
+    def ways_1d_link_items(self, ways_1d, items_1d):
+        # Assign item nodes
+        # TODO: this shall better come from osm node-names/relations directly, but supporting geojson is also nice
+        # TODO: Before or after splitting?
+        vertex_cache = defaultdict(list)
+        for way in ways_1d.children:
+            for c in list(way.geom.coords):
+                vertex_cache[c].append(way)
+
+        logger.warn("Asociating Items to Ways via nodes. This shall be done outside and AFTER split_ways (and it's causing items_1d to be passed in)")
+        for item in items_1d.children:
+            if item.geom.coords[0] in vertex_cache:
+                #logger.debug("Associating item to ways: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
+                item.extra['osm:item:way'] = vertex_cache[item.geom.coords[0]][0]
+                item.extra['osm:item:ways'] = vertex_cache[item.geom.coords[0]]
+                #if len(vertex_cache[item.geom.coords[0]]):
+                #    raise NotImplementedError()
+
+
+    def ways_1d_intersections(self, ways_1d):
         """
         Intersections are just data structures, they are not geometries.
         """
 
-        logger.info("Generating intersections from %d ways.", len(self.osm.ways_1d.children))
+        logger.info("Generating intersections from %d ways.", len(ways_1d.children))
 
         intersections = []
         intersections_cache = defaultdict(default=list)
@@ -220,7 +222,7 @@ class Ways1DOSMBuilder():
             return intersection
 
         # Walk connected ways and generate intersections
-        for way in self.osm.ways_1d.children:
+        for way in ways_1d.children:
 
             # For each vertex (start / end), evaluate the connection
             connections_start = [c for c in way.extra['ddd:connections'] if c.self_idx == 0]
@@ -232,10 +234,13 @@ class Ways1DOSMBuilder():
             way.extra['intersection_start'] = get_create_intersection(joins_start)
             way.extra['intersection_end'] = get_create_intersection(joins_end)
 
-        self.osm.intersections = intersections
-        logger.info("Generated %d intersections", len(self.osm.intersections))
 
-    def ways_1d_heights_initial(self):
+        self.osm.intersections = intersections
+        logger.warn("Generated %d intersections (TODO: CHANGE)", len(self.osm.intersections))
+        # SHOULD really add intersection points as points to Features or Meta, in order to walk them later, and can be useful in general, but not keep them apart
+
+
+    def ways_1d_heights_initial(self, ways_1d):
         """
         Heights in 1D, regarding connections with bridges, tunnels...
         Road flatness is to be resolved afterwards in 2D.
@@ -252,7 +257,7 @@ class Ways1DOSMBuilder():
         # all can go up or down depending on min/max limits (inside minor streets lower tunnels, highways have higher tunnels, etc)
 
         """
-        for way in self.osm.ways_1d.children:
+        for way in ways_1d.children:
 
             height = 0.0
 
@@ -334,16 +339,16 @@ class Ways1DOSMBuilder():
                 else:
                     con.other.extra['ddd:way_height_end'] = heights_weighted_avg
 
-    def ways_1d_heights_connections(self):
+    def ways_1d_heights_connections(self, ways_1d):
         """
         """
         visited = set()
-        for way in self.osm.ways_1d.children:
+        for way in ways_1d.children:
             self.ways_1d_heights_connections_way(way, visited)
 
-    def ways_1d_heights_propagate(self):
+    def ways_1d_heights_propagate(self, ways_1d):
 
-        for way in self.osm.ways_1d.children:
+        for way in ways_1d.children:
 
             # if not way.extra['ddd:layer_transition']: continue
 
@@ -397,7 +402,7 @@ class Ways1DOSMBuilder():
 
         return height_apply_func
 
-    def split_way_1d_vertex(self, way, v):
+    def split_way_1d_vertex(self, ways_1d, way, v):
 
         coord_idx = None
         for idx, c in enumerate(way.geom.coords):
@@ -427,8 +432,8 @@ class Ways1DOSMBuilder():
         part2.extra['ddd:connections'] = []
         '''
 
-        self.osm.ways_1d.children.remove(way)
-        self.osm.ways_1d.children.extend([part1, part2])
+        ways_1d.children.remove(way)
+        ways_1d.children.extend([part1, part2])
 
         return part1, part2
 

@@ -49,6 +49,7 @@ class Areas2DOSMBuilder():
 
         self.osm = osmbuilder
 
+    """
     def generate_areas_2d(self):
         logger.info("Generating 2D areas.")
 
@@ -64,7 +65,7 @@ class Areas2DOSMBuilder():
             area.extra['ddd:area:type'] = area.extra.get('ddd:area:type', None)
             area.extra['ddd:area:container'] = None
             area.extra['ddd:area:contained'] = []
-            area.extra['ddd:baseheight'] = 0.0
+            #area.extra['ddd:baseheight'] = 0.0
 
             try:
                 area = area.individualize().flatten()
@@ -196,6 +197,132 @@ class Areas2DOSMBuilder():
 
                 self.osm.areas_2d.append(area)
                 #self.osm.areas_2d.children.extend(area.individualize().children)
+    """
+
+    def generate_areas_2d_process(self, areas_2d, subtract):
+
+        areas = areas_2d.select('["ddd:area:area"]').children
+
+        logger.info("Sorting 2D areas (%d).", len(areas))
+        areas.sort(key=lambda a: a.extra['ddd:area:area'])
+
+        for idx in range(len(areas)):
+            area = areas[idx]
+            for larger in areas[idx + 1:]:
+                if larger.contains(area):
+                    #logger.debug("Area %s contains %s.", larger, area)
+                    area.extra['ddd:area:container'] = larger
+                    larger.extra['ddd:area:contained'].append(area)
+                    break
+
+        # Union all roads in the plane to subtract
+        logger.info("Generating 2D areas subtract.")
+        #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a']]).union()  # , areas_2d
+        union = subtract.union()
+
+        logger.info("Generating 2D areas (%d)", len(areas))
+        for narea in areas:
+        #for feature in self.osm.features:
+            feature = narea.extra['osm:feature']
+
+            if narea.geom.type == 'Point': continue
+
+            narea.extra['ddd:area:original'] = narea  # Before subtracting any internal area
+
+            '''
+            # Subtract areas contained (use contained relationship)
+            for contained in narea.extra['ddd:area:contained']:
+                narea = narea.subtract(contained)
+            '''
+
+            narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+            narea = narea.subtract(union)
+            area = self.generate_area_2d_park(narea)
+
+            '''
+            area = None
+            if narea.extra.get('osm:leisure', None) in ('park', 'garden'):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_park(narea)
+
+            elif narea.extra.get('osm:landuse', None) in ('forest', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_forest(narea)
+            elif narea.extra.get('osm:landuse', None) in ('vineyard', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_vineyard(narea)
+
+            elif narea.extra.get('osm:natural', None) in ('wood', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_forest(narea)
+            elif narea.extra.get('osm:natural', None) in ('wetland', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_wetland(narea)
+            elif narea.extra.get('osm:natural', None) in ('beach', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_beach(narea)
+            elif narea.extra.get('osm:landuse', None) in ('grass', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_park(narea)
+
+            elif narea.extra.get('osm:amenity', None) in ('parking', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_parking(narea)
+
+            elif (narea.extra.get('osm:public_transport', None) in ('platform', ) or
+                  narea.extra.get('osm:railway', None) in ('platform', )):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_platform(narea)
+
+            elif narea.extra.get('osm:tourism', None) in ('artwork', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_artwork(narea)
+
+            elif narea.extra.get('osm:leisure', None) in ('pitch', ):  # Cancha
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                area = self.generate_area_2d_pitch(narea)
+            elif narea.extra.get('osm:landuse', None) in ('railway', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                area = self.generate_area_2d_railway(narea)
+            elif narea.extra.get('osm:landuse', None) in ('brownfield', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                area = self.generate_area_2d_unused(narea)
+                narea = narea.subtract(union)
+            elif narea.extra.get('osm:amenity', None) in ('school', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_school(narea)
+            elif (narea.extra.get('osm:waterway', None) in ('riverbank', 'stream') or
+                  narea.extra.get('osm:natural', None) in ('water', ) or
+                  narea.extra.get('osm:water', None) in ('river', )):
+                #narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                #narea = narea.subtract(union)
+                area = self.generate_area_2d_riverbank(narea)
+            else:
+                logger.debug("Unknown area: %s", feature)
+
+            #elif feature['properties'].get('amenity', None) in ('fountain', ):
+            #    area = self.generate_area_2d_school(feature)
+            '''
+
+            if area:
+                logger.debug("Area: %s", area)
+                area = area.subtract(union)
+
+                areas_2d.remove(narea)
+                areas_2d.append(area)
+                #areas_2d.children.extend(area.individualize().children)
+
 
     def generate_area_2d_park(self, area, tree_density_m2=0.0025, tree_types=None):
 
@@ -468,9 +595,9 @@ class Areas2DOSMBuilder():
         logger.info("Postprocessing water areas and ways")
 
         # Get all water areas ('ddd:water')
-        water_areas = self.osm.areas_2d.select(ddd.sel.extra('ddd:area:type', 'water'))
+        water_areas = self.osm.areas_2d.select('["ddd:area:type" = "water"]')
 
-        river_areas = self.osm.ways_2d["0"].select(ddd.sel.extra('ddd:area:type', 'water'))
+        river_areas = self.osm.ways_2d["0"].select('["ddd:area:type" = "water"]')
         self.osm.ways_2d["0"].children = [c for c in self.osm.ways_2d["0"].children if c not in river_areas.children]
 
         all_water_areas = ddd.group2(water_areas.children + river_areas.children)

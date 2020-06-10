@@ -229,6 +229,7 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_base.s30_groups_ways.py',
                                             'pipelines.osm_base.s30_groups_buildings.py',
                                             'pipelines.osm_base.s30_groups_areas.py',
+                                            'pipelines.osm_base.s30_groups_areaitems.py',
                                             'pipelines.osm_base.s30_groups_export_2d.py',
                                             'pipelines.osm_base.s40_structured.py',
                                             'pipelines.osm_base.s40_structured_export_2d.py',

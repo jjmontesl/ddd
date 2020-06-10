@@ -4,13 +4,7 @@
 
 import sys
 
-import pyproj
 
-from ddd.ddd import ddd
-from ddd.geo import terrain
-from ddd.osm import osm
-from ddd.osm.augment.mapillary import MapillaryClient
-from ddd.osm.osm import project_coordinates
 from ddd.pipeline.decorators import dddtask
 
 
