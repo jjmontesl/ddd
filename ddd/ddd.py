@@ -295,6 +295,9 @@ class D1D2D3():
         if children is None:
             children = []
 
+        if not isinstance(children, list):
+            raise ValueError("Tried to add a non-list as children of a group.")
+
         if not children:
             if empty is None:
                 raise ValueError("Tried to add empty collection to children group and no empty value is set.")
@@ -586,8 +589,15 @@ class DDDObject():
     def append(self, obj):
         """
         Adds an object as a children to this node.
+        If a list is passed, each element is added.
         """
-        self.children.append(obj)
+        if isinstance(obj, Iterable):
+            for i in obj:
+                self.children.append(i)
+        elif isinstance(obj, DDDObject):
+            self.children.append(obj)
+        else:
+            raise ValueError("Cannot append object of this type to DDDObject children: %s", obj)
         return self
 
     def remove(self, obj):
@@ -605,7 +615,7 @@ class DDDObject2(DDDObject):
         self.geom = geom
 
     def __repr__(self):
-        return "<DDDObject2 (name=%s, geom=%s (%s verts), children=%d>" % (self.name, self.geom.type if self.geom else None, self.vertex_count(), len(self.children) if self.children else 0)
+        return "<%s (name=%s, geom=%s (%s verts), children=%d>" % (self.__class__.__name__, self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count(), len(self.children) if self.children else 0)
 
     def vertex_count(self):
         if not self.geom:
@@ -694,7 +704,10 @@ class DDDObject2(DDDObject):
 
     def centroid(self):
         result = self.copy()
-        result.geom = self.union().geom.centroid
+        geom = self.union().geom
+        if geom is None:
+            raise DDDException("Cannot find centroid (no geometry) for object: %s" % self)
+        result.geom = geom.centroid
         return result
 
     def translate(self, coords):

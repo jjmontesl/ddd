@@ -139,6 +139,9 @@ Using:
 
     for a in $(ls *.svg) ; do inkscape -w 64 -h 64 $a --export-filename ../amenity-$a.png ; done
 
+Resize with margin:
+
+    mogrify -path x -resize 120x120 -gravity Center -extent 128x128 *.png
 
 ## FAQ
 

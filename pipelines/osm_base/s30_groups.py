@@ -26,6 +26,7 @@ def osm_groups_create_root_nodes(root, osm):
 def osm_generate_items(root, osm, obj):
     """Generate items for point features."""
     item = obj.copy(name="Item: %s" % obj.name)
+    item = item.material(ddd.mats.red)
     root.find("/Items").append(item)
 
 @dddtask(order="30.20.20", log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
@@ -123,6 +124,12 @@ def osm_groups_areas(root, osm, obj, logger):
 @dddtask(order="30.50.20")
 def osm_groups_areas_process(pipeline, osm, root, logger):
     pass
+
+
+@dddtask(order="30.50.90.+", path="/Areas/*", select='[! "ddd:area:type"]')
+def osm_groups_areas_remove_ignored(root, obj, logger):
+    """Remove ignored areas."""
+    return False
 
 
 @dddtask(order="30.60.+")

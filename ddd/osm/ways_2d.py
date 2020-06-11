@@ -369,7 +369,7 @@ class Ways2DOSMBuilder():
                         except Exception as e:
                             logger.error("Could not generate way due to exception in extrude check: %s", way)
 
-        ways_2d.replace(ddd.group(ways, empty="2", name="Ways 2D"))
+        ways_2d.replace(ddd.group(ways, empty="2", name="Ways"))
 
         # logger.info("Saving intersections 2D.")
         # ddd.group([ways_2d["0"].extrude(1.0), self.osm.intersections_2d.material(ddd.mats.highlight).extrude(1.5)]).save("/tmp/ddd-intersections.glb")

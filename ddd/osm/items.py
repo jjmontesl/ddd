@@ -50,6 +50,7 @@ class ItemsOSMBuilder():
         return item
     '''
 
+    '''
     def generate_items_3d(self):
         logger.info("Generating 3D items (from %d items_1d)", len(self.osm.items_1d.children))
 
@@ -64,6 +65,7 @@ class ItemsOSMBuilder():
         # FIXME: Do not alter every vertex, move the entire object instead
         #self.osm.items_3d = terrain.terrain_geotiff_elevation_apply(self.osm.items_3d, self.osm.ddd_proj)
         #self.osm.items_3d = self.osm.items_3d.translate([0, 0, -0.20])  # temporary fix snapping
+    '''
 
     def generate_item_3d(self, item_2d):
 
@@ -274,9 +276,6 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_post_box(self, item_2d):
 
-        #item_2d = ddd.snap.project(item_2d, self.osm.areas_2d, penetrate=0.5)
-        item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
-
         coords = item_2d.geom.coords[0]
         item_3d = urban.post_box().translate([coords[0], coords[1], 0.0])
         item_3d.prop_set('ddd:static', False, children=True)  # TODO: Make static or not via styling
@@ -377,8 +376,6 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_bus_stop(self, item_2d):
-        busways = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('osm:highway', None) not in ('path', 'track', 'footway', None))
-        item_2d = ddd.snap.project(item_2d, busways, penetrate=-0.5)
         coords = item_2d.geom.coords[0]
         text = item_2d.extra.get("osm:name", None)
         item_3d = urban.busstop_small(text=text)

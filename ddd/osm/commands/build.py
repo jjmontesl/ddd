@@ -231,14 +231,21 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_base.s30_groups_areas.py',
                                             'pipelines.osm_base.s30_groups_areaitems.py',
                                             'pipelines.osm_base.s30_groups_export_2d.py',
+
                                             'pipelines.osm_base.s40_structured.py',
                                             'pipelines.osm_base.s40_structured_export_2d.py',
+
+                                            'pipelines.osm_base.s50_positioning.py',
+                                            'pipelines.osm_base.s50_crop.py',
+                                            'pipelines.osm_base.s50_90_export_2d.py',
 
                                             'pipelines.osm_base.s60_model.py',
                                             'pipelines.osm_base.s60_model_export_3d.py',
 
                                             'pipelines.osm_augment.plants.py',
                                             'pipelines.osm_augment.ways.py',
+
+                                            'pipelines.osm_default_2d.s30_icons.py'
 
                                             #'pipelines.osm_extras.mapillary.py',
 

@@ -14,6 +14,7 @@ from ddd.core.cli import D1D2D3Bootstrap
 from builtins import staticmethod
 from abc import abstractstaticmethod
 from shapely.geometry.base import BaseMultipartGeometry
+import base64
 
 
 # Get instance of logger for this module
@@ -39,8 +40,8 @@ class DDDSVG():
         geoms = obj.geom_recursive()
         geom = geometry.GeometryCollection(geoms)
 
-        svg_top = '<svg xmlns="http://www.w3.org/2000/svg" ' \
-            'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        svg_top = ('<svg xmlns="http://www.w3.org/2000/svg" ' +
+                   'xmlns:xlink="http://www.w3.org/1999/xlink" ')
         if geom.is_empty:
             return svg_top + '/>'
         else:
@@ -110,7 +111,14 @@ class DDDSVG():
                 data = data + DDDSVG.svg_obj(c, path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx), instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = data + '</g>'
 
-        if obj.geom:
+        if obj.extra.get('svg:image:data'):
+            geom = obj.centroid().geom
+            bindata = obj.extra.get("svg:image:data")
+            width = obj.extra.get("svg:image:width", 1)
+            height = obj.extra.get("svg:image:height", 1)
+            data = data + DDDSVG.svg_image(geom, data=metadata, bindata=bindata, width=width, height=height)
+
+        elif obj.geom:
             geom = geometry.GeometryCollection([obj.geom])
             data = data + DDDSVG.svg_geom(geom, data=metadata, color=color, fill_opacity=fill_opacity, stroke_width=stroke_width)
 
@@ -158,6 +166,8 @@ class DDDSVG():
             return DDDSVG.svg_polygon(geom, data, **kwargs)
         elif geom.type == 'LineString':
             return DDDSVG.svg_linestring(geom, data, **kwargs)
+        elif geom.type == 'Point':
+            return DDDSVG.svg_point(geom, data, **kwargs)
         elif isinstance(geom, BaseMultipartGeometry):
             return DDDSVG.svg_multipart(geom, data, **kwargs)
         else:
@@ -196,6 +206,55 @@ class DDDSVG():
         return ('<path fill-rule="evenodd" fill="{2}" stroke="#555555" '
                 'stroke-width="{0}" opacity="{3}" d="{1}" />'
                 ).format(stroke_width, path, fill_color, fill_opacity)
+
+    @staticmethod
+    def svg_point(geom, data, **kwargs):
+        fill_color = kwargs.get('color', None)
+        fill_opacity = kwargs.get('fill_opacity', 0.6)
+        stroke_width = kwargs.get('stroke_width', 0.1)
+        radius = 1.0
+        if geom.is_empty:
+            return '<g />'
+        if fill_color is None:
+            fill_color = "#55cc88" if geom.is_valid else "#ff2222"
+        return ('<circle cx="{0.x}" cy="{0.y}" r="{1}" '
+                'stroke="#555555" stroke-width="{2}" fill="{3}" opacity="{4}" />'
+                ).format(geom, radius, stroke_width, fill_color, fill_opacity)
+
+    @staticmethod
+    def svg_image(geom, data, bindata, width=1, height=1, **kwargs):
+        """
+            Example: <image width="100" height="100" xlink:href="data:image/png;base64,...">
+        """
+        x = geom.x
+        y = geom.y
+        base64data = base64.b64encode(bindata).decode("ascii")
+        opacity = 1.0
+
+        result = ('<image width="{0}" height="{1}" x="{5}" y="{6}" ' +
+                  'xlink:href="data:image/png;base64,{4}" transform="translate({2}, {3}) scale(1, -1)" />'  #rotate(180deg) # opacity="{5}"
+                  ).format(width, height, x, y, base64data, -width/2, -height/2)  #, opacity)
+        return result
+
+    def svg(self, scale_factor=1., fill_color=None):
+        """Returns SVG circle element for the Point geometry.
+
+        Parameters
+        ==========
+        scale_factor : float
+            Multiplication factor for the SVG circle diameter.  Default is 1.
+        fill_color : str, optional
+            Hex string for fill color. Default is to use "#66cc99" if
+            geometry is valid, and "#ff3333" if invalid.
+        """
+        if self.is_empty:
+            return '<g />'
+        if fill_color is None:
+            fill_color = "#66cc99" if self.is_valid else "#ff3333"
+
+
+
+
 
     @staticmethod
     def svg_multipart(geom, data, **kwargs):

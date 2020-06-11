@@ -235,27 +235,6 @@ class OSMBuilder():
         #        print(f)
         #sys.exit(1)
 
-    def tile_2d(self):
-        tile = ddd.group2([
-                    ddd.shape(self.area_crop).material(ddd.material(color='#ffffff')),
-                    self.ground_2d, self.water_2d,
-                    self.areas_2d,
-                    self.ways_2d['-1a'], self.ways_2d['0'], self.ways_2d['0a'], self.ways_2d['1'],
-                    self.roadlines_2d,
-                    self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f')),
-                    self.items_2d,
-                    self.items_1d.buffer(0.5).material(ddd.mats.red),
-                    ]).flatten().select(func=lambda o: o.extra.get('ddd:area:type') != 'underwater')
-        tile = tile.intersection(ddd.shape(self.area_crop))
-        tile.prop_set('svg:stroke-width', 0.01, children=True)
-        return tile
-
-    def save_tile_2d(self, path):
-        tile = self.tile_2d()
-        #tile.save("/tmp/tile.json")
-        #tile.dump()
-        tile.save(path)
-
     def generate_old(self):
 
         logger.info("Generating geometry (area_filter=%s, area_crop=%s)", self.area_filter, self.area_crop)

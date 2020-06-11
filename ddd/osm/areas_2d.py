@@ -201,6 +201,7 @@ class Areas2DOSMBuilder():
 
     def generate_areas_2d_process(self, areas_2d, subtract):
 
+        # TODO: Assign area here, it's where it's used
         areas = areas_2d.select('["ddd:area:area"]').children
 
         logger.info("Sorting 2D areas (%d).", len(areas))
@@ -221,13 +222,14 @@ class Areas2DOSMBuilder():
         union = subtract.union()
 
         logger.info("Generating 2D areas (%d)", len(areas))
-        for narea in areas:
-        #for feature in self.osm.features:
-            feature = narea.extra['osm:feature']
+        for area in areas:
 
-            if narea.geom.type == 'Point': continue
 
-            narea.extra['ddd:area:original'] = narea  # Before subtracting any internal area
+            #feature = area.extra['osm:feature']
+            if area.geom.type == 'Point': continue
+
+            original_area = area
+            area.extra['ddd:area:original'] = original_area  # Before subtracting any internal area
 
             '''
             # Subtract areas contained (use contained relationship)
@@ -235,9 +237,10 @@ class Areas2DOSMBuilder():
                 narea = narea.subtract(contained)
             '''
 
-            narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+            narea = area.subtract(ddd.group2(area.extra['ddd:area:contained']))
             narea = narea.subtract(union)
-            area = self.generate_area_2d_park(narea)
+            #area = self.generate_area_2d_park(narea)
+            area = narea
 
             '''
             area = None
@@ -246,36 +249,6 @@ class Areas2DOSMBuilder():
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_park(narea)
 
-            elif narea.extra.get('osm:landuse', None) in ('forest', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_forest(narea)
-            elif narea.extra.get('osm:landuse', None) in ('vineyard', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_vineyard(narea)
-
-            elif narea.extra.get('osm:natural', None) in ('wood', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_forest(narea)
-            elif narea.extra.get('osm:natural', None) in ('wetland', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_wetland(narea)
-            elif narea.extra.get('osm:natural', None) in ('beach', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_beach(narea)
-            elif narea.extra.get('osm:landuse', None) in ('grass', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_park(narea)
-
-            elif narea.extra.get('osm:amenity', None) in ('parking', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_parking(narea)
 
             elif (narea.extra.get('osm:public_transport', None) in ('platform', ) or
                   narea.extra.get('osm:railway', None) in ('platform', )):
@@ -317,9 +290,9 @@ class Areas2DOSMBuilder():
 
             if area:
                 logger.debug("Area: %s", area)
-                area = area.subtract(union)
+                #area = area.subtract(union)
 
-                areas_2d.remove(narea)
+                areas_2d.remove(original_area)
                 areas_2d.append(area)
                 #areas_2d.children.extend(area.individualize().children)
 
@@ -385,22 +358,6 @@ class Areas2DOSMBuilder():
 
         return area
 
-    def generate_area_2d_forest(self, area):
-        return self.generate_area_2d_park(area, tree_density_m2=0.004, tree_types={'default': 1})
-
-    def generate_area_2d_wetland(self, area):
-        # TODO: put smaller trees and juncos
-        return self.generate_area_2d_park(area, tree_density_m2=0.0010)
-
-    def generate_area_2d_beach(self, area):
-        area.name = "Beach: %s" % area.name
-        area = area.material(ddd.mats.sand)
-        return area
-
-    def generate_area_2d_parking(self, area):
-        area.name = "Parking: %s" % area.name
-        area = area.material(ddd.mats.asphalt)
-        return area
 
     def generate_area_2d_platform(self, area):
         area.name = "Platform: %s" % area.name
@@ -479,6 +436,52 @@ class Areas2DOSMBuilder():
 
         return area
 
+    def generate_union_safe(self, groups):
+        """
+        Unions a series of groups.
+
+        This is used for generation of interways, as the resulting union interiors are the target areas.
+        """
+        try:
+            union = groups.union()
+            union = union.clean(eps=0.01)
+        except TopologicalError as e:
+            logger.error("Error calculating interways: %s", e)
+            children_unions = []
+            for g in groups.children:
+                u = g.clean(eps=0.01).union()
+                children_unions.append(u)
+            try:
+                union = ddd.group2(children_unions)
+                #union = union.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
+                union = union.union()
+            except TopologicalError as e:
+                logger.error("Error calculating interways (2): %s", e)
+                union = ddd.group2()
+                #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], areas_2d]).union()
+        return union
+
+    def generate_areas_2d_ways_interiors(self, union):
+
+        result = ddd.group2()
+        if not union.geom: return result
+
+        for c in ([union.geom] if union.geom.type == "Polygon" else union.geom):
+            if c.type == "LineString":
+                logger.warning("Interways areas union resulted in LineString geometry. Skipping.")
+                continue
+            for interior in c.interiors:
+                area = ddd.polygon(interior.coords, name="Interways area")
+                if area:
+                    area = area.subtract(union)
+                    area = area.clean(eps=0.01)
+                    result.append(area)
+                else:
+                    logger.warn("Invalid interways area.")
+        return result
+
+
+    '''
     def generate_areas_2d_interways(self):
 
         logger.info("Generating 2D areas between ways.")
@@ -494,12 +497,10 @@ class Areas2DOSMBuilder():
         #        areas_2d.append(a.extra.get('ddd:area:original'))
 
         try:
-            #ways_2d_0 = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('highway', None) not in ('path', 'track', 'footway', None))
-            ways_2d_0 = self.osm.ways_2d["0"]
-            union = ddd.group([ways_2d_0, self.osm.ways_2d['-1a'], areas_2d]).union()
+            union = ddd.group([self.osm.ways_2d["0"], self.osm.ways_2d['-1a'], areas_2d]).union()
         except TopologicalError as e:
             logger.error("Error calculating interways: %s", e)
-            l0 = ways_2d_0.union()
+            l0 = self.osm.ways_2d["0"].union()
             lm1a = self.osm.ways_2d['-1a'].union()
             #l0a = self.osm.ways_2d['0a'].union()  # shall be trimmed  # added to avoid height conflicts but leaves holes
             c = areas_2d.clean(eps=0.01).union()
@@ -531,6 +532,7 @@ class Areas2DOSMBuilder():
                     self.osm.areas_2d.children.append(area)
                 else:
                     logger.warn("Invalid interways area.")
+    '''
 
     '''
     def generate_areas_ways_relations(self):
@@ -723,7 +725,7 @@ class Areas2DOSMBuilder():
         terr = terr.clean(eps=0.01)
         terr = terr.material(ddd.mats.terrain)
 
-        self.osm.ground_2d.append(terr)
+        #self.osm.ground_2d.append(terr)
 
         # The buffer is fixing a core segment violation :/
         #terr.save("/tmp/test.svg")
@@ -732,3 +734,5 @@ class Areas2DOSMBuilder():
         #terr = ddd.group([DDDObject2(geom=s.buffer(0.5).buffer(-0.5)) for s in terr.geom.geoms if not s.is_empty])
 
         #terr.save("/tmp/test.svg")
+
+        return terr

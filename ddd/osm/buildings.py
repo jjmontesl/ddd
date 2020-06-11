@@ -130,13 +130,17 @@ class BuildingOSMBuilder():
                 closest_distance = distance
         return closest_building, closest_distance
 
-    def generate_buildings_3d(self):
-        logger.info("Generating 3D buildings (%d)", len(self.osm.buildings_2d.children))
 
-        for building_2d in self.osm.buildings_2d.children:
+    def generate_buildings_3d(self, buildings_2d):
+        logger.info("Generating 3D buildings (%d)", len(buildings_2d.children))
+
+        buildings_3d = ddd.group3(name="Buildings")
+        for building_2d in buildings_2d.children:
             building_3d = self.generate_building_3d_generic(building_2d)
             if building_3d:
-                self.osm.buildings_3d.append(building_3d)
+                buildings_3d.append(building_3d)
+        return buildings_3d
+
 
     def generate_building_3d_generic(self, building_2d):
         """

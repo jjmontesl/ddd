@@ -4,15 +4,16 @@
 
 
 from ddd.pipeline.decorators import dddtask
+from ddd.ddd import ddd
 
 
 @dddtask(order="40.90.+")
 def osm_structured_export_2d(root, osm):
 
-    osm.save_tile_2d("/tmp/osm-structured.png")
 
     root = root.copy()
     root = root.remove(root.find("/Features"))  # !Altering
+    root.prop_set('svg:stroke-width', 0.1, children=True)
     root.prop_set('svg:fill-opacity', 0.7, children=True)
 
     #root.find("/Areas").replace(root.find("/Areas").material(ddd.mats.park).prop_set('svg:fill-opacity', 0.6, True))
@@ -22,4 +23,32 @@ def osm_structured_export_2d(root, osm):
 
     root.save("/tmp/osm-structured.json")
     root.save("/tmp/osm-structured.svg")
+
+
+@dddtask(order="40.90.+")
+def osm_structured_export_2d_tile(root, osm, pipeline):
+    """Save a cropped tileable 2D image of the scene."""
+
+    tile = ddd.group2([
+        ddd.shape(osm.area_crop).material(ddd.material(color='#ffffff')),  # White background (?)
+        #self.ground_2d,
+        root.select(path="/Water", recurse=False),
+        root.select(path="/Areas", recurse=False),
+        root.select(path="/Ways", recurse=False),  #, select="")  self.ways_2d['-1a'], self.ways_2d['0'], self.ways_2d['0a'], self.ways_2d['1'],
+        root.select(path="/Roadlines", recurse=False),
+        root.select(path="/Buildings", recurse=False),
+        #self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f')),
+        root.select(path="/Items2", recurse=False),  #self.items_2d,
+        root.select(path="/Items", recurse=False).buffer(0.5).material(ddd.mats.red),
+
+    ]).flatten().select(func=lambda o: o.extra.get('ddd:area:type') != 'underwater')
+
+    tile = tile.intersection(ddd.shape(osm.area_crop))
+    tile = tile.clean()
+    tile.prop_set('svg:stroke-width', 0.01, children=True)
+
+    path = pipeline.data['filenamebase'] + ".png"
+    tile.save(path)
+
+    tile.save("/tmp/osm-structured.png")
 

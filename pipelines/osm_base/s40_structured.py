@@ -4,6 +4,7 @@
 
 from ddd.osm import osm
 from ddd.pipeline.decorators import dddtask
+from ddd.ddd import ddd
 
 
 @dddtask(order="40.10.+", log=True)
@@ -39,34 +40,87 @@ def osm_structured_generate_ways_2d(osm, root):
     root.append(ways2)
 
 
+
+@dddtask()
+def osm_structured_generate_areas_interways(pipeline, osm, root, logger):
+    """Generates interior areas between ways."""
+
+    #osm.areas2.generate_areas_2d_interways()
+
+    union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]'),
+                        root.find("/Areas")])
+    union = osm.areas2.generate_union_safe(union)
+
+    interiors = osm.areas2.generate_areas_2d_ways_interiors(union)
+    interiors = interiors.material(ddd.mats.pavement)
+    interiors.extra['ddd:area:type'] = 'sidewalk'
+
+    root.find("/Areas").append(interiors.children)
+
+@dddtask()
+def osm_structured_generate_areas_ground_fill(osm, root, logger):
+    """
+    Generates (fills) remaining ground areas (not between ways or otherwise occupied by other areas).
+    Ground must come after every other area (interways, etc), as it is used to "fill" missing gaps.
+    """
+
+    area_crop = osm.area_filter
+    logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
+
+    union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]'),
+                        root.find("/Areas")])
+    union = osm.areas2.generate_union_safe(union)
+
+    terr = ddd.rect(area_crop.bounds, name="Ground")
+    terr = terr.material(ddd.mats.terrain)
+
+    try:
+        terr = terr.subtract(union)
+        terr = terr.clean(eps=0.01)
+    except Exception as e:
+        logger.error("Could not subtract areas_2d from terrain.")
+        return
+
+    #terr = terr.subtract(root.find("/Water"))
+    #terr = terr.clean(eps=0.01)
+
+    #terr = osm.areas2.generate_ground_2d(osm.area_filter)  # must come before ground
+    #for a in terr.children:
+    #    root.find("/Areas").append(a)
+    root.find("/Areas").append(terr)
+
 @dddtask()
 def osm_structured_areas_processed(osm, root):
     areas_2d = root.find("/Areas")
+
     subtract = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]')
+    subtract = osm.areas2.generate_union_safe(subtract)
+
     osm.areas2.generate_areas_2d_process(areas_2d, subtract)  # Where to put?
 
-@dddtask()
-def osm_generate_areas_interways(pipeline, osm, root, logger):
-    osm.areas2.generate_areas_2d_interways()
-
-@dddtask()
-def osm_generate_areas_ground_2d(osm, root):
-    """Ground must come after every other area (interways, etc), as it is used to "fill" missing gaps. It requires Ways2 to have been generated."""
-    #osm.areas.generate_coastline_2d(osm.area_crop if osm.area_crop else osm.area_filter)  # must come before ground
-    osm.areas2.generate_ground_2d(osm.area_filter)  # must come before ground
-    for a in osm.ground_2d.children:
-        root.find("/Areas").append(a)
 
 @dddtask(log=True)
+def osm_structured_areas_postprocess(root, osm):
+    #osm.areas2.generate_areas_2d_postprocess()
+    #osm.areas2.generate_areas_2d_postprocess_water()
+    pass
+
+@dddtask(log=True)
+def osm_structured_building_link_features(root, osm):
+    # Associate features (amenities, etc) to 2D objects (buildings, etc)
+    #osm.buildings.link_features_2d()
+    pass
+
+
+@dddtask()
 def osm_structured_rest(root, osm):
 
-    #root.find("/Ways").replace(osm.ways_1d)
+    # Generates items defined as areas (area fountains, football fields...)
+    #osm.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
 
-    osm.areas2.generate_areas_2d_postprocess()
-    osm.areas2.generate_areas_2d_postprocess_water()
-
-    # Associate features (amenities, etc) to 2D objects (buildings, etc)
-    osm.buildings.link_features_2d()
+    # Road props (traffic lights, lampposts, fountains, football fields...) - needs. roads, areas, coastline, etc... and buildings
+    #osm.ways2.generate_props_2d(root.find("/Ways"))  # Objects related to ways
+    pass
 
 
 @dddtask(order="40.90")

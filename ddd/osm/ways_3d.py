@@ -28,31 +28,17 @@ class Ways3DOSMBuilder():
     def __init__(self, osmbuilder):
         self.osm = osmbuilder
 
-    def generate_ways_3d(self):
-        for layer_idx in self.osm.layer_indexes:
-            self.generate_ways_3d_layer(layer_idx)
+    def generate_ways_3d(self, ways_2d):
+        #for layer_idx in self.osm.layer_indexes:
+        ways_3d = self.generate_ways_3d_base(ways_2d)
 
-        '''
-        self.roads_3d_lm1 = self.roads_2d_lm1.extrude(-0.2).translate([0, 0, -5]).material(mat_asphalt)
-        self.roads_3d_lm1  = terrain.terrain_geotiff_elevation_apply(self.roads_3d_lm1, self.ddd_proj)
+        #self.generate_ways_3d_subways()
+        #self.generate_ways_3d_elevated()
 
-        self.roads_3d_l0 = self.roads_2d_l0.extrude(-0.2).material(mat_asphalt)
-        self.roads_3d_l0  = terrain.terrain_geotiff_elevation_apply(self.roads_3d_l0, self.ddd_proj)
+        return ways_3d
 
-        self.roads_3d_l1 = self.roads_2d_l1.extrude(-0.2).translate([0, 0, 6]).material(mat_asphalt)
-        self.roads_3d_l1  = terrain.terrain_geotiff_elevation_apply(self.roads_3d_l1, self.ddd_proj)
 
-        self.generate_transitions_lm1_l0()
-        self.generate_transitions_l0_l1()
-
-        '''
-        self.generate_ways_3d_subways()
-        self.generate_ways_3d_elevated()
-
-    def generate_ways_3d_intersections(self):
-        pass
-
-    def generate_ways_3d_layer(self, layer_idx):
+    def generate_ways_3d_base(self, ways_2d):
         '''
         - Sorts ways (more important first),
         - Generates 2D shapes
@@ -60,8 +46,7 @@ class Ways3DOSMBuilder():
         - Add metadata (road name, surface type, connections?)
         - Consider elevation and level roads on the transversal axis
         '''
-        ways_2d = self.osm.ways_2d[layer_idx]
-        logger.info("Generating 3D ways for layer %s: %s", layer_idx, ways_2d)
+        logger.info("Generating 3D ways for: %s", ways_2d)
 
         ways_3d = []
         for way_2d in ways_2d.children:
@@ -82,7 +67,7 @@ class Ways3DOSMBuilder():
             except IndexError as e:
                 logger.error("Could not generate 3D way: %s", e)
 
-        ways_3d = ddd.group(ways_3d, empty=3)
+        ways_3d = ddd.group3(ways_3d)
 
         nways = []
         for way in ways_3d.children:
@@ -96,7 +81,9 @@ class Ways3DOSMBuilder():
                 nway = way.translate([0, 0, self.layer_height(way.extra['ddd:layer'])])
             nways.append(nway)
 
-        self.osm.ways_3d[layer_idx] = ddd.group(nways, empty=3, name="Ways (%s)" % layer_idx)
+        ways_3d = ddd.group3(nways, name="Ways")
+        return ways_3d
+
 
     def generate_way_3d_common(self, way_2d):
         '''

@@ -135,17 +135,6 @@ class AreaItemsOSMBuilder():
 
         return None
 
-    def generate_items_3d(self):
-        logger.info("Generating 3D area items")
-
-        for item_2d in self.osm.items_2d.children:
-            item_3d = self.generate_item_3d(item_2d)
-            if item_3d:
-                item_3d.name = item_2d.name
-                item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
-                self.osm.items_3d.children.append(item_3d)
-                logger.debug("Generated area item: %s", item_3d)
-
         # FIXME: Do not alter every vertex, move the entire object instead
         #self.osm.items_3d = self.osm.items_3d.translate([0, 0, -0.20])  # temporary fix snapping
 
@@ -155,6 +144,12 @@ class AreaItemsOSMBuilder():
             item_3d = self.generate_item_3d_fountain(item_2d)
         if item_2d.extra.get('osm:water', None) == 'pond':
             item_3d = self.generate_item_3d_pond(item_2d)
+
+        if item_3d:
+            item_3d.name = item_2d.name
+            item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
+            self.osm.items_3d.children.append(item_3d)
+            logger.debug("Generated area item: %s", item_3d)
 
         return item_3d
 

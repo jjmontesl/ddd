@@ -8,7 +8,6 @@ from ddd.pipeline.decorators import dddtask
 
 
 
-
 @dddtask(order="30.50.20.+", log=True)
 def osm_groups_areas(root, osm, logger):
 
@@ -41,24 +40,107 @@ def osm_groups_areas_default_data(obj, osm):
     obj.extra['ddd:area:height'] = 0  # Lowest
     obj.extra['ddd:area:container'] = None
     obj.extra['ddd:area:contained'] = []
-    obj.prop_set('ddd:area:type', default=None)
 
 
 @dddtask(path="/Areas/*", select='["osm:leisure" ~ "park|garden"]')
 def osm_groups_areas_leisure_park(obj, osm):
     """Define area data."""
+    obj.name = "Park: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
     obj.extra['ddd:aug:itemfill:density'] = 0.0025
     obj.extra['ddd:aug:itemfill:types'] = {'default': 1, 'palm': 0.001}
     obj = obj.material(ddd.mats.park)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:landuse" = "forest"]')
+def osm_groups_areas_landuse_forest(obj, osm):
+    """Define area data."""
+    obj.name = "Forest: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:density'] = 0.004
+    obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
+    obj = obj.material(ddd.mats.park)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:landuse" = "vineyard"]')
+def osm_groups_areas_landuse_vineyard(obj, osm):
+    """Define area data."""
+    obj.name = "Vineyard: %s" % obj.name
+    obj.extra['ddd:area:type'] = "terrain"
+    obj.extra['ddd:aug:itemfill:density'] = 0.001
+    obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
+    obj = obj.material(ddd.mats.park)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:landuse" = "grass"]')
+def osm_groups_areas_landuse_grass(obj, osm):
+    """Define area data."""
+    obj.name = "Grass: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj = obj.material(ddd.mats.park)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:landuse" = "brownfield"]')
+def osm_groups_areas_landuse_brownfield(obj, osm):
+    """Define area data."""
+    obj.name = "Brownfield: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj = obj.material(ddd.mats.dirt)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:landuse" = "greenfield"]')
+def osm_groups_areas_landuse_greenfield(obj, osm):
+    """Define area data."""
+    obj.name = "Greenfield: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:density'] = 0.001
+    obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
+    obj = obj.material(ddd.mats.park)
+    return obj
+
+
+@dddtask(path="/Areas/*", select='["osm:natural" = "wood"]')
+def osm_groups_areas_natural_wood(obj, osm):
+    """Define area data."""
+    obj.name = "Wood: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:density'] = 0.0005
+    obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
+    obj = obj.material(ddd.mats.park)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:natural" = "wetland"]')
+def osm_groups_areas_natural_wetland(obj, osm):
+    """Define area data."""
+    obj.name = "Wetland: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:density'] = 0.001
+    obj = obj.material(ddd.mats.park)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:natural" = "beach"]')
+def osm_groups_areas_natural_beach(obj, osm):
+    """Define area data."""
+    obj.name = "Beach: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj = obj.material(ddd.mats.sand)
+    return obj
+
+
+@dddtask(path="/Areas/*", select='["osm:amenity" = "parking"]')
+def osm_groups_areas_amenity_parking(obj, osm):
+    """Define area data."""
+    obj.name = "Parking: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj = obj.material(ddd.mats.asphalt)
+    return obj
+
+
+
 
 
 """
 def generate_areas_2d(self):
-
-
 
         logger.info("Sorting 2D areas  (%d).", len(areas))
         areas.sort(key=lambda a: a.extra['ddd:area:area'])
@@ -92,42 +174,6 @@ def generate_areas_2d(self):
                 narea = narea.subtract(contained)
             '''
 
-            area = None
-            if narea.extra.get('osm:leisure', None) in ('park', 'garden'):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_park(narea)
-
-            elif narea.extra.get('osm:landuse', None) in ('forest', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_forest(narea)
-            elif narea.extra.get('osm:landuse', None) in ('vineyard', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_vineyard(narea)
-
-            elif narea.extra.get('osm:natural', None) in ('wood', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_forest(narea)
-            elif narea.extra.get('osm:natural', None) in ('wetland', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_wetland(narea)
-            elif narea.extra.get('osm:natural', None) in ('beach', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_beach(narea)
-            elif narea.extra.get('osm:landuse', None) in ('grass', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_park(narea)
-
-            elif narea.extra.get('osm:amenity', None) in ('parking', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_parking(narea)
 
             elif (narea.extra.get('osm:public_transport', None) in ('platform', ) or
                   narea.extra.get('osm:railway', None) in ('platform', )):
@@ -146,10 +192,7 @@ def generate_areas_2d(self):
             elif narea.extra.get('osm:landuse', None) in ('railway', ):
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 area = self.generate_area_2d_railway(narea)
-            elif narea.extra.get('osm:landuse', None) in ('brownfield', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                area = self.generate_area_2d_unused(narea)
-                narea = narea.subtract(union)
+
             elif narea.extra.get('osm:amenity', None) in ('school', ):
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)

@@ -52,6 +52,8 @@ class Areas3DOSMBuilder():
 
     def generate_coastline_3d(self, area_crop):
 
+
+        '''
         logger.info("Generating water and land areas according to coastline: %s", (area_crop.bounds))
 
         #self.water_3d = terrain.terrain_grid(self.area_crop.bounds, height=0.1, detail=200.0).translate([0, 0, 1]).material(mat_sea)
@@ -123,6 +125,8 @@ class Areas3DOSMBuilder():
             self.osm.water_2d = ddd.group(areas_2d)
         else:
             logger.debug("No water areas from coastline generated.")
+        '''
+        pass
 
     '''
     def generate_ground_3d(self, area_crop):
@@ -158,9 +162,13 @@ class Areas3DOSMBuilder():
         self.osm.ground_3d.append(terr)
     '''
 
-    def generate_areas_3d(self):
+    def generate_areas_3d(self, areas_2d):
+
         logger.info("Generating 3D areas (%d)", len(self.osm.areas_2d.children))
-        for area_2d in self.osm.areas_2d.children:
+
+        areas_3d = ddd.group3(name="Areas")
+
+        for area_2d in areas_2d.children:
             try:
                 if area_2d.extra.get('ddd:area:type', None) is None:
                     area_3d = self.generate_area_3d(area_2d)
@@ -182,7 +190,8 @@ class Areas3DOSMBuilder():
                     raise AssertionError("Area type undefined: %s" % (area_2d.extra.get('ddd:area:type', None)))
 
                 if area_3d:
-                    self.osm.areas_3d.children.append(area_3d)
+                    areas_3d.append(area_3d)
+
             except ValueError as e:
                 logger.error("Could not generate area %s: %s", area_2d, e)
                 raise
@@ -192,6 +201,9 @@ class Areas3DOSMBuilder():
             except DDDException as e:
                 logger.error("Could not generate area %s: %s", area_2d, e)
                 raise
+
+        return areas_3d
+
 
     def generate_area_3d(self, area_2d):
 
@@ -215,7 +227,7 @@ class Areas3DOSMBuilder():
                 # Grass
                 if True:
                     # For volumetric grass, as described by: https://www.bruteforce-games.com/post/grass-shader-devblog-04
-                    grass_layers = ddd.group3()
+                    grass_layers = []
                     colors = ['#000000', '#222222', '#444444', '#666666', '#888888', '#aaaaaa', '#cccccc', '#eeeeee']
                     for i in range(8):
                         grass_layer = area_3d.copy(name="Grass %d: %s" % (i, area_3d.name))
@@ -227,7 +239,8 @@ class Areas3DOSMBuilder():
                         grass_layer.extra['ddd:collider'] = False
                         grass_layer.extra['ddd:occluder'] = False
                         grass_layers.append(grass_layer)
-                    self.osm.other_3d.append(grass_layers)  #ddd.group3([area_3d, grass_layers])
+                    #self.osm.other_3d.append(grass_layers)  #ddd.group3([area_3d, grass_layers])
+                    area_3d.children.extend(grass_layers)
 
 
                 #area_3d = ddd.group([area_2d.triangulate().translate([0, 0, 0.0]),
