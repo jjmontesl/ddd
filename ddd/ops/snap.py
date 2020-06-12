@@ -35,7 +35,8 @@ class DDDSnap():
 
         result = point.copy()
         result.geom.coords = coords_p
-        result.extra['ddd:angle'] = math.atan2(dirvec[1], dirvec[0]) + (math.pi if exterior < 0 else 0)
+        result.extra['ddd:angle:calculated'] = math.atan2(dirvec[1], dirvec[0]) + (math.pi if exterior < 0 else 0)
+        result.extra['ddd:angle'] = result.extra['ddd:angle'] if result.extra.get('ddd:angle', None) is not None else result.extra['ddd:angle:calculated']
 
         return result
 

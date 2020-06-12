@@ -2,8 +2,8 @@
 
   * Added pipeline and tasks support.
   * Added selectors language (overpass-like).
-  * Added WMS client.
-  * Added mapillary support.
+  * Added WMS client and orthophoto pipeline steps.
+  * Added mapillary support and sample pipeline steps.
   * Added mesh combine method (and used to simplify tree structure).
   * Added --catalog-overwrite and --catalog-ignore options.
   * Added --renderer option (pyrender and pyglet options).

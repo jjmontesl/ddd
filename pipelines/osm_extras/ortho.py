@@ -9,14 +9,14 @@ import pyproj
 from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.osm import osm
-from ddd.osm.augment.wms import WMSClient
 from ddd.osm.osm import project_coordinates
 from ddd.pipeline.decorators import dddtask
+from ddd.geo.sources.wms import WMSClient
 
 
 # TODO: These tasks could be callable repeatedly with different parameters (?) for Orthophotos and OSM images
 
-@dddtask(order="50.90.+.+", log=True)
+@dddtask(order="60.80.+.+", log=True)
 def osm_extras_orthophoto():
     pass
 
@@ -25,45 +25,68 @@ def osm_extras_orthophoto_get(pipeline, osm, root, logger):
 
     # Add mapillary items
     # TODO: Move to separate task and rule module, separate point generation from image/metadata generation, reuse code, this could be much shorter
-    url = pipeline.data['wms_ortho_url']
-    client = WMSClient(url)
+    url = None  # pipeline.data['wms_ortho_url']
+    client = WMSClient("es_ortho", url, width=2048, height=2048)
 
-    transformer = pyproj.Transformer.from_proj(osm.osm_proj, osm.ddd_proj)
-    transformer2 = pyproj.Transformer.from_proj(osm.ddd_proj, osm.osm_proj)
+    transformer1 = pyproj.Transformer.from_proj(osm.ddd_proj, osm.osm_proj)
+    transformer2 = pyproj.Transformer.from_proj(osm.osm_proj, osm.webmercator_proj)
 
-    #query_coords = osm.area_crop2.centroid().geom.coords[0]
-    #query_coords = project_coordinates(query_coords, transformer2)
+    query_bbox_ddd = osm.area_crop2.bounds()
+    print(query_bbox_ddd)
+    query_bbox_osm = project_coordinates(query_bbox_ddd, transformer1)
+    logger.info("Requesting WMS image for: %s", query_bbox_osm)
 
-    logger.info("Requesting WMS image for: %s", osm.area_crop2.geom.coords)
+    query_bbox_webmercator = project_coordinates(query_bbox_osm, transformer2)
+    #bbox = [-1007960.7600516, 5131958.1924932, -878017.81196677, 5223682.6264354]
+    data = client.request_image(query_bbox_webmercator)
+    image = client.image_textured(query_bbox_webmercator)
 
-    client.request()
     # Save to disk (or do by default if not cached)
+    bounds = root.bounds()
+    area_size = [query_bbox_ddd[2] - query_bbox_ddd[0], query_bbox_ddd[3] - query_bbox_ddd[1]]
+    image = image.scale([area_size[0], area_size[1], 1]).translate([query_bbox_ddd[0], query_bbox_ddd[1], bounds[1][2] + 10.0])
+
+    pipeline.data["crop_image"] = image
 
 
+'''
 @dddtask()
-def osm_extras_orthophoto_addimage():
-
-    coords = project_coordinates(coords, transformer)
-    logger.debug("Mapillary Image: %s  CameraAngle: %.1f  Pano: %s  Coords: %s" % (key, camera_angle, pano, coords))
-
-    mc.request_image(key)
-    # Reuse the image_textured
-    image = mc.image_textured(feature).scale([3, 3, 3])
-    image_height = 1.5
-    image = image.translate([0, 1, 0])
-    image = image.rotate([0, 0, (0 + (-camera_angle)) * ddd.DEG_TO_RAD])
-    image = image.translate([coords[0], coords[1], image_height])
-
-    cam = ddd.cube(d=0.05).translate([coords[0], coords[1], image_height]).material(ddd.mats.highlight)
-    image.append(cam)
-
-    image = terrain.terrain_geotiff_min_elevation_apply(image, osm.ddd_proj)
-
-    osm.other_3d.append(image)
+def osm_extras_orthophoto_addimage(root, pipeline):
+    root.find("/Other3").append(pipeline.data["crop_image"])
+'''
 
 
-@dddtask(order="60.90.+.+", onlyif=lambda pipeline: pipeline.get('osm_extras_groundimage', False), log=True)
+
+@dddtask(order="60.85.+.+", log=True)  # condition=lambda pipeline: pipeline.get('osm_extras_groundimage', True)
 def osm_extras_image_as_ground():
     """Replaces areas (terrain, sidewalks...) with a given image."""
     pass
+
+@dddtask(path="/Areas/*", recurse=True)  # condition=lambda pipeline: pipeline.get('osm_extras_groundimage', True)
+def osm_extras_image_as_ground_areas(pipeline, osm, obj):
+    """Replaces areas (terrain, sidewalks...) with a given image."""
+    if obj.mat and obj.mat.extra.get("ddd:export-as-marker", None): return
+    if obj.children and not obj.mesh: return
+
+    query_bbox_ddd = osm.area_crop2.bounds()
+    area_size = [query_bbox_ddd[2] - query_bbox_ddd[0], query_bbox_ddd[3] - query_bbox_ddd[1]]
+
+    #obj = obj.material(pipeline.data["crop_image"].mat)
+    obj.mat = pipeline.data["crop_image"].mat
+    obj = ddd.uv.map_cubic(obj, offset=[query_bbox_ddd[0] / area_size[0], query_bbox_ddd[1] / area_size[1]], scale=[1.0 / area_size[0], 1.0 / area_size[1]])
+    return obj
+
+@dddtask(path="/Ways/*", recurse=True)  # condition=lambda pipeline: pipeline.get('osm_extras_groundimage', True)
+def osm_extras_image_as_ground_ways(pipeline, osm, obj):
+    """Replaces ways with a given image."""
+    if obj.mat and obj.mat.extra.get("ddd:export-as-marker", None): return
+    if obj.children and not obj.mesh: return
+
+    query_bbox_ddd = osm.area_crop2.bounds()
+    area_size = [query_bbox_ddd[2] - query_bbox_ddd[0], query_bbox_ddd[3] - query_bbox_ddd[1]]
+
+    #obj = obj.material(pipeline.data["crop_image"].mat)
+    obj.mat = pipeline.data["crop_image"].mat
+    obj = ddd.uv.map_cubic(obj, offset=[query_bbox_ddd[0] / area_size[0], query_bbox_ddd[1] / area_size[1]], scale=[1.0 / area_size[0], 1.0 / area_size[1]])
+    return obj
 

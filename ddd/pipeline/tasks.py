@@ -24,7 +24,7 @@ class DDDTask(object):
 
     _tasks = []
 
-    def __init__(self, name=None, path=None, select=None, filter=None, order=None, parent=None, before=None, after=None, log=None):
+    def __init__(self, name=None, path=None, select=None, filter=None, order=None, parent=None, before=None, after=None, log=None, recurse=False):
 
         self.name = name
 
@@ -39,6 +39,7 @@ class DDDTask(object):
 
         self.path = path
         self.filter = filter
+        self.recurse = recurse
         self.replace = True
 
         try:
@@ -108,8 +109,8 @@ class DDDTask(object):
             elif arg == 'logger': kwargs['logger'] = logging.getLogger(func.__module__)
             elif arg in pipeline.data: kwargs[arg] = pipeline.data[arg]
 
-        logger.debug("Select: func=%s selector=%s path=%s recurse=%s _rec_path=%s", self.filter, self.selector, self.path)
-        objs = pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=False)
+        logger.debug("Select: func=%s selector=%s path=%s recurse=%s ", self.filter, self.selector, self.path, self.recurse)
+        objs = pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=self.recurse)
 
         #if self.log:
         self.runlog(objs.count())

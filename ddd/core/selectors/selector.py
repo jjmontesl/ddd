@@ -3,14 +3,13 @@
 # Jose Juan Montes 2020
 
 import logging
-import os
-import functools
-import inspect
-from lark.lark import Lark
-from ddd.core.selectors.selector_ebnf import selector_ebnf
-from lark.visitors import Transformer
-from ddd.core.exception import DDDException
 import re
+
+from lark.lark import Lark
+from lark.visitors import Transformer
+
+from ddd.core.exception import DDDException
+from ddd.core.selectors.selector_ebnf import selector_ebnf
 
 
 # Get instance of logger for this module
@@ -19,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 class TreeToSelector(Transformer):
     """
-    Helper class for Lark that transforms Selector grammar into
-    python types.
+    Helper class for Lark that transforms DDD Selector grammar into python types and selector evaluation functions.
     """
 
     def TAG_KEY_STRING(self, s):
@@ -72,25 +70,46 @@ class TreeToSelector(Transformer):
     def datafiltervalueexpr(self, t):
         return t[0]
 
-    def datafilter_attr_equals(self, t):
+    def datafilter_attr_eq(self, t):
         datakey = t[0]
         datavalue = t[1]
-        def datafilter_attr_equals_func(obj):
+        def datafilter_attr_eq_func(obj):
             metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
             return (datakey in metadata and metadata[datakey] == datavalue)
-        return datafilter_attr_equals_func
+        return datafilter_attr_eq_func
+
+    def datafilter_attr_neq(self, t):
+        datakey = t[0]
+        datavalue = t[1]
+        def datafilter_attr_neq_func(obj):
+            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
+            return (datakey in metadata and metadata[datakey] != datavalue)
+        return datafilter_attr_neq_func
 
     def datafilter_attr_def(self, t):
         datakey = t[0]
-        def datafilter_attr_undef_func(obj):
-            return (datakey in obj.extra)
-        return datafilter_attr_undef_func
+        def datafilter_attr_def_func(obj):
+            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
+            return (datakey in metadata)
+        return datafilter_attr_def_func
 
     def datafilter_attr_undef(self, t):
         datakey = t[0]
         def datafilter_attr_undef_func(obj):
-            return (datakey not in obj.extra)
+            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
+            return (datakey not in metadata)
         return datafilter_attr_undef_func
+
+    def datafilter_attr_def_re(self, t):
+        datakey = t[0]
+        regexp = re.compile(datakey)
+        def datafilter_attr_def_re_func(obj):
+            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
+            for datakey in metadata:
+                matches = bool(regexp.match(datakey))
+                if matches: return True
+            return False
+        return datafilter_attr_def_re_func
 
     def datafilter_attr_regexp(self, t):
         datakey = t[0]

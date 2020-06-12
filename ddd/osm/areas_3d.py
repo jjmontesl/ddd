@@ -50,10 +50,10 @@ class Areas3DOSMBuilder():
         self.osm = osmbuilder
 
 
+    '''
     def generate_coastline_3d(self, area_crop):
 
 
-        '''
         logger.info("Generating water and land areas according to coastline: %s", (area_crop.bounds))
 
         #self.water_3d = terrain.terrain_grid(self.area_crop.bounds, height=0.1, detail=200.0).translate([0, 0, 1]).material(mat_sea)
@@ -125,8 +125,8 @@ class Areas3DOSMBuilder():
             self.osm.water_2d = ddd.group(areas_2d)
         else:
             logger.debug("No water areas from coastline generated.")
-        '''
         pass
+    '''
 
     '''
     def generate_ground_3d(self, area_crop):
@@ -170,7 +170,7 @@ class Areas3DOSMBuilder():
 
         for area_2d in areas_2d.children:
             try:
-                if area_2d.extra.get('ddd:area:type', None) is None:
+                if area_2d.extra.get('ddd:area:type', 'default') is 'default':
                     area_3d = self.generate_area_3d(area_2d)
                 elif area_2d.extra['ddd:area:type'] == 'sidewalk':
                     area_3d = self.generate_area_3d(area_2d)
@@ -300,7 +300,13 @@ class Areas3DOSMBuilder():
 
         if area_3d.mesh or area_3d.children:
             #height = area_2d.extra.get('ddd:height', 0.2)
-            area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
+            area_elevation = area_2d.extra.get('ddd:area:elevation', 'geotiff')
+            if area_elevation == 'geotiff':
+                area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
+            elif area_elevation == 'none':
+                pass
+            else:
+                raise AssertionError()
 
         area_3d.children.extend( [self.generate_area_3d(c) for c in area_2d.children] )
 

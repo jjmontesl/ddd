@@ -25,15 +25,19 @@ SINGLE_QUOTED_STRING  : /'[^']*'/
 string: ESCAPED_STRING
 tagkeystring: TAG_KEY_STRING
 
-datafilter: datafilter_attr_equals
+datafilter: datafilter_attr_eq
+          | datafilter_attr_neq
           | datafilter_attr_regexp
           | datafilter_attr_def
           | datafilter_attr_undef
+          | datafilter_attr_def_re
           | datafilter_attr_ext_in
 
 datafilter_attr_def: "[" datafilterkeyexprname "]"
 datafilter_attr_undef: "[" "!" datafilterkeyexprname "]"
-datafilter_attr_equals: "[" datafilterkeyexprname "=" datafiltervalueexpr "]"
+datafilter_attr_def_re: "[" "~" datafilterkeyexprname "]"
+datafilter_attr_eq: "[" datafilterkeyexprname "=" datafiltervalueexpr "]"
+datafilter_attr_neq: "[" datafilterkeyexprname "!=" datafiltervalueexpr "]"
 datafilter_attr_regexp: "[" datafilterkeyexprname "~" datafiltervalueexpr "]"
 
 datafilter_attr_ext_in: "[" datafilterkeyexprname "in" list "]"

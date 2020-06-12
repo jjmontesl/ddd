@@ -43,8 +43,6 @@ logger = logging.getLogger(__name__)
 
 class Areas2DOSMBuilder():
 
-    max_trees = None
-
     def __init__(self, osmbuilder):
 
         self.osm = osmbuilder
@@ -297,45 +295,6 @@ class Areas2DOSMBuilder():
                 #areas_2d.children.extend(area.individualize().children)
 
 
-    def generate_area_2d_park(self, area, tree_density_m2=0.0025, tree_types=None):
-
-        if tree_types is None:
-            tree_types = {'default': 1, 'palm': 0.001}
-
-        #area = ddd.shape(feature["geometry"], name="Park: %s" % feature['properties'].get('name', None))
-        feature = area.extra['osm:feature']
-        area = area.material(ddd.mats.park)
-        area.name = "Park: %s" % feature['properties'].get('name', None)
-        area.extra['ddd:area:type'] = 'park'
-
-        # Add trees if necesary
-        # FIXME: should not check for None in intersects, filter shall not return None (empty group)
-        trees = self.osm.items_1d.filter(lambda o: o.extra.get('osm:natural') == 'tree')
-        has_trees = area.intersects(trees)
-        add_trees = not has_trees # and area.geom.area > 100
-
-        if add_trees and area.geom:
-
-            tree_area = area.intersection(ddd.shape(self.osm.area_crop)).union()
-            tree_type = weighted_choice(tree_types)
-
-            if tree_area.geom:
-                # Decimation would affect after
-                num_trees = int((tree_area.geom.area * tree_density_m2))
-                #if num_trees == 0 and random.uniform(0, 1) < 0.5: num_trees = 1  # alone trees
-                if self.max_trees:
-                    num_trees = min(num_trees, self.max_trees)
-                logger.debug("Adding %d trees to %s", num_trees, area)
-                #logger.warning("Should be adding items_1d or items_2d, not 3D directly")
-                for p in tree_area.random_points(num_points=num_trees):
-                    #plant = plants.plant().translate([p[0], p[1], 0.0])
-                    #self.osm.items_3d.children.append(plant)
-                    tree = ddd.point(p, name="Tree")
-                    tree.extra['osm:natural'] = 'tree'
-                    tree.extra['osm:tree:type'] = tree_type
-                    self.osm.items_1d.children.append(tree)
-
-        return area
 
     def generate_area_2d_artwork(self, area):
 
@@ -627,8 +586,9 @@ class Areas2DOSMBuilder():
 
         for way in self.osm.features_2d.children:
             if way.extra.get('osm:natural') == 'coastline':
-                coastlines_1d.append(way)
-                coastlines.append(way.buffer(0.01))
+                original = way.extra['osm:original']  # Original has not been cropped (cropped verison is not valid for this)
+                coastlines_1d.append(original)
+                coastlines.append(original.buffer(0.01))
 
         #for way in self.osm.features.children:
         #    if way.properties.get('natural') == 'coastline':
@@ -662,24 +622,29 @@ class Areas2DOSMBuilder():
 
 
         areas_2d = []
-        geoms = coastline_areas.geom.geoms if coastline_areas.geom.type == 'MultiPolygon' else [coastline_areas.geom]
-        for water_area_geom in geoms:
+        #geoms = coastline_areas.geom.geoms if coastline_areas.geom.type == 'MultiPolygon' else [coastline_areas.geom]
+        for water_area_geom in coastline_areas.individualize().flatten().children:
             # Find closest point, closest segment, and angle to closest segment
-            water_area_geom = ddd.shape(water_area_geom).clean(eps=0.01).geom
+            #water_area_geom = ddd.shape(water_area_geom).clean(eps=0.01).geom
 
-            if not water_area_geom.is_simple:
-                logger.error("Invalid water area geometry (not simple): %s", water_area_geom)
-                continue
+            #if not water_area_geom.is_simple:
+            #    logger.error("Invalid water area geometry (not simple): %s", water_area_geom)
+            #    continue
 
-            water_area_point = water_area_geom.representative_point()
+            if not water_area_geom.geom: continue
+
+            water_area_point = water_area_geom.geom.representative_point()
             p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = coastlines_1d.closest_segment(ddd.shape(water_area_point))
             pol = LinearRing([segment_coords_a, segment_coords_b, (water_area_point.coords[0][0], water_area_point.coords[0][1], 0)])
 
             if not pol.is_ccw:
                 #area_3d = area_2d.extrude(-0.2)
-                area_2d = ddd.shape(water_area_geom).buffer(0.10).clean(eps=0.01)
+                area_2d = ddd.shape(water_area_geom.geom).buffer(0.10).clean(eps=0.01)
                 area_2d.validate()
                 area_2d = area_2d.material(ddd.mats.sea)
+                area_2d.extra['ddd:area:type'] = 'water'
+                area_2d.extra['ddd:area:elevation'] = 'none'
+                area_2d.extra['ddd:height'] = 0
                 area_2d.extra['ddd:collider'] = False
                 area_2d.extra['ddd:shadows'] = False
                 area_2d.extra['ddd:occluder'] = False
@@ -688,13 +653,14 @@ class Areas2DOSMBuilder():
                 areas_2d.append(area_2d)
                 #areas.append(area_3d)
 
-        self.osm.water_2d = ddd.group(areas_2d)
+        return ddd.group2(areas_2d, name="Water")
 
         #if areas:
         #    self.osm.water_3d = ddd.group(areas)
         #else:
         #    logger.debug("No water areas from coastline generated.")
 
+    '''
     def generate_ground_2d(self, area_crop):
 
         logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
@@ -736,3 +702,6 @@ class Areas2DOSMBuilder():
         #terr.save("/tmp/test.svg")
 
         return terr
+    '''
+
+

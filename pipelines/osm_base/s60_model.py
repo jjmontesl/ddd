@@ -5,6 +5,7 @@
 
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
+from ddd.geo import terrain
 
 
 @dddtask(order="60.10.+", log=True)
@@ -15,6 +16,7 @@ def osm_model_init(root, osm):
     #root.append(ddd.group3(name="Areas3"))
     #root.append(ddd.group3(name="Buildings3"))
     #root.append(ddd.group3(name="Items3"))
+    root.append(ddd.group3(name="Other3"))
     #root.append(ddd.group3(name="Meta3"))
 
 
@@ -22,9 +24,21 @@ def osm_model_init(root, osm):
 def osm_model_generate(osm, root):
     pass
 
-@dddtask()
-def osm_model_generate_coastline(osm, root):
-    osm.areas3.generate_coastline_3d(osm.area_crop if osm.area_crop else osm.area_filter)
+@dddtask(path="/Features", select='["osm:natural" = "coastline"]')
+def osm_model_generate_coastline(osm, root, obj):
+
+    # Crop this feature as it has not been cropped
+    area_crop = osm.area_crop2 if osm.area_crop2 else osm.area_filter2
+    coastlines_3d = obj.intersection(area_crop).union().clean()
+    if not coastlines_3d.geom:
+        return
+
+    coastlines_3d = obj.individualize().extrude(10.0).translate([0, 0, -10.0])
+    coastlines_3d = terrain.terrain_geotiff_elevation_apply(coastlines_3d, osm.ddd_proj)
+    coastlines_3d = ddd.uv.map_cubic(coastlines_3d)
+    coastlines_3d.name = 'Coastline: %s' % coastlines_3d.name
+    root.find("/Other3").append(coastlines_3d)
+
 
 @dddtask()
 def osm_model_generate_ways(osm, root):
@@ -33,6 +47,14 @@ def osm_model_generate_ways(osm, root):
 
     root.remove(ways_2d)
     root.append(ways_3d)
+
+
+@dddtask()
+def osm_model_generate_ways_roadlines(osm, root, pipeline):
+    # TODO: Do this here, instead of during 2D stage
+    roadlines = pipeline.data["Roadlines3"]
+    del(pipeline.data["Roadlines3"])
+    root.append(roadlines)
 
 
 @dddtask()
@@ -68,7 +90,7 @@ def osm_model_generate_items2(obj, osm, root):
         root.find("/Items3").append(item_3d)
 
 
-@dddtask(log=True)
+@dddtask(order="60.50.+", log=True)
 def osm_model_rest(pipeline, root, osm):
 
     # Final grouping
@@ -77,8 +99,8 @@ def osm_model_rest(pipeline, root, osm):
              root.find("/Ways"),
              root.find("/Buildings"),
              root.find("/Items3"),
-             #root.find("/Other"),
-             #root.find("/Roadlines"),
+             root.find("/Other3"),
+             root.find("/Roadlines3"),
              ]
     scene = ddd.group(scene, name="Scene")
     pipeline.root = scene

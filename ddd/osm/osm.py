@@ -31,16 +31,18 @@ logger = logging.getLogger(__name__)
 WayConnection = namedtuple("WayConnection", "other self_idx other_idx")
 
 def project_coordinates(coords, transformer):
-    if isinstance(coords[0], list):
-        coords = [project_coordinates(c, transformer) for c in coords]
-    elif isinstance(coords[0], float):
-        x, y = transformer.transform(coords[0], coords[1])
-        coords = [x, y]
+    if isinstance(coords[0], float) or isinstance(coords[0], int):
+        result = []
+        for i in range(0, len(coords), 2):
+            x, y = transformer.transform(coords[i], coords[i+1])
+            result.extend([x, y])
         #c = _c(coords)
+    elif isinstance(coords[0], list):
+        result = [project_coordinates(c, transformer) for c in coords]
     else:
         raise AssertionError()
 
-    return coords
+    return result
 
 
 class OSMBuilder():
@@ -82,13 +84,18 @@ class OSMBuilder():
                               '-2a': 0.0, '-1a': 0.0, '0a': 0.0, '1a': 0.0}
 
 
-        self.osm_proj = osm_proj
+        self.webmercator_proj = pyproj.Proj(init='epsg:3857')
+        self.osm_proj = osm_proj  # 4326
         self.ddd_proj = ddd_proj
 
         self.features = features if features else []
         self.features_2d = ddd.group2(name="Features")
 
         '''
+        # TODO: Temporary, move out of builder and to pipeline nodes, separate 2D and 3D building
+        self.roadlines_2d = DDDObject2(name="Roadlines2")
+        self.roadlines_3d = DDDObject3(name="Roadlines3")
+
         self.items_1d = ddd.group2(name="Items 1D")  # Point items
         self.items_2d = ddd.group2(name="Items 2D")  # Area items
         self.items_3d = ddd.group3(name="Items")
@@ -97,8 +104,6 @@ class OSMBuilder():
         self.ways_2d = defaultdict(DDDObject2)  # <- big error :D everything can have a layer, removed changed for a group
         self.ways_3d = defaultdict(DDDObject3)  # <- big error :D everything can have a layer, removed changed for a group
 
-        self.roadlines_2d = DDDObject2(name="Roadlines 2D")
-        self.roadlines_3d = DDDObject3(name="Roadlines")
 
         self.areas_2d = DDDObject2("Areas 2D")
         self.areas_2d_objects = DDDObject2(name="Areas 2D Objects")

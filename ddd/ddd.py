@@ -615,7 +615,7 @@ class DDDObject2(DDDObject):
         self.geom = geom
 
     def __repr__(self):
-        return "<%s (name=%s, geom=%s (%s verts), children=%d>" % (self.__class__.__name__, self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count(), len(self.children) if self.children else 0)
+        return "<%s (name=%s, geom=%s (%s verts), children=%d>" % (self.__class__.__name__, self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
     def vertex_count(self):
         if not self.geom:
@@ -1420,6 +1420,11 @@ class DDDInstance(DDDObject):
         obj.transform.position = np.array(v) * obj.transform.position
         return obj
 
+    def bounds(self):
+        if self.ref:
+            return self.ref.bounds()
+        return None
+
     def marker(self):
         ref = D1D2D3.marker(name=self.name, extra=dict(self.extra))
         ref = ref.scale(self.transform.scale)
@@ -1558,7 +1563,8 @@ class DDDObject3(DDDObject):
         corners = list()
         for c in self.children:
             cb = c.bounds()
-            corners.extend((*cb, ))
+            if cb is not None:
+                corners.extend((*cb, ))
 
         if self.mesh:
             corners.extend((*list(self.mesh.bounds), ))

@@ -401,22 +401,22 @@ class Ways2DOSMBuilder():
         # ways_2d["1a"] = ways_2d["1a"].subtract(union_l1)
 
 
-    def generate_props_2d(self, ways_2d):
+    def generate_props_2d(self, ways_2d, pipeline):
         """
         Road props (traffic lights, lampposts...).
         Need roads, areas, coastline, etc... and buildings
         """
 
-        logger.info("Generating props linked to ways (%d ways)", len(ways))
+        logger.info("Generating props linked to ways (%d ways)", len(ways_2d.children))
 
-        for way_2d in ways_2d:
+        for way_2d in ways_2d.children:
             try:
-                self.generate_props_2d_way(way_2d)
+                self.generate_props_2d_way(way_2d, pipeline)
             except Exception as e:
                 #raise DDDException("Could not generate props for way: %s" % e, ddd_obj=way_2d)
                 logger.error("Error generating props for way %s: %s", way_2d, e)
 
-    def generate_props_2d_way(self, way_2d):
+    def generate_props_2d_way(self, way_2d, pipeline):
 
         #if 'way_1d' not in way_2d.extra:
         #    # May be an intersection, should generate roadlines too
@@ -467,7 +467,7 @@ class Ways2DOSMBuilder():
                 # try:
                 uvmapping.map_2d_path(line, pathline, line_x_offset / 0.05)
 
-                self.osm.roadlines_2d.children.append(line)
+                pipeline.root.find("/Roadlines2").append(line)
 
                 # except Exception as e:
                 #    logger.error("Could not UV map Way 2D from path: %s %s %s: %s", line, line.geom, pathline.geom, e)
@@ -484,10 +484,10 @@ class Ways2DOSMBuilder():
                 uvmapping.map_3d_from_2d(line_3d, line)
                 # uvmapping.map_2d_path(line_3d, path)
 
-                self.osm.roadlines_3d.children.append(line_3d)
+                pipeline.data["Roadlines3"].append(line_3d)
 
         # Check if to generate lamps
-        if path.extra['ddd:way:lamps'] and path.extra['ddd:layer'] == "0":
+        if path.extra['ddd:way:lamps'] and (path.extra['ddd:layer'] in (0, "0") or path.extra['osm:layer'] in (0, "0")):
 
             # Generate lamp posts
             interval = 25.0
@@ -535,7 +535,7 @@ class Ways2DOSMBuilder():
 
                         item.extra['way_2d'] = way_2d
                         item.extra['osm:highway'] = 'street_lamp'
-                        self.osm.items_1d.children.append(item)
+                        pipeline.root.find("/Items").append(item)
 
         '''
         # Check if to generate bridge posts
@@ -576,7 +576,7 @@ class Ways2DOSMBuilder():
         '''
 
         # Generate traffic lights
-        if True and path.geom.length > 45.0 and path.extra['ddd:way:traffic_signals'] and path.extra['ddd:layer'] == "0":
+        if True and path.geom.length > 45.0 and path.extra['ddd:way:traffic_signals'] and path.extra['ddd:layer'] in (0, "0"):
 
             for end in (1, -1):
 
@@ -610,7 +610,7 @@ class Ways2DOSMBuilder():
                 item.extra['way_2d'] = way_2d
                 item.extra['osm:highway'] = 'traffic_signals'
                 item.extra['ddd:angle'] = angle #+ math.pi/2
-                self.osm.items_1d.children.append(item)
+                pipeline.root.find("/Items").append(item)
 
         # Generate traffic signs
         if True and path.geom.length > 20.0 and path.extra['ddd:way:traffic_signs'] and path.extra['ddd:layer'] == "0":
@@ -646,8 +646,8 @@ class Ways2DOSMBuilder():
                     # area = self.osm.areas_2d.intersect(item)
                     # Check type of area point is on
                     item.extra['way_2d'] = way_2d
-                    item.extra['ddd:angle'] = angle
+                    item.extra['ddd:angle'] = angle - math.pi / 2
                     item.extra['osm:traffic_sign'] = random.choice(['es:r1', 'es:r2', 'es:p1', 'es:r101', 'es:r303', 'es:r305',
                                                                     'es:r308', 'es:r400c', 'es:r500', 'es:s13'])  # 'es:r301_50',
-                    self.osm.items_1d.children.append(item)
+                    pipeline.root.find("/Items").append(item)
 

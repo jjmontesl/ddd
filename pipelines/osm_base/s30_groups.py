@@ -5,6 +5,7 @@
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 from ddd.core.exception import DDDException
+import random
 
 
 @dddtask(order="30.10.+", log=True)
@@ -68,32 +69,28 @@ def osm_groups_ways_process(pipeline, osm, root, logger):
 
 
 # Generate buildings
-##osm.buildings.generate_buildings_2d()
-@dddtask(order="30.40.10", path="/Features/*", select='["geom:type"="Polygon"]', filter=lambda o: o.extra.get("osm:building", None) is not None or o.extra.get("osm:building:part", None) is not None, log=True)
-def osm_generate_buildings(root, obj):
-    # Ways depend on buildings
-    item = obj.copy(name="Building: %s" % obj.name)
-    root.find("/Buildings").append(item)
-    ## ?? osm.ways.generate_ways_1d()
 
-@dddtask(order="30.40.+")
+@dddtask(order="30.40.5.+")
 def osm_generate_buildings_preprocess(pipeline, osm, root, logger):
-    #osm.buildings.preprocess_buildings_2d()
-    pass
+    """Preprocesses buildings at OSM feature level, associating buildings and building parts."""
+    features = root.find("/Features")
+    osm.buildings.preprocess_buildings_features(features)
 
-@dddtask(order="30.40.+")
+
+@dddtask(order="30.40.10.+", path="/Features/*", select='["geom:type" != "Point"]', filter=lambda o: o.extra.get("osm:building", None) is not None or o.extra.get("osm:building:part", None) is not None, log=True)
+def osm_generate_buildings(root, obj):
+    item = obj.copy(name="Building: %s" % obj.name)
+    item.extra['ddd:building:items'] = []
+    if 'ddd:building:parts' not in item.extra: item.extra['ddd:building:parts'] = []
+    item = item.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3]))
+    root.find("/Buildings").append(item)
+
+
+@dddtask(order="30.40.20.+")
 def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
-    #osm.buildings.generate_buildings_2d()
     pass
 
 
-'''
-@dddtask(order="30.50.10", path="/Features/*", select='["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"][!"osm:building"]')
-def osm_groups_areas(root, osm, obj, logger):
-    # Ways depend on buildings
-    item = obj.copy(name="Area: %s" % obj.name)
-    root.find("/Areas").append(item)
-'''
 
 @dddtask(order="30.50.10", path="/Features/*", select='["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"][!"osm:building"]')
 def osm_groups_areas(root, osm, obj, logger):
@@ -133,10 +130,12 @@ def osm_groups_areas_remove_ignored(root, obj, logger):
 
 
 @dddtask(order="30.60.+")
-def osm_generate_areas_coastline_2d(osm, root):
+def osm_generate_areas_coastline_2d(osm, root, logger):
     #osm.areas.generate_coastline_2d(osm.area_crop if osm.area_crop else osm.area_filter)  # must come before ground
-    osm.areas2.generate_coastline_2d(osm.area_filter)  # must come before ground
-    root.find("/Areas").append(osm.water_2d)
+    water_2d = osm.areas2.generate_coastline_2d(osm.area_filter)  # must come before ground
+    logger.info("Coastline 2D areas generated: %s", water_2d)
+    if water_2d:
+        root.find("/Areas").children.extend(water_2d.children)
 
 @dddtask(order="30.90")
 def osm_groups_finished(pipeline, osm, root, logger):

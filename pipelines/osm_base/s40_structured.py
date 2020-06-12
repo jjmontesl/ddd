@@ -25,10 +25,10 @@ def osm_structured_link_ways_items(osm, root):
 @dddtask()
 def osm_structured_buildings(osm, root):
     # dependencies? (document)
-    osm.buildings.preprocess_buildings_2d()
-
-    root.find("/Buildings").children = []  # Remove as they will be generated from features: TODO: change this
-    osm.buildings.generate_buildings_2d(root.find("/Buildings"))
+    features = root.find("/Features")
+    #osm.buildings.preprocess_buildings_features(features)
+    #root.find("/Buildings").children = []  # Remove as they will be generated from features: TODO: change this
+    #osm.buildings.generate_buildings_2d(root.find("/Buildings"))
 
 @dddtask()
 def osm_structured_generate_ways_2d(osm, root):
@@ -38,7 +38,6 @@ def osm_structured_generate_ways_2d(osm, root):
 
     ways2 = osm.ways2.generate_ways_2d(ways1)
     root.append(ways2)
-
 
 
 @dddtask()
@@ -68,7 +67,9 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
     logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
 
     union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]'),
-                        root.find("/Areas")])
+                        root.find("/Areas"),
+                        #root.find("/Water")
+                        ])
     union = osm.areas2.generate_union_safe(union)
 
     terr = ddd.rect(area_crop.bounds, name="Ground")
@@ -81,12 +82,6 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
         logger.error("Could not subtract areas_2d from terrain.")
         return
 
-    #terr = terr.subtract(root.find("/Water"))
-    #terr = terr.clean(eps=0.01)
-
-    #terr = osm.areas2.generate_ground_2d(osm.area_filter)  # must come before ground
-    #for a in terr.children:
-    #    root.find("/Areas").append(a)
     root.find("/Areas").append(terr)
 
 @dddtask()
@@ -105,21 +100,35 @@ def osm_structured_areas_postprocess(root, osm):
     #osm.areas2.generate_areas_2d_postprocess_water()
     pass
 
+
 @dddtask(log=True)
 def osm_structured_building_link_features(root, osm):
-    # Associate features (amenities, etc) to 2D objects (buildings, etc)
-    #osm.buildings.link_features_2d()
-    pass
+    """Associate features (amenities, etc) to buildings."""
+    # TODO: There is some logic for specific items inside: use tagging.
+    items = root.find("/Items")
+    buildings = root.find("/Buildings")
+    osm.buildings.link_items_to_buildings(buildings, items)
 
 
 @dddtask()
-def osm_structured_rest(root, osm):
-
+def osm_structured_items_2d_generate(root, osm):
     # Generates items defined as areas (area fountains, football fields...)
     #osm.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
+    pass
 
+@dddtask(order="40.80.+.+")
+def osm_structured_ways_2d_generate_roadlines(root, osm, pipeline, logger):
+    # TODO: Except roadline,s the rest shall be moved to augmentation, etc... and not pass root around
+    # Separate different things: roadlines, etc...
     # Road props (traffic lights, lampposts, fountains, football fields...) - needs. roads, areas, coastline, etc... and buildings
-    #osm.ways2.generate_props_2d(root.find("/Ways"))  # Objects related to ways
+    logger.warn("Separate Roadlines 2D and 3D creation.")
+    root.append(ddd.group2(name="Roadlines2"))
+    pipeline.data["Roadlines3"] = ddd.group3(name="Roadlines3")
+    osm.ways2.generate_props_2d(root.find("/Ways"), pipeline)  # Objects related to ways
+
+
+@dddtask(order="40.80")
+def osm_structured_rest(root, osm):
     pass
 
 

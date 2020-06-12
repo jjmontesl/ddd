@@ -22,7 +22,7 @@ class WMSClient():
     """
     """
 
-    def __init__(self, name, url, width=850, height=600):
+    def __init__(self, name, url, width=512, height=512):
         self.name = name
         self.url = url
         self.width = width
@@ -83,12 +83,12 @@ class WMSClient():
         bbox = ",".join(["%f" % c for c in bbox])
         filename = "_cache/images/wms/%s-%s.jpg" % (self.name, bbox)
 
-        material = ddd.material(texture_path=filename)
+        material = ddd.material(texture_path=filename, color="#ffffff")
 
         plane = ddd.rect(name="WMS Image (%s)" % self.name).triangulate().material(material)
         plane = ddd.uv.map_cubic(plane)
-        plane = plane.recenter()
-        plane = plane.rotate(ddd.ROT_FLOOR_TO_FRONT)
+        #plane = plane.recenter()
+        #plane = plane.rotate(ddd.ROT_FLOOR_TO_FRONT)
 
         return plane
 

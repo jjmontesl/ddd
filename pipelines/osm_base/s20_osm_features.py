@@ -30,6 +30,7 @@ def osm_features_crop_extended_area(pipeline, osm, root, obj):
 
     #pipeline.data['osm'].preprocess_features()
     #osm.preprocess_features()
+    obj.extra['osm:original'] = obj.copy()
     obj = obj.intersection(osm.area_filter2)
     return obj
 

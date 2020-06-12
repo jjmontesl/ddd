@@ -16,7 +16,7 @@ from ddd.pipeline.decorators import dddtask
 """
 
 
-@dddtask(order="50.10.10.+", log=True)
+@dddtask(order="50.80.10.+", log=True)
 def osm_crop(pipeline, osm, root, logger):
     """Crops features in different ways."""
     pass
@@ -38,7 +38,7 @@ def osm_crop_buidings(obj, osm, root, logger):
     obj.extra['ddd:crop'] = 'centroid'
 
 
-@dddtask(order="50.10.90.+", log=True)
+@dddtask(order="50.80.90.+", log=True)
 def osm_crop_apply(obj, osm, root, logger):
     pass
 

@@ -246,8 +246,7 @@ class ItemsOSMBuilder():
             item_3d = self.osm.catalog.add(key, item_3d)
 
         coords = item_2d.geom.coords[0]
-        oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
-        item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Bench: %s' % item_2d.name
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
@@ -257,10 +256,6 @@ class ItemsOSMBuilder():
 
         coords = item_2d.geom.coords[0]
         angle = item_2d.extra.get('ddd:angle', None)
-
-        #invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d]).clean(eps=0.01)
-        item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
-        #if not self.osm.osmops.placement_valid(item_2d.buffer(0.2), invalid=invalid): return None
 
         item_3d = gen_func()
 
@@ -285,10 +280,6 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_waste_basket(self, item_2d):
         coords = item_2d.geom.coords[0]
-        invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d]).clean(eps=0.01)
-
-        item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
-        if not self.osm.osmops.placement_valid(item_2d.buffer(0.2), invalid=invalid): return None
 
         itemtype = "waste-basket" if random.uniform(0, 1) < 0.5 else "waste-basket-post"
 
@@ -318,7 +309,7 @@ class ItemsOSMBuilder():
     def generate_item_3d_sculpture(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
-        oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
+        #oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
 
         item_name = item_2d.extra['osm:feature']['properties'].get('name', None)
         if item_name:
@@ -326,7 +317,7 @@ class ItemsOSMBuilder():
         else:
             item_3d = urban.sculpture(1.5)
 
-        item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0]).material(ddd.mats.steel)  # mat_bronze
         item_3d.name = 'Sculpture: %s' % item_2d.name
         return item_3d
@@ -334,23 +325,22 @@ class ItemsOSMBuilder():
     def generate_item_3d_monument(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
-        oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
+        #oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
         item_name = item_2d.extra['osm:feature']['properties'].get('name', None)
         if item_name:
             item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0)
         else:
             item_3d = urban.sculpture(2.0, 5.0)
         item_3d = urban.pedestal(item_3d, 2.0)
-        item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
         item_3d.name = 'Monument: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_wayside_cross(self, item_2d):
         coords = item_2d.geom.coords[0]
-        oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
         item_3d = urban.wayside_cross()
-        item_3d = item_3d.rotate([0, 0, oriented_point.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0]).material(ddd.mats.stone)  # mat_bronze
         item_3d.name = 'Wayside Cross: %s' % item_2d.name
         return item_3d
@@ -452,11 +442,6 @@ class ItemsOSMBuilder():
 
         coords = item_2d.geom.coords[0]
 
-        # Check if item can be placed
-        invalid = ddd.group([self.osm.ways_2d["0"], self.osm.buildings_2d]).clean(eps=0.01)
-        if not self.osm.osmops.placement_valid(ddd.disc(coords, r=0.2, resolution=0, name=item_2d.name), invalid=invalid):
-            return None
-
         key = "lamppost-default-1"
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
@@ -546,12 +531,10 @@ class ItemsOSMBuilder():
             #if len(osm_ways) > 1:
             #    logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
         else:
-            # Project point to have an orientation angle
-            ways = self.osm.ways_2d["0"].flatten().filter(lambda i: i.extra.get('osm:highway', None) not in ('path', 'track', 'footway', None))
+            # Point shall have been projected and have a direction
             coords = item_2d.geom.coords[0]
-            angle = item_2d.extra.get('ddd:angle', None)
-            item_2d = ddd.snap.project(item_2d, ways, penetrate=-0.5)
-            if angle: item_2d.extra['ddd:angle'] = angle
+            item_2d.extra['ddd:angle'] = item_2d.extra['ddd:angle'] + math.pi / 2
+            #if angle: item_2d.extra['ddd:angle'] = angle
 
         item_3d.prop_set('ddd:static', False, children=False)  # TODO: Make static or not via styling
         item_3d.extra['ddd:layer'] = 'DynamicObjects'  # TODO: Assign layers via styling

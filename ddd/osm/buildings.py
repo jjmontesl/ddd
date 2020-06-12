@@ -25,23 +25,23 @@ class BuildingOSMBuilder():
 
         self.osm = osmbuilder
 
-    def preprocess_buildings_2d(self):
+    def preprocess_buildings_features(self, features_2d):
 
         logger.info("Preprocessing buildings and bulding parts (2D)")
 
         # Assign each building part to a building, or transform it into a building if needed
-        for feature in list(self.osm.features_2d.children):
+        for feature in list(features_2d.children):
             if feature.geom.type == 'Point': continue
             if feature.extra.get('osm:building:part', None) is None: continue
 
             # Find building
-            buildings = self.osm.features_2d.select(func=lambda o: o.extra.get('osm:building', None) and o.contains(feature))
+            buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and o.contains(feature))
             if len(buildings.children) == 0:
                 logger.warn("Building part with no building: %s", feature)
                 building = feature.copy()
                 building.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')
                 building.extra['ddd:building:parts'] = [feature]
-                self.osm.features_2d.append(building)
+                features_2d.append(building)
                 feature.extra['ddd:building:feature'] = building
 
             elif len(buildings.children) > 1:
@@ -54,6 +54,7 @@ class BuildingOSMBuilder():
                     buildings.children[0].extra['ddd:building:parts'] = []
                 buildings.children[0].extra['ddd:building:parts'].append(feature)
 
+    """
     def generate_buildings_2d(self, buildings_2d):
 
         logger.info("Generating buildings (2D)")
@@ -76,14 +77,6 @@ class BuildingOSMBuilder():
     def generate_building_2d(self, feature):
         building_2d = feature.copy(name="Building (%s)" % (feature.extra.get("name", None)))
 
-        '''
-        try:
-            building_2d.validate()
-        except DDDException as e:
-            logger.warn("Invalid geometry for building: %s", e)
-            return None
-        '''
-
         building_2d.extra['ddd:building:items'] = []
         if 'ddd:building:parts' not in building_2d.extra:
             building_2d.extra['ddd:building:parts'] = []
@@ -93,37 +86,37 @@ class BuildingOSMBuilder():
         # Augment building (roof type, facade type, portals ?)
 
         return building_2d
+    """
 
-    def link_features_2d(self):
+    def link_items_to_buildings(self, buildings_2d, items_1d):
 
-        logger.info("Linking features to buildings.")
-        logger.warn("SHOULD LINK FEATURES TO BUILDING PARTS.")
+        logger.info("Linking items to buildings.")
+        # TODO: Link to building parts, inspect facade, etc.
 
-        for feature in self.osm.features_2d.children:
-            if feature.geom.type != "Point": continue
+        for feature in items_1d.children:
             # Find closest building
-            point = feature.copy(name="Point: %s" % (feature.extra.get('name', None)))
-            building, distance = self.closest_building(point)
+            #point = feature.copy(name="Point: %s" % (feature.extra.get('name', None)))
+            point = feature
+            building, distance = self.closest_building(buildings_2d, point)
             if not building:
                 continue
 
-            point.extra['osm:building'] = building
+            feature.extra['osm:building'] = building
 
-            if point.extra.get('osm:amenity', None) or point.extra.get('osm:shop', None):
+            if feature.extra.get('osm:amenity', None) or feature.extra.get('osm:shop', None):
                 #logger.debug("Point: %s  Building: %s  Distance: %s", point, building, distance)
-
                 # TODO: Do the opposite, create items we are interested in
                 if point.extra.get('osm:amenity', None) in ('waste_disposal', 'waste_basket',
                                                             'recycling', 'bicycle_parking'):
                     continue
-
-                building.extra['ddd:building:items'].append(point)
+                building.extra['ddd:building:items'].append(feature)
                 #logger.debug("Amenity: %s" % point)
 
-    def closest_building(self, point):
+
+    def closest_building(self, buildings_2d, point):
         closest_building = None
         closest_distance = math.inf
-        for building in self.osm.buildings_2d.children:
+        for building in buildings_2d.children:
             distance = point.distance(building)
             if distance < closest_distance:
                 closest_building = building

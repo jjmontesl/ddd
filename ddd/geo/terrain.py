@@ -29,7 +29,7 @@ class DDDGeoTerrain():
 
 dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'  # Galicia
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40e000.tif'  # Vilanova i la Geltrú
-#dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w005.tif'  # Madrid
+#dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w005.tif'  # Madrid, Huesca
 
 
 def terrain_grid(bounds, detail=1.0, height=1.0, scale=0.025):

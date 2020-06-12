@@ -28,11 +28,14 @@ class DDDUVMapping():
         result.children = [self.map_3d_random(c) for c in result.children]
         return result
 
-    def map_cubic(self, obj):
+    def map_cubic(self, obj, offset=None, scale=None):
         """
         FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
         before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
         """
+
+        if offset is None: offset = (0, 0)
+        if scale is None: scale = (1, 1)
 
         result = obj.copy()
         if result.mesh:
@@ -40,7 +43,7 @@ class DDDUVMapping():
             # Avoid remapping
             if result.extra.get('uv', None):
                 logger.error("Object already has UV coordinates: %s", result)
-                raise DDDException("Object already has UV coordinates: %s" % result)
+                #raise DDDException("Object already has UV coordinates: %s" % result)
 
             result.extra['uv'] = [None for idx, v in enumerate(result.mesh.vertices)]
             for face in result.mesh.faces:
@@ -50,6 +53,7 @@ class DDDUVMapping():
                 v = v / np.linalg.norm(v)
 
                 def setuv(face, idx, uv):
+                    uv = (uv[0] * scale[0] + offset[0], uv[1] * scale[1] + offset[1])
                     if result.extra['uv'][idx] != None:
                         # FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
                         # before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
@@ -79,7 +83,7 @@ class DDDUVMapping():
                     setuv(face, face[1], (p1[0], p1[1]))
                     setuv(face, face[2], (p2[0], p2[1]))
 
-        result.children = [self.map_cubic(c) for c in result.children]
+        result.children = [self.map_cubic(c, offset, scale) for c in result.children]
         return result
 
     def map_spherical(self, obj):

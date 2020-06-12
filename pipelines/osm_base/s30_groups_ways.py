@@ -130,7 +130,9 @@ def osm_groups_ways_primary_link(obj, osm):
     obj.extra['ddd:way:lane_width_right'] = 1.0
     obj.extra['ddd:way:lane_width_left'] = 0.5
     obj.extra['ddd:way:roadlines'] = True
-    obj.prop_set('ddd:way:lanes', default=2)
+
+    lanes = 1 if obj.extra.get('osm:oneway', False) else 2
+    obj.prop_set('ddd:way:lanes', default=lanes)
 
 
 @dddtask(path="/Ways/*", select='["osm:highway" = "secondary"]')
@@ -198,13 +200,13 @@ def osm_groups_ways_residential(obj, osm):
 def osm_groups_ways_living_street(obj, osm):
     """Define road data."""
     obj.extra['ddd:way:weight'] = 23
-    obj.extra['ddd:way:lane_width'] = 0.3 * 1.2 if obj.extra.get('osm:oneway', False) else 0.3
     obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:traffic_signs'] = True
     obj.extra['ddd:way:traffic_signals'] = False
     obj.prop_set('ddd:way:lamps', default=True)
 
     lanes = 1 if obj.extra.get('osm:oneway', False) else 2
+    obj.extra['ddd:way:lane_width'] = 3.2 * 1.2 if lanes == 1 else 3.0
     obj.prop_set('ddd:way:lanes', default=lanes)
 
 
