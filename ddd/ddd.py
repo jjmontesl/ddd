@@ -730,15 +730,16 @@ class DDDObject2(DDDObject):
         result.children = [c.rotate(angle, origin) for c in self.children]
         return result
 
-    def scale(self, coords):
+    def scale(self, coords, origin=None): # None=(0,0), centroid
         if isinstance(coords, int): coords = float(coords)
         if isinstance(coords, float): coords = [coords, coords, 1.0]
         if len(coords) == 2: coords = [coords[0], coords[1], 1.0]
+
+        if origin is None: origin = (0, 0)
         result = self.copy()
         if self.geom:
-            trans_func = lambda x, y, z=1.0: (x * coords[0], y * coords[1], z * coords[2])
-            result.geom = ops.transform(trans_func, self.geom)
-        result.children = [c.scale(coords) for c in self.children]
+            result.geom = affinity.scale(self.geom, coords[0], coords[1], coords[2] if len(coords) > 2 else 0.0, origin)
+        result.children = [c.scale(coords, origin) for c in self.children]
         return result
 
     def bounds(self):
@@ -786,7 +787,7 @@ class DDDObject2(DDDObject):
         return result
 
     def outline(self):
-        result = self.copy().individualize()
+        result = self.copy().individualize().clean()
         if result.geom and result.geom.type == "Polygon":
             result.geom = LineString(list(result.geom.exterior.coords))
         result.children = [c.outline() for c in result.children]
@@ -958,6 +959,9 @@ class DDDObject2(DDDObject):
             if c.contains(other):
                 return True
         return False
+
+    def length(self):
+        return self.geom.length
 
     def convex_hull(self):
         result = self.copy().union()
@@ -1727,7 +1731,7 @@ class DDDObject3(DDDObject):
             #result.extra.update(cc.extra)
             #vertices = list(result.mesh.vertices) + list(cc.mesh.vertices)
             #result.mesh = Trimesh(vertices, faces)
-            if cc.extra['uv']:
+            if cc.extra.get('uv', None):
                 if 'uv' not in result.extra: result.extra['uv'] = []
                 #offset = len(result.extra['uv'])
                 result.extra['uv'] = result.extra['uv'] + list(cc.extra['uv'])
@@ -1738,7 +1742,11 @@ class DDDObject3(DDDObject):
         result.children = []
         return result
 
-    def extrude_step(self, obj_2d, offset, cap=True):
+    def extrude_step(self, obj_2d, offset, cap=True, base=None):
+        """
+        Base argument is supported for compatibility with DDDObject2 signature, but ignored.
+        """
+
         if self.children:
             raise DDDException("Cannot extrude_step with children.")
 
@@ -1833,12 +1841,12 @@ class DDDObject3(DDDObject):
             uvs = self.extra['uv']
         else:
             # Note that this does not flatten normals (that should be optional) - also, we assume mesh is rotated (XZ)
-            uvs = [(v[0], v[2]) for v in self.mesh.vertices]
+            uvs = [[v[0], v[2]] for v in self.mesh.vertices]
 
         if len(uvs) != len(self.mesh.vertices):
             logger.warning("Invalid number of UV coordinates: %s (vertices: %s, uv: %s)", self, len(self.mesh.vertices), len(uvs))
             #raise DDDException("Invalid number of UV coordinates: %s", self)
-            uvs = [(v[0], v[2]) for v in self.mesh.vertices]
+            uvs = [[v[0], v[2]] for v in self.mesh.vertices]
 
         #if self.mesh.visual is None:
         #    self.mesh.visual = TextureVisuals(uv=uvs, material=mat)
@@ -2037,7 +2045,8 @@ class DDDObject3(DDDObject):
             data = data.encode("utf8")
 
         else:
-            raise ValueError()
+            logger.error("Cannot save. Invalid 3D filename format: %s", path)
+            raise DDDException("Cannot save. Invalid 3D filename format: %s" % path)
 
         #scene.export(path)
         with open(path, 'wb') as f:

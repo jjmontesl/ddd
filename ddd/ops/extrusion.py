@@ -24,7 +24,7 @@ from trimesh.visual.texture import TextureVisuals
 from matplotlib import colors
 import json
 import base64
-from shapely.geometry.polygon import orient
+from shapely.geometry.polygon import orient, Polygon
 
 
 # Get instance of logger for this module
@@ -63,8 +63,10 @@ def extrude_step(obj, shape, offset, cap=True):
         logger.debug("Extruding to point (should be using line too).")
         geom_b = geom_a.centroid
     elif geom_b.type == "LineString":
-        logger.debug("Extruding to line as point (should be using line).")
-        geom_b = geom_b.centroid
+        #logger.debug("Extruding to line as point (should be using line).")
+        #geom_b = geom_b.centroid
+        geom_b = Polygon(list(geom_b.coords) + [geom_b.coords[0]])
+
 
     vertices = list(result.mesh.vertices) if result.mesh else []
     faces = list(result.mesh.faces) if result.mesh else []
@@ -115,7 +117,7 @@ def extrude_between_geoms(geom_a, geom_b, offset, base_height):
     # Ensure winding
     if (geom_a.type == "Polygon" and geom_b.type == "Polygon"):
         if (geom_a.exterior.is_ccw != geom_b.exterior.is_ccw):
-            logger.warn("Cannot extrude between polygons with different winding. Orienting polygons.")
+            #logger.debug("Cannot extrude between polygons with different winding. Orienting polygons.")
             geom_a = orient(geom_a, -1)
             geom_b = orient(geom_b, -1)
 
@@ -265,4 +267,45 @@ def extrude_coords(coords_a, coords_b, distance, base_height=0):
     #print(vertices)
     #print(faces)
     return Trimesh(vertices, faces)
+
+
+def extrude_step_multi(obj, steps, cap=True, base=True, scale_y=1.0, shape_callback=None):
+    """
+    If height is passed, shape is adjusted to it.
+    """
+
+    base = obj
+    obj = obj.copy()
+
+    ref_x = steps[0][0]
+    last_y = steps[0][1] * scale_y
+    for step in steps[1:]:
+        step_scale = step[0] / ref_x
+        step_shape = base.scale([step_scale, step_scale])
+        step_dy = (step[1] * scale_y) - last_y
+        obj = obj.extrude_step(step_shape, step_dy, cap=cap, base=base)
+        last_y = last_y + step_dy
+
+    return obj
+
+def extrude_dome(obj, height, steps=6):
+    """
+    If height is passed, shape is adjusted to it.
+    """
+
+    base = obj
+    obj = obj.copy()
+
+    stepheight = 1.0 / steps
+    for i in range(steps):
+        stepy = (i + 1) * stepheight
+        stepx = math.sqrt(1 - (stepy ** 2))
+        stepbuffer = -(1 - stepx)
+        #obj = obj.extrude_step(base.buffer(stepbuffer * height), stepheight * height)
+
+        shp = base.scale([stepx, stepx]) if stepx > 0 else base.centroid()
+        obj = obj.extrude_step(shp, stepheight * height)
+
+    return obj
+
 

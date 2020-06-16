@@ -42,14 +42,12 @@ def osm_groups_ways(root, obj, logger):
     # Ways depend on buildings
     item = obj.copy(name="Way: %s" % obj.name)
     root.find("/Ways").append(item)
-    ## ?? osm.ways.generate_ways_1d()
 
 @dddtask(order="30.30.10.+", path="/Features/*", select='["geom:type"="LineString"]["osm:waterway"]', log=True)
 def osm_groups_ways_waterway(root, obj, logger):
     # Ways depend on buildings
     item = obj.copy(name="Way: %s" % obj.name)
     root.find("/Ways").append(item)
-    ## ?? osm.ways.generate_ways_1d()
 
 
 '''

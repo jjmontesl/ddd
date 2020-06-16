@@ -350,11 +350,25 @@ def osm_groups_ways_waterway_stream(obj, osm):
     obj = obj.material(ddd.mats.sea)
     return obj
 
+
 '''
 def generate_way_1d(feature):
 
     create_as_item = False
 
+    elif path.extra.get('osm:barrier', None) == 'retaining_wall':
+        width = 0.7
+        material = ddd.mats.stone
+        extra_height = 1.5
+        name = "Wall Retaining: %s" % name_id
+        path.extra['ddd:subtract_buildings'] = True
+    elif path.extra.get('osm:barrier', None) == 'wall':
+        # TODO: Get height and material from metadata
+        width = 0.35
+        material = ddd.mats.bricks
+        extra_height = 1.8
+        name = "Wall: %s" % name_id
+        path.extra['ddd:subtract_buildings'] = True
 
     elif path.extra.get('osm:barrier', None) == 'city_wall':
         width = 1.0
@@ -395,19 +409,7 @@ def generate_way_1d(feature):
         width = 1.8
         material = ddd.mats.wood
 
-    elif path.extra.get('osm:barrier', None) == 'retaining_wall':
-        width = 0.7
-        material = ddd.mats.stone
-        extra_height = 1.5
-        name = "Wall Retaining: %s" % name_id
-        path.extra['ddd:subtract_buildings'] = True
-    elif path.extra.get('osm:barrier', None) == 'wall':
-        # TODO: Get height and material from metadata
-        width = 0.35
-        material = ddd.mats.bricks
-        extra_height = 1.8
-        name = "Wall: %s" % name_id
-        path.extra['ddd:subtract_buildings'] = True
+
 
     elif path.extra.get('osm:power', None) == 'line':
         width = 0.1

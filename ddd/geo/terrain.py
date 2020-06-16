@@ -27,7 +27,7 @@ class DDDGeoTerrain():
         self.path_egm = 'data/dem/egm/egm2008-2_5.tif'
 
 
-dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'  # Galicia
+dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'  # Galicia, Salamanca
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40e000.tif'  # Vilanova i la Geltrú
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w005.tif'  # Madrid, Huesca
 

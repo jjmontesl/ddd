@@ -3,6 +3,7 @@
 from ddd.pack.sketchy import urban, landscape
 from ddd.ddd import ddd
 import math
+import sys
 
 items = ddd.group3()
 
@@ -12,12 +13,38 @@ fig = fig1.extrude(2.0)
 items.append(fig)
 #fig.show()
 
-# Extrusion to line (empty geometry)
+# Extrusion to line (explicit)
+fig1 = ddd.rect([-4, -2, 4, 2])
+fig2 = ddd.line([[-4, 0], [4, 0]])
+fig = fig1.extrude_step(fig2, 1.0)
+items.append(fig)
+
+# Extrusion to line (explicit)
+fig1 = ddd.rect([-4, -2, 4, 2])
+fig2 = ddd.line([[-3, 0], [3, 0]])
+fig = fig1.extrude_step(fig2, 1.0)
+items.append(fig)
+
+# Extrusion to line (axis middle)
+fig1 = ddd.rect([-4, -2, 4, 2]) #.rotate(math.pi * 1.5)
+axis_major, axis_minor, axis_angle = ddd.geomops.oriented_axis(fig1)
+fig = fig1.extrude_step(axis_minor, 1.0)
+items.append(fig)
+fig.show()
+
+# Extrusion to line (axis middle)
+fig1 = ddd.rect([-4, -2, 4, 2]) #.rotate(math.pi * 1.5)
+axis_major, axis_minor, axis_angle = ddd.geomops.oriented_axis(fig1)
+fig = fig1.extrude_step(axis_major, 1.0)
+items.append(fig)
+fig.show()
+
+# Extrusion to line (buffered geometry) - currently fails (shapely does not return the reduced polygon linestring)
 fig1 = ddd.rect([-4, -2, 4, 2])
 fig = fig1.extrude_step(fig1.buffer(-2.5), 1.0)
 items.append(fig)
-#fig.show()
 
+# Extrusion to line (buffered geometry) and back (fails, extrusion from point to shape)
 fig1 = ddd.rect([-4, -2, 4, 2])
 fig = fig1.extrude_step(fig1.buffer(-2.5), 1.0)
 fig = fig.extrude_step(fig1, 1.0)
@@ -91,7 +118,6 @@ coords = [[10, 10], [5, 9], [3, 12], [1, 5], [-8, 0], [10, 0]]
 fig = ddd.polygon(coords)
 fig = fig.extrude_step(fig.buffer(-3), 1)
 items.append(fig)
-fig.show()
 
 
 # All items

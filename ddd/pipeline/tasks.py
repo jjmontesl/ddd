@@ -119,14 +119,18 @@ class DDDTask(object):
 
         for o in objs.children:
             #logger.debug("Running task %s for object: %s", self, o)
-            if 'o' in kwargs: kwargs['o'] = o
-            if 'obj' in kwargs: kwargs['obj'] = o
-            result = func(**kwargs)
-            if self.replace:
-                if result:
-                    o.replace(result)
-                elif result is False:
-                    pipeline.root.remove(o)
+            try:
+                if 'o' in kwargs: kwargs['o'] = o
+                if 'obj' in kwargs: kwargs['obj'] = o
+                result = func(**kwargs)
+                if self.replace:
+                    if result:
+                        o.replace(result)
+                    elif result is False:
+                        pipeline.root.remove(o)
+            except Exception as e:
+                logger.error("Error running task %s on %s: %s", self, o, e)
+                raise DDDException("Error running task %s on %s: %s" % (self, o, e), ddd_obj=o)
 
             #interactive.showbg(pipeline.root)
 

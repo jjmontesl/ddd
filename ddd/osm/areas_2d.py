@@ -599,16 +599,12 @@ class Areas2DOSMBuilder():
             logger.info("No coastlines in the feature set.")
             return
 
-        coastlines_1d = ddd.group(coastlines_1d).individualize().flatten()
+        coastlines_1d = ddd.group(coastlines_1d)  #.individualize().flatten()
         coastlines = ddd.group(coastlines)  # .individualize().flatten()
         coastline_areas = water.subtract(coastlines)
 
         logger.info("Coastlines: %s", (coastlines_1d, ))
         logger.info("Coastline areas: %s", (coastline_areas, ))
-
-        #coastline_areas.show()
-        #coastline_areas.save("/tmp/test.svg")
-        #coastline_areas.dump()
 
         # Generate coastline edge
         if coastlines_1d.children:
@@ -623,7 +619,7 @@ class Areas2DOSMBuilder():
 
         areas_2d = []
         #geoms = coastline_areas.geom.geoms if coastline_areas.geom.type == 'MultiPolygon' else [coastline_areas.geom]
-        for water_area_geom in coastline_areas.individualize().flatten().children:
+        for water_area_geom in coastline_areas.individualize().flatten().clean().children:
             # Find closest point, closest segment, and angle to closest segment
             #water_area_geom = ddd.shape(water_area_geom).clean(eps=0.01).geom
 
@@ -632,6 +628,9 @@ class Areas2DOSMBuilder():
             #    continue
 
             if not water_area_geom.geom: continue
+
+            #water_area_geom.dump()
+            coastlines_1d = coastlines_1d.outline().clean()
 
             water_area_point = water_area_geom.geom.representative_point()
             p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = coastlines_1d.closest_segment(ddd.shape(water_area_point))
@@ -659,49 +658,4 @@ class Areas2DOSMBuilder():
         #    self.osm.water_3d = ddd.group(areas)
         #else:
         #    logger.debug("No water areas from coastline generated.")
-
-    '''
-    def generate_ground_2d(self, area_crop):
-
-        logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
-
-        #terr = terrain.terrain_grid(distance=500.0, height=1.0, detail=25.0).translate([0, 0, -0.5]).material(mat_terrain)
-        #terr = terrain.terrain_geotiff(area_crop.bounds, detail=10.0, ddd_proj=self.osm.ddd_proj).material(mat_terrain)
-        #terr2 = terrain.terrain_grid(distance=60.0, height=10.0, detail=5).translate([0, 0, -20]).material(mat_terrain)
-        #terr = ddd.grid2(area_crop.bounds, detail=10.0).buffer(0.0)  # useless, shapely does not keep triangles when operating
-        terr = ddd.rect(area_crop.bounds, name="Ground")
-
-        terr = terr.subtract(self.osm.ways_2d['0'].clean(eps=0.01))
-        terr = terr.clean(eps=0.01)
-
-        terr = terr.subtract(self.osm.ways_2d['-1a'].clean(eps=0.01))
-        terr = terr.clean(eps=0.01)
-
-        #terr = terr.subtract(self.osm.ways_2d['0a'])  # added to avoid floor, but shall be done better, by layers spawn and base_height,e tc
-        #terr = terr.clean(eps=0.01)
-
-        try:
-            terr = terr.subtract(self.osm.areas_2d.clean(eps=0.01))
-            terr = terr.clean(eps=0.01)
-        except Exception as e:
-            logger.error("Could not subtract areas_2d from terrain.")
-            return
-
-        terr = terr.subtract(self.osm.water_2d)
-        terr = terr.clean(eps=0.01)
-        terr = terr.material(ddd.mats.terrain)
-
-        #self.osm.ground_2d.append(terr)
-
-        # The buffer is fixing a core segment violation :/
-        #terr.save("/tmp/test.svg")
-        #terr.dump()
-        #terr.show()
-        #terr = ddd.group([DDDObject2(geom=s.buffer(0.5).buffer(-0.5)) for s in terr.geom.geoms if not s.is_empty])
-
-        #terr.save("/tmp/test.svg")
-
-        return terr
-    '''
-
 

@@ -14,9 +14,21 @@ logger = logging.getLogger(__name__)
 
 class DDDSnap():
 
+    def __init__(self):
+        self._last_obj = None
+        self._last_linearized = None
+
     def project(self, point, obj, penetrate=0.0):
 
-        obj = obj.individualize().linearize()
+        # Cache last object
+        if obj != self._last_obj:
+            self._last_obj = obj
+            obj = obj.individualize().linearize()
+            self._last_linearized = obj
+        else:
+            obj = self._last_linearized
+
+
         coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = obj.closest_segment(point)
 
         dirvec_d = [coords_p[0] - point.geom.coords[0][0], coords_p[1] - point.geom.coords[0][1]]

@@ -234,7 +234,7 @@ class Areas3DOSMBuilder():
                         grass_layer = grass_layer.material(ddd.material(name="VolumetricGrass", color=colors[i], extra={'ddd:export-as-marker': True}))
                         #grass_layer.extra['ddd:vertex_colors'] =
                         grass_layer = grass_layer.translate([0, 0, 0.05 * i])
-                        grass_layer = terrain.terrain_geotiff_elevation_apply(grass_layer, self.osm.ddd_proj)
+                        #grass_layer = terrain.terrain_geotiff_elevation_apply(grass_layer, self.osm.ddd_proj)
                         grass_layer.extra['ddd:shadows'] = False
                         grass_layer.extra['ddd:collider'] = False
                         grass_layer.extra['ddd:occluder'] = False

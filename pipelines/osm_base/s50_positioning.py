@@ -36,6 +36,7 @@ def osm_positioning_init(pipeline, osm, root, logger):
 def osm_positioning_select(pipeline, osm, root, logger):
     pass
 
+
 @dddtask(path="/Items/*", select='["osm:amenity" = "bench"]')
 def osm_positioning_select_bench(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'

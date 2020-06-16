@@ -33,7 +33,7 @@ def osm_model_generate_coastline(osm, root, obj):
     if not coastlines_3d.geom:
         return
 
-    coastlines_3d = obj.individualize().extrude(10.0).translate([0, 0, -10.0])
+    coastlines_3d = coastlines_3d.individualize().extrude(10.0).translate([0, 0, -10.0])
     coastlines_3d = terrain.terrain_geotiff_elevation_apply(coastlines_3d, osm.ddd_proj)
     coastlines_3d = ddd.uv.map_cubic(coastlines_3d)
     coastlines_3d.name = 'Coastline: %s' % coastlines_3d.name

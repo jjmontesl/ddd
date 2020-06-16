@@ -14,6 +14,7 @@ import re
 import random
 from trimesh import transformations
 import numpy as np
+from ddd.ops.extrusion import extrude_step_multi, extrude_dome
 
 
 # Get instance of logger for this module
@@ -560,6 +561,27 @@ def wayside_cross():
     col = column(height=2.0, top=cross)
     #ped = pedestal(top=col)
     return col
+
+def bell(r=1.00, height=2.6, thick=0.10):
+    """
+    The bell is hung on 0, 0, 0.
+    """
+    base = ddd.disc(r=r, resolution=4, name="Bell").subtract(ddd.disc(r=r - thick, resolution=4))
+    extrude_steps = ((4.45, 0), (4.5, 0.25), (4.3, 1), (3.7, 2), (3.0, 3), (2.5, 4), (2.3, 5), (2.4, 6), (2.6, 7))
+    bell = extrude_step_multi(base, extrude_steps, base=True, cap=False, scale_y=height / 10)
+    bell = bell.twosided()
+
+    cap = extrude_dome(ddd.disc(r=r * (2.6 / 4.45), resolution=4), height=1.5 / 10)
+    cap = cap.translate([0, 0, 7 / 10 * height])
+
+    bell = ddd.group([bell, cap]).combine()
+    bell = bell.material(ddd.mats.bronze)
+    bell = ddd.uv.map_cylindrical(bell)
+    bell = bell.translate([0, 0, -height])
+
+    return bell
+
+
 
 def plaque():
     '''

@@ -19,6 +19,26 @@ from ddd.util.dddrandom import weighted_choice
 logger = logging.getLogger(__name__)
 
 
+from pint import UnitRegistry
+ureg = UnitRegistry()
+
+
+# TODO: Move to a quantity parsing library (also check quantity3, but it doesn't seem to make conversions)
+def parse_meters(expr):
+    quantity = ureg.parse_expression(str(expr))
+    if not isinstance(quantity, float) and not isinstance(quantity, int):
+        quantity = quantity.to(ureg.meter).magnitude
+    return float(quantity)
+
+def parse_material(name, color):
+    material = None
+    if hasattr(ddd.mats, name):
+        material = getattr(ddd.mats, name)
+    else:
+        material = ddd.material(name, color)
+    return material
+
+
 class BuildingOSMBuilder():
 
     def __init__(self, osmbuilder):
@@ -36,6 +56,7 @@ class BuildingOSMBuilder():
 
             # Find building
             buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and o.contains(feature))
+
             if len(buildings.children) == 0:
                 logger.warn("Building part with no building: %s", feature)
                 building = feature.copy()
@@ -46,47 +67,20 @@ class BuildingOSMBuilder():
 
             elif len(buildings.children) > 1:
                 logger.warn("Building part with multiple buildings: %s -> %s", feature, buildings.children)
+                buildings.children.sort(key=lambda b: b.geom.area, reverse=True)
 
-            else:
-                #logger.debug("Associating building part to building: %s -> %s", feature, buildings.children[0])
                 feature.extra['ddd:building:feature'] = buildings.children[0]
                 if 'ddd:building:parts' not in buildings.children[0].extra:
                     buildings.children[0].extra['ddd:building:parts'] = []
                 buildings.children[0].extra['ddd:building:parts'].append(feature)
 
-    """
-    def generate_buildings_2d(self, buildings_2d):
+            else:
+                logger.debug("Associating building part to building: %s -> %s", feature, buildings.children[0])
+                feature.extra['ddd:building:feature'] = buildings.children[0]
+                if 'ddd:building:parts' not in buildings.children[0].extra:
+                    buildings.children[0].extra['ddd:building:parts'] = []
+                buildings.children[0].extra['ddd:building:parts'].append(feature)
 
-        logger.info("Generating buildings (2D)")
-
-        for feature in self.osm.features_2d.children:
-            if feature.geom.type == 'Point': continue
-
-            building_2d = None
-
-            if feature.extra.get('osm:building', None) is not None:
-                building_2d = self.generate_building_2d(feature)
-            #if feature.extra.get('osm:building:part', None) is not None:
-            #    building_2d = self.generate_building_2d(feature)
-
-            if building_2d:
-                buildings_2d.append(building_2d)
-
-        #self.osm.buildings_2d.show()
-
-    def generate_building_2d(self, feature):
-        building_2d = feature.copy(name="Building (%s)" % (feature.extra.get("name", None)))
-
-        building_2d.extra['ddd:building:items'] = []
-        if 'ddd:building:parts' not in building_2d.extra:
-            building_2d.extra['ddd:building:parts'] = []
-
-        # Generate info: segment_facing_way + sidewalk, pricipal facade, secondary (if any) facades, portal entry...
-
-        # Augment building (roof type, facade type, portals ?)
-
-        return building_2d
-    """
 
     def link_items_to_buildings(self, buildings_2d, items_1d):
 
@@ -129,9 +123,10 @@ class BuildingOSMBuilder():
 
         buildings_3d = ddd.group3(name="Buildings")
         for building_2d in buildings_2d.children:
-            building_3d = self.generate_building_3d_generic(building_2d)
-            if building_3d:
-                buildings_3d.append(building_3d)
+            if building_2d.extra.get('ddd:building:feature', None) in (None, building_2d):
+                building_3d = self.generate_building_3d_generic(building_2d)
+                if building_3d:
+                    buildings_3d.append(building_3d)
         return buildings_3d
 
 
@@ -148,14 +143,18 @@ class BuildingOSMBuilder():
         floors = int(floors)
         base_floors = floors
 
-        material = random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3])
+        building_material = random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3])
+        if building_2d.extra.get('osm:building:material', None):
+            material_name = building_2d.extra.get('osm:building:material')
+            if hasattr(ddd.mats, material_name):
+                building_material = getattr(ddd.mats, material_name)
 
         entire_building_2d = ddd.group2()
         entire_building_3d = building_2d.copy3(name="Building: %s" % (building_2d.name))
 
         roof_type = weighted_choice({'none': 2,
                                      'flat': 1,
-                                     'pointy': 0.5,
+                                     'pyramidal': 0.5,
                                      'attic': 0.5,
                                      'terrace': 1})
         roof_buffered = weighted_choice({True: 1, False: 5})
@@ -173,63 +172,205 @@ class BuildingOSMBuilder():
                     floors = 1
 
                 # Remove building so far
-                part = part.subtract(entire_building_2d)
+                if part == building_2d:
+                    part = part.subtract(entire_building_2d)
                 if part.geom.is_empty:
                     continue
 
-                # Generate building procedurally (use library)
-                building_3d = part.extrude(floors * 3.00)
-                building_3d = building_3d.material(material)
+                material = building_material
+                if part.extra.get('osm:building:material', None):
+                    material_name = part.extra.get('osm:building:material')
+                    if hasattr(ddd.mats, material_name):
+                        material = getattr(ddd.mats, material_name)
 
+                # Roof: default
                 pbuffered = roof_buffered
-                ptype = roof_type
+                roof_shape = roof_type
                 if floors < 2:
-                    ptype = 'none'
+                    roof_shape = 'none'
                 if floors < base_floors:
                     pbuffered = False
-                    if (random.uniform(0, 1) < 0.5): ptype = random.choice(['terrace', 'none'])
+                    if (random.uniform(0, 1) < 0.5): roof_shape = random.choice(['terrace', 'none'])
                     if (floors <= 2):
-                        if (random.uniform(0, 1) < 0.8): ptype = random.choice(['terrace', 'terrace', 'terrace', 'none'])
+                        if (random.uniform(0, 1) < 0.8): roof_shape = random.choice(['terrace', 'terrace', 'terrace', 'none'])
+                if 'osm:building:part' in part.extra:
+                    roof_shape = 'none'
+                    pbuffered = 0
+
+                # Roof: info
+                roof_shape = part.extra.get('osm:roof:shape', roof_shape)
+                roof_height = float(part.extra.get('osm:roof:height', 0))
+                roof_material = ddd.mats.roof_tiles
+
+                floors_height = floors * 3.00
+                min_height = float(part.extra.get('osm:min_height', 0))
+                max_height = parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
+                dif_height = max_height - min_height
+
+                # Generate building procedurally (use library)
+                try:
+                    building_3d = part.extrude(dif_height)
+                except ValueError as e:
+                    logger.error("Could not generate building (%s): %s", part, e)
+                    continue
+                except DDDException as e:
+                    logger.error("Could not generate building (%s): %s", part, e)
+                    continue
+
+                # Building solid post processing
+                if part.extra.get('osm:tower:type', None) == 'bell_tower':  # and dif_height > 6:
+                    # Cut
+                    center_pos = part.centroid().geom.coords[0]
+                    (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(part)
+                    cut1 = ddd.rect([-axis_major.length(), -axis_minor.length() * 0.20, +axis_major.length(), +axis_minor.length() * 0.20])
+                    cut2 = ddd.rect([-axis_major.length() * 0.20, -axis_minor.length(), +axis_major.length() * 0.20, +axis_minor.length()])
+                    cuts = ddd.group2([cut1, cut2]).union().rotate(axis_rot).extrude(-6.0).translate([center_pos[0], center_pos[1], dif_height - 2])
+                    #ddd.group3([building_3d, cuts]).show()
+                    building_3d = building_3d.subtract(cuts)
+                    #building_3d.show()
+
+                    # TODO: Create 1D items
+                    (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(part.buffer(-0.40))
+                    for coords in (axis_major.geom.coords[0], axis_major.geom.coords[1], axis_minor.geom.coords[0], axis_minor.geom.coords[1]):
+                        bell = urban.bell().translate([coords[0], coords[1], dif_height - 3.0])
+                        entire_building_3d.append(bell)
+
+
+                if min_height: building_3d = building_3d.translate([0, 0, min_height])
+                building_3d = building_3d.material(material)
+
 
                 # Base
-                if random.uniform(0, 1) < 0.2:
-                    base = part.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
-                    base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.roof_tiles]))
-                    building_3d.children.append(base)
+                if 'osm:building:part' not in part.extra:
+                    if random.uniform(0, 1) < 0.2:
+                        base = part.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
+                        base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.roof_tiles]))
+                        building_3d.children.append(base)
 
                 # Roof
                 try:
                     roof = None
-                    if ptype == 'flat':
+
+                    if roof_shape == 'flat':
                         # Flat
-                        roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude(0.75).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
-                    if ptype == 'terrace':
+                        default_height = 0.75
+                        roof_height = roof_height if roof_height else default_height
+                        roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude(roof_height).translate([0, 0, max_height]).material(roof_material)
+
+                    elif roof_shape == 'terrace':
                         # Flat
                         usefence = random.uniform(0, 1) < 0.8
                         if usefence:
-                            terrace = part.subtract(part.buffer(-0.4)).extrude(0.6).translate([0, 0, floors * 3.00]).material(getattr(ddd.mats, roof_wall_material))
-                            fence = part.buffer(-0.2).outline().extrude(0.7).twosided().translate([0, 0, floors * 3.00 + 0.6]).material(ddd.mats.railing)
+                            terrace = part.subtract(part.buffer(-0.4)).extrude(0.6).translate([0, 0, max_height]).material(getattr(ddd.mats, roof_wall_material))
+                            fence = part.buffer(-0.2).outline().extrude(0.7).twosided().translate([0, 0, max_height + 0.6]).material(ddd.mats.railing)
                             roof = ddd.group3([terrace, fence], name="Roof")
                         else:
-                            terrace = part.subtract(part.buffer(-0.4)).extrude(random.uniform(0.40, 1.20)).translate([0, 0, floors * 3.00]).material(ddd.mats.stone)
+                            terrace = part.subtract(part.buffer(-0.4)).extrude(random.uniform(0.40, 1.20)).translate([0, 0, max_height]).material(ddd.mats.stone)
                             roof = ddd.group3([terrace], name="Roof")
 
-                    elif ptype == 'pointy':
+                    elif roof_shape == 'pyramidal':
                         # Pointy
-                        height = floors * 0.2 + random.uniform(2.0, 5.0)
-                        try:
-                            roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.buffer(-10), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
-                        except DDDException as e:
-                            logger.debug("Could not generate roof: %s", e)
-                    elif ptype == 'attic':
+                        default_height = floors * 0.2 + random.uniform(2.0, 5.0)
+                        roof_height = roof_height if roof_height else default_height
+                        roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.centroid(), roof_height)
+                        roof = roof.translate([0, 0, max_height]).material(roof_material)
+
+                    elif roof_shape == 'attic':
                         # Attic
                         height = random.uniform(3.0, 4.0)
-                        try:
-                            roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.buffer(-2), height).translate([0, 0, floors * 3.00]).material(ddd.mats.roof_tiles)
-                        except DDDException as e:
-                            logger.debug("Could not generate roof: %s", e)
+                        roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.buffer(-2), height).translate([0, 0, max_height]).material(roof_material)
+
+                    elif roof_shape == 'gabled':
+                        # Attic
+                        base = part.buffer(roof_buffer if pbuffered else 0)
+                        orientation = "major"
+                        if part.extra.get("osm:roof:orientation", "along") == "across": orientation = "minor"
+                        (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(base)
+                        axis_line = axis_major if orientation == "major" else axis_minor
+                        default_height = random.uniform(3.0, 4.0)
+                        roof_height = roof_height if roof_height else default_height
+                        roof = base.extrude_step(axis_line, roof_height).translate([0, 0, max_height]).material(roof_material)
+
+                        '''
+                        #elif roof_shape == 'round':
+                        # Attic
+                        base = part.buffer(roof_buffer if pbuffered else 0)
+                        orientation = "major"
+                        if part.extra.get("osm:roof:orientation", "along") == "across": orientation = "minor"
+                        (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(base)
+                        axis_line = axis_major if orientation == "major" else axis_minor
+
+                        major_seg_plus = ((axis_major.coords[0][0] + (axis_minor.coords[0][0] - axis_minor.coords[1][0]) * 0.5, axis_major.coords[0][1] + (axis_minor.coords[0][1] - axis_minor.coords[1][1]) * 0.5),
+                                          (axis_major.coords[1][0] + (axis_minor.coords[0][0] - axis_minor.coords[1][0]) * 0.5, axis_major.coords[1][1] + (axis_minor.coords[0][1] - axis_minor.coords[1][1]) * 0.5))
+                        minor_seg_plus = ((axis_minor.coords[0][0] + (axis_major.coords[0][0] - axis_major.coords[1][0]) * 0.5, axis_minor.coords[0][1] + (axis_major.coords[0][1] - axis_major.coords[1][1]) * 0.5),
+                                          (axis_minor.coords[1][0] + (axis_major.coords[0][0] - axis_major.coords[1][0]) * 0.5, axis_minor.coords[1][1] + (axis_major.coords[0][1] - axis_major.coords[1][1]) * 0.5))
+
+
+
+                        default_height = random.uniform(3.0, 4.0)
+                        roof_height = roof_height if roof_height else default_height
+                        roof = base.extrude_step(axis_line, roof_height).translate([0, 0, max_height]).material(roof_material)
+                        '''
+
+                    elif roof_shape == 'skillion':
+                        # Attic
+                        base = part.buffer(roof_buffer if pbuffered else 0)
+                        orientation = "major"
+                        if part.extra.get("osm:roof:orientation", "along") == "across": orientation = "minor"
+                        (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(base)
+
+                        axis_major = axis_major.geom
+                        axis_minor = axis_minor.geom
+
+                        major_seg_plus = ((axis_major.coords[0][0] + (axis_minor.coords[0][0] - axis_minor.coords[1][0]) * 0.5, axis_major.coords[0][1] + (axis_minor.coords[0][1] - axis_minor.coords[1][1]) * 0.5),
+                                          (axis_major.coords[1][0] + (axis_minor.coords[0][0] - axis_minor.coords[1][0]) * 0.5, axis_major.coords[1][1] + (axis_minor.coords[0][1] - axis_minor.coords[1][1]) * 0.5))
+                        minor_seg_plus = ((axis_minor.coords[0][0] + (axis_major.coords[0][0] - axis_major.coords[1][0]) * 0.5, axis_minor.coords[0][1] + (axis_major.coords[0][1] - axis_major.coords[1][1]) * 0.5),
+                                          (axis_minor.coords[1][0] + (axis_major.coords[0][0] - axis_major.coords[1][0]) * 0.5, axis_minor.coords[1][1] + (axis_major.coords[0][1] - axis_major.coords[1][1]) * 0.5))
+
+                        skillion_line = major_seg_plus if orientation == "major" else minor_seg_plus
+                        default_height = random.uniform(1.0, 2.0)
+                        roof_height = roof_height if roof_height else default_height
+                        roof = base.extrude_step(ddd.line(skillion_line), roof_height).translate([0, 0, max_height]).material(roof_material)
+
+                    elif roof_shape == 'hipped':
+                        # Attic
+                        base = part.buffer(roof_buffer if pbuffered else 0)
+                        orientation = "major"
+                        if part.extra.get("osm:roof:orientation", "along") == "across": orientation = "minor"
+                        (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(base)
+                        axis_line = axis_major if orientation == "major" else axis_minor
+                        #other_axis_line = axis_minor if orientation == "major" else axis_major
+
+                        axis_line = axis_line.intersection(axis_line.centroid().buffer(axis_minor.geom.length / 2, cap_style=ddd.CAP_ROUND, resolution=8))
+
+                        default_height = random.uniform(1.0, 2.0)
+                        roof_height = roof_height if roof_height else default_height
+                        roof = base.extrude_step(axis_line, roof_height).translate([0, 0, max_height]).material(roof_material)
+
+                    elif roof_shape == 'dome':
+                        default_height = random.uniform(2.0, 4.0)
+                        roof_height = roof_height if roof_height else default_height
+
+                        roofbase = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2)
+                        roof = roofbase.copy()
+
+                        steps = 6
+                        stepheight = 1.0 / steps
+                        for i in range(steps):
+                            stepy = (i + 1) * stepheight
+                            stepx = math.sqrt(1 - (stepy ** 2))
+                            stepbuffer = -(1 - stepx)
+                            roof = roof.extrude_step(roofbase.buffer(stepbuffer * roof_height), stepheight * roof_height)
+                        roof = roof.translate([0, 0, max_height]).material(roof_material)
+
+                    elif roof_shape == 'none':
+                        pass
+
+                    else:
+                        logger.warning("Unknown roof shape: %s", roof_shape)
 
                     if roof: building_3d.children.append(roof)
+
                 except Exception as e:
                     logger.warning("Cannot generate roof: %s (geom: %s)" % (e, part.geom))
 
@@ -240,8 +381,17 @@ class BuildingOSMBuilder():
                 entire_building_3d.append(building_3d)
 
             except ValueError as e:
-                logger.warning("Cannot generate building: %s (geom: %s)" % (e, part.geom))
-                return None
+                logger.error("Cannot generate building part %s: %s (geom: %s)" % (part, e, part.geom))
+                raise
+                #return None
+            except IndexError as e:
+                logger.error("Cannot generate building part %s: %s (geom: %s)" % (part, e, part.geom))
+                raise
+                #return None
+            except Exception as e:
+                logger.error("Cannot generate building part %s: %s (geom: %s)" % (part, e, part.geom))
+                raise
+
 
         entire_building_3d = terrain.terrain_geotiff_min_elevation_apply(entire_building_3d, self.osm.ddd_proj)
         entire_building_3d = entire_building_3d.translate([0, 0, -0.20])  # temporary hack floor snapping

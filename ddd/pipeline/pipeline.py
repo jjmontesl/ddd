@@ -98,7 +98,12 @@ class DDDPipeline():
         for task in tasks:
             print("  " + str(task))
         for task in tasks:
-            task.run(self)
+            try:
+                task.run(self)
+            except Exception as e:
+                logger.error("Error running task %s: %s", task, e)
+                #raise DDDException("Error running task %s: %s" % (task, e))
+                raise
 
     def run_pipeline_doit(self):
         from doit.doit_cmd import DoitMain
