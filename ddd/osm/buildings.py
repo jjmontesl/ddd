@@ -48,40 +48,41 @@ class BuildingOSMBuilder():
     def preprocess_buildings_features(self, features_2d):
 
         logger.info("Preprocessing buildings and bulding parts (2D)")
-        logger.warn("TODO: support nested buildings in a best effort")
-
         # TODO: create nested buildings them separately, consider them part of the bigger building for subtraction)
 
-
         # Assign each building part to a building, or transform it into a building if needed
+        features_2d_original = list(features_2d.children)
         for feature in list(features_2d.children):
             if feature.geom.type == 'Point': continue
-            if feature.extra.get('osm:building:part', None) is None: continue
+
+            if feature.extra.get('osm:building:part', None) is None and feature.extra.get('osm:building', None) is None: continue
 
             # Find building
             #buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and ddd.polygon(o.geom.exterior.coords).contains(feature))
-            buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and o.contains(feature))
+            buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and o != feature and o.contains(feature) and o in features_2d_original)
 
             if len(buildings.children) == 0:
-                logger.warn("Building part with no building: %s", feature)
-                building = ddd.shape(feature.geom, name="Building (added): %s" % feature.name)
-                building.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')
-                building.extra['ddd:building:parts'] = [feature]
-                feature.extra['ddd:building:feature'] = building
-                features_2d.append(building)
+                if feature.extra.get('osm:building', None) is None:
+                    logger.warn("Building part with no building: %s", feature)
+                    building = ddd.shape(feature.geom, name="Building (added): %s" % feature.name)
+                    building.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')
+                    building.extra['ddd:building:parts'] = [feature]
+                    feature.extra['ddd:building:parent'] = building
+                    features_2d.append(building)
 
             elif len(buildings.children) > 1:
-                buildings.children.sort(key=lambda b: b.geom.area, reverse=True)
+                # Sort by area and get the smaller one
+                buildings.children.sort(key=lambda b: b.geom.area, reverse=False)
                 logger.warn("Building part with multiple buildings: %s -> %s", feature, buildings.children)
 
-                feature.extra['ddd:building:feature'] = buildings.children[0]
+                feature.extra['ddd:building:parent'] = buildings.children[0]
                 if 'ddd:building:parts' not in buildings.children[0].extra:
                     buildings.children[0].extra['ddd:building:parts'] = []
                 buildings.children[0].extra['ddd:building:parts'].append(feature)
 
             else:
                 logger.debug("Associating building part to building: %s -> %s", feature, buildings.children[0])
-                feature.extra['ddd:building:feature'] = buildings.children[0]
+                feature.extra['ddd:building:parent'] = buildings.children[0]
                 if 'ddd:building:parts' not in buildings.children[0].extra:
                     buildings.children[0].extra['ddd:building:parts'] = []
                 buildings.children[0].extra['ddd:building:parts'].append(feature)
@@ -103,14 +104,37 @@ class BuildingOSMBuilder():
             feature.extra['osm:building'] = building
 
             if feature.extra.get('osm:amenity', None) or feature.extra.get('osm:shop', None):
-                #logger.debug("Point: %s  Building: %s  Distance: %s", point, building, distance)
-                # TODO: Do the opposite, create items we are interested in
-                if point.extra.get('osm:amenity', None) in ('waste_disposal', 'waste_basket',
-                                                            'recycling', 'bicycle_parking'):
+                # TODO: Do the opposite, create items we are interested in, avoid this exception
+                if point.extra.get('osm:amenity', None) in ('waste_disposal', 'waste_basket', 'recycling', 'bicycle_parking'):
                     continue
-                building.extra['ddd:building:items'].append(feature)
-                #logger.debug("Amenity: %s" % point)
 
+                logger.debug("Associating item %s to building %s.", feature, building)
+                #logger.debug("Point: %s  Building: %s  Distance: %s", point, building, distance)
+                building.extra['ddd:building:items'].append(feature)
+
+    def link_items_ways_to_buildings(self, buildings_all, items):
+        for item in items.children:
+
+            '''
+            for building in buildings.children:
+                if building.contains(item):
+                    logger.info("Associating item %s to building %s.", item, building)
+                    item.extra['ddd:building:parent'] = building
+                    #building.extra['ddd:building:items_ways'].append(item)
+            '''
+
+            buildings = buildings_all.select(func=lambda o: o.extra.get('osm:building', None) and not o.extra.get('ddd:building:parent', None) and o.contains(item))
+
+            if len(buildings.children) > 1:
+                logger.warn("Item with multiple buildings: %s -> %s", item, buildings.children)
+                # Sort by area
+                buildings.children.sort(key=lambda b: b.geom.area, reverse=True)
+
+            if len(buildings.children) > 0:
+                building = buildings.children[0]
+                logger.info("Associating item (way) %s to building %s.", item, building)
+                item.extra['ddd:building:parent'] = building
+                #building.extra['ddd:building:items_ways'].append(item)
 
     def closest_building(self, buildings_2d, point):
         closest_building = None
@@ -122,15 +146,16 @@ class BuildingOSMBuilder():
                 closest_distance = distance
         return closest_building, closest_distance
 
-
     def generate_buildings_3d(self, buildings_2d):
         logger.info("Generating 3D buildings (%d)", len(buildings_2d.children))
 
         buildings_3d = ddd.group3(name="Buildings")
         for building_2d in buildings_2d.children:
-            if building_2d.extra.get('ddd:building:feature', None) in (None, building_2d):
+            if building_2d.extra.get('ddd:building:parent', None) in (None, building_2d):
                 building_3d = self.generate_building_3d_generic(building_2d)
                 if building_3d:
+                    self.generate_building_3d_amenities(building_3d)
+                    building_3d = self.generate_building_3d_elevation(building_3d)
                     buildings_3d.append(building_3d)
         return buildings_3d
 
@@ -140,6 +165,7 @@ class BuildingOSMBuilder():
         Buildings 2D may contain references to building parts.
 
         TODO: Do a lot more in tags in 2D and here, and generalize tasks to pipelines and tags.
+        Support buildings recursively earlier.
         """
 
         floors = building_2d.extra.get('osm:building:levels', None)
@@ -166,7 +192,14 @@ class BuildingOSMBuilder():
         roof_buffer = random.uniform(0.5, 1.2)
         roof_wall_material = weighted_choice({"stone": 3, "bricks": 1})
 
-        for part in (building_2d.extra['ddd:building:parts'] + [building_2d]):
+        for part in (building_2d.extra.get('ddd:building:parts', []) + [building_2d]):
+
+            # Process subbuildings recursively (non standard, but improves support and compatibility with other renderers)
+            if part != building_2d and part.extra.get('osm:building', None) is not None:
+                subbuilding = self.generate_building_3d_generic(part)
+                entire_building_2d.append(part)
+                entire_building_3d.append(subbuilding)
+                continue
 
             building_3d = None
             try:
@@ -406,14 +439,16 @@ class BuildingOSMBuilder():
                 logger.error("Cannot generate building part %s: %s (geom: %s)" % (part, e, part.geom))
                 raise
 
-
-        entire_building_3d = terrain.terrain_geotiff_min_elevation_apply(entire_building_3d, self.osm.ddd_proj)
-        entire_building_3d = entire_building_3d.translate([0, 0, -0.20])  # temporary hack floor snapping
         entire_building_3d.extra['building_2d'] = building_2d
-
-        self.generate_building_3d_amenities(entire_building_3d)
+        entire_building_3d.extra['ddd:building:feature'] = building_2d
 
         return entire_building_3d
+
+    def generate_building_3d_elevation(self, building_3d):
+        building_3d = terrain.terrain_geotiff_min_elevation_apply(building_3d, self.osm.ddd_proj)
+        building_3d.extra['ddd:building:feature'].extra['ddd:building:elevation'] = building_3d.extra['_terrain_geotiff_min_elevation_apply:elevation']
+        building_3d = building_3d.translate([0, 0, -0.20])  # temporary hack floor snapping
+        return building_3d
 
     def snap_to_building(self, item_3d, building_3d):
 
@@ -467,7 +502,7 @@ class BuildingOSMBuilder():
                 item.extra['ddd:item'] = item_1d
                 item = self.snap_to_building(item, building_3d)
                 item = item.translate([0, 0, 3.0])  # no post
-                item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
+                #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
                 building_3d.children.append(item)
 
             elif item_1d.extra.get('osm:amenity', None) and item_1d.extra.get('osm:amenity', None) not in ('fountain', 'taxi', 'post_box', 'bench', 'toilets', 'parking_entrance'):
@@ -483,7 +518,7 @@ class BuildingOSMBuilder():
                 if item:
                     item = item.translate([0, 0, 3.2])  # no post
                     color = random.choice(["#d41b8d", "#a7d42a", "#e2de9f", "#9f80e2"])
-                    item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
+                    #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
                     building_3d.children.append(item)
                 else:
                     logger.info("Could not snap item to building (skipping item): %s", item)
@@ -500,7 +535,7 @@ class BuildingOSMBuilder():
                     item = item.translate([0, 0, 2.8])  # no post
                     color = random.choice(["#c41a7d", "#97c41a", "#f2ee0f", "#0f90f2"])
                     item = item.material(ddd.material(color=color))
-                    item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
+                    #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
                     building_3d.children.append(item)
                 else:
                     logger.info("Could not snap item to building (skipping item): %s", item)

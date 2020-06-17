@@ -32,9 +32,8 @@ def osm_extras_orthophoto_get(pipeline, osm, root, logger):
     transformer2 = pyproj.Transformer.from_proj(osm.osm_proj, osm.webmercator_proj)
 
     query_bbox_ddd = osm.area_crop2.bounds()
-    print(query_bbox_ddd)
     query_bbox_osm = project_coordinates(query_bbox_ddd, transformer1)
-    logger.info("Requesting WMS image for: %s", query_bbox_osm)
+    logger.info("Obtaining orthophoto for: %s", query_bbox_osm)
 
     query_bbox_webmercator = project_coordinates(query_bbox_osm, transformer2)
     #bbox = [-1007960.7600516, 5131958.1924932, -878017.81196677, 5223682.6264354]
@@ -66,6 +65,7 @@ def osm_extras_image_as_ground():
 def osm_extras_image_as_ground_areas(pipeline, osm, obj):
     """Replaces areas (terrain, sidewalks...) with a given image."""
     if obj.mat and obj.mat.extra.get("ddd:export-as-marker", None): return
+    if obj.extra.get('ddd:collider', None) is False and obj.extra.get('ddd:area:type', None) != 'water': return  # TODO: this is to avoid replacing pitch lines, but those shall be separated, and this removes sea from ortho
     if obj.children and not obj.mesh: return
 
     query_bbox_ddd = osm.area_crop2.bounds()

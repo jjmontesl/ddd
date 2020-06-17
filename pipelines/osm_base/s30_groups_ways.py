@@ -385,8 +385,8 @@ def osm_groups_ways_barrier_retaining_wall(root, osm, obj):
     obj.name = "Retaining Wall: %s" % obj.name
     #obj.extra['ddd:way:weight'] = 90
     #obj.extra['ddd:way:lanes'] = None
-    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 0.7))
-    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 1.5))
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 0.70))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 1.4))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
     obj = obj.material(ddd.mats.stone)

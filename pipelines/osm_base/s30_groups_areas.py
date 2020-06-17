@@ -135,8 +135,22 @@ def osm_groups_areas_amenity_parking(obj, osm):
     obj = obj.material(ddd.mats.asphalt)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:leisure" = "pitch"]')
+def osm_groups_areas_leisure_pitch(obj, osm):
+    """Define area data."""
+    obj.name = "Pitch: %s" % obj.name
+    obj.extra['ddd:area:type'] = "pitch"
+    obj = obj.material(ddd.mats.pitch)
+    return obj
 
-
+@dddtask(path="/Areas/*", select='["osm:public_transport" = "platform"]; ["osm:railway" = "platform"]')
+def osm_groups_areas_transport_platform(obj, osm):
+    """Define area data."""
+    obj.name = "Platform: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj.extra['ddd:height'] = 0.35
+    obj = obj.material(ddd.mats.pavement)
+    return obj
 
 
 """
@@ -175,20 +189,12 @@ def generate_areas_2d(self):
             '''
 
 
-            elif (narea.extra.get('osm:public_transport', None) in ('platform', ) or
-                  narea.extra.get('osm:railway', None) in ('platform', )):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_platform(narea)
-
             elif narea.extra.get('osm:tourism', None) in ('artwork', ):
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_artwork(narea)
 
-            elif narea.extra.get('osm:leisure', None) in ('pitch', ):  # Cancha
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                area = self.generate_area_2d_pitch(narea)
+
             elif narea.extra.get('osm:landuse', None) in ('railway', ):
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 area = self.generate_area_2d_railway(narea)

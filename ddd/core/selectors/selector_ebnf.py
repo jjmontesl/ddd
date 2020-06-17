@@ -51,8 +51,17 @@ list : "[" [value ("," value)*] "]"
 dict : "{" [pair ("," pair)*] "}"
 pair : string ":" value
 
-datafilterand: datafilter*
-selector: datafilterand
+selector: datafilterstatement
+
+?datafilterstatement: datafilterexpr
+                    | datafilterand
+                    | datafilteror
+
+datafilterexpr: datafilter
+
+datafilterand: datafilterexpr datafilterexpr
+datafilteror: datafilterstatement ";" datafilterstatement
+
 
 %import common.ESCAPED_STRING
 %import common.SIGNED_NUMBER

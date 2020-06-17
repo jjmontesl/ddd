@@ -48,10 +48,12 @@ class DDDUVMapping():
             '''
 
             result.extra['uv'] = [None for idx, v in enumerate(result.mesh.vertices)]
+            #logger.debug("UV mapping object: %s", obj)
             for face in result.mesh.faces:
                 v1 = result.mesh.vertices[face[1]] - result.mesh.vertices[face[0]]
                 v2 = result.mesh.vertices[face[2]] - result.mesh.vertices[face[0]]
                 v = np.cross(v1, v2)
+
                 v = v / np.linalg.norm(v)
 
                 def setuv(face, idx, uv):

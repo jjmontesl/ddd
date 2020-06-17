@@ -142,15 +142,18 @@ def osm_structured_building_link_items_nodes(root, osm):
     osm.buildings.link_items_to_buildings(buildings, items)
 
 
-'''
 @dddtask(log=True)
 def osm_structured_building_link_items_ways(root, osm):
     """Associate features (amenities, etc) to buildings."""
-    # TODO: There is some logic for specific items inside: use tagging.
-    items = root.find("/ItemsNodes")
+    items = root.find("/ItemsWays")
     buildings = root.find("/Buildings")
-    osm.buildings.link_items_to_buildings(buildings, items)
-'''
+    osm.buildings.link_items_ways_to_buildings(buildings, items)
+
+
+@dddtask(path="/ItemsWays/*", select='["ddd:building:parent"]')  # filter=lambda o: "ddd:building:parent" in o.extra)  #
+def osm_structured_building_link_items_ways_elevation(root, osm, obj):
+    obj.extra['ddd:elevation'] = 'building'
+    obj.extra['_height_mapping'] = 'none'
 
 
 @dddtask()

@@ -918,8 +918,8 @@ class DDDObject2(DDDObject):
         result = self.copy()
         other = other.union()
 
-        if self.geom and other.geom:
-            result.geom = self.geom.intersection(other.geom)
+        if result.geom and other.geom:
+            result.geom = result.geom.intersection(other.geom)
         result.children = [c.intersection(other) for c in self.children]
 
         return result

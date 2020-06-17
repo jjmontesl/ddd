@@ -6,6 +6,7 @@ from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 from ddd.core.exception import DDDException
 import random
+import sys
 
 
 @dddtask(order="30.10.+", log=True)
@@ -68,27 +69,9 @@ def osm_groups_ways_process(pipeline, osm, root, logger):
     pass
 
 
-# Generate buildings
 
-@dddtask(order="30.40.5.+")
-def osm_generate_buildings_preprocess(pipeline, osm, root, logger):
-    """Preprocesses buildings at OSM feature level, associating buildings and building parts."""
-    features = root.find("/Features")
-    osm.buildings.preprocess_buildings_features(features)
+# Generate buildings (separate file)
 
-
-@dddtask(order="30.40.10.+", path="/Features/*", select='["geom:type" != "Point"]', filter=lambda o: o.extra.get("osm:building", None) is not None or o.extra.get("osm:building:part", None) is not None, log=True)
-def osm_generate_buildings(root, obj):
-    item = obj.copy(name="Building: %s" % obj.name)
-    item.extra['ddd:building:items'] = []
-    if 'ddd:building:parts' not in item.extra: item.extra['ddd:building:parts'] = []
-    item = item.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3]))
-    root.find("/Buildings").append(item)
-
-
-@dddtask(order="30.40.20.+")
-def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
-    pass
 
 
 

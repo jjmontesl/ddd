@@ -164,6 +164,7 @@ class Areas3DOSMBuilder():
 
     def generate_areas_3d(self, areas_2d):
 
+        # TODO: Move to pipeline
         logger.info("Generating 3D areas (%d)", len(self.osm.areas_2d.children))
 
         areas_3d = ddd.group3(name="Areas")
@@ -317,7 +318,10 @@ class Areas3DOSMBuilder():
         if area_2d.geom is None:
             return None
 
-        logger.debug("Pitch: %s", area_2d)
+        area_2d_orig = area_2d.extra.get('ddd:crop:original')  #, area_2d)
+
+        logger.info("Pitch: %s", area_2d)
+        print("Areas: %s %s" % (area_2d, area_2d_orig))
         area_3d = self.generate_area_3d(area_2d)
 
         # TODO: pass size then adapt to position and orientation, easier to construct and reuse
@@ -326,11 +330,12 @@ class Areas3DOSMBuilder():
         sport = area_2d.extra.get('osm:sport', None)
 
         if sport == 'tennis':
-            lines = sports.field_lines_area(area_2d, sports.tennis_field_lines, padding=3.0)
+            lines = sports.field_lines_area(area_2d_orig, sports.tennis_field_lines, padding=3.0)
         elif sport == 'basketball':
-            lines = sports.field_lines_area(area_2d, sports.basketball_field_lines, padding=2.0)
+            lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=2.0)
         else:
-            lines = sports.field_lines_area(area_2d, sports.football_field_lines, padding=1.25)
+            # TODO: No default (empty), it should be assigned via pipeline props earlier
+            lines = sports.field_lines_area(area_2d_orig, sports.football_field_lines, padding=1.25)
 
         if lines:
             lines = terrain.terrain_geotiff_elevation_apply(lines, self.osm.ddd_proj).translate([0, 0, 0.15])

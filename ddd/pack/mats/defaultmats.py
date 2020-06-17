@@ -49,7 +49,7 @@ class DefaultMaterials(MaterialsCollection):
         self.metal = ddd.material(name="Steel", color='#68738c')
 
         self.stone = ddd.material(name="Stone", color='#9c9378')
-        self.rock = ddd.material(name="Rock", color='#7c5378')
+        self.rock = ddd.material(name="Rock", color='#5f5f4d')
         self.cement = ddd.material(name="Concrete", color='#b8b8a0')
         self.bricks = ddd.material(name="Bricks", color='#d49156')
 

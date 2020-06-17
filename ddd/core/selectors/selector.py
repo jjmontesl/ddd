@@ -53,6 +53,12 @@ class TreeToSelector(Transformer):
         return selector_func
     '''
 
+    def datafilterstatement(self, t):
+        return t[0]
+
+    def datafilterexpr(self, t):
+        return t[0]
+
     def datafilterand(self, t):
         def datafilterand_func(obj):
             for df in t:
@@ -60,6 +66,14 @@ class TreeToSelector(Transformer):
                 if not selected: return False
             return True
         return datafilterand_func
+
+    def datafilteror(self, t):
+        def datafilteror_func(obj):
+            for df in t:
+                selected = df(obj)
+                if selected: return True
+            return False
+        return datafilteror_func
 
     def datafilterkeyexprname(self, t):
         return t[0]
@@ -90,14 +104,14 @@ class TreeToSelector(Transformer):
         datakey = t[0]
         def datafilter_attr_def_func(obj):
             metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
-            return (datakey in metadata)
+            return (datakey in metadata) or (datakey in obj.extra)
         return datafilter_attr_def_func
 
     def datafilter_attr_undef(self, t):
         datakey = t[0]
         def datafilter_attr_undef_func(obj):
             metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
-            return (datakey not in metadata)
+            return (datakey not in metadata) and (datakey not in obj.extra)
         return datafilter_attr_undef_func
 
     def datafilter_attr_def_re(self, t):

@@ -76,13 +76,13 @@ def osm_model_generate_buildings(osm, root):
     root.append(buildings_3d)
 
 
+
 @dddtask(path="/ItemsNodes/*")
 def osm_model_generate_items_nodes(obj, osm, root):
     item_3d = osm.items.generate_item_3d(obj)
     if item_3d:
         #item_3d.name = item_3d.name if item_3d.name else item_2d.name
         root.find("/Items3").append(item_3d)
-
 
 
 @dddtask(path="/ItemsWays/*")
@@ -106,8 +106,9 @@ def osm_model_generate_items_ways_height(obj, osm, root):
     obj = obj.extrude(dif_height)
     if min_height:
         obj = obj.translate([0, 0, min_height])
-    obj = terrain.terrain_geotiff_elevation_apply(obj, osm.ddd_proj)
     obj = ddd.uv.map_cubic(obj)
+
+    obj.extra['ddd:elevation'] = "terrain_geotiff_elevation_apply"
 
     '''
     # Move to generic place for all
@@ -128,6 +129,26 @@ def osm_model_generate_items_ways_height(obj, osm, root):
 
     root.find("/Items3").append(obj)
 
+@dddtask(path="/Items3/*", select='["ddd:building:parent"]')
+def osm_model_elevation_items_buildings(obj, osm, root):
+    """Apply elevation from building to building related items."""
+    # TODO: (?) Associate earlier to building, and build building with all items, then apply elevation from here to building?
+    obj.extra['ddd:elevation'] = "building"
+    return obj
+
+
+@dddtask(path="/Items3/*", select='["ddd:elevation" = "terrain_geotiff_elevation_apply"]')
+def osm_model_elevation_apply_terrain(obj, osm, root):
+    obj = terrain.terrain_geotiff_elevation_apply(obj, osm.ddd_proj)
+    return obj
+
+@dddtask(path="/Items3/*", select='["ddd:elevation" = "building"]')
+def osm_model_elevation_apply_building(obj, osm, root):
+    """Apply elevation to items contained in a building."""
+    building_elevation = float(obj.extra['ddd:building:parent'].extra['ddd:building:elevation'])
+    obj = obj.translate([0, 0, building_elevation])
+    obj = obj.translate([0, 0, -0.20])
+    return obj
 
 
 @dddtask(path="/ItemsAreas/*")

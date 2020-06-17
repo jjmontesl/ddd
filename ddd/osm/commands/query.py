@@ -5,3 +5,12 @@
 osmgenconfig = {}
 
 
+
+'''
+@dddtask(select='["osm:direction"]')
+def test(root, osm, obj):
+    print(obj.extra['osm:direction'])
+@dddtask()
+def test2():
+    sys.exit(1)
+'''

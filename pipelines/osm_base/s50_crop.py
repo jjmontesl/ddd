@@ -21,6 +21,7 @@ def osm_crop(pipeline, osm, root, logger):
     """Crops features in different ways."""
     pass
 
+
 @dddtask(path="/Areas/*")
 def osm_crop_areas(obj, osm, root, logger):
     obj.extra['ddd:crop'] = 'area'
@@ -52,6 +53,7 @@ def osm_crop_apply(obj, osm, root, logger):
 
 @dddtask(select='["ddd:crop" = "area"]')
 def osm_crop_apply_area(obj, osm, root, logger):
+    obj.extra['ddd:crop:original'] = obj.copy()
     obj = obj.intersection(osm.area_crop2)
     return obj
 

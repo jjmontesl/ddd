@@ -181,6 +181,10 @@ class ItemsOSMBuilder():
                 vertex_func = self.osm.ways.get_height_apply_func(path)
                 item_3d = item_3d.vertex_func(vertex_func)
                 item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
+            elif height_mapping == 'none':  # building...
+                pass
+            elif height_mapping == 'building':  # building...
+                pass
             else:
                 item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
 
@@ -387,7 +391,7 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_powerpole(self, item_2d):
         coords = item_2d.geom.coords[0]
-        item_3d = landscape.powertower(18)
+        item_3d = landscape.powertower(14)
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Power Pole: %s' % item_2d.name
         return item_3d
@@ -414,7 +418,7 @@ class ItemsOSMBuilder():
         if min_height:
             item_3d = item_3d.translate([0, 0, min_height])
 
-        item_3d.extra['_height_mapping'] = item_3d.extra.get('_height_mapping', 'terrain_geotiff_elevation_apply')
+        item_3d.extra['_height_mapping'] = item_3d.extra.get('ddd:elevation', 'terrain_geotiff_elevation_apply')
         item_3d.name = 'Fence: %s' % item_2d.name
 
         return item_3d
@@ -423,7 +427,7 @@ class ItemsOSMBuilder():
         """
         Expects a line.
         """
-        height = item_2d.extra['ddd:item:height']
+        height = item_2d.extra['ddd:height']
         width = item_2d.extra['ddd:width']
         profile = item_2d.buffer(width - 0.2)
         item_3d = profile.extrude_step(profile.buffer(0.2), 0.4)
@@ -502,7 +506,8 @@ class ItemsOSMBuilder():
         #        logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
         coords = item_2d.geom.coords[0]
 
-        if 'osm:direction' in item_2d.extra: item_2d.extra['ddd:angle'] = item_2d.extra['osm:direction'] * (math.pi / 180)
+        #if 'osm:direction' in item_2d.extra: item_2d.extra['ddd:angle'] = item_2d.extra['osm:direction'] * (math.pi / 180)
+
         #if item_2d.extra.get('ddd:angle', None) is None: item_2d.extra['ddd:angle'] = 0
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
 

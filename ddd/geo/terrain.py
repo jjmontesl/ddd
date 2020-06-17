@@ -16,6 +16,7 @@ from ddd.ddd import ddd
 import noise
 from ddd.geo.georaster import ElevationChunk
 import pyproj
+from ddd.core.exception import DDDException
 
 
 class DDDGeoTerrain():
@@ -102,7 +103,11 @@ def terrain_geotiff_min_elevation_apply(obj, ddd_proj):
         if v_h < min_h:
             min_h = v_h
 
+    if min_h is None:
+        raise DDDException("Cannot calculate min value for elevation: %s" % obj)
+
     #func = lambda x, y, z, i: [x, y, z + min_h]
     obj = obj.translate([0, 0, min_h])
+    obj.extra['_terrain_geotiff_min_elevation_apply:elevation'] = min_h
     #mesh.mesh.invert()
     return obj

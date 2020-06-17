@@ -11,7 +11,7 @@ from ddd.core.exception import DDDException
 def osm_icons(root, osm):
     pass
 
-@dddtask(path="/Items/*", select='["osm:amenity"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity"]')
 def osm_icons_amenity(obj, root, osm, logger):
     """Add icons."""
 

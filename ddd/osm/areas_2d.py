@@ -317,24 +317,10 @@ class Areas2DOSMBuilder():
 
         return area
 
-
-    def generate_area_2d_platform(self, area):
-        area.name = "Platform: %s" % area.name
-        area = area.material(ddd.mats.pavement)
-        area.extra['ddd:height'] = 0.3
-        return area
-
     def generate_area_2d_vineyard(self, area):
         area.name = "Vineyard: %s" % area.name
         area = self.generate_area_2d_park(area, tree_density_m2=0.001, tree_types={'default': 1})
         # Generate crops
-        return area
-
-    def generate_area_2d_pitch(self, area):
-        feature = area.extra['osm:feature']
-        area.name = "Pitch: %s" % feature['properties'].get('name', None)
-        area.extra['ddd:area:type'] = 'pitch'
-        area = area.material(ddd.mats.pitch)
         return area
 
     def generate_area_2d_railway(self, area):

@@ -34,7 +34,7 @@ def osm_groups_export_2d(root):
     root.find("/Ways").replace(root.find("/Ways").buffer(1.0).material(ddd.mats.asphalt).prop_set('svg:fill-opacity', 0.8, True))
     root.find("/Buildings").replace(root.find("/Buildings").material(ddd.mats.stone).prop_set('svg:fill-opacity', 0.7, True))
     root.find("/ItemsNodes").replace(root.find("/ItemsNodes").material(ddd.mats.highlight))  # buffer(1.0).
-    root.find("/ItemsWays").replace(root.find("/ItemsWays").material(ddd.mats.highlight))  # buffer(1.0).
+    root.find("/ItemsWays").replace(root.find("/ItemsWays").buffer(0.75).material(ddd.mats.highlight))  # buffer(1.0).
     root.save("/tmp/osm-groups-features.json")
     root.save("/tmp/osm-groups-features.svg")
 
