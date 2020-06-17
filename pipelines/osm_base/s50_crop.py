@@ -29,8 +29,16 @@ def osm_crop_areas(obj, osm, root, logger):
 def osm_crop_ways(obj, osm, root, logger):
     obj.extra['ddd:crop'] = 'area'
 
-@dddtask(path="/Items/*")
-def osm_crop_items(obj, osm, root, logger):
+@dddtask(path="/ItemsAreas/*")
+def osm_crop_items_areas(obj, osm, root, logger):
+    obj.extra['ddd:crop'] = 'centroid'
+
+@dddtask(path="/ItemsWays/*")
+def osm_crop_items_ways(obj, osm, root, logger):
+    obj.extra['ddd:crop'] = 'centroid'
+
+@dddtask(path="/ItemsNodes/*")
+def osm_crop_items_nodes(obj, osm, root, logger):
     obj.extra['ddd:crop'] = 'centroid'
 
 @dddtask(path="/Buildings/*")

@@ -108,17 +108,6 @@ class Ways2DOSMBuilder():
             way_2d = way_2d.buffer(distance=0.1, cap_style=2, join_style=2)
             # way_2d = way_2d.simplify(0.5)
 
-        # Remove buildings
-        if way_2d.extra.get('ddd:subtract_buildings', False):
-            #buildings_2d_union = self.osm.buildings_2d.union()
-            #way_2d = way_2d.subtract(self.osm.buildings_2d_union)
-            way_2d = way_2d.clean(eps=0.05)
-            try:
-                way_2d = way_2d.subtract(self.osm.buildings_2d)
-            except Exception as e:
-                logger.error("Could not subtract buildings %s from way %s: %s", self.osm.buildings_2d, way_2d, e)
-                return None
-
         # print(feature['properties'].get("name", None))
         # way_2d.extra['osm:feature'] = feature
         # way_2d.extra['path'] = path
@@ -431,7 +420,7 @@ class Ways2DOSMBuilder():
         crop = ddd.shape(self.osm.area_crop)
 
         # Generate lines
-        if way_2d.extra['ddd:way:roadlines']:
+        if way_2d.extra.get('ddd:way:roadlines', False):
 
             lanes = way_2d.extra['ddd:way:lanes']
             numlines = lanes - 1 + 2
@@ -487,7 +476,7 @@ class Ways2DOSMBuilder():
                 pipeline.data["Roadlines3"].append(line_3d)
 
         # Check if to generate lamps
-        if path.extra['ddd:way:lamps'] and (path.extra['ddd:layer'] in (0, "0") or path.extra['osm:layer'] in (0, "0")):
+        if path.extra.get('ddd:way:lamps', False) and (path.extra['ddd:layer'] in (0, "0") or path.extra['osm:layer'] in (0, "0")):
 
             # Generate lamp posts
             interval = 25.0
@@ -535,7 +524,7 @@ class Ways2DOSMBuilder():
 
                         item.extra['way_2d'] = way_2d
                         item.extra['osm:highway'] = 'street_lamp'
-                        pipeline.root.find("/Items").append(item)
+                        pipeline.root.find("/ItemsNodes").append(item)
 
         '''
         # Check if to generate bridge posts
@@ -610,10 +599,10 @@ class Ways2DOSMBuilder():
                 item.extra['way_2d'] = way_2d
                 item.extra['osm:highway'] = 'traffic_signals'
                 item.extra['ddd:angle'] = angle #+ math.pi/2
-                pipeline.root.find("/Items").append(item)
+                pipeline.root.find("/ItemsNodes").append(item)
 
         # Generate traffic signs
-        if True and path.geom.length > 20.0 and path.extra['ddd:way:traffic_signs'] and path.extra['ddd:layer'] == "0":
+        if path.extra.get('ddd:way:traffic_signs', False) and path.geom.length > 20.0 and path.extra['ddd:layer'] == "0":
 
             for end in (1, -1):
 
@@ -649,5 +638,5 @@ class Ways2DOSMBuilder():
                     item.extra['ddd:angle'] = angle - math.pi / 2
                     item.extra['osm:traffic_sign'] = random.choice(['es:r1', 'es:r2', 'es:p1', 'es:r101', 'es:r303', 'es:r305',
                                                                     'es:r308', 'es:r400c', 'es:r500', 'es:s13'])  # 'es:r301_50',
-                    pipeline.root.find("/Items").append(item)
+                    pipeline.root.find("/ItemsNodes").append(item)
 

@@ -19,7 +19,7 @@ def osm_structured_split_ways(osm, root):
 
 @dddtask()
 def osm_structured_link_ways_items(osm, root):
-    osm.ways1.ways_1d_link_items(root.find("/Ways"), root.find("/Items"))
+    osm.ways1.ways_1d_link_items(root.find("/Ways"), root.find("/ItemsNodes"))
 
 
 @dddtask()
@@ -30,6 +30,16 @@ def osm_structured_buildings(osm, root):
     #root.find("/Buildings").children = []  # Remove as they will be generated from features: TODO: change this
     #osm.buildings.generate_buildings_2d(root.find("/Buildings"))
 
+
+@dddtask(path="/ItemsWays/*", select='["ddd:width"]')
+def osm_structured_process_items_ways(osm, root, obj):
+    """Generates items from Items Ways (lines)."""
+    width = float(obj.extra.get('ddd:width', 0))
+    if width > 0:
+        obj = obj.buffer(width, cap_style=ddd.CAP_FLAT)
+    return obj
+
+
 @dddtask()
 def osm_structured_generate_ways_2d(osm, root):
     """Generates ways 2D (areas) from ways 1D (lines), replacing the /Ways node in the hierarchy."""
@@ -38,6 +48,28 @@ def osm_structured_generate_ways_2d(osm, root):
 
     ways2 = osm.ways2.generate_ways_2d(ways1)
     root.append(ways2)
+
+
+@dddtask()
+def osm_structured_subtract_buildings_calculate(pipeline, root, logger):
+
+    buildings = root.find("/Buildings").union()
+    pipeline.data['buildings'] = buildings
+
+@dddtask(path="/Ways/*", select='["ddd:subtract_buildings" = True]')
+def osm_structured_subtract_buildings(pipeline, root, logger, obj):
+    """Subtract buildings from objects that cannot overlap them."""
+    #buildings_2d_union = self.osm.buildings_2d.union()
+    #way_2d = way_2d.subtract(self.osm.buildings_2d_union)
+    obj = obj.clean(eps=0.05)
+    buildings = pipeline.data['buildings']
+    try:
+        obj = obj.subtract(buildings)
+    except Exception as e:
+        logger.error("Could not subtract buildings %s from way %s: %s", buildings, obj, e)
+    return obj
+
+
 
 
 @dddtask()
@@ -102,12 +134,23 @@ def osm_structured_areas_postprocess(root, osm):
 
 
 @dddtask(log=True)
-def osm_structured_building_link_features(root, osm):
+def osm_structured_building_link_items_nodes(root, osm):
     """Associate features (amenities, etc) to buildings."""
-    # TODO: There is some logic for specific items inside: use tagging.
-    items = root.find("/Items")
+    # TODO: There is some logic for specific items inside: use tagging for linkable items.
+    items = root.find("/ItemsNodes")
     buildings = root.find("/Buildings")
     osm.buildings.link_items_to_buildings(buildings, items)
+
+
+'''
+@dddtask(log=True)
+def osm_structured_building_link_items_ways(root, osm):
+    """Associate features (amenities, etc) to buildings."""
+    # TODO: There is some logic for specific items inside: use tagging.
+    items = root.find("/ItemsNodes")
+    buildings = root.find("/Buildings")
+    osm.buildings.link_items_to_buildings(buildings, items)
+'''
 
 
 @dddtask()

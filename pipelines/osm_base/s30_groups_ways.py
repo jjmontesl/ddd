@@ -329,7 +329,7 @@ def osm_groups_ways_railway(obj, osm):
 
 @dddtask(path="/Ways/*", select='["osm:waterway" = "river"]')
 def osm_groups_ways_waterway_river(obj, osm):
-    """Define road data."""
+    """Define item data."""
     obj.name = "River: %s" % obj.name
     obj.extra['ddd:way:lanes'] = None
     obj.extra['ddd:way:width'] = 6.0
@@ -341,7 +341,7 @@ def osm_groups_ways_waterway_river(obj, osm):
 
 @dddtask(path="/Ways/*", select='["osm:waterway" = "stream"]')
 def osm_groups_ways_waterway_stream(obj, osm):
-    """Define road data."""
+    """Define item data."""
     obj.name = "Stream: %s" % obj.name
     obj.extra['ddd:way:lanes'] = None
     obj.extra['ddd:way:width'] = 3.5
@@ -351,64 +351,95 @@ def osm_groups_ways_waterway_stream(obj, osm):
     return obj
 
 
+@dddtask(path="/Features/*", select='["osm:barrier" = "fence"]')
+def osm_groups_ways_barrier_fence(root, osm, obj):
+    """Define item data."""
+    obj.name = "Fence: %s" % obj.name
+    #obj.extra['ddd:way:weight'] = 100
+    #obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:width'] = 0.0
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 1.2))
+    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
+    obj.extra['ddd:subtract_buildings'] = True
+    obj = obj.material(ddd.mats.fence)
+    obj = obj.outline()  #.buffer(0.05)
+    root.find("/ItemsWays").append(obj)
+
+@dddtask(path="/Features/*", select='["osm:barrier" = "hedge"]')
+def osm_groups_ways_barrier_hedge(root, osm, obj):
+    """Define item data."""
+    obj.name = "Hedge: %s" % obj.name
+    #obj.extra['ddd:way:weight'] = 100
+    #obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:width'] = 0.6
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 1.2))
+    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
+    obj.extra['ddd:subtract_buildings'] = True
+    obj = obj.material(ddd.mats.treetop)
+    root.find("/ItemsWays").append(obj)
+
+
+@dddtask(path="/Features/*", select='["osm:barrier" = "retaining_wall"]')
+def osm_groups_ways_barrier_retaining_wall(root, osm, obj):
+    """Define item data."""
+    obj.name = "Retaining Wall: %s" % obj.name
+    #obj.extra['ddd:way:weight'] = 90
+    #obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 0.7))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 1.5))
+    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
+    obj.extra['ddd:subtract_buildings'] = True
+    obj = obj.material(ddd.mats.stone)
+    root.find("/ItemsWays").append(obj)
+
+@dddtask(path="/Features/*", select='["osm:barrier" = "wall"]')
+def osm_groups_ways_barrier_wall(root, osm, obj):
+    """Define item data."""
+    obj.name = "Wall: %s" % obj.name
+    #obj.extra['ddd:way:weight'] = 91
+    #obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 0.35))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 1.8))
+    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
+    obj.extra['ddd:subtract_buildings'] = True
+    obj = obj.material(ddd.mats.bricks)
+    root.find("/ItemsWays").append(obj)
+
+@dddtask(path="/Features/*", select='["osm:barrier" = "city_wall"]')
+def osm_groups_ways_barrier_city_wall(root, osm, obj):
+    """Define item data."""
+    obj.name = "City Wall: %s" % obj.name
+    #obj.extra['ddd:way:weight'] = 91
+    #obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 1.00))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 2.0))
+    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
+    obj.extra['ddd:subtract_buildings'] = True
+    obj = obj.material(ddd.mats.stone)
+    root.find("/ItemsWays").append(obj)
+
+@dddtask(path="/Features/*", select='["osm:barrier" = "castle_wall"]')
+def osm_groups_ways_barrier_castle_wall(root, osm, obj):
+    """Define item data."""
+    obj.name = "Castle Wall: %s" % obj.name
+    #obj.extra['ddd:way:weight'] = 91
+    #obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 3.00))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 3.5))
+    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
+    obj.extra['ddd:subtract_buildings'] = True
+    obj = obj.material(ddd.mats.stone)
+    root.find("/ItemsWays").append(obj)
+
+
 '''
 def generate_way_1d(feature):
 
     create_as_item = False
 
-    elif path.extra.get('osm:barrier', None) == 'retaining_wall':
-        width = 0.7
-        material = ddd.mats.stone
-        extra_height = 1.5
-        name = "Wall Retaining: %s" % name_id
-        path.extra['ddd:subtract_buildings'] = True
-    elif path.extra.get('osm:barrier', None) == 'wall':
-        # TODO: Get height and material from metadata
-        width = 0.35
-        material = ddd.mats.bricks
-        extra_height = 1.8
-        name = "Wall: %s" % name_id
-        path.extra['ddd:subtract_buildings'] = True
-
-    elif path.extra.get('osm:barrier', None) == 'city_wall':
-        width = 1.0
-        material = ddd.mats.stone
-        extra_height = 2.0
-        name = "City Wall: %s" % name_id
-        path.extra['ddd:subtract_buildings'] = True
-    elif path.extra.get('osm:historic', None) == 'castle_wall':
-        width = 3.0
-        material = ddd.mats.stone
-        extra_height = 3.5
-        name = "Castle Wall: %s" % name_id
-        path.extra['ddd:subtract_buildings'] = True
-
-    elif path.extra.get('osm:barrier', None)== 'hedge':
-        width = 0.6
-        lanes = None
-        material = ddd.mats.treetop
-        extra_height = 1.2
-        create_as_item = True
-        name = "Hedge: %s" % name_id
-        path.extra['ddd:subtract_buildings'] = True
-
-    elif path.extra.get('osm:barrier', None) == 'fence':
-        width = 0.05
-        lanes = None
-        material = ddd.mats.fence
-        extra_height = 1.2
-        create_as_item = True
-        name = "Fence: %s" % name_id
-        path.extra['ddd:subtract_buildings'] = True
-
-    elif path.extra.get('osm:kerb', None) == 'kerb':
-        logger.debug("Ignoring kerb")
-        return None
-
     elif path.extra.get('osm:man_made', None) == 'pier':
         width = 1.8
         material = ddd.mats.wood
-
 
 
     elif path.extra.get('osm:power', None) == 'line':
@@ -417,6 +448,9 @@ def generate_way_1d(feature):
         layer = "3"
         create_as_item = True
 
+    elif path.extra.get('osm:kerb', None) == 'kerb':
+        logger.debug("Ignoring kerb")
+        return None
     else:
         logger.debug("Unknown way (discarding): %s", path.extra)
         return None
@@ -486,5 +520,4 @@ def osm_groups_ways_calculated_data(obj, osm):
     obj.extra['ddd:width'] = obj.extra['ddd:way:width']
 
     # path.extra['ddd:item'] = create_as_item
-    # path.extra['ddd:item:height'] = extra_height
 

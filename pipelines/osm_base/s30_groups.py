@@ -10,13 +10,15 @@ import random
 
 @dddtask(order="30.10.+", log=True)
 def osm_groups_create_root_nodes(root, osm):
-    items = ddd.group2(name="Areas")  # 2D
+    items = ddd.group2(name="Areas")
     root.append(items)
-    items = ddd.group2(name="Ways")  # 1D
+    items = ddd.group2(name="Ways")
     root.append(items)
-    items = ddd.group2(name="Buildings")  # 2D
+    items = ddd.group2(name="Buildings")
     root.append(items)
-    items = ddd.group2(name="Items")  # 1D
+    items = ddd.group2(name="ItemsNodes")
+    root.append(items)
+    items = ddd.group2(name="ItemsWays")
     root.append(items)
     items = ddd.group2(name="Meta")  # 2D meta information (boundaries, etc...)
     root.append(items)
@@ -28,7 +30,7 @@ def osm_generate_items(root, osm, obj):
     """Generate items for point features."""
     item = obj.copy(name="Item: %s" % obj.name)
     item = item.material(ddd.mats.red)
-    root.find("/Items").append(item)
+    root.find("/ItemsNodes").append(item)
 
 @dddtask(order="30.20.20", log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
 def osm_generate_items_process(root, osm, obj):

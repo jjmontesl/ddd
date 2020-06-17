@@ -14,7 +14,7 @@ from ddd.util.dddrandom import weighted_choice
 @dddtask(order="50.50.+", path="/Areas/*", select='["ddd:area:type" = "park"]')  # [!contains(["natural"="tree"])]
 def osm_augment_trees_annotate(obj, root):
 
-    trees = root.find("/Items").filter(lambda o: o.extra.get('osm:natural') == 'tree')
+    trees = root.find("/ItemsNodes").filter(lambda o: o.extra.get('osm:natural') == 'tree')
     has_trees = obj.intersects(trees)
     add_trees = not has_trees # and area.geom.area > 100
 
@@ -30,7 +30,7 @@ def osm_augment_trees_generate(logger, pipeline, root, obj):
     tree_types = {'default': 1, 'palm': 0.001}
     trees = generate_area_2d_park(obj, tree_density_m2, tree_types)
 
-    root.find("/Items").children.extend(trees.children)
+    root.find("/ItemsNodes").children.extend(trees.children)
 
 
 def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):

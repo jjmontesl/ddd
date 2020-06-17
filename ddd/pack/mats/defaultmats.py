@@ -46,6 +46,7 @@ class DefaultMaterials(MaterialsCollection):
         # Structural / building materials
         self.bronze = ddd.material(name="Bronze", color='#f0cb11')
         self.steel = ddd.material(name="Steel", color='#78839c')
+        self.metal = ddd.material(name="Steel", color='#68738c')
 
         self.stone = ddd.material(name="Stone", color='#9c9378')
         self.rock = ddd.material(name="Rock", color='#7c5378')
@@ -65,6 +66,9 @@ class DefaultMaterials(MaterialsCollection):
         # Plastics
         self.plastic_transparent = ddd.material(color='e8e0e4', extra={'ddd:transparent': True})  # name="PlasticTransparent",
         self.plastic_black = ddd.material(color='#2c2936')
+
+        # Glass
+        self.glass = ddd.material("Glass", color='#baf3f5')  #  , extra={'ddd:transparent': True}
 
         # Lights
         self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')

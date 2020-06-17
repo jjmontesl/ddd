@@ -69,6 +69,8 @@ class ItemsOSMBuilder():
 
     def generate_item_3d(self, item_2d):
 
+        # TODO! Move to pipeline or at least call from pipeline
+
         #if 'osm:feature' in item_2d.extra:
         #    if ("Julio Verne" in item_2d.extra['osm:feature']['properties'].get('name', "")):
         #        print(item_2d)
@@ -394,15 +396,23 @@ class ItemsOSMBuilder():
         """
         Expects a line.
         """
-        height = item_2d.extra.get('ddd:item:height')
-        item_3d = item_2d.extrude(height)
+
+        #parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
+        min_height = float(item_2d.extra.get('ddd:min_height', item_2d.extra.get('osm:min_height', 0)))
+        max_height = float(item_2d.extra.get('ddd:height', item_2d.extra.get('ddd:item:height', item_2d.extra.get('osm:height', 0))))
+        dif_height = max_height - min_height
+
+        item_3d = item_2d.extrude(dif_height)
         item_3d = ddd.uv.map_cubic(item_3d)
 
         if True:
             topbar = item_2d.buffer(0.1).extrude(0.1).material(ddd.mats.bronze)
-            topbar = topbar.translate([0, 0, height])
+            topbar = topbar.translate([0, 0, dif_height])
             topbar = ddd.uv.map_cubic(topbar)
             item_3d = item_3d.append(topbar)
+
+        if min_height:
+            item_3d = item_3d.translate([0, 0, min_height])
 
         item_3d.extra['_height_mapping'] = item_3d.extra.get('_height_mapping', 'terrain_geotiff_elevation_apply')
         item_3d.name = 'Fence: %s' % item_2d.name

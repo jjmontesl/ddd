@@ -786,13 +786,6 @@ class DDDObject2(DDDObject):
 
         return result
 
-    def outline(self):
-        result = self.copy().individualize().clean()
-        if result.geom and result.geom.type == "Polygon":
-            result.geom = LineString(list(result.geom.exterior.coords))
-        result.children = [c.outline() for c in result.children]
-        return result
-
     def buffer(self, distance, resolution=8, cap_style=D1D2D3.CAP_SQUARE, join_style=D1D2D3.JOIN_MITRE, mitre_limit=5.0):
         '''
         Resolution is:
@@ -1237,6 +1230,25 @@ class DDDObject2(DDDObject):
             result.geom = result.geom.exterior if result.geom.type == "Polygon" else result.geom
         result.children = [c.linearize() for c in self.children]
         return result
+
+    def outline(self):
+        result = self.copy().individualize().clean()
+        if result.geom and result.geom.type == "Polygon":
+            result.geom = LineString(list(result.geom.exterior.coords))
+        result.children = [c.outline() for c in result.children]
+        return result
+
+    '''
+    def outline(self):
+        result = self.copy()
+        if result.geom:
+            result.geom = result.geom.boundary
+        #if result.geom and result.geom.type == "Polygon":
+        #    result.geom = LineString(list(result.geom.exterior.coords))
+        result.children = [c.outline() for c in result.children]
+        return result
+    '''
+
 
     def distance(self, other):
         """

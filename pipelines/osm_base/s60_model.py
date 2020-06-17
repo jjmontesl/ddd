@@ -33,8 +33,9 @@ def osm_model_generate_coastline(osm, root, obj):
     if not coastlines_3d.geom:
         return
 
-    coastlines_3d = coastlines_3d.individualize().extrude(10.0).translate([0, 0, -10.0])
+    coastlines_3d = coastlines_3d.individualize().extrude(15.0).translate([0, 0, -15.0])
     coastlines_3d = terrain.terrain_geotiff_elevation_apply(coastlines_3d, osm.ddd_proj)
+    coastlines_3d = coastlines_3d.material(ddd.mats.rock)
     coastlines_3d = ddd.uv.map_cubic(coastlines_3d)
     coastlines_3d.name = 'Coastline: %s' % coastlines_3d.name
     root.find("/Other3").append(coastlines_3d)
@@ -75,15 +76,62 @@ def osm_model_generate_buildings(osm, root):
     root.append(buildings_3d)
 
 
-@dddtask(path="/Items/*")
-def osm_model_generate_items1(obj, osm, root):
+@dddtask(path="/ItemsNodes/*")
+def osm_model_generate_items_nodes(obj, osm, root):
     item_3d = osm.items.generate_item_3d(obj)
     if item_3d:
         #item_3d.name = item_3d.name if item_3d.name else item_2d.name
         root.find("/Items3").append(item_3d)
 
-@dddtask(path="/Items2/*")
-def osm_model_generate_items2(obj, osm, root):
+
+
+@dddtask(path="/ItemsWays/*")
+def osm_model_generate_items_ways(obj, osm, root):
+    item_3d = osm.items.generate_item_3d(obj)
+    if item_3d:
+        #item_3d.name = item_3d.name if item_3d.name else item_2d.name
+        root.find("/Items3").append(item_3d)
+
+@dddtask(path="/ItemsWays/*", select='["ddd:height"]')
+def osm_model_generate_items_ways_height(obj, osm, root):
+    # TODO: Removing fence here, but what we should do is use exclusively these common generators based on TAGS. Keep refactoring.
+
+    if obj.extra.get('osm:barrier', None) in ("fence", "hedge"):
+        return
+
+    max_height = float(obj.extra.get('ddd:height'))
+    min_height = float(obj.extra.get('ddd:min_height', 0.0))
+    dif_height = max_height - min_height
+
+    obj = obj.extrude(dif_height)
+    if min_height:
+        obj = obj.translate([0, 0, min_height])
+    obj = terrain.terrain_geotiff_elevation_apply(obj, osm.ddd_proj)
+    obj = ddd.uv.map_cubic(obj)
+
+    '''
+    # Move to generic place for all
+    if item_3d:
+        height_mapping = item_3d.extra.get('_height_mapping', 'terrain_geotiff_min_elevation_apply')
+        if height_mapping == 'terrain_geotiff_elevation_apply':
+            item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
+        elif height_mapping == 'terrain_geotiff_incline_elevation_apply':
+            item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
+        elif height_mapping == 'terrain_geotiff_and_path_apply':
+            path = item_3d.extra['way_1d']
+            vertex_func = self.osm.ways.get_height_apply_func(path)
+            item_3d = item_3d.vertex_func(vertex_func)
+            item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
+        else:
+            item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
+    '''
+
+    root.find("/Items3").append(obj)
+
+
+
+@dddtask(path="/ItemsAreas/*")
+def osm_model_generate_items_areas(obj, osm, root):
     """Generating 3D area items."""
     item_3d = osm.items2.generate_item_3d(obj)
     if item_3d:

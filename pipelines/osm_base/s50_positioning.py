@@ -37,37 +37,37 @@ def osm_positioning_select(pipeline, osm, root, logger):
     pass
 
 
-@dddtask(path="/Items/*", select='["osm:amenity" = "bench"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "bench"]')
 def osm_positioning_select_bench(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
 
-@dddtask(path="/Items/*", select='["osm:amenity" = "post_box"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "post_box"]')
 def osm_positioning_select_postbox (obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'snap-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     obj.extra['ddd:positioning:penetrate'] = -1.0
 
-@dddtask(path="/Items/*", select='["osm:amenity" = "waste_basket"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "waste_basket"]')
 def osm_positioning_select_waste_basket(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'snap-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     obj.extra['ddd:positioning:penetrate'] = -1.0
     obj.extra['ddd:positioning:validate:ref'] = 'positioning_ways_2d_0_and_buildings'
 
-@dddtask(path="/Items/*", select='["osm:highway" = "bus_stop"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:highway" = "bus_stop"]')
 def osm_positioning_select_bus_stop(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'snap-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0_major'
     obj.extra['ddd:positioning:penetrate'] = -0.5
 
-@dddtask(path="/Items/*", select=r'[~"^osm:traffic_sign"][!"ddd:angle"]')
+@dddtask(path="/ItemsNodes/*", select=r'[~"^osm:traffic_sign"][!"ddd:angle"]')
 def osm_positioning_select_traffic_sign(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'snap-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     obj.extra['ddd:positioning:penetrate'] = -0.5
 
-@dddtask(path="/Items/*", select='["osm:highway" = "traffic_signals"][!"ddd:angle"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:highway" = "traffic_signals"][!"ddd:angle"]')
 def osm_positioning_select_traffic_signals(obj, osm, root, logger):
     # TODO: This shall be calculated along with way items.
     obj.extra['ddd:positioning:type'] = 'snap-project'
@@ -75,60 +75,60 @@ def osm_positioning_select_traffic_signals(obj, osm, root, logger):
     #obj.extra['ddd:positioning:penetrate'] = -0.5
 
 
-@dddtask(path="/Items/*", select='["osm:tourism" = "artwork"]["osm:artwork_type" = "sculpture"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:tourism" = "artwork"]["osm:artwork_type" = "sculpture"]')
 def osm_positioning_select_sculpture(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     #obj.extra['ddd:positioning:penetrate'] = -0.5
 
-@dddtask(path="/Items/*", select='["osm:tourism" = "artwork"]["osm:artwork_type" = "statue"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:tourism" = "artwork"]["osm:artwork_type" = "statue"]')
 def osm_positioning_select_statue(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     #obj.extra['ddd:positioning:penetrate'] = -0.5
 
 
-@dddtask(path="/Items/*", select='["osm:historic" = "monument"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:historic" = "monument"]')
 def osm_positioning_select_historic_monument(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     #obj.extra['ddd:positioning:penetrate'] = -0.5
 
-@dddtask(path="/Items/*", select='["osm:historic" = "memorial"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:historic" = "memorial"]')
 def osm_positioning_select_historic_memorial(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     #obj.extra['ddd:positioning:penetrate'] = -0.5
 
-@dddtask(path="/Items/*", select='["osm:historic" = "wayside_cross"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:historic" = "wayside_cross"]')
 def osm_positioning_select_historic_wayside_cross(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     #obj.extra['ddd:positioning:penetrate'] = -0.5
 
-@dddtask(path="/Items/*", select='["osm:highway" = "street_lamp"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:highway" = "street_lamp"]')
 def osm_positioning_select_highway_street_lamp(obj, osm, root, logger):
     obj.extra['ddd:positioning:validate:ref'] = 'positioning_ways_2d_0_and_buildings'
 
-@dddtask(path="/Items/*", select='["osm:amenity" = "table"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "table"]')
 def osm_positioning_select_amenity_table(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     #obj.extra['ddd:positioning:penetrate'] = -1
 
-@dddtask(path="/Items/*", select='["osm:amenity" = "seat"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "seat"]')
 def osm_positioning_select_amenity_seat(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     #obj.extra['ddd:positioning:penetrate'] = -1
 
-@dddtask(path="/Items/*", select='["osm:amenity" = "umbrella"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "umbrella"]')
 def osm_positioning_select_amenity_umbrella(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     #obj.extra['ddd:positioning:penetrate'] = -1
 
-@dddtask(path="/Items/*", select='["osm:emergency" = "fire_hydrant"]')
+@dddtask(path="/ItemsNodes/*", select='["osm:emergency" = "fire_hydrant"]')
 def osm_positioning_select_emergency_fire_hydrant(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'

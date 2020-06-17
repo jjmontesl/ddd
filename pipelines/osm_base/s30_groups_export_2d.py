@@ -16,14 +16,10 @@ def osm_groups_ways_svg_style(obj):
 
 @dddtask(order="30.90.+")
 def osm_groups_export_2d_processed(root):
+    """Export current 2D root node without alterations to JSON and SVG."""
 
     root = root.copy()
     root = root.remove(root.find("/Features"))  # !Altering
-
-    #root.find("/Areas").replace(root.find("/Areas").material(ddd.mats.park).prop_set('svg:fill-opacity', 0.6, True))
-    #root.find("/Ways").replace(root.find("/Ways").buffer(1.0).material(ddd.mats.asphalt).prop_set('svg:fill-opacity', 0.8, True))
-    #root.find("/Buildings").replace(root.find("/Buildings").material(ddd.mats.stone).prop_set('svg:fill-opacity', 0.7, True))
-    #root.find("/Items").replace(root.find("/Items").buffer(1.0).material(ddd.mats.highlight))
 
     root.save("/tmp/osm-groups.json")
     root.save("/tmp/osm-groups.svg")
@@ -37,7 +33,8 @@ def osm_groups_export_2d(root):
     root.find("/Areas").replace(root.find("/Areas").material(ddd.mats.park).prop_set('svg:fill-opacity', 0.6, True))
     root.find("/Ways").replace(root.find("/Ways").buffer(1.0).material(ddd.mats.asphalt).prop_set('svg:fill-opacity', 0.8, True))
     root.find("/Buildings").replace(root.find("/Buildings").material(ddd.mats.stone).prop_set('svg:fill-opacity', 0.7, True))
-    root.find("/Items").replace(root.find("/Items").material(ddd.mats.highlight))  # buffer(1.0).
+    root.find("/ItemsNodes").replace(root.find("/ItemsNodes").material(ddd.mats.highlight))  # buffer(1.0).
+    root.find("/ItemsWays").replace(root.find("/ItemsWays").material(ddd.mats.highlight))  # buffer(1.0).
     root.save("/tmp/osm-groups-features.json")
     root.save("/tmp/osm-groups-features.svg")
 

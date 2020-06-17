@@ -48,6 +48,10 @@ class BuildingOSMBuilder():
     def preprocess_buildings_features(self, features_2d):
 
         logger.info("Preprocessing buildings and bulding parts (2D)")
+        logger.warn("TODO: support nested buildings in a best effort")
+
+        # TODO: create nested buildings them separately, consider them part of the bigger building for subtraction)
+
 
         # Assign each building part to a building, or transform it into a building if needed
         for feature in list(features_2d.children):
@@ -55,19 +59,20 @@ class BuildingOSMBuilder():
             if feature.extra.get('osm:building:part', None) is None: continue
 
             # Find building
+            #buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and ddd.polygon(o.geom.exterior.coords).contains(feature))
             buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and o.contains(feature))
 
             if len(buildings.children) == 0:
                 logger.warn("Building part with no building: %s", feature)
-                building = feature.copy()
+                building = ddd.shape(feature.geom, name="Building (added): %s" % feature.name)
                 building.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')
                 building.extra['ddd:building:parts'] = [feature]
-                features_2d.append(building)
                 feature.extra['ddd:building:feature'] = building
+                features_2d.append(building)
 
             elif len(buildings.children) > 1:
-                logger.warn("Building part with multiple buildings: %s -> %s", feature, buildings.children)
                 buildings.children.sort(key=lambda b: b.geom.area, reverse=True)
+                logger.warn("Building part with multiple buildings: %s -> %s", feature, buildings.children)
 
                 feature.extra['ddd:building:feature'] = buildings.children[0]
                 if 'ddd:building:parts' not in buildings.children[0].extra:
@@ -171,7 +176,7 @@ class BuildingOSMBuilder():
                     logger.warn("Building part with 0 floors (setting to 1): %s", floors)
                     floors = 1
 
-                # Remove building so far
+                # Remove the rest of the building
                 if part == building_2d:
                     part = part.subtract(entire_building_2d)
                 if part.geom.is_empty:
@@ -180,6 +185,10 @@ class BuildingOSMBuilder():
                 material = building_material
                 if part.extra.get('osm:building:material', None):
                     material_name = part.extra.get('osm:building:material')
+                    if hasattr(ddd.mats, material_name):
+                        material = getattr(ddd.mats, material_name)
+                if part.extra.get('osm:building:facade:material', None):
+                    material_name = part.extra.get('osm:building:facade:material')
                     if hasattr(ddd.mats, material_name):
                         material = getattr(ddd.mats, material_name)
 
@@ -200,7 +209,12 @@ class BuildingOSMBuilder():
                 # Roof: info
                 roof_shape = part.extra.get('osm:roof:shape', roof_shape)
                 roof_height = float(part.extra.get('osm:roof:height', 0))
+
                 roof_material = ddd.mats.roof_tiles
+                if part.extra.get('osm:roof:material', None):
+                    material_name = part.extra.get('osm:roof:material')
+                    if hasattr(ddd.mats, material_name):
+                        roof_material = getattr(ddd.mats, material_name)
 
                 floors_height = floors * 3.00
                 min_height = float(part.extra.get('osm:min_height', 0))
@@ -230,7 +244,7 @@ class BuildingOSMBuilder():
                     #building_3d.show()
 
                     # TODO: Create 1D items
-                    (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(part.buffer(-0.40))
+                    (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(part.buffer(-0.80))
                     for coords in (axis_major.geom.coords[0], axis_major.geom.coords[1], axis_minor.geom.coords[0], axis_minor.geom.coords[1]):
                         bell = urban.bell().translate([coords[0], coords[1], dif_height - 3.0])
                         entire_building_3d.append(bell)
