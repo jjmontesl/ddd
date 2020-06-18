@@ -122,8 +122,26 @@ def osm_groups_areas_natural_wetland(obj, osm):
 def osm_groups_areas_natural_beach(obj, osm):
     """Define area data."""
     obj.name = "Beach: %s" % obj.name
-    obj.extra['ddd:area:type'] = "default"
+    obj.extra['ddd:area:type'] = "default"  # sand / dunes
     obj = obj.material(ddd.mats.sand)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:natural" = "sand"]')
+def osm_groups_areas_natural_sand(obj, osm):
+    """Define area data."""
+    # Note that golf:bunker is also usually marked as natural:sand
+    obj.name = "Beach: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"  # sand / dunes
+    obj = obj.material(ddd.mats.sand)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:natural" = "bare_rock"]')
+def osm_groups_areas_natural_bare_rock(obj, osm):
+    """Define area data."""
+    # Note that golf:bunker is also usually marked as natural:sand
+    obj.name = "Bare Rock: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"  # sand / dunes
+    obj = obj.material(ddd.mats.rock)
     return obj
 
 
@@ -151,6 +169,43 @@ def osm_groups_areas_transport_platform(obj, osm):
     obj.extra['ddd:height'] = 0.35
     obj = obj.material(ddd.mats.pavement)
     return obj
+
+
+@dddtask(path="/Areas/*", select='["osm:tourism" = "artwork"]')
+def osm_groups_areas_tourism_artwork(obj, osm):
+    """Define area data."""
+    obj.name = "Artwork: %s" % obj.name
+    obj.extra['ddd:area:type'] = "steps"
+    obj.extra['ddd:steps:count'] = 2
+    obj.extra['ddd:steps:height'] = 0.16
+    obj.extra['ddd:steps:depth'] = 0.38
+    #obj.extra['ddd:height'] = 0.35
+    obj = obj.material(ddd.mats.stone)
+    return obj
+
+# Move this to "s30_interpretations" (not raw OSM)
+@dddtask(path="/Areas/*", select='["osm:artwork_type" = "sculpture"]["osm:man_made" != "compass_rose"]')  # [!contains(["osm:artwork_type" == "sculpture"])]
+def osm_groups_areas_artwork_sculpture(root, obj):
+    """Define area data."""
+    obj.name = "Sculpture: %s" % obj.name
+    # Add artwork as node
+    item = obj.centroid()    # area.centroid()
+    root.find("/ItemsNodes").append(item)
+
+
+
+@dddtask(path="/Areas/*", select='["osm:waterway" ~ "riverbank|stream"];["osm:natural" = "water"];["osm:water" = "river"]')
+def osm_groups_areas_riverbank(obj, root):
+    """Define area data."""
+    obj.name = "Riverbank: %s" % obj.name
+    obj.extra['ddd:area:type'] = "water"
+    obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.sea)
+    obj = obj.individualize().flatten()
+    root.find("/Areas").children.extend(obj.children)
+    return False
+    #return obj
+
 
 
 """
@@ -189,11 +244,6 @@ def generate_areas_2d(self):
             '''
 
 
-            elif narea.extra.get('osm:tourism', None) in ('artwork', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_artwork(narea)
-
 
             elif narea.extra.get('osm:landuse', None) in ('railway', ):
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
@@ -203,12 +253,7 @@ def generate_areas_2d(self):
                 narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
                 narea = narea.subtract(union)
                 area = self.generate_area_2d_school(narea)
-            elif (narea.extra.get('osm:waterway', None) in ('riverbank', 'stream') or
-                  narea.extra.get('osm:natural', None) in ('water', ) or
-                  narea.extra.get('osm:water', None) in ('river', )):
-                #narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                #narea = narea.subtract(union)
-                area = self.generate_area_2d_riverbank(narea)
+
             else:
                 logger.debug("Unknown area: %s", feature)
 

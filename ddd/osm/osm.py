@@ -177,7 +177,7 @@ class OSMBuilder():
             try:
                 geom = shape(f['geometry'])
             except Exception as e:
-                logger.warn("Could not load feature with invalid geometry: %s", f.properties.get('id'))
+                logger.warn("Could not load feature with invalid geometry (%s): %s", f.properties, e)
                 continue
 
             #if self.area_filter.contains(geom.centroid):
@@ -185,8 +185,15 @@ class OSMBuilder():
                 if self.area_filter.intersects(geom):
                     filtered.append(f)
             except Exception as e:
-                logger.warn("Could not load feature with invalid geometry: %s", f.properties.get('id'))
-                continue
+                logger.debug("Could not load feature (1/2) with invalid geometry (%s): %s", f.properties, e)
+                # Attempt intersection first
+                try:
+                    geom = geom.intersection(self.area_filter)
+                    if self.area_filter.intersects(geom):
+                        filtered.append(f)
+                except Exception as e:
+                    logger.warn("Could not load feature (2/2) with invalid geometry (%s): %s", f.properties, e)
+                    continue
 
 
         features = filtered
@@ -226,11 +233,25 @@ class OSMBuilder():
             for k, v in f.properties.items():
                 feature_2d.extra['osm:' + k] = v
 
+            # Resolving the intersection
             try:
                 feature_2d.validate()
-                self.features_2d.append(feature_2d)
             except Exception as e:
-                logger.info("Invalid feature '%s': %s", name, e)
+                logger.debug("Invalid feature (1/2) '%s': %s", name, e)
+                try:
+                    feature_2d = feature_2d.intersection(self.area_filter2)
+                    feature_2d.validate()
+                except Exception as e:
+                    logger.warn("Invalid feature (2/2) '%s': %s", name, e)
+                    continue
+
+            # Separate GeometryCollection geometries
+            if feature_2d.geom.type == "GeometryCollection":
+                logger.info("Splitting GeometryCollection: %s", feature_2d)
+                for f in feature_2d.individualize().children:
+                    self.features_2d.append(f)
+            else:
+                self.features_2d.append(feature_2d)
 
         #self.features_2d.save("/tmp/dddosm2d.json")
 
@@ -240,6 +261,7 @@ class OSMBuilder():
         #        print(f)
         #sys.exit(1)
 
+    '''
     def generate_old(self):
 
         logger.info("Generating geometry (area_filter=%s, area_crop=%s)", self.area_filter, self.area_crop)
@@ -326,4 +348,5 @@ class OSMBuilder():
         scene = ddd.group(scene + list(self.ways_3d.values()), name="Scene")
 
         return scene
+    '''
 

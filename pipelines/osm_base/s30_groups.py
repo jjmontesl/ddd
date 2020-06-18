@@ -19,6 +19,8 @@ def osm_groups_create_root_nodes(root, osm):
     root.append(items)
     items = ddd.group2(name="ItemsNodes")
     root.append(items)
+    items = ddd.group2(name="ItemsAreas")
+    root.append(items)
     items = ddd.group2(name="ItemsWays")
     root.append(items)
     items = ddd.group2(name="Meta")  # 2D meta information (boundaries, etc...)
@@ -40,17 +42,11 @@ def osm_generate_items_process(root, osm, obj):
     pass
 
 
-@dddtask(order="30.30.10.+", path="/Features/*", select='["geom:type"="LineString"]["osm:highway"]', log=True)
-def osm_groups_ways(root, obj, logger):
-    # Ways depend on buildings
-    item = obj.copy(name="Way: %s" % obj.name)
-    root.find("/Ways").append(item)
 
-@dddtask(order="30.30.10.+", path="/Features/*", select='["geom:type"="LineString"]["osm:waterway"]', log=True)
-def osm_groups_ways_waterway(root, obj, logger):
+@dddtask(order="30.30.10.+", log=True)
+def osm_select_ways(root):
     # Ways depend on buildings
-    item = obj.copy(name="Way: %s" % obj.name)
-    root.find("/Ways").append(item)
+    pass
 
 
 '''
@@ -71,8 +67,6 @@ def osm_groups_ways_process(pipeline, osm, root, logger):
 
 
 # Generate buildings (separate file)
-
-
 
 
 @dddtask(order="30.50.10", path="/Features/*", select='["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"][!"osm:building"]')
@@ -119,6 +113,13 @@ def osm_generate_areas_coastline_2d(osm, root, logger):
     logger.info("Coastline 2D areas generated: %s", water_2d)
     if water_2d:
         root.find("/Areas").children.extend(water_2d.children)
+
+
+@dddtask(order="30.70.+")
+def osm_groups_items_areas(osm, root, logger):
+    # In separate file
+    pass
+
 
 @dddtask(order="30.90")
 def osm_groups_finished(pipeline, osm, root, logger):

@@ -7,7 +7,8 @@ from ddd.osm import osm
 from ddd.pipeline.decorators import dddtask
 
 
-@dddtask(order="30.30.20.+", log=True)
+
+@dddtask(order="30.30.10.+", log=True)
 def osm_groups_ways(root, osm):
 
     # Split and junctions first?
@@ -16,6 +17,23 @@ def osm_groups_ways(root, osm):
     # Otherwise: do a pre and post step, and do most things in post (everything not needed for splitting)
 
     pass
+
+'''
+@dddtask(order="30.30.10.+", path="/Features/*", select='["geom:type"="LineString"]["osm:highway"]', log=True)
+def osm_groups_ways_highway(root, obj, logger):
+    item = obj.copy(name="Way: %s" % obj.name)
+    root.find("/Ways").append(item)
+
+@dddtask(order="30.30.10.+", path="/Features/*", select='["geom:type"="LineString"]["osm:waterway"]', log=True)
+def osm_groups_ways_waterway(root, obj, logger):
+    item = obj.copy(name="Way: %s" % obj.name)
+    root.find("/Ways").append(item)
+'''
+
+@dddtask(order="30.30.10.+", path="/Features/*", select='["geom:type"="LineString"]', log=True)
+def osm_groups_ways_waterway(root, obj, logger):
+    item = obj.copy(name="Way: %s" % obj.name)
+    root.find("/Ways").append(item)
 
 
 @dddtask(path="/Ways/*")
@@ -339,6 +357,17 @@ def osm_groups_ways_waterway_river(obj, osm):
     return obj
 
 
+@dddtask(path="/Ways/*", select='["osm:waterway" = "canal"]')
+def osm_groups_ways_waterway_canal(obj, osm):
+    """Define item data."""
+    obj.name = "Canal: %s" % obj.name
+    obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:way:width'] = 3.0
+    obj.extra['ddd:area:type'] = "water"
+    # obj.extra['ddd:baseheight'] = -0.5
+    obj = obj.material(ddd.mats.sea)
+    return obj
+
 @dddtask(path="/Ways/*", select='["osm:waterway" = "stream"]')
 def osm_groups_ways_waterway_stream(obj, osm):
     """Define item data."""
@@ -478,7 +507,7 @@ def generate_way_1d(feature):
 '''
 
 
-@dddtask(order="30.30.50.+", path="/Ways/*")
+@dddtask(order="30.30.50.+")
 def osm_groups_ways_calculated(osm):
     # TODO: Tag identified ways
     pass

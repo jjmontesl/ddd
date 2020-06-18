@@ -250,7 +250,7 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_default_2d.s30_icons.py',
 
                                             #'pipelines.osm_extras.mapillary.py',
-                                            'pipelines.osm_extras.ortho.py',
+                                            #'pipelines.osm_extras.ortho.py',
 
                                             ], name="OSM Build Pipeline")
                     pipeline.data['osmfiles'] = files

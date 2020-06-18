@@ -2,40 +2,13 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
-from collections import defaultdict, namedtuple
 import logging
-import math
-import random
-import sys
 
-from csg import geom as csggeom
-from csg.core import CSG
-import geojson
-import noise
-from numpy import angle
-import pyproj
-from shapely import geometry
-from shapely.errors import TopologicalError
-from shapely.geometry import shape
-from shapely.geometry.geo import shape
-from shapely.geometry.linestring import LineString
-from shapely.geometry.polygon import LinearRing
-from shapely.ops import transform
-from trimesh import creation, primitives, boolean
-import trimesh
-from trimesh.base import Trimesh
-from trimesh.path import segments
-from trimesh.path.path import Path
-from trimesh.scene.scene import Scene, append_scenes
-from trimesh.visual.material import SimpleMaterial
-
+from ddd.core.exception import DDDException
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
-from ddd.pack.sketchy import plants, urban, sports
 from ddd.geo import terrain
-from ddd.core.exception import DDDException
-from ddd.util.dddrandom import weighted_choice
-from _ast import Or
+from ddd.pack.sketchy import plants, urban, sports
 
 
 # Get instance of logger for this module
@@ -184,6 +157,8 @@ class Areas3DOSMBuilder():
                     area_3d = self.generate_area_3d_pitch(area_2d)
                 elif area_2d.extra['ddd:area:type'] == 'water':
                     area_3d = self.generate_area_3d_water(area_2d)
+                elif area_2d.extra['ddd:area:type'] == 'sea':
+                    area_3d = self.generate_area_3d_water(area_2d)
                 elif area_2d.extra['ddd:area:type'] == 'underwater':
                     area_3d = self.generate_area_3d_underwater(area_2d)
                 else:
@@ -320,8 +295,7 @@ class Areas3DOSMBuilder():
 
         area_2d_orig = area_2d.extra.get('ddd:crop:original')  #, area_2d)
 
-        logger.info("Pitch: %s", area_2d)
-        print("Areas: %s %s" % (area_2d, area_2d_orig))
+        #logger.debug("Pitch: %s", area_2d)
         area_3d = self.generate_area_3d(area_2d)
 
         # TODO: pass size then adapt to position and orientation, easier to construct and reuse

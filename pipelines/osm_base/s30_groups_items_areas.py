@@ -8,35 +8,44 @@ from ddd.pipeline.decorators import dddtask
 
 
 
-'''
-@dddtask(order="30.50.20.+", log=True)
-def osm_groups_areaitems(root, osm):
-
-    # Split and junctions first?
-    # Possibly: metadata can depend on that, and it needs to be done if it will be done anyway
-
-    # Otherwise: do a pre and post step, and do most things in post (everything not needed for splitting)
-
+@dddtask(order="30.70.30.+")
+def osm_groups_items_areas(osm, root, logger):
+    # In separate file
     pass
 
-@dddtask(path="/Areas/*")
-def osm_groups_areas_default_name(obj, osm):
-    """Set default name."""
-    name = "Area: " + (obj.extra.get('osm:name', obj.extra.get('osm:id')))
-    obj.name = name
-    #obj.extra['ddd:ignore'] = True
+@dddtask(path="/Features/*", select='["osm:amenity" = "fountain"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
+def osm_groups_items_areas_amenity_fountain(obj, root):
+    """Define area data."""
+    obj = obj.material(ddd.mats.water)
+    obj.name = "Fountain: %s" % obj.name
+    #obj.extra['ddd:item:type'] = "area"
+    root.find("/ItemsAreas").append(obj)
 
-@dddtask(path="/Areas/*")
-def osm_groups_areas_default_material(obj, osm):
-    """Assign default material."""
-    obj = obj.material(ddd.mats.terrain)
-    return obj
+@dddtask(path="/Features/*", select='["osm:water" = "pond"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
+def osm_groups_items_areas_water_pond(obj, root):
+    """Define area data."""
+    obj = obj.material(ddd.mats.water)
+    obj.name = "Pond: %s" % obj.name
+    #obj.extra['ddd:item:type'] = "area"
+    root.find("/ItemsAreas").append(obj)
 
-@dddtask(path="/Areas/*")
-def osm_groups_areas_default_data(obj, osm):
-    """Sets default data."""
-    obj.extra['ddd:area:weight'] = 100  # Lowest
-    obj.extra['ddd:area:height'] = 0  # Lowest
-'''
+
+@dddtask(path="/Features/*", select='["osm:leisure" = "outdoor_seating"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
+def osm_groups_items_areas_leisure_outdoor_seating(obj, root, osm):
+    """Define area data."""
+    items = osm.items2.generate_item_2d_outdoor_seating(obj)
+    root.find("/ItemsNodes").children.extend([i for i in items.flatten().children if i.geom])
+
+
+@dddtask(path="/Features/*", select='["osm:leisure" = "playground"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
+def osm_groups_items_areas_leisure_playground(obj, root, osm):
+    """Define area data."""
+    items = osm.items2.generate_item_2d_childrens_playground(obj)
+    root.find("/ItemsNodes").children.extend([i for i in items.flatten().children if i.geom])
+
+    obj = obj.material(ddd.mats.pitch_blue)
+    obj.name = "Playground: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    root.find("/Areas").append(obj)
 
 

@@ -70,6 +70,12 @@ def osm_structured_subtract_buildings(pipeline, root, logger, obj):
     return obj
 
 
+@dddtask(log=True)
+def osm_structured_areas_postprocess(root, osm):
+    areas_2d = root.find("/Areas")
+    ways_2d = root.find("/Ways")
+    #osm.areas2.generate_areas_2d_postprocess()
+    osm.areas2.generate_areas_2d_postprocess_water(areas_2d, ways_2d)
 
 
 @dddtask()
@@ -98,7 +104,7 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
     area_crop = osm.area_filter
     logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
 
-    union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]'),
+    union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "^(0|-1a)$"]'),
                         root.find("/Areas"),
                         #root.find("/Water")
                         ])
@@ -124,13 +130,6 @@ def osm_structured_areas_processed(osm, root):
     subtract = osm.areas2.generate_union_safe(subtract)
 
     osm.areas2.generate_areas_2d_process(areas_2d, subtract)  # Where to put?
-
-
-@dddtask(log=True)
-def osm_structured_areas_postprocess(root, osm):
-    #osm.areas2.generate_areas_2d_postprocess()
-    #osm.areas2.generate_areas_2d_postprocess_water()
-    pass
 
 
 @dddtask(log=True)

@@ -102,6 +102,9 @@ class DDDSVG():
             color = obj.mat.color
         fill_opacity = extra.get('svg:fill-opacity', 0.7)
         stroke_width = extra.get('svg:stroke-width', 0.1)
+        ignore = extra.get('svg:ignore', False)
+
+        if ignore: return '<g />'
 
         data = ""
 
@@ -236,6 +239,7 @@ class DDDSVG():
                   ).format(width, height, x, y, base64data, -width/2, -height/2)  #, opacity)
         return result
 
+    '''
     def svg(self, scale_factor=1., fill_color=None):
         """Returns SVG circle element for the Point geometry.
 
@@ -251,9 +255,7 @@ class DDDSVG():
             return '<g />'
         if fill_color is None:
             fill_color = "#66cc99" if self.is_valid else "#ff3333"
-
-
-
+    '''
 
 
     @staticmethod

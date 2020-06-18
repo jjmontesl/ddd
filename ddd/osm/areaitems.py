@@ -2,37 +2,12 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
-from collections import defaultdict, namedtuple
 import logging
 import math
 import random
-import sys
 
-from csg import geom as csggeom
-from csg.core import CSG
-import geojson
-import noise
-import pyproj
-from shapely import geometry
-from shapely.geometry import shape
-from shapely.geometry.geo import shape
-from shapely.ops import transform
-
-from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
-from ddd.pack.sketchy import plants, urban
-from trimesh import creation, primitives, boolean
-import trimesh
-from trimesh.base import Trimesh
-from trimesh.path import segments
-from trimesh.path.path import Path
-from trimesh.scene.scene import Scene, append_scenes
-from trimesh.visual.material import SimpleMaterial
-from shapely.geometry.linestring import LineString
 from ddd.geo import terrain
-from ddd.pack.sketchy.urban import childrens_playground_swingset,\
-    childrens_playground_sandbox, childrens_playground_slide,\
-    childrens_playground_arc
 
 
 # Get instance of logger for this module
@@ -42,38 +17,6 @@ class AreaItemsOSMBuilder():
 
     def __init__(self, osmbuilder):
         self.osm = osmbuilder
-
-    def generate_items_2d(self):
-        logger.info("Generating 2D area items (fountains, playgrounds...)")
-
-        for feature in self.osm.features_2d.children:
-
-            #if feature.geom.type == 'Point': continue
-
-            area = None
-
-            if not feature.geom.type == 'Point' and feature.extra.get('osm:amenity', None) in ('fountain', ):
-                area = self.generate_item_2d_fountain(feature)
-            elif not feature.geom.type == 'Point' and feature.extra.get('osm:water', None) in ('pond', ):
-                area = self.generate_item_2d_pond(feature)
-
-            elif feature.extra.get('osm:leisure', None) == 'outdoor_seating':
-                area = self.generate_item_2d_outdoor_seating(feature)
-            elif feature.extra.get('osm:leisure', None) == 'playground':
-                area = self.generate_item_2d_childrens_playground(feature)
-
-            if area:
-                #union = union.union(area)
-                self.osm.items_2d.children.append(area)
-                logger.debug("Area Object: %s", area)
-
-    def generate_item_2d_fountain(self, feature):
-        area = feature.copy(name="Area Fountain: %s" % feature.extra.get('name', None))
-        return area
-
-    def generate_item_2d_pond(self, feature):
-        area = feature.copy(name="Pond: %s" % feature.extra.get('name', None))
-        return area
 
     def generate_item_2d_outdoor_seating(self, feature):
 
@@ -103,6 +46,8 @@ class AreaItemsOSMBuilder():
 
         item = ddd.group2([table, umbrella, chairs], "Outdoor seating: %s" % feature.name)
 
+        return item
+
         for i in item.flatten().children:
             if i.geom: self.osm.items_1d.append(i)
 
@@ -129,14 +74,8 @@ class AreaItemsOSMBuilder():
         items = ddd.align.polar(items, 3, offset=random.uniform(0, math.pi * 2))
         items = items.translate(center.geom.coords[0])
 
-        for i in items.flatten().children:
-            if i.geom:
-                self.osm.items_1d.append(i)
+        return items
 
-        return None
-
-        # FIXME: Do not alter every vertex, move the entire object instead
-        #self.osm.items_3d = self.osm.items_3d.translate([0, 0, -0.20])  # temporary fix snapping
 
     def generate_item_3d(self, item_2d):
         item_3d = None
