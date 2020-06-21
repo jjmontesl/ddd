@@ -22,6 +22,6 @@ def weighted_choice(options):
     rand = random.uniform(0, total)
     accum = 0.0
     for k, v in options.items():
+        if accum + v >= rand: return k
         accum += v
-        if accum > rand: return k
-    return k
+    assert False, "Incorrect weighted choice."

@@ -177,7 +177,7 @@ class OSMBuilder():
             try:
                 geom = shape(f['geometry'])
             except Exception as e:
-                logger.warn("Could not load feature with invalid geometry (%s): %s", f.properties, e)
+                logger.warn("Could not load feature with invalid geometry (%s): %s", str(f.properties)[:240], e)
                 continue
 
             #if self.area_filter.contains(geom.centroid):
@@ -185,7 +185,7 @@ class OSMBuilder():
                 if self.area_filter.intersects(geom):
                     filtered.append(f)
             except Exception as e:
-                logger.debug("Could not load feature (1/2) with invalid geometry (%s): %s", f.properties, e)
+                logger.debug("Could not load feature (1/2) with invalid geometry (%s): %s", str(f.properties)[:240], e)
                 # Attempt intersection first
                 try:
                     geom = geom.intersection(self.area_filter)
@@ -233,25 +233,33 @@ class OSMBuilder():
             for k, v in f.properties.items():
                 feature_2d.extra['osm:' + k] = v
 
-            # Resolving the intersection
+            # We do not validate or clean here as linestrings may crose themselves. Simply remove empty geometries.
+
+            # Crop to area filter
             try:
                 feature_2d.validate()
             except Exception as e:
                 logger.debug("Invalid feature (1/2) '%s': %s", name, e)
                 try:
                     feature_2d = feature_2d.intersection(self.area_filter2)
+                    #feature_2d.clean(eps=0.01)
                     feature_2d.validate()
                 except Exception as e:
-                    logger.warn("Invalid feature (2/2) '%s': %s", name, e)
+                    logger.warn("Invalid feature (2/2) '%s' %s: %s", name, feature_2d.extra, e)
                     continue
 
             # Separate GeometryCollection geometries
             if feature_2d.geom.type == "GeometryCollection":
                 logger.info("Splitting GeometryCollection: %s", feature_2d)
                 for f in feature_2d.individualize().children:
+                    f.extra['osm:feature_2d'] = f
+                    f = f.intersection(self.area_filter2)
+                    #f = f.clean(eps=0.0)
+                    f.validate()
                     self.features_2d.append(f)
             else:
                 self.features_2d.append(feature_2d)
+
 
         #self.features_2d.save("/tmp/dddosm2d.json")
 

@@ -129,7 +129,7 @@ def osm_structured_areas_processed(osm, root):
     subtract = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]')
     subtract = osm.areas2.generate_union_safe(subtract)
 
-    osm.areas2.generate_areas_2d_process(areas_2d, subtract)  # Where to put?
+    osm.areas2.generate_areas_2d_process(areas_2d, subtract)
 
 
 @dddtask(log=True)

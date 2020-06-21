@@ -2,40 +2,13 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
-from collections import defaultdict, namedtuple
 import logging
-import math
-import random
-import sys
 
-from csg import geom as csggeom
-from csg.core import CSG
-import geojson
-import noise
-from numpy import angle
-import pyproj
-from shapely import geometry
 from shapely.errors import TopologicalError
-from shapely.geometry import shape
-from shapely.geometry.geo import shape
-from shapely.geometry.linestring import LineString
 from shapely.geometry.polygon import LinearRing
-from shapely.ops import transform
-from trimesh import creation, primitives, boolean
-import trimesh
-from trimesh.base import Trimesh
-from trimesh.path import segments
-from trimesh.path.path import Path
-from trimesh.scene.scene import Scene, append_scenes
-from trimesh.visual.material import SimpleMaterial
 
-from ddd.ddd import DDDObject2, DDDObject3
-from ddd.ddd import ddd
-from ddd.pack.sketchy import plants, urban, sports
-from ddd.geo import terrain
 from ddd.core.exception import DDDException
-from ddd.util.dddrandom import weighted_choice
-from _ast import Or
+from ddd.ddd import ddd
 
 
 # Get instance of logger for this module
@@ -363,7 +336,7 @@ class Areas2DOSMBuilder():
         logger.info("Postprocessing water areas and ways")
 
         # Get all water areas ('ddd:water')
-        water_areas = areas_2d.select('["ddd:area:type" = "water"]')
+        water_areas = areas_2d.select('["ddd:area:type" = "water"]').union().clean(eps=0.00)
 
         river_areas = ways_2d.select('["ddd:area:type" = "water"]')
 
@@ -377,12 +350,13 @@ class Areas2DOSMBuilder():
         # Subtract water areas to ways
         # TODO: Might be done via generic mechanism (assign ways to areas, etc)
         for r in river_areas.children:
-            if r.intersects(river_areas):
-                new_river = r.subtract(river_areas)
+            if r.intersects(water_areas):
+                new_river = r.subtract(water_areas)
                 r.replace(new_river)
 
         # Create ground area
-        underwater_area = all_water_areas.union().material(ddd.mats.terrain)
+        underwater_area = all_water_areas.union().clean(eps=0.00)
+        underwater_area = underwater_area.material(ddd.mats.terrain)
         underwater_area.extra['ddd:area:type'] = 'underwater'
         underwater_area.extra['svg:ignore'] = True
         areas_2d.append(underwater_area)

@@ -25,7 +25,11 @@ class DefaultMaterials(MaterialsCollection):
         self.sand = ddd.material(name="Sand", color='#fff694')
 
         # Ways/roads special
-        self.roadline = ddd.material(name="Roadline", color='#e8e8e8', extra={'ddd:collider': False, 'ddd:shadows': False})
+        self.roadline = ddd.material(name="Roadline", color='#e8e8e8',
+                                     texture_path="../data/materials/road_signs/RoadLines_alb.png",
+                                     texture_normal_path="../data/materials/road_signs/RoadLines_normal.jpg",
+                                     alpha_cutoff=0.05,
+                                     extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05})
         self.railway = ddd.material(name="RoadRailway", color="#47443e")
         self.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
                                           texture_path="../data/materials/traffic_signs/traffic_signs_es_0.png",
@@ -34,11 +38,14 @@ class DefaultMaterials(MaterialsCollection):
         # Areas
         self.sea = ddd.material(name="Water4Advanced", color='#3d43b5', extra={'ddd:collider': False, 'ddd:shadows': False, 'ddd:transparent': True})
         self.water = ddd.material(name="WaterBasicDaytime", color='#4d53c5', extra={'ddd:collider': False, 'ddd:shadows': False, 'ddd:transparent': True})
+        self.volumetricgrass = ddd.material(name="VolumetricGrass", color='#2dd355', extra={'ddd:export-as-marker': True})
 
         self.terrain = ddd.material(name="Ground", color='#e6821e')
         self.park = ddd.material(name="Park", color='#1db345')
-
-        self.grass = ddd.material(name="VolumetricGrass", color='#2dd355', extra={'ddd:export-as-marker': True})
+        self.forest = ddd.material(name="Park", color='#3a6e17')
+        self.wetland = ddd.material(name="Park", color='#54610c')
+        self.garden = ddd.material(name="Park", color='#2f614b')
+        self.grass = ddd.material(name="Park", color='#2dd355')
 
         self.pitch = ddd.material(name="Pitch", color='#196118')
         self.pitch_blue = ddd.material(name="Pitch Blue", color='#2a69b0')  # Eg. cycleways

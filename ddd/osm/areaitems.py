@@ -86,9 +86,10 @@ class AreaItemsOSMBuilder():
 
         if item_3d:
             item_3d.name = item_2d.name
-            item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
-            self.osm.items_3d.children.append(item_3d)
-            logger.debug("Generated area item: %s", item_3d)
+            item_3d.extra['ddd:elevation'] = "terrain_geotiff_elevation_apply"
+            #item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
+            #self.osm.items_3d.children.append(item_3d)
+            #logger.debug("Generated area item: %s", item_3d)
 
         return item_3d
 

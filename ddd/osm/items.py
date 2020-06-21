@@ -219,6 +219,8 @@ class ItemsOSMBuilder():
                 item_3d = plants.tree_default(height=plant_height)
             elif tree_type == 'palm':
                 item_3d = plants.tree_palm(height=plant_height)
+            elif tree_type == 'reed':
+                item_3d = plants.reed()
             else:
                 raise AssertionError()
 

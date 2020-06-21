@@ -6,7 +6,7 @@ import logging
 import math
 
 from shapely import geometry, affinity, ops
-from ddd.ddd import ddd
+from ddd.ddd import ddd, DDDObject3
 import numpy as np
 
 
@@ -32,14 +32,20 @@ class DDDAlign():
 
         return obj
 
-    def polar(self, obj, d, offset=0):
+    def polar(self, obj, d, offset=0, rotate=False):
         """
         Distribute children around center with distance d.
         """
         for idx, c in enumerate(obj.children):
             angle = offset + (2 * math.pi) / len(obj.children) * idx
             posx, posy = math.cos(angle) * d, math.sin(angle) * d
-            newc = c.translate([posx, posy, 0])
+            newc = c.copy()
+            if rotate:
+                if isinstance(newc, DDDObject3):
+                    newc = newc.rotate([0, 0, angle + (math.pi / 2)])
+                else:
+                    newc = newc.rotate(angle)
+            newc = newc.translate([posx, posy, 0])
             newc.extra['ddd:angle'] = angle - (math.pi / 2)
             c.replace(newc)
         return obj

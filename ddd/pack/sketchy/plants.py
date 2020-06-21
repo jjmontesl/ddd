@@ -249,6 +249,34 @@ def tree_weeping_willow():
     pass
 
 
+def reed(height=None, leaves=None):
+
+    if leaves is None:
+        leaves = random.randint(4, 7)
+    if height is None:
+        height = random.uniform(1.3, 1.9)
+
+    reed = ddd.group3(name="Reed")
+    for i in range(leaves):
+        lh = height + random.uniform(-0.4, 0.4)
+        lb = 0.02 * lh
+        item = ddd.polygon([[-lb, 0.0], [lb, 0.0], [0, lh]], name="Reed leaf").triangulate(twosided=True).material(ddd.mats.treetop)
+        item = item.rotate(ddd.ROT_FLOOR_TO_FRONT)
+        item = ddd.group([item, item.rotate(ddd.ROT_TOP_CW)], name="Reed leaf")
+        item = ddd.uv.map_cubic(item, scale=(0.2, 2.0))
+        item = item.rotate([0, 0, random.uniform(0, math.pi)])
+        item = item.rotate([random.uniform(0.1, 0.3), 0, 0])
+        torsion_advance = math.pi / 4
+        item = item.rotate([0, 0, torsion_advance])
+        rt = 0.15
+        item = item.translate([random.uniform(-rt, rt), random.uniform(-rt, rt), 0])
+        reed.append(item)
+
+    reed = ddd.align.polar(reed, 0.1, rotate=True)
+
+    reed = reed.combine()
+    return reed
+
 def bush(height=0.8):
     pass
 

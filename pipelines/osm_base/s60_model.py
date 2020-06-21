@@ -84,6 +84,12 @@ def osm_model_generate_items_nodes(obj, osm, root):
         #item_3d.name = item_3d.name if item_3d.name else item_2d.name
         root.find("/Items3").append(item_3d)
 
+@dddtask(path="/ItemsAreas/*")
+def osm_model_generate_items_areas(obj, osm, root):
+    """Generating 3D area items."""
+    item_3d = osm.items2.generate_item_3d(obj)
+    if item_3d:
+        root.find("/Items3").append(item_3d)
 
 @dddtask(path="/ItemsWays/*")
 def osm_model_generate_items_ways(obj, osm, root):
@@ -151,12 +157,6 @@ def osm_model_elevation_apply_building(obj, osm, root):
     return obj
 
 
-@dddtask(path="/ItemsAreas/*")
-def osm_model_generate_items_areas(obj, osm, root):
-    """Generating 3D area items."""
-    item_3d = osm.items2.generate_item_3d(obj)
-    if item_3d:
-        root.find("/Items3").append(item_3d)
 
 
 @dddtask(order="60.50.+", log=True)

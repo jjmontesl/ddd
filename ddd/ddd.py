@@ -83,11 +83,10 @@ class D1D2D3():
         D1D2D3Bootstrap.initialize_logging(debug)
 
     @staticmethod
-    def material(name=None, color=None, extra=None, texture_path=None, atlas_path=None):
+    def material(name=None, color=None, extra=None, **kwargs):
         #material = SimpleMaterial(diffuse=color, )
         #return (0.3, 0.9, 0.3)
-        material = DDDMaterial(name=name, color=color, extra=extra,
-                               texture_path=texture_path, atlas_path=atlas_path)
+        material = DDDMaterial(name=name, color=color, extra=extra, **kwargs)
         return material
 
     @staticmethod
@@ -339,19 +338,24 @@ class D1D2D3():
 
 class DDDMaterial():
 
-    def __init__(self, name=None, color=None, extra=None, texture_path=None, atlas_path=None):
+    def __init__(self, name=None, color=None, extra=None, texture_path=None, atlas_path=None, alpha_cutoff=None, alpha_mode=None, texture_normal_path=None):
         """
         Color is hex color.
         """
         self.name = name
-        self.color = color
-        self.color_rgba = None
         self.extra = extra if extra else {}
 
+        self.color = color
+        self.color_rgba = None
         if self.color:
             self.color_rgba = trimesh.visual.color.hex_to_rgba(self.color)
 
+        self.alpha_cutoff = alpha_cutoff
+        self.alpha_mode = alpha_mode
+
         self.texture = texture_path
+        self.texture_normal = texture_normal_path
+
         self.atlas = None
         if atlas_path:
             self.load_atlas(atlas_path)
@@ -372,7 +376,14 @@ class DDDMaterial():
         if self._trimesh_material_cached is None:
             if self.texture and D1D2D3Bootstrap.export_textures:
                 im = PIL.Image.open(self.texture)  #.convert("RGBA")
-                mat = SimpleMaterial(image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
+                if self.texture and (self.alpha_cutoff or self.texture_normal):
+                    alpha_mode = self.alpha_mode if self.alpha_mode else ('MASK' if self.alpha_cutoff else 'OPAQUE')
+                    im_normal = PIL.Image.open(self.texture_normal) if self.texture_normal else None
+                    mat = PBRMaterial(baseColorTexture=im, baseColorFactor=self.color_rgba,
+                                      normalTexture=im_normal,
+                                      alphaMode=alpha_mode, alphaCutoff=self.alpha_cutoff)  # , ambient, specular, glossiness)
+                else:
+                    mat = SimpleMaterial(image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
             else:
                 mat = SimpleMaterial(diffuse=self.color_rgba)
             #mat = PBRMaterial(doubleSided=True)  # , emissiveFactor= [0.5 for v in self.mesh.vertices])
@@ -726,7 +737,7 @@ class DDDObject2(DDDObject):
         if origin is None: origin = (0, 0)
         result = self.copy()
         if self.geom:
-            result.geom = affinity.rotate(self.geom, angle / (math.pi / 180), origin=origin)
+            result.geom = affinity.rotate(self.geom, angle, origin=origin, use_radians=True)
         result.children = [c.rotate(angle, origin) for c in self.children]
         return result
 
@@ -763,9 +774,14 @@ class DDDObject2(DDDObject):
 
     def clean(self, eps=None, remove_empty=True, validate=True):
         result = self.copy()
-        if result.geom and not self.children and eps:
+        if result.geom and not self.children and eps is not None:
             #result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
-            result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
+            if eps != 0:
+                result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
+            else:
+                result = result.buffer(0)
+        if result.geom and result.geom.is_empty:
+            result.geom = None
         if result.geom and not result.geom.is_valid:
             logger.warn("Removed invalid geometry: %s", result)
             result.geom = None
@@ -781,7 +797,7 @@ class DDDObject2(DDDObject):
             try:
                 result.validate()
             except DDDException as e:
-                logger.warn("Removed node that didn't pass validation check: %s", result)
+                logger.warn("Removed geom that didn't pass validation check: %s", result)
                 result.geom = None
 
         return result
@@ -1359,14 +1375,14 @@ class DDDObject2(DDDObject):
         if path.endswith(".svg"):
             logger.info("Exporting 2D as SVG to: %s", path)
             #data = geom._repr_svg_().encode()
-            data = DDDSVG.export_svg(self, instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDSVG.export_svg(self, instance_mesh=instance_mesh, instance_marker=instance_marker, scale=scale)
             data = data.encode()
 
         elif path.endswith(".png"):
             logger.info("Exporting 2D as PNG to: %s", path)
-            data = DDDSVG.export_svg(self, instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDSVG.export_svg(self, instance_mesh=instance_mesh, instance_marker=instance_marker, scale=scale)
             svgdata = data.encode("utf8")
-            data = cairosvg.svg2png(bytestring=svgdata, scale=scale)  #, write_to=path) parent_width, parent_height, dpi, scale, unsafe.
+            data = cairosvg.svg2png(bytestring=svgdata, scale=1.0)  # scale  #, write_to=path) parent_width, parent_height, dpi, scale, unsafe.
 
             # NOTE: Also, using Inkscape: https://stackoverflow.com/questions/6589358/convert-svg-to-png-in-python
 
@@ -1866,6 +1882,10 @@ class DDDObject3(DDDObject):
         #    self.mesh.visual.uv = uvs
 
         if self.mat:
+
+            uvscale = self.mat.extra.get('uv:scale', None)
+            if uvscale:
+                uvs = [[v[0] * uvscale, v[1] * uvscale] for v in uvs]
 
             # Material + UVs
             mat = self.mat._trimesh_material()

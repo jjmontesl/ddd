@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class DDDSVG():
 
     @staticmethod
-    def export_svg(obj, instance_mesh=True, instance_marker=False, size_min=1.0, scale=10.0, margin=0.00):
+    def export_svg(obj, instance_mesh=True, instance_marker=False, size_min=1.0, scale=1.0, margin=0.00):
         """
         Produces a complete SVG document.
 

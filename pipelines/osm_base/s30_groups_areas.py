@@ -10,14 +10,6 @@ from ddd.pipeline.decorators import dddtask
 
 @dddtask(order="30.50.20.+", log=True)
 def osm_groups_areas(root, osm, logger):
-
-    logger.info("Processing 2D areas.")
-
-    # Split and junctions first?
-    # Possibly: metadata can depend on that, and it needs to be done if it will be done anyway
-
-    # Otherwise: do a pre and post step, and do most things in post (everything not needed for splitting)
-
     pass
 
 @dddtask(path="/Areas/*")
@@ -42,7 +34,7 @@ def osm_groups_areas_default_data(obj, osm):
     obj.extra['ddd:area:contained'] = []
 
 
-@dddtask(path="/Areas/*", select='["osm:leisure" ~ "park|garden"]')
+@dddtask(path="/Areas/*", select='["osm:leisure" = "park"]')
 def osm_groups_areas_leisure_park(obj, osm):
     """Define area data."""
     obj.name = "Park: %s" % obj.name
@@ -52,14 +44,24 @@ def osm_groups_areas_leisure_park(obj, osm):
     obj = obj.material(ddd.mats.park)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:leisure" = "garden"]')
+def osm_groups_areas_leisure_garden(obj, osm):
+    """Define area data."""
+    obj.name = "Garden: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:density'] = 0.0
+    obj.extra['ddd:aug:itemfill:types'] = {'default': 1, 'palm': 0.001}
+    obj = obj.material(ddd.mats.garden)
+    return obj
+
 @dddtask(path="/Areas/*", select='["osm:landuse" = "forest"]')
 def osm_groups_areas_landuse_forest(obj, osm):
     """Define area data."""
     obj.name = "Forest: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
-    obj.extra['ddd:aug:itemfill:density'] = 0.004
-    obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
-    obj = obj.material(ddd.mats.park)
+    obj.extra['ddd:aug:itemfill:density'] = 0.006
+    obj.extra['ddd:aug:itemfill:types'] = {'default': 1, 'reed': 0.5}
+    obj = obj.material(ddd.mats.forest)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:landuse" = "vineyard"]')
@@ -77,7 +79,8 @@ def osm_groups_areas_landuse_grass(obj, osm):
     """Define area data."""
     obj.name = "Grass: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
-    obj = obj.material(ddd.mats.park)
+    obj.extra['ddd:aug:itemfill:density'] = 0.0
+    obj = obj.material(ddd.mats.grass)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:landuse" = "brownfield"]')
@@ -98,15 +101,23 @@ def osm_groups_areas_landuse_greenfield(obj, osm):
     obj = obj.material(ddd.mats.park)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:natural" = "fell"]')
+def osm_groups_areas_natural_fell(obj, osm):
+    """Define area data."""
+    obj.name = "Fell: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:density'] = 0
+    obj = obj.material(ddd.mats.terrain)
+    return obj
 
 @dddtask(path="/Areas/*", select='["osm:natural" = "wood"]')
 def osm_groups_areas_natural_wood(obj, osm):
     """Define area data."""
     obj.name = "Wood: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
-    obj.extra['ddd:aug:itemfill:density'] = 0.0005
-    obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
-    obj = obj.material(ddd.mats.park)
+    obj.extra['ddd:aug:itemfill:density'] = 0.006
+    obj.extra['ddd:aug:itemfill:types'] = {'default': 1, 'reed': 0.25}
+    obj = obj.material(ddd.mats.forest)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:natural" = "wetland"]')
@@ -114,8 +125,9 @@ def osm_groups_areas_natural_wetland(obj, osm):
     """Define area data."""
     obj.name = "Wetland: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
-    obj.extra['ddd:aug:itemfill:density'] = 0.001
-    obj = obj.material(ddd.mats.park)
+    obj.extra['ddd:aug:itemfill:density'] = 0.008
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 1, 'default': 0.01}
+    obj = obj.material(ddd.mats.wetland)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:natural" = "beach"]')
@@ -130,7 +142,7 @@ def osm_groups_areas_natural_beach(obj, osm):
 def osm_groups_areas_natural_sand(obj, osm):
     """Define area data."""
     # Note that golf:bunker is also usually marked as natural:sand
-    obj.name = "Beach: %s" % obj.name
+    obj.name = "Sand: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"  # sand / dunes
     obj = obj.material(ddd.mats.sand)
     return obj
@@ -142,6 +154,7 @@ def osm_groups_areas_natural_bare_rock(obj, osm):
     obj.name = "Bare Rock: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"  # sand / dunes
     obj = obj.material(ddd.mats.rock)
+    obj.extra['ddd:height'] = 0.40
     return obj
 
 
@@ -159,6 +172,14 @@ def osm_groups_areas_leisure_pitch(obj, osm):
     obj.name = "Pitch: %s" % obj.name
     obj.extra['ddd:area:type'] = "pitch"
     obj = obj.material(ddd.mats.pitch)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:leisure" = "golf_course"]')
+def osm_groups_areas_leisure_golf_course(obj, osm):
+    """Define area data."""
+    obj.name = "Golf Course: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj = obj.material(ddd.mats.park)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:public_transport" = "platform"]; ["osm:railway" = "platform"]')
@@ -201,7 +222,7 @@ def osm_groups_areas_riverbank(obj, root):
     obj.extra['ddd:area:type'] = "water"
     obj.extra['ddd:height'] = 0.0
     obj = obj.material(ddd.mats.sea)
-    obj = obj.individualize().flatten()
+    obj = obj.individualize().clean(eps=0.01).flatten()
     root.find("/Areas").children.extend(obj.children)
     return False
     #return obj

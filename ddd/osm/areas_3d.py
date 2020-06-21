@@ -362,7 +362,7 @@ class Areas3DOSMBuilder():
                 print(area_2d.buffer(-1.0).geom)
                 area_3d = None
 
-            if area_3d is None or area_3d.extra['_extrusion_steps'] < 2:
+            if area_3d is None or area_3d.extra['_extrusion_steps'] < 3:
                 logger.debug("Could not extrude underwater area softly. Extruding abruptly.")
                 area_3d = area_2d.extrude_step(area_2d.buffer(-0.05), -1.0, base=False)
                 area_3d = area_3d.extrude_step(area_2d.buffer(-0.15), -0.5)

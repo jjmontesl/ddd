@@ -238,6 +238,7 @@ def extrude_coords(coords_a, coords_b, distance, base_height=0):
         ab = ang(vb(shape_b_idx))
         abn = ang(vb(shape_b_idx + 1)) if (shape_b_idx < len(coords_b) - 1) else float("inf")
 
+        #norm = 'l2'
         norm = 'l2'
         if norm == 'angle':
             advance_b = (abs(abn - aa) < abs(aan - ab))

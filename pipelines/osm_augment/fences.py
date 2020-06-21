@@ -13,7 +13,4 @@ from ddd.osm.osm import project_coordinates
 from ddd.pipeline.decorators import dddtask
 
 
-# YCR requires road smoothing to avoid sharp visual angles and improve triangulation,
-# in order to also smooth angled transitions y the vertical axis.
-
 

@@ -7,6 +7,11 @@ import math
 items = ddd.group3()
 
 for h in (3.0, 5.0, 10.0, 15.0):
+    item = plants.reed(height=h)
+    items.append(item)
+item.show()
+
+for h in (3.0, 5.0, 10.0, 15.0):
     item = plants.tree_default(height=h)
     items.append(item)
 
