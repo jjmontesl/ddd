@@ -190,7 +190,7 @@ class OSMBuildCommand(DDDCommand):
                 area_crop = area_ddd
                 area_filter = area_ddd.buffer(self.chunk_size_extra_filter)
 
-                shortname = '%s_%dr_%.3f,%.3f' % (name, 0, self.center[0], self.center[1])
+                shortname = '%s_%dr_%.3f,%.3f' % (name, self._radius if self._radius else 0, self.center[0], self.center[1])
                 filenamebase = 'output/%s/%s' % (name, shortname)
                 filename = filenamebase + ".glb"
 
@@ -234,8 +234,11 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_base.s30_groups_items_areas.py',
                                             'pipelines.osm_base.s30_groups_export_2d.py',
 
+
                                             'pipelines.osm_base.s40_structured.py',
                                             'pipelines.osm_base.s40_structured_export_2d.py',
+
+                                            'pipelines.osm_common.s45_pitch.py',
 
                                             'pipelines.osm_base.s50_positioning.py',
                                             'pipelines.osm_base.s50_crop.py',

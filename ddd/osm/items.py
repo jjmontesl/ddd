@@ -432,9 +432,9 @@ class ItemsOSMBuilder():
         height = item_2d.extra['ddd:height']
         width = item_2d.extra['ddd:width']
         profile = item_2d.buffer(width - 0.2)
-        item_3d = profile.extrude_step(profile.buffer(0.2), 0.4)
-        item_3d = item_3d.extrude_step(profile.buffer(0.2), height - 0.6)
-        item_3d = item_3d.extrude_step(profile, 0.2)
+        item_3d = profile.extrude_step(profile.buffer(0.2), 0.4, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+        item_3d = item_3d.extrude_step(profile.buffer(0.2), height - 0.6, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+        item_3d = item_3d.extrude_step(profile, 0.2, method=ddd.EXTRUSION_METHOD_SUBTRACT)
         item_3d = ddd.uv.map_cubic(item_3d)
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
         item_3d.name = 'Hedge: %s' % item_2d.name

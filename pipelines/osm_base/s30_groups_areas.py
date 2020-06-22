@@ -207,11 +207,13 @@ def osm_groups_areas_tourism_artwork(obj, osm):
 # Move this to "s30_interpretations" (not raw OSM)
 @dddtask(path="/Areas/*", select='["osm:artwork_type" = "sculpture"]["osm:man_made" != "compass_rose"]')  # [!contains(["osm:artwork_type" == "sculpture"])]
 def osm_groups_areas_artwork_sculpture(root, obj):
-    """Define area data."""
+    """Adds a sculpture item to sculpture areas."""
     obj.name = "Sculpture: %s" % obj.name
     # Add artwork as node
     item = obj.centroid()    # area.centroid()
     root.find("/ItemsNodes").append(item)
+
+
 
 
 
@@ -226,6 +228,19 @@ def osm_groups_areas_riverbank(obj, root):
     root.find("/Areas").children.extend(obj.children)
     return False
     #return obj
+
+@dddtask(path="/Areas/*", select='["osm:man_made" = "bridge"]')
+def osm_groups_areas_man_made_bridge(obj, root):
+    """Define area data."""
+    obj.name = "Riverbank: %s" % obj.name
+    obj.extra['ddd:area:type'] = "water"
+    obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.sea)
+    obj = obj.individualize().clean(eps=0.01).flatten()
+    root.find("/Areas").children.extend(obj.children)
+    return False
+    #return obj
+
 
 
 

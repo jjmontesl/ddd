@@ -143,6 +143,13 @@ class Areas3DOSMBuilder():
         areas_3d = ddd.group3(name="Areas")
 
         for area_2d in areas_2d.children:
+
+            try:
+                area_2d.validate()
+            except Exception as e:
+                logger.error("Could not generate invalid area %s: %s", area_2d, e)
+                continue
+
             try:
                 if area_2d.extra.get('ddd:area:type', 'default') is 'default':
                     area_3d = self.generate_area_3d(area_2d)
@@ -183,7 +190,7 @@ class Areas3DOSMBuilder():
 
     def generate_area_3d(self, area_2d):
 
-        if area_2d.geom is not None and area_2d.geom.type != "LineString":
+        if area_2d.geom is not None and area_2d.geom.type != "LineString" and area_2d.geom.type:
 
             if area_2d.geom.type in ('GeometryCollection', 'MultiPolygon'):
                 logger.debug("Generating area 3d as separate areas as it is a GeometryCollection: %s", area_2d)
@@ -191,14 +198,14 @@ class Areas3DOSMBuilder():
                 # But also, we should have an individualize that work, correct iterators, and a generic cleanup/flatten method
                 # to flatten areas, which might solve this.
                 areas_3d = []
-                for a in area_2d.individualize().children:
+                for a in area_2d.individualize().clean().children:
                     areas_3d.append(self.generate_area_3d(a))
                 return ddd.group(areas_3d, empty=3)
 
             if area_2d.extra.get('ddd:area:type', None) == 'park':
 
-                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, base=False)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), 0.1)
+                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), 0.1, method=ddd.EXTRUSION_METHOD_SUBTRACT)
 
                 # Grass
                 if True:
@@ -229,8 +236,8 @@ class Areas3DOSMBuilder():
 
                 area_3d = area_2d.extrude_step(area_2d, area_2d.extra['ddd:steps:height'], base=False)
                 for stepidx in range(1, area_2d.extra['ddd:steps:count'] + 1):
-                    area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), 0)
-                    area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), area_2d.extra['ddd:steps:height'])
+                    area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), 0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                    area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), area_2d.extra['ddd:steps:height'], method=ddd.EXTRUSION_METHOD_SUBTRACT)
 
                 # TODO: Crop in 3D (or as a workaround fake it as centroid cropping)
 
@@ -290,7 +297,7 @@ class Areas3DOSMBuilder():
 
     def generate_area_3d_pitch(self, area_2d):
 
-        if area_2d.geom is None:
+        if area_2d.geom is None or area_2d.geom.is_empty:
             return None
 
         area_2d_orig = area_2d.extra.get('ddd:crop:original')  #, area_2d)
@@ -350,12 +357,12 @@ class Areas3DOSMBuilder():
                 continue
 
             try:
-                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), -0.3, base=False)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-2.0), -0.5)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-4.0), -1.0)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-6.0), -0.5)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-9.0), -0.4)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-12.0), -0.3)
+                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), -0.3, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-2.0), -0.5, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-4.0), -1.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-6.0), -0.5, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-9.0), -0.4, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-12.0), -0.3, method=ddd.EXTRUSION_METHOD_SUBTRACT)
             except Exception as e:
                 logger.warn("Exception extruding underwater area (reduced LinearRings need caring): %s", e)
                 print(area_2d.geom)
@@ -364,10 +371,10 @@ class Areas3DOSMBuilder():
 
             if area_3d is None or area_3d.extra['_extrusion_steps'] < 3:
                 logger.debug("Could not extrude underwater area softly. Extruding abruptly.")
-                area_3d = area_2d.extrude_step(area_2d.buffer(-0.05), -1.0, base=False)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-0.15), -0.5)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-0.3), -0.5)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-1.0), -0.5)
+                area_3d = area_2d.extrude_step(area_2d.buffer(-0.05), -1.0, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-0.15), -0.5, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-0.3), -0.5, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-1.0), -0.5, method=ddd.EXTRUSION_METHOD_SUBTRACT)
             if area_3d.extra['_extrusion_steps'] < 1:
                 logger.warn("Could not extrude underwater area: %s", area_3d)
                 area_3d = area_3d.translate([0, 0, -1.0])

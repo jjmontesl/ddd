@@ -6,7 +6,7 @@
 from ddd.pipeline.decorators import dddtask
 
 
-@dddtask(order="60.90.+")
+@dddtask(order="69.90.+")
 def osm_model_export_3d(root, osm, pipeline):
 
     root = root.copy()

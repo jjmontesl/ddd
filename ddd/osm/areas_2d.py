@@ -185,7 +185,7 @@ class Areas2DOSMBuilder():
             union = groups.union()
             union = union.clean(eps=0.01)
         except TopologicalError as e:
-            logger.error("Error calculating interways: %s", e)
+            logger.debug("Error calculating safe union_safe (1/2): %s", e)
             children_unions = []
             for g in groups.children:
                 u = g.clean(eps=0.01).union()
@@ -195,7 +195,7 @@ class Areas2DOSMBuilder():
                 #union = union.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
                 union = union.union()
             except TopologicalError as e:
-                logger.error("Error calculating interways (2): %s", e)
+                logger.error("Error calculating union_safe (2/2): %s", e)
                 union = ddd.group2()
                 #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], areas_2d]).union()
         return union
@@ -336,11 +336,12 @@ class Areas2DOSMBuilder():
         logger.info("Postprocessing water areas and ways")
 
         # Get all water areas ('ddd:water')
-        water_areas = areas_2d.select('["ddd:area:type" = "water"]').union().clean(eps=0.00)
+        water_areas = areas_2d.select('["ddd:area:type" = "water"]', recurse=False).union().clean(eps=0.05)
+        #water_areas.show()
 
-        river_areas = ways_2d.select('["ddd:area:type" = "water"]')
+        river_areas = ways_2d.select('["ddd:area:type" = "water"]', recurse=False)
+        #river_areas.show()
 
-        all_water_areas = ddd.group2(water_areas.children + river_areas.children)
         #all_water_areas = ddd.group2(water_areas.children)
 
         # Move river areas to areas
@@ -350,15 +351,21 @@ class Areas2DOSMBuilder():
         # Subtract water areas to ways
         # TODO: Might be done via generic mechanism (assign ways to areas, etc)
         for r in river_areas.children:
-            if r.intersects(water_areas):
-                new_river = r.subtract(water_areas)
-                r.replace(new_river)
+            new_river = r.intersection(self.osm.area_filter2)
+            if new_river.intersects(water_areas):
+                new_river = new_river.subtract(water_areas)
+            r.replace(new_river)
+        #river_areas.show()
+
+        all_water_areas = ddd.group2([water_areas, river_areas])
 
         # Create ground area
-        underwater_area = all_water_areas.union().clean(eps=0.00)
+        underwater_area = all_water_areas.union().clean(eps=0.05)
+        #underwater_area.show()
         underwater_area = underwater_area.material(ddd.mats.terrain)
         underwater_area.extra['ddd:area:type'] = 'underwater'
         underwater_area.extra['svg:ignore'] = True
+        #underwater_area.show()
         areas_2d.append(underwater_area)
 
 

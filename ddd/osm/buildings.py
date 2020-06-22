@@ -325,7 +325,7 @@ class BuildingOSMBuilder():
                     elif roof_shape == 'attic':
                         # Attic
                         height = random.uniform(3.0, 4.0)
-                        roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.buffer(-2), height).translate([0, 0, max_height]).material(roof_material)
+                        roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.buffer(-2), height, method=ddd.EXTRUSION_METHOD_SUBTRACT).translate([0, 0, max_height]).material(roof_material)
 
                     elif roof_shape == 'gabled':
                         # Attic

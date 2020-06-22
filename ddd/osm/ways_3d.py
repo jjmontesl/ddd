@@ -123,7 +123,7 @@ class Ways3DOSMBuilder():
             if (len(way_2d_interior.individualize().children) > 1):
                 way_3d = way_2d.triangulate()
             else:
-                way_3d = way_2d.extrude_step(way_2d_interior, rail_height, base=False, cap=False)
+                way_3d = way_2d.extrude_step(way_2d_interior, rail_height, base=False, cap=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
 
             way_3d = way_3d.material(ddd.mats.dirt)
             way_3d = ddd.uv.map_cubic(way_3d)

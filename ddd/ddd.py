@@ -74,6 +74,10 @@ class D1D2D3():
     ROT_TOP_HALFTURN = (0, 0, math.pi)
 
     DEG_TO_RAD = (math.pi / 180.0)
+    RAD_TO_DEG = (180.0 / math.pi)
+
+    EXTRUSION_METHOD_WRAP = extrusion.EXTRUSION_METHOD_WRAP
+    EXTRUSION_METHOD_SUBTRACT = extrusion.EXTRUSION_METHOD_SUBTRACT # For internal/external/vertical extrusions
 
     @staticmethod
     def initialize_logging(debug=True):
@@ -569,7 +573,7 @@ class DDDObject():
             if default is None:
                 self.extra[key] = value
             else:
-                if key not in self.extra:
+                if key not in self.extra or self.extra[key] is None:
                     self.extra[key] = default
         return self
 
@@ -878,6 +882,11 @@ class DDDObject2(DDDObject):
             elif result.geom.type == "MultiLineString":
                 for g in result.geom.geoms:
                     g.coords = [(x, y) for (x, y, _) in g.coords]
+            elif result.geom.type == "Polygon":
+                result.geom.exterior.coords = [(x, y) for (x, y, _) in result.geom.exterior.coords]
+                for g in result.geom.interior:
+                    g.coords = [(x, y) for (x, y, _) in g.coords]
+
             else:
                 result.geom.coords = [(x, y) for (x, y, _) in result.geom.coords]
         result.children = [c.remove_z() for c in result.children]
@@ -990,10 +999,10 @@ class DDDObject2(DDDObject):
             #    raise DDDException("Invalid polygon: polygon is not simple.")
             if self.geom.type == "Polygon":
                 if len(list(self.geom.exterior.coords)) < 3:
-                    raise AssertionError()
+                    raise DDDException("Polygon with invalid number of coordinates (<3).", ddd_obj=self)
                 for interior in self.geom.interiors:
                     if len(list(interior.coords)) < 3:
-                        raise AssertionError()
+                        raise DDDException("Polygon with invalid number of interior coordinates (<3).", ddd_obj=self)
 
         for c in self.children:
             c.validate()
@@ -1079,7 +1088,7 @@ class DDDObject2(DDDObject):
 
         return result
 
-    def extrude(self, height, center=False):
+    def extrude(self, height, center=False, cap=True, base=True):
         """
         If height is negative, the object is aligned with is top face on the XY plane.
         If center is true, the object is centered relative to the extruded height.
@@ -1133,9 +1142,10 @@ class DDDObject2(DDDObject):
 
                 vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
                 try:
-                    mesh = creation.extrude_triangulation(vertices=vertices,
-                                                          faces=faces,
-                                                          height=abs(height))
+                    mesh = extrusion.extrude_triangulation(vertices=vertices,
+                                                           faces=faces,
+                                                           height=abs(height),
+                                                           cap=cap, base=base)
                     mesh.merge_vertices()
                     result = DDDObject3(mesh=mesh)
                 except Exception as e:
@@ -1180,7 +1190,7 @@ class DDDObject2(DDDObject):
 
         return result
 
-    def extrude_step(self, obj_2d, offset, cap=True, base=True):
+    def extrude_step(self, obj_2d, offset, cap=True, base=True, method=D1D2D3.EXTRUSION_METHOD_WRAP):
         # Triangulate and store info for 3D extrude_step
 
         if obj_2d.children:
@@ -1191,17 +1201,19 @@ class DDDObject2(DDDObject):
             if result.mesh:
                 result.mesh.faces = np.fliplr(result.mesh.faces)
         else:
-            # TODO: unify in copy2d->3d method
+            result = self.copy3()
+            '''
             result = DDDObject3()
             # Copy extra information from original object
             result.name = self.name if result.name is None else result.name
             result.extra = dict(self.extra)
             if self.mat is not None:
                 result = result.material(self.mat)
+            '''
 
         result.extra['_extrusion_steps'] = 0
         result.extra['_extrusion_last_shape'] = self
-        result = result.extrude_step(obj_2d, offset, cap)
+        result = result.extrude_step(obj_2d, offset, cap, method=method)
         return result
 
     def split(self, other):
@@ -1655,6 +1667,12 @@ class DDDObject3(DDDObject):
         obj.children = [c.scale(v) for c in self.children]
         return obj
 
+    def invert(self):
+        """Inverts mesh triangles (which inverts triangle face normals)."""
+        obj = self.copy()
+        obj.mesh.invert()
+        return obj
+
     def material(self, material):
         obj = self.copy()
         obj.mat = material
@@ -1770,7 +1788,7 @@ class DDDObject3(DDDObject):
         result.children = []
         return result
 
-    def extrude_step(self, obj_2d, offset, cap=True, base=None):
+    def extrude_step(self, obj_2d, offset, cap=True, base=None, method=D1D2D3.EXTRUSION_METHOD_WRAP):
         """
         Base argument is supported for compatibility with DDDObject2 signature, but ignored.
         """
@@ -1779,7 +1797,7 @@ class DDDObject3(DDDObject):
             raise DDDException("Cannot extrude_step with children.")
 
         result = self.copy()
-        result = extrusion.extrude_step(result, obj_2d, offset, cap=cap)
+        result = extrusion.extrude_step(result, obj_2d, offset, cap=cap, method=method)
         return result
 
     '''

@@ -18,11 +18,7 @@ class DefaultMaterials(MaterialsCollection):
 
         # Ways
         self.asphalt = ddd.material(name="Asphalt", color='#202020')
-        self.dirt = ddd.material(name="Dirt", color="#b58800")
-        self.sidewalk = ddd.material(name="Sidewalk", color='#e0d0d0')
-        self.pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
         self.pathwalk = ddd.material(name="WayPedestrian", color='#78281e')
-        self.sand = ddd.material(name="Sand", color='#fff694')
 
         # Ways/roads special
         self.roadline = ddd.material(name="Roadline", color='#e8e8e8',
@@ -40,12 +36,20 @@ class DefaultMaterials(MaterialsCollection):
         self.water = ddd.material(name="WaterBasicDaytime", color='#4d53c5', extra={'ddd:collider': False, 'ddd:shadows': False, 'ddd:transparent': True})
         self.volumetricgrass = ddd.material(name="VolumetricGrass", color='#2dd355', extra={'ddd:export-as-marker': True})
 
-        self.terrain = ddd.material(name="Ground", color='#e6821e')
-        self.park = ddd.material(name="Park", color='#1db345')
+
+        self.dirt = ddd.material(name="Dirt", color="#b58800")
         self.forest = ddd.material(name="Park", color='#3a6e17')
-        self.wetland = ddd.material(name="Park", color='#54610c')
         self.garden = ddd.material(name="Park", color='#2f614b')
         self.grass = ddd.material(name="Park", color='#2dd355')
+        self.park = ddd.material(name="Park", color='#1db345')
+        self.rock = ddd.material(name="Rock", color='#5f5f4d')
+        self.sand = ddd.material(name="Sand", color='#fff694')
+        self.terrain = ddd.material(name="Ground", color='#e6821e')
+        self.wetland = ddd.material(name="Park", color='#54610c')
+
+        self.pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
+        self.sett = ddd.material(name="Sett", color='#7b719f')
+        self.sidewalk = ddd.material(name="Sidewalk", color='#e0d0d0')
 
         self.pitch = ddd.material(name="Pitch", color='#196118')
         self.pitch_blue = ddd.material(name="Pitch Blue", color='#2a69b0')  # Eg. cycleways
@@ -56,7 +60,6 @@ class DefaultMaterials(MaterialsCollection):
         self.metal = ddd.material(name="Steel", color='#68738c')
 
         self.stone = ddd.material(name="Stone", color='#9c9378')
-        self.rock = ddd.material(name="Rock", color='#5f5f4d')
         self.cement = ddd.material(name="Concrete", color='#b8b8a0')
         self.bricks = ddd.material(name="Bricks", color='#d49156')
 

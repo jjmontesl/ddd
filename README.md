@@ -38,7 +38,7 @@ DDD is accompanied by its sibling projects:
 ## Features
 
 - Procedurally generate, alter and align 2D and 3D geometry
-- Object catalog ("prefabs") management
+- Object catalog ("prefabs") management (object and geometry instancing).
 - Export 2D to SVG and PNG
 - Export 3D to GLTF, FBX or OBJ
 - TTF based generation of text geometry
@@ -46,7 +46,7 @@ DDD is accompanied by its sibling projects:
 - UV mapping and collider primitives support. Texture atlas support.
 - A small procedural models library (trees, urban props...)
 - Document generation transformation pipeline support
-- OpenStreetMap data based 3D scene builder (TODO: move to separate project [?])
+- OpenStreetMap data 2D and 3D generation pipelines
 - Examples
 
 

@@ -58,7 +58,7 @@ class DDDUVMapping():
 
                 def setuv(face, idx, uv):
                     uv = (uv[0] * scale[0] + offset[0], uv[1] * scale[1] + offset[1])
-                    if result.extra['uv'][idx] != None:
+                    if result.extra['uv'][idx] != None and (result.extra['uv'][idx] != uv):
                         # FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
                         # before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
                         newidx = len(result.mesh.vertices)

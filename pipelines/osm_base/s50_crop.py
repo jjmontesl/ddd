@@ -24,27 +24,27 @@ def osm_crop(pipeline, osm, root, logger):
 
 @dddtask(path="/Areas/*")
 def osm_crop_areas(obj, osm, root, logger):
-    obj.extra['ddd:crop'] = 'area'
+    obj.prop_set('ddd:crop', default='area')
 
 @dddtask(path="/Ways/*")
 def osm_crop_ways(obj, osm, root, logger):
-    obj.extra['ddd:crop'] = 'area'
+    obj.prop_set('ddd:crop', default='area')
 
 @dddtask(path="/ItemsAreas/*")
 def osm_crop_items_areas(obj, osm, root, logger):
-    obj.extra['ddd:crop'] = 'centroid'
+    obj.prop_set('ddd:crop', default='centroid')
 
 @dddtask(path="/ItemsWays/*")
 def osm_crop_items_ways(obj, osm, root, logger):
-    obj.extra['ddd:crop'] = 'centroid'
+    obj.prop_set('ddd:crop', default='centroid')
 
 @dddtask(path="/ItemsNodes/*")
 def osm_crop_items_nodes(obj, osm, root, logger):
-    obj.extra['ddd:crop'] = 'centroid'
+    obj.prop_set('ddd:crop', default='centroid')
 
 @dddtask(path="/Buildings/*")
 def osm_crop_buidings(obj, osm, root, logger):
-    obj.extra['ddd:crop'] = 'centroid'
+    obj.prop_set('ddd:crop', default='centroid')
 
 
 @dddtask(order="50.80.90.+", log=True)
