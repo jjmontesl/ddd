@@ -21,6 +21,7 @@ from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.osm import osm
 from ddd.pipeline.pipeline import DDDPipeline
+import sys
 
 
 #from osm import OSMDDDBootstrap
@@ -57,7 +58,7 @@ class OSMBuildCommand(DDDCommand):
         parser.add_argument("--name", type=str, default=None, help="base name for output")
         parser.add_argument("--center", type=str, default=None, help="center of target area (lon, lat)")
         parser.add_argument("--area", type=str, default=None, help="target area polygon GeoJSON")
-        parser.add_argument("--radius", type=float, default=250, help="radius of target area (m)")
+        parser.add_argument("--radius", type=float, default=None, help="radius of target area (m)")
         parser.add_argument("--tile", type=float, default=None, help="tile size or 0 (m)")
 
         args = parser.parse_args(args)
@@ -152,7 +153,7 @@ class OSMBuildCommand(DDDCommand):
 
         # TODO: Move area resolution outside this method and resolve after processing args
         area_ddd = None
-        if self.area:
+        if self.area is not None:
             trans_func = partial(pyproj.transform, osm_proj, ddd_proj)
             area_ddd = ops.transform(trans_func, self.area)
         else:

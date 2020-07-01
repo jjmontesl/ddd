@@ -32,7 +32,7 @@ class Areas2DOSMBuilder():
             area = areas[idx]
             for larger in areas[idx + 1:]:
                 if larger.contains(area):
-                    #logger.debug("Area %s contains %s.", larger, area)
+                    #logger.info("Area %s contains %s.", larger, area)
                     area.extra['ddd:area:container'] = larger
                     larger.extra['ddd:area:contained'].append(area)
                     break
@@ -64,51 +64,6 @@ class Areas2DOSMBuilder():
             #area = self.generate_area_2d_park(narea)
             area = narea
 
-            '''
-            area = None
-            if narea.extra.get('osm:leisure', None) in ('park', 'garden'):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_park(narea)
-
-
-            elif (narea.extra.get('osm:public_transport', None) in ('platform', ) or
-                  narea.extra.get('osm:railway', None) in ('platform', )):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_platform(narea)
-
-            elif narea.extra.get('osm:tourism', None) in ('artwork', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_artwork(narea)
-
-            elif narea.extra.get('osm:leisure', None) in ('pitch', ):  # Cancha
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                area = self.generate_area_2d_pitch(narea)
-            elif narea.extra.get('osm:landuse', None) in ('railway', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                area = self.generate_area_2d_railway(narea)
-            elif narea.extra.get('osm:landuse', None) in ('brownfield', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                area = self.generate_area_2d_unused(narea)
-                narea = narea.subtract(union)
-            elif narea.extra.get('osm:amenity', None) in ('school', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_school(narea)
-            elif (narea.extra.get('osm:waterway', None) in ('riverbank', 'stream') or
-                  narea.extra.get('osm:natural', None) in ('water', ) or
-                  narea.extra.get('osm:water', None) in ('river', )):
-                #narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                #narea = narea.subtract(union)
-                area = self.generate_area_2d_riverbank(narea)
-            else:
-                logger.debug("Unknown area: %s", feature)
-
-            #elif feature['properties'].get('amenity', None) in ('fountain', ):
-            #    area = self.generate_area_2d_school(feature)
-            '''
 
             if area:
                 logger.debug("Area: %s", area)
@@ -130,16 +85,6 @@ class Areas2DOSMBuilder():
         area.name = "Railway area: %s" % feature['properties'].get('name', None)
         area = area.material(ddd.mats.dirt)
         area = self.generate_wallfence_2d(area)
-        return area
-
-    def generate_area_2d_school(self, area):
-        feature = area.extra['osm:feature']
-        area.name = "School: %s" % feature['properties'].get('name', None)
-        area = area.material(ddd.mats.dirt)
-        area.extra['ddd:height'] = 0.0
-
-        area = self.generate_wallfence_2d(area, doors=2)
-
         return area
 
 
@@ -281,6 +226,8 @@ class Areas2DOSMBuilder():
     '''
 
     def generate_areas_2d_postprocess(self):
+        """
+        """
 
         logger.info("Postprocessing areas and ways (%d areas, %d ways['0']).", len(self.osm.areas_2d.children), len(self.osm.ways_2d['0'].children))
 

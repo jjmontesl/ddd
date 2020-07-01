@@ -165,6 +165,7 @@ def position(root, obj):
 def show(root):
     """
     """
+    root.find("/Elements3").save("/tmp/periodictable.glb")
     root.find("/Elements3").show()
 
 

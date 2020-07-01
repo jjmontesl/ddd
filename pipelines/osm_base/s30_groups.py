@@ -10,7 +10,7 @@ import sys
 
 
 @dddtask(order="30.10.+", log=True)
-def osm_groups_create_root_nodes(root, osm):
+def osm_groups_create_root_nodes(root, osm, pipeline):
     items = ddd.group2(name="Areas")
     root.append(items)
     items = ddd.group2(name="Ways")

@@ -451,11 +451,23 @@ def fire_hydrant(height=0.90, r=0.25):
     return obj
 
 
+def bollard(height=1.2, r=0.2, sides=6):
+    """
+    A bollard. Sits centered on its base.
+    """
+    bollard = ddd.regularpolygon(6, r, name="Bollard")
+    extrude_steps = ((2.0, 0), (2.0, 0.75), (1.0, 1), (1.0, 6.75), (2.0, 7), (2.0, 7.75), (1.0, 8))
+    bollard = extrude_step_multi(bollard, extrude_steps, base=False, cap=True, scale_y=height / 8)
+    bollard = bollard.material(ddd.mats.bronze)
+    bollard = ddd.uv.map_cylindrical(bollard)
+    return bollard
+
+
 def pedestal(obj=None, d=1.0):
-    '''
+    """
     A pedestal with an optional object on top.
     Sits centered on its base.
-    '''
+    """
 
     pedestal = ddd.cube(d=d / 2.0).material(ddd.mats.bronze)
     pedestal = ddd.uv.map_cubic(pedestal)

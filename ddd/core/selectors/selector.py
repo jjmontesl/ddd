@@ -167,10 +167,11 @@ class DDDSelector(object):
     def evaluate(self, obj):
 
         tree = self._tree
+
         #print(tree)
         #print(tree.pretty())
+        #logger.info("Evaluate: %s", tree)
 
-        logger.debug("Evaluate: %s", tree)
         selected = tree.children[0](obj)
 
         '''

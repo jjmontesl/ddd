@@ -74,7 +74,7 @@ class OSMBuilder():
         self.layer_indexes = ('-2', '-1', '0', '1', '2', '3', '-2a', '-1a', '0a', '1a')
 
         self.layer_heights = {'-2': -12.0,
-                              '-1': -5.0,
+                              '-1': -6.0,
                               '0': 0.0,
                               '1': 6.0,
                               '2': 12.0,
@@ -245,7 +245,7 @@ class OSMBuilder():
                     #feature_2d.clean(eps=0.01)
                     feature_2d.validate()
                 except Exception as e:
-                    logger.warn("Invalid feature (2/2) '%s' %s: %s", name, feature_2d.extra, e)
+                    logger.warn("Invalid feature (2/2) '%s' %s: %s", name, feature_2d.metadata("", ""), e)
                     continue
 
             # Separate GeometryCollection geometries

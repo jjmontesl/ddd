@@ -19,7 +19,7 @@ process and present larger areas in chunks.
 - Ways and intersections processing (both in 1D and 2D)
 - Areas processing: containment and layering
 - Buildings and bulding parts relationships
-- (Heuristic) association of features (features/ways/areas/buildings to to ways/areas/buildings...)
+- (Heuristic) association and alignment of features (features/ways/areas/buildings to to ways/areas/buildings...)
 - Coastlines and riverbanks
 - Elevation model (2D contours, 3D elevation, stairs, filtering...)
 - 3D bridges, tunnels and (TODO) stairs

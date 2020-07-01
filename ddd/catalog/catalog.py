@@ -120,6 +120,6 @@ class PrefabCatalog():
 
     def export(self, path="catalog.glb"):
         scene = self.all()
-        scene.save(path, instance_mesh=True, instance_marker=True)
         scene.save(path + ".json", instance_mesh=True, instance_marker=True)
+        scene.save(path, instance_mesh=True, instance_marker=True)
 

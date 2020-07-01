@@ -81,6 +81,8 @@ class D1D2D3Bootstrap():
         parser.add_argument("-v", "--visualize-errors", action="store_true", default=False, help="visualize objects that caused exceptions")
         parser.add_argument("-o", "--overwrite", action="store_true", default=False, help="overwrite output files")
 
+        parser.add_argument("-r", "--profile", type=str, default=False, help="profile execution writing results to filename")
+
         parser.add_argument("-c", "--config", action="append", help="load config file before running")
 
         parser.add_argument("--export-meshes", action="store_true", default=False, help="export instance meshes")
@@ -127,12 +129,15 @@ class D1D2D3Bootstrap():
         self.visualize_errors = args.visualize_errors
         self.overwrite = args.overwrite
 
+
         if args.help:
             if not self.command:
                 print(parser.format_help())
                 sys.exit(0)
             else:
                 unparsed_args = unparsed_args + ['-h']
+
+        self.profile = args.profile
 
         D1D2D3Bootstrap.export_marker = args.export_markers
         D1D2D3Bootstrap.export_mesh = args.export_meshes
@@ -157,6 +162,14 @@ class D1D2D3Bootstrap():
             self.runcommand(configname)
 
     def runcommand(self, command):
+        if not self.profile:
+            self._runcommand(command)
+        else:
+            import cProfile
+            logger.warning("Profiling execution (WARNING this is SLOW) and saving results to: %s" % self.profile)
+            cProfile.runctx("self._runcommand(command)", globals(), locals(), self.profile)
+
+    def _runcommand(self, command):
         #data =
         #compiled = compile()
 

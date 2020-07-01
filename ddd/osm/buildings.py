@@ -169,10 +169,13 @@ class BuildingOSMBuilder():
         """
 
         floors = building_2d.extra.get('osm:building:levels', None)
+        floors_min = building_2d.extra.get('osm:building:min_level', 0)
         if not floors:
             floors = random.randint(2, 8)
         floors = int(floors)
+        floors_min = int(floors_min)
         base_floors = floors
+        base_floors_min = floors_min
 
         building_material = random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3])
         if building_2d.extra.get('osm:building:material', None):
@@ -208,6 +211,7 @@ class BuildingOSMBuilder():
                 if floors == 0:
                     logger.warn("Building part with 0 floors (setting to 1): %s", floors)
                     floors = 1
+                floors_min = int(part.extra.get('osm:building:min_level', base_floors_min))
 
                 # Remove the rest of the building
                 if part == building_2d:
@@ -250,7 +254,8 @@ class BuildingOSMBuilder():
                         roof_material = getattr(ddd.mats, material_name)
 
                 floors_height = floors * 3.00
-                min_height = float(part.extra.get('osm:min_height', 0))
+                floors_min_height = floors_min * 3.00
+                min_height = float(part.extra.get('osm:min_height', floors_min_height))
                 max_height = parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
                 dif_height = max_height - min_height
 
@@ -264,6 +269,9 @@ class BuildingOSMBuilder():
                     logger.error("Could not generate building (%s): %s", part, e)
                     continue
 
+                if min_height: building_3d = building_3d.translate([0, 0, min_height])
+                building_3d = building_3d.material(material)
+
                 # Building solid post processing
                 if part.extra.get('osm:tower:type', None) == 'bell_tower':  # and dif_height > 6:
                     # Cut
@@ -271,7 +279,7 @@ class BuildingOSMBuilder():
                     (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(part)
                     cut1 = ddd.rect([-axis_major.length(), -axis_minor.length() * 0.20, +axis_major.length(), +axis_minor.length() * 0.20])
                     cut2 = ddd.rect([-axis_major.length() * 0.20, -axis_minor.length(), +axis_major.length() * 0.20, +axis_minor.length()])
-                    cuts = ddd.group2([cut1, cut2]).union().rotate(axis_rot).extrude(-6.0).translate([center_pos[0], center_pos[1], dif_height - 2])
+                    cuts = ddd.group2([cut1, cut2]).union().rotate(axis_rot).extrude(-6.0).translate([center_pos[0], center_pos[1], max_height - 2])
                     #ddd.group3([building_3d, cuts]).show()
                     building_3d = building_3d.subtract(cuts)
                     #building_3d.show()
@@ -279,12 +287,9 @@ class BuildingOSMBuilder():
                     # TODO: Create 1D items
                     (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(part.buffer(-0.80))
                     for coords in (axis_major.geom.coords[0], axis_major.geom.coords[1], axis_minor.geom.coords[0], axis_minor.geom.coords[1]):
-                        bell = urban.bell().translate([coords[0], coords[1], dif_height - 3.0])
+                        bell = urban.bell().translate([coords[0], coords[1], max_height - 3.0])
                         entire_building_3d.append(bell)
 
-
-                if min_height: building_3d = building_3d.translate([0, 0, min_height])
-                building_3d = building_3d.material(material)
 
 
                 # Base

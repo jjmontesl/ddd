@@ -11,7 +11,7 @@ from ddd.util.dddrandom import weighted_choice
 
 
 # TODO: implement [!contains(["natural"="tree"])]
-@dddtask(order="50.50.+", path="/Areas/*", select='["ddd:area:type" = "park"]')  # [!contains(["natural"="tree"])]
+@dddtask(order="55.50.+", path="/Areas/*", select='["ddd:area:type" = "park"]')  # [!contains(["natural"="tree"])]
 def osm_augment_trees_annotate(obj, root):
 
     trees = root.find("/ItemsNodes").filter(lambda o: o.extra.get('osm:natural') == 'tree')
@@ -25,7 +25,7 @@ def osm_augment_trees_annotate(obj, root):
         # ...Different probabilities for planted trees (urban / beach) than from forest (natural flora)
 
 
-@dddtask(order="50.50.+", path="/Areas/*", select='["ddd:aug:itemfill" = True]')
+@dddtask(order="55.50.+", path="/Areas/*", select='["ddd:aug:itemfill" = True]')
 def osm_augment_trees_generate(logger, pipeline, root, obj):
     tree_density_m2 = obj.extra.get("ddd:aug:itemfill:density", 0.0025)
     tree_types = {'default': 1, 'palm': 0.001}

@@ -153,10 +153,11 @@ def osm_positioning_apply_orient_project(obj, pipeline, osm, root, logger):
         obj.extra['ddd:angle'] = projected_point.extra['ddd:angle']
     return obj
 
+'''
 @dddtask(order="50.05.50.50.+", select='["ddd:positioning:validate:ref"]')
 def osm_positioning_apply_validate_overlap(obj, pipeline, osm, root, logger):
     """Check if item can be placed."""
     invalid = pipeline.data[obj.extra['ddd:positioning:validate:ref']]
     if not osm.osmops.placement_valid(obj.buffer(0.2), invalid=invalid):
         return False
-
+'''

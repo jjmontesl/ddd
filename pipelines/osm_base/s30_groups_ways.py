@@ -213,7 +213,7 @@ def osm_select_ways_track(obj, root):
     obj.extra['ddd:way:traffic_signals'] = False
     obj.prop_set('ddd:way:lamps', default=False)
     obj.prop_set('ddd:way:lanes', default=1)
-    obj.extra['ddd:way:height'] = 0.2
+    obj.extra['ddd:way:height'] = 0 #0.2
     root.find("/Ways").append(obj)
 
 
@@ -507,6 +507,11 @@ def osm_select_ways_calculated(osm):
     # TODO: Tag identified ways
     pass
 
+@dddtask(order="30.30.50.+")
+def osm_select_ways_calculated_clean(osm, root):
+    # TODO: Tag identified ways
+    root.find("/Ways").replace(root.find("/Ways").clean())
+
 '''
 # Disabled: currently selecting highways and water only
 @dddtask(path="/Ways/*", )
@@ -526,15 +531,22 @@ def osm_select_ways_calculated_oneway_lane_margins(obj):
 
 
 @dddtask(path="/Ways/*")
-def osm_select_ways_calculated_data(obj, root):
+def osm_select_ways_calculated_data(obj, root, logger):
     """Sets calculated data for ways."""
 
     # Use osm:lanes if set, otherwise use lanes
-    obj.extra['ddd:way:lanes'] = int(obj.extra.get('osm:lanes', obj.extra.get('ddd:way:lanes', 0)) or 2)
-    if obj.extra['ddd:way:lanes'] < 1: obj.extra['ddd:way:lanes'] = 1
+    try:
+        obj.extra['ddd:way:lanes'] = int(obj.extra.get('osm:lanes', obj.extra.get('ddd:way:lanes', 0)))
+    except TypeError as e:
+        #logger.warning("Invalid lanes value (%s %s): %s (%s - %s)", obj.extra.get('osm:lanes', None), obj.extra.get('ddd:way:lanes', None), e, obj, obj.extra)
+        obj.extra['ddd:way:lanes'] = None
 
     if obj.extra.get('ddd:way:width', None) is None:
-        obj.extra['ddd:way:width'] = (obj.extra['ddd:way:lanes'] * obj.extra['ddd:way:lane_width'] +
+
+        lanes = obj.extra.get('ddd:way:lanes', 0)
+        if lanes is None or lanes < 1: lanes = 1
+
+        obj.extra['ddd:way:width'] = (lanes * obj.extra['ddd:way:lane_width'] +
                                       obj.extra['ddd:way:lane_width_left'] + obj.extra['ddd:way:lane_width_right'])
 
     # TODO: use these generic attribs? possibly avoid

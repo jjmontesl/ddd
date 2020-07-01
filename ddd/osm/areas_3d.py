@@ -258,8 +258,8 @@ class Areas3DOSMBuilder():
                         #    area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
                         #    kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj).material(ddd.mats.cement)
                         #area_3d.append(kerb_3d)
-                        kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj)
-                        self.osm.areas_3d.children.append(kerb_3d)
+                        #kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj)
+                        area_3d.append(kerb_3d)
                 except Exception as e:
                     logger.error("Could not generate area: %s (%s)", e, area_2d)
                     area_3d = DDDObject3()
@@ -291,6 +291,10 @@ class Areas3DOSMBuilder():
             else:
                 raise AssertionError()
 
+        layer = str(area_3d.extra.get('ddd:layer', area_3d.extra.get('osm:layer', 0)))
+        base_height = float(area_3d.extra.get('ddd:base_height', self.osm.ways1.layer_height(layer)))
+        area_3d = area_3d.translate([0, 0, base_height])
+
         area_3d.children.extend( [self.generate_area_3d(c) for c in area_2d.children] )
 
         return area_3d
@@ -314,6 +318,9 @@ class Areas3DOSMBuilder():
             lines = sports.field_lines_area(area_2d_orig, sports.tennis_field_lines, padding=3.0)
         elif sport == 'basketball':
             lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=2.0)
+        elif sport == 'gymnastics':
+            #lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=2.0)
+            lines = ddd.group3()
         else:
             # TODO: No default (empty), it should be assigned via pipeline props earlier
             lines = sports.field_lines_area(area_2d_orig, sports.football_field_lines, padding=1.25)

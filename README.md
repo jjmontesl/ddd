@@ -85,7 +85,7 @@ export C_INCLUDE_PATH=/usr/include/gdal/
 
 **Quick generate 3D OSM**
 
-ddd osm-build --center=41.224, 1.725 --radius=2000
+ddd osm-build --center=41.224, 1.725 --radius=125
 
 ## Documentation
 

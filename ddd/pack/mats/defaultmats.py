@@ -53,6 +53,7 @@ class DefaultMaterials(MaterialsCollection):
 
         self.pitch = ddd.material(name="Pitch", color='#196118')
         self.pitch_blue = ddd.material(name="Pitch Blue", color='#2a69b0')  # Eg. cycleways
+        self.pitch_red = ddd.material(name="Pitch Red", color='#b34446')  # Eg. leisure track
 
         # Structural / building materials
         self.bronze = ddd.material(name="Bronze", color='#f0cb11')
@@ -63,7 +64,7 @@ class DefaultMaterials(MaterialsCollection):
         self.cement = ddd.material(name="Concrete", color='#b8b8a0')
         self.bricks = ddd.material(name="Bricks", color='#d49156')
 
-        self.wood = ddd.material(color='#efae85')
+        self.wood = ddd.material(name="Wood", color='#efae85')
 
         # Painted materials
         self.metal_paint_red = ddd.material("PaintRed", color='#d01010')

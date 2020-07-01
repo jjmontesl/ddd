@@ -108,6 +108,8 @@ class DDDTask(object):
             elif arg == 'obj': kwargs['obj'] = None
             elif arg == 'logger': kwargs['logger'] = logging.getLogger(func.__module__)
             elif arg in pipeline.data: kwargs[arg] = pipeline.data[arg]
+            else:
+                raise DDDException("Unknown argument in task parameter list: %s (task: %s)" % (arg, self))
 
         logger.debug("Select: func=%s selector=%s path=%s recurse=%s ", self.filter, self.selector, self.path, self.recurse)
         objs = pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=self.recurse)

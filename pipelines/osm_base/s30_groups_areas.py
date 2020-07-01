@@ -174,6 +174,14 @@ def osm_groups_areas_leisure_pitch(obj, osm):
     obj = obj.material(ddd.mats.pitch)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:leisure" = "track"]')
+def osm_groups_areas_leisure_track(obj, osm):
+    """Define area data."""
+    obj.name = "Track: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj = obj.material(ddd.mats.pitch_red)
+    return obj
+
 @dddtask(path="/Areas/*", select='["osm:leisure" = "golf_course"]')
 def osm_groups_areas_leisure_golf_course(obj, osm):
     """Define area data."""
@@ -229,13 +237,14 @@ def osm_groups_areas_riverbank(obj, root):
     return False
     #return obj
 
+
 @dddtask(path="/Areas/*", select='["osm:man_made" = "bridge"]')
 def osm_groups_areas_man_made_bridge(obj, root):
     """Define area data."""
-    obj.name = "Riverbank: %s" % obj.name
-    obj.extra['ddd:area:type'] = "water"
-    obj.extra['ddd:height'] = 0.0
-    obj = obj.material(ddd.mats.sea)
+    obj.name = "Bridge Area: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.cement)
     obj = obj.individualize().clean(eps=0.01).flatten()
     root.find("/Areas").children.extend(obj.children)
     return False

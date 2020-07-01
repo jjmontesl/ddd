@@ -47,6 +47,7 @@ def osm_structured_generate_ways_2d(osm, root):
     root.remove(ways1)
 
     ways2 = osm.ways2.generate_ways_2d(ways1)
+    ways2 = ways2.clean()
     root.append(ways2)
 
 
@@ -70,7 +71,13 @@ def osm_structured_subtract_buildings(pipeline, root, logger, obj):
     return obj
 
 
-@dddtask(log=True)
+@dddtask(path="/Areas/*", select='[!"ddd:layer"]')
+def osm_structured_areas_layer(osm, root, obj):
+    layer = str(obj.extra.get('osm:layer', 0))
+    obj.prop_set('ddd:layer', layer)
+
+
+@dddtask()
 def osm_structured_areas_postprocess(root, osm):
     areas_2d = root.find("/Areas")
     ways_2d = root.find("/Ways")
@@ -82,15 +89,19 @@ def osm_structured_areas_postprocess(root, osm):
 def osm_structured_generate_areas_interways(pipeline, osm, root, logger):
     """Generates interior areas between ways."""
 
-    #osm.areas2.generate_areas_2d_interways()
-
+    logger.info("Generating union for interways.")
     union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]'),
-                        root.find("/Areas")])
+                        root.find("/Areas").select('["ddd:layer" ~ "0|-1a"]') ])
+    #union = union.clean()
     union = osm.areas2.generate_union_safe(union)
 
+    logger.info("Generating interways from interiors.")
     interiors = osm.areas2.generate_areas_2d_ways_interiors(union)
     interiors = interiors.material(ddd.mats.pavement)
-    interiors.extra['ddd:area:type'] = 'sidewalk'
+    interiors.prop_set('ddd:area:type', 'sidewalk', children=True)
+    interiors.prop_set('ddd:kerb', True, children=True)
+    interiors.prop_set('ddd:layer', "0", children=True)
+    #interiors = interiors.clean()
 
     root.find("/Areas").append(interiors.children)
 
@@ -105,13 +116,15 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
     logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
 
     union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "^(0|-1a)$"]'),
-                        root.find("/Areas"),
+                        root.find("/Areas").select('["ddd:layer" ~ "^(0|-1a)$"]'),
                         #root.find("/Water")
                         ])
     union = osm.areas2.generate_union_safe(union)
 
     terr = ddd.rect(area_crop.bounds, name="Ground")
     terr = terr.material(ddd.mats.terrain)
+    terr.extra["ddd:layer"] = "0"
+    terr.extra["ddd:height"] = 0
 
     try:
         terr = terr.subtract(union)
@@ -123,13 +136,17 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
     root.find("/Areas").append(terr)
 
 @dddtask()
-def osm_structured_areas_processed(osm, root):
-    areas_2d = root.find("/Areas")
+def osm_structured_areas_process(logger, osm, root):
 
-    subtract = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]')
-    subtract = osm.areas2.generate_union_safe(subtract)
+    layers = set([n.extra.get('ddd:layer', '0') for n in root.select(path="*", recurse=True).children])
 
-    osm.areas2.generate_areas_2d_process(areas_2d, subtract)
+    for layer in layers:
+        logger.info("Processing areas for layers: %s", layer)
+        areas_2d = root.find("/Areas").select('["ddd:layer" = "%s"]' % layer)
+        subtract = root.find("/Ways").select('["ddd:layer" = "%s"]' % layer)
+        #subtract = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]')
+        subtract = osm.areas2.generate_union_safe(subtract)
+        osm.areas2.generate_areas_2d_process(areas_2d, subtract)
 
 
 @dddtask(log=True)

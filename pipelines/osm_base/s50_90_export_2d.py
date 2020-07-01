@@ -7,7 +7,7 @@ from ddd.pipeline.decorators import dddtask
 from ddd.ddd import ddd
 
 
-@dddtask(order="50.90.+")
+@dddtask(order="59.90.+")
 def osm_processed_export_2d(root, osm):
 
 

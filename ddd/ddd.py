@@ -335,7 +335,8 @@ class D1D2D3():
         try:
             data = obj.export()
         except Exception as e:
-            data = None
+            #data = None
+            data = repr(obj)
         #if data: print(data)
         return data
 
@@ -406,6 +407,8 @@ class DDDObject():
         self.extra = extra if extra is not None else {}
         self.mat = material
 
+        self._uid = None
+
         #self.geom = None
         #self.mesh = None
 
@@ -423,16 +426,26 @@ class DDDObject():
             h.update(self.name.encode("utf8"))
         for k, v in self.extra.items():
             h.update(k.encode("utf8"))
-            h.update(str(v).encode("utf8"))
+            if not v or isinstance(v, (str, int, float)):
+                h.update(str(v).encode("utf8"))
+        #h.update(str(hash(frozenset(self.extra.items()))).encode("utf8"))
         for c in self.children:
             h.update(c.hash().digest())
         return h
-
         #print(self.__class__.__name__, self.name, hash((self.__class__.__name__, self.name)))
         #return abs(hash((self.__class__.__name__, self.name)))  #, ((k, self.extra[k]) for k in sorted(self.extra.keys())))))
 
+
     def uniquename(self):
-        node_name = "%s_%s" % (self.name if self.name else 'Node', self.hash().hexdigest()[:8])
+        # Hashing
+        #node_name = "%s_%s" % (self.name if self.name else 'Node', self.hash().hexdigest()[:8])
+
+        # Random number
+        if self._uid is None:
+            self._uid = random.randint(0, 2 ** 32)
+
+        node_name = "%s_%s" % (self.name if self.name else 'Node', self._uid)
+
         return node_name
 
     def replace(self, obj):
@@ -464,8 +477,9 @@ class DDDObject():
             # If material has extra metadata, add it but do not replace
             metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
 
-        metadata = json.loads(json.dumps(metadata, default=lambda x: D1D2D3.json_serialize(x)))
+        # FIXME: This is suboptimal
         metadata = {k: v for k, v in metadata.items() if v is not None and k not in ignore_keys}
+        #metadata = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
 
         return metadata
 
@@ -486,7 +500,16 @@ class DDDObject():
         return self.children[0]
 
     def find(self, path=None):
-        result = self.select(path=path, recurse=False)
+
+        # Shortcuts for performance
+        # TODO: Path filtering shall be improved in select() method
+        if path.startswith("/") and '*' not in path and (path.count('/') == 1 or (path.count('/') == 2 and path.endswith("/"))):
+            parts = path[1:].split("/")
+            result = [o for o in self.children if o.name == parts[0]]
+            result = self.grouptyped(result)
+        else:
+            result = self.select(path=path, recurse=False)
+
         if len(result.children) != 1:
             raise DDDException("Find '%s' expected 1 object but found %s." % (path, len(result.children)), ddd_obj=self)
         return result.one()
@@ -562,7 +585,7 @@ class DDDObject():
                     method_to_call = getattr(comp, methodname)
                     self.extra[k] = method_to_call(*args, **kwargs)
 
-    def prop_set(self, key, value=None, children=False, default=None):
+    def prop_set(self, key, value=None, children=False, default=(None, )):
         """
         """
         if children:
@@ -570,7 +593,7 @@ class DDDObject():
             for o in self.select().children:
                 o.prop_set(key, value, False, default)
         else:
-            if default is None:
+            if default is self.prop_set.__defaults__[2]:
                 self.extra[key] = value
             else:
                 if key not in self.extra or self.extra[key] is None:
@@ -792,6 +815,7 @@ class DDDObject2(DDDObject):
         if result.geom and not result.geom.is_simple:
             logger.warn("Removed geometry that crosses itself: %s", result)
             result.geom = None
+
         result.children = [c.clean(eps=eps, remove_empty=remove_empty, validate=validate) for c in self.children]
 
         if remove_empty:
@@ -801,7 +825,7 @@ class DDDObject2(DDDObject):
             try:
                 result.validate()
             except DDDException as e:
-                logger.warn("Removed geom that didn't pass validation check: %s", result)
+                logger.warn("Removed geom that didn't pass validation check (%s): %s", result, e)
                 result.geom = None
 
         return result
@@ -893,13 +917,16 @@ class DDDObject2(DDDObject):
         return result
 
     def union(self, other=None):
+        result = self.copy()
+        return result.union_replace(other)
+
+    def union_replace(self, other=None):
         """
         Returns a copy of this object to which geometry from other object has been unioned.
         If the second object has children, they are also unioned recursively.
 
         If the second object is None, all children of this are unioned.
         """
-        result = self.copy()
 
         '''
         thisgeom = self.recurse_geom()
@@ -909,10 +936,12 @@ class DDDObject2(DDDObject):
         return result
         '''
 
+        result = self
+
+        objs = result.children
         result.children = []
-        objs = self.children
         while len(objs) > 1:
-            newo = objs[0].union().union(objs[1].union())
+            newo = objs[0].union_replace().union_replace(objs[1].union_replace())
             objs = objs[2:] + [newo]
         if objs:
             if result.geom:
@@ -1486,7 +1515,7 @@ class DDDInstance(DDDObject):
         # Add metadata to name
         if True:
             metadata = self.metadata(path_prefix, name_suffix)
-            serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
+            serialized_metadata = base64.b64encode(json.dumps(metadata, default=D1D2D3.json_serialize).encode("utf-8")).decode("ascii")
             encoded_node_name = node_name + "_" + str(serialized_metadata)
 
         scene = Scene()
@@ -1848,7 +1877,7 @@ class DDDObject3(DDDObject):
         if True:
             metadata = self.metadata(path_prefix, name_suffix)
             #print(json.dumps(metadata))
-            serialized_metadata = base64.b64encode(json.dumps(metadata).encode("utf-8")).decode("ascii")
+            serialized_metadata = base64.b64encode(json.dumps(metadata, default=D1D2D3.json_serialize).encode("utf-8")).decode("ascii")
             encoded_node_name = node_name + "_" + str(serialized_metadata)
 
         # Do not export nodes indicated 'ddd:export-as-marker' if not exporting markers
@@ -1859,7 +1888,11 @@ class DDDObject3(DDDObject):
 
         # UV coords test
         if self.mesh:
-            self.mesh = self._process_mesh()
+            try:
+                self.mesh = self._process_mesh()
+            except Exception as e:
+                logger.error("Could not process mesh for serialization (%s %s): %s", self, metadata, e,)
+                raise DDDException("Could not process mesh for serialization: %s" % e, ddd_obj=self)
 
         scene.add_geometry(geometry=self.mesh, node_name=encoded_node_name.replace(" ", "_"))
 
