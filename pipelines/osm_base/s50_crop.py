@@ -64,4 +64,10 @@ def osm_crop_apply_centroid(obj, osm, root, logger):
     if not contained: return False
 
 
+@dddtask()
+def osm_crop_cleanup(root, logger):
+    """
+    Remove empty geometries.
+    """
+    root.replace(root.clean())
 

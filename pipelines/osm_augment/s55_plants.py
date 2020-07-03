@@ -66,6 +66,7 @@ def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
             for p in tree_area.random_points(num_points=num_trees):
                 tree_type = weighted_choice(tree_types)
                 tree = ddd.point(p, name="Tree")
+                tree.extra['ddd:aug:status'] = 'added'
                 tree.extra['osm:natural'] = 'tree'
                 tree.extra['osm:tree:type'] = tree_type
                 trees.append(tree)

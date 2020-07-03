@@ -4,13 +4,14 @@
 
 import logging
 import math
+
+from geographiclib.geodesic import Geodesic
 import numpy
 from osgeo import gdal
 from osgeo.gdalconst import GA_ReadOnly
 from scipy.interpolate.interpolate import interp2d
 from shapely.geometry.linestring import LineString
 
-from geographiclib.geodesic import Geodesic
 import numpy as np
 
 

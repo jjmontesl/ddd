@@ -98,7 +98,7 @@ def osm_groups_areas_landuse_greenfield(obj, osm):
     obj.extra['ddd:area:type'] = "park"
     obj.extra['ddd:aug:itemfill:density'] = 0.001
     obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
-    obj = obj.material(ddd.mats.park)
+    obj = obj.material(ddd.mats.terrain)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:natural" = "fell"]')
@@ -243,6 +243,8 @@ def osm_groups_areas_man_made_bridge(obj, root):
     """Define area data."""
     obj.name = "Bridge Area: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"
+    #obj.extra['ddd:area:barrier:width'] = 0.2
+    #obj.extra['ddd:area:barrier:height'] = 0.2
     #obj.extra['ddd:height'] = 0.0
     obj = obj.material(ddd.mats.cement)
     obj = obj.individualize().clean(eps=0.01).flatten()
@@ -251,6 +253,47 @@ def osm_groups_areas_man_made_bridge(obj, root):
     #return obj
 
 
+"""
+    def generate_area_2d_railway(self, area):
+        feature = area.extra['osm:feature']
+        area.name = "Railway area: %s" % feature['properties'].get('name', None)
+        area = area.material(ddd.mats.dirt)
+        area = self.generate_wallfence_2d(area)
+        return area
+
+
+    def generate_area_2d_unused(self, area, wallfence=True):
+        feature = area.extra['osm:feature']
+        area.name = "Unused land: %s" % feature['properties'].get('name', None)
+        area.extra['ddd:height'] = 0.0
+        area = area.material(ddd.mats.dirt)
+
+        if wallfence:
+            area = self.generate_wallfence_2d(area)
+        #if ruins:
+        #if construction
+        #if ...
+
+        return area
+
+    def generate_wallfence_2d(self, area, fence_ratio=0.0, wall_thick=0.3, doors=1):
+
+        area_original = area.extra['ddd:area:original']
+        reduced_area = area_original.buffer(-wall_thick).clean(eps=0.01)
+
+        wall = area.subtract(reduced_area).material(ddd.mats.bricks)
+        try:
+            wall = wall.subtract(self.osm.buildings_2d)
+        except Exception as e:
+            logger.error("Could not subtract buildings from wall: %s", e)
+
+        wall.extra['ddd:height'] = 1.8
+
+        #ddd.uv.map_2d_polygon(wall, area.linearize())
+        area = ddd.group2([area, wall])
+
+        return area
+"""
 
 
 """

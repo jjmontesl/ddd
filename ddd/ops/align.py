@@ -18,7 +18,7 @@ class DDDAlign():
     def grid(self, obj, space=5.0, width=None):
 
         if width is None:
-            width = int(math.sqrt(len(obj.children)))
+            width = int(math.ceil(math.sqrt(len(obj.children))))
 
         result = []
         for idx, c in enumerate(obj.children):

@@ -73,7 +73,7 @@ def osm_structured_subtract_buildings(pipeline, root, logger, obj):
 
 @dddtask(path="/Areas/*", select='[!"ddd:layer"]')
 def osm_structured_areas_layer(osm, root, obj):
-    layer = str(obj.extra.get('osm:layer', 0))
+    layer = obj.extra.get('osm:layer', "0")
     obj.prop_set('ddd:layer', layer)
 
 
@@ -146,7 +146,7 @@ def osm_structured_areas_process(logger, osm, root):
         subtract = root.find("/Ways").select('["ddd:layer" = "%s"]' % layer)
         #subtract = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]')
         subtract = osm.areas2.generate_union_safe(subtract)
-        osm.areas2.generate_areas_2d_process(areas_2d, subtract)
+        osm.areas2.generate_areas_2d_process(root.find("/Areas"), areas_2d, subtract)
 
 
 @dddtask(log=True)
@@ -178,18 +178,28 @@ def osm_structured_items_2d_generate(root, osm):
     #osm.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
     pass
 
+
 @dddtask(order="40.80.+.+")
 def osm_structured_ways_2d_generate_roadlines(root, osm, pipeline, logger):
-    # TODO: Except roadline,s the rest shall be moved to augmentation, etc... and not pass root around
-    # Separate different things: roadlines, etc...
-    # Road props (traffic lights, lampposts, fountains, football fields...) - needs. roads, areas, coastline, etc... and buildings
-    logger.warn("Separate Roadlines 2D and 3D creation.")
+    """
+    Roadlines are incorporated here, but other augmented properties (traffic lights, lamp posts, traffic signs...)
+    are added during augmentation.
+    """
+    logger.info("Generating roadlines.")
     root.append(ddd.group2(name="Roadlines2"))
+    # TODO: This shall be moved to s60, in 3D, and separated from 2D roadline generation
     pipeline.data["Roadlines3"] = ddd.group3(name="Roadlines3")
-    osm.ways2.generate_props_2d(root.find("/Ways"), pipeline)  # Objects related to ways
+
+@dddtask(path="/Ways/*", select='["ddd:way:roadlines" = True]')
+def osm_structured_ways_2d_generate_roadlines_way(root, osm, pipeline, obj):
+    """
+    Generate roadlines (2D) for each way.
+    """
+    osm.ways2.generate_roadlines(pipeline, obj)
+    #props_2d(root.find("/Ways"), pipeline)  # Objects related to ways
 
 
-@dddtask(order="40.80")
+@dddtask(order="40.80.+")
 def osm_structured_rest(root, osm):
     pass
 

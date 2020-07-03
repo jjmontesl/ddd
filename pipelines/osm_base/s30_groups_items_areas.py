@@ -33,6 +33,7 @@ def osm_groups_items_areas_water_pond(obj, root):
 @dddtask(path="/Features/*", select='["osm:leisure" = "outdoor_seating"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
 def osm_groups_items_areas_leisure_outdoor_seating(obj, root, osm):
     """Define area data."""
+    obj.extra['ddd:elevation:base_ref'] = "container"
     items = osm.items2.generate_item_2d_outdoor_seating(obj)
     root.find("/ItemsNodes").children.extend([i for i in items.flatten().children if i.geom])
 
@@ -40,6 +41,7 @@ def osm_groups_items_areas_leisure_outdoor_seating(obj, root, osm):
 @dddtask(path="/Features/*", select='["osm:leisure" = "playground"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
 def osm_groups_items_areas_leisure_playground(obj, root, osm):
     """Define area data."""
+    obj.extra['ddd:elevation:base_ref'] = "container"
     items = osm.items2.generate_item_2d_childrens_playground(obj)
     root.find("/ItemsNodes").children.extend([i for i in items.flatten().children if i.geom])
 

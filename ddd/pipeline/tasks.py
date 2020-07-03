@@ -60,11 +60,11 @@ class DDDTask(object):
         #self._module = args[0].__module__
 
     def __repr__(self):
-        return "Task(%s-%s)" % (".".join([str(n) for n in self._order_num]) if self._order_num else self.order, self.name)
+        return "%s(%s-%s)" % (self.__class__.__name__, ".".join([str(n) for n in self._order_num]) if self._order_num else self.order, self.name)
 
     def runlog(self, obj=None):
         if self.log in (True, False, None) :
-            logger.info("Running task (task=%s, obj=%s)", self, obj)
+            logger.info("Running %s (obj=%s)", self, obj)
         else:
             logger.info("%s (task=%s, obj=%s)", self.log, self, obj)
 

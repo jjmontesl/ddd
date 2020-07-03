@@ -78,7 +78,7 @@ def osm_select_ways_trunk(obj, root):
     obj = obj.copy()
     obj.extra['ddd:way:weight'] = 10
     obj.extra['ddd:way:lane_width'] = 3.4
-    obj.extra['ddd:way:lane_width_right'] = 1.4
+    obj.extra['ddd:way:lane_width_right'] = 1.0
     obj.extra['ddd:way:lane_width_left'] = 0.5
     obj.extra['ddd:way:roadlines'] = True
     obj.prop_set('ddd:way:lanes', default=2)
@@ -90,7 +90,7 @@ def osm_select_ways_trunk_link(obj, root):
     obj = obj.copy()
     # obj.extra['ddd:way:weight'] = 10
     obj.extra['ddd:way:lane_width'] = 3.4
-    obj.extra['ddd:way:lane_width_right'] = 1.4
+    obj.extra['ddd:way:lane_width_right'] = 1.0
     obj.extra['ddd:way:lane_width_left'] = 0.5
     obj.extra['ddd:way:roadlines'] = True
     obj.prop_set('ddd:way:lanes', default=1)
@@ -234,7 +234,7 @@ def osm_select_ways_path(obj, root):
     obj = obj.copy()
     obj.extra['ddd:way:lanes'] = 0
     obj.extra['ddd:way:weight'] = 31
-    obj.extra['ddd:way:height'] = 0.2
+    #obj.extra['ddd:way:height'] = 0
     obj.extra['ddd:way:width'] = 1.5
     obj = obj.material(ddd.mats.dirt)
 
@@ -480,9 +480,13 @@ def osm_select_ways_default_data(obj, root):
     obj.prop_set('ddd:way:lane_width_right', default=0.3)  # Forward direction
     obj.prop_set('ddd:way:lane_width_left', default=0.3)  # Reverse direction
 
-    # TODO: rename as ddd:augment: or whatever
     obj.prop_set('ddd:way:roadlines', default=False)
-    obj.prop_set('ddd:way:lamps', default=obj.extra.get('osm:lit', False))
+
+
+    # TODO: rename as ddd:augment: or whatever
+    obj.prop_set('ddd:way:lamps', default=False)
+    if obj.extra.get('osm:lit', None) is not None:
+        obj.extra['ddd:way:lamps'] = obj.extra['osm:lit']
     obj.prop_set('ddd:way:traffic_signals', default=False)
     obj.prop_set('ddd:way:traffic_signs', default=False)
 
@@ -525,7 +529,7 @@ def osm_select_ways_calculated_discard_untagged(osm):
 def osm_select_ways_calculated_roundabout_weight(obj):
     obj.extra['ddd:way:weight'] = 1
 
-@dddtask(path="/Ways/*", select='["osm:oneway"]')
+@dddtask(path="/Ways/*", select='["osm:oneway"]["osm:highway" != "motorway"]["osm:highway" != "motorway_link"]')
 def osm_select_ways_calculated_oneway_lane_margins(obj):
     obj.extra['ddd:way:lane_width_left'] = obj.extra['ddd:way:lane_width_right']
 

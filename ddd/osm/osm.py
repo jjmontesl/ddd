@@ -3,12 +3,16 @@
 # Jose Juan Montes 2020
 
 from collections import defaultdict, namedtuple
+from functools import partial
+from functools import partial
 import logging
 import sys
 
 import geojson
 import pyproj
+import pyproj
 from shapely.geometry.geo import shape
+from shapely.ops import transform
 
 from ddd.catalog.catalog import PrefabCatalog
 from ddd.ddd import DDDObject2, DDDObject3
@@ -83,7 +87,6 @@ class OSMBuilder():
                               #'-2a': -12.0, '-1a': -5.0, '0a': 0.0, '1a': 6.0}
                               '-2a': 0.0, '-1a': 0.0, '0a': 0.0, '1a': 0.0}
 
-
         self.webmercator_proj = pyproj.Proj(init='epsg:3857')
         self.osm_proj = osm_proj  # 4326
         self.ddd_proj = ddd_proj
@@ -91,42 +94,21 @@ class OSMBuilder():
         self.features = features if features else []
         self.features_2d = ddd.group2(name="Features")
 
-        '''
-        # TODO: Temporary, move out of builder and to pipeline nodes, separate 2D and 3D building
-        self.roadlines_2d = DDDObject2(name="Roadlines2")
-        self.roadlines_3d = DDDObject3(name="Roadlines3")
 
-        self.items_1d = ddd.group2(name="Items 1D")  # Point items
-        self.items_2d = ddd.group2(name="Items 2D")  # Area items
-        self.items_3d = ddd.group3(name="Items")
+    def project_coordinates(self, obj, proj_from, proj_to, _transformer=None):
+        """
+        Note: Modifies coordinates in-place.
+        """
 
-        self.ways_1d = ddd.group2(name="Ways 1D")  # Line items
-        self.ways_2d = defaultdict(DDDObject2)  # <- big error :D everything can have a layer, removed changed for a group
-        self.ways_3d = defaultdict(DDDObject3)  # <- big error :D everything can have a layer, removed changed for a group
+        if _transformer is None:
+            _transformer = pyproj.Transformer.from_proj(proj_from, proj_to)
 
+        if obj.geom:
+            obj.geom = transform(_transformer.transform, obj.geom)
 
-        self.areas_2d = DDDObject2("Areas 2D")
-        self.areas_2d_objects = DDDObject2(name="Areas 2D Objects")
-        self.areas_3d = DDDObject3(name="Areas")
+        obj.children = [self.project_coordinates(c, proj_from, proj_to, _transformer) for c in obj.children]
 
-        self.buildings_2d = DDDObject2(name="Buildings 2D")
-        self.buildings_3d = DDDObject3(name="Buildings")
-
-        self.water_2d = DDDObject2(name="Water 2D")
-        self.water_3d = DDDObject3(name="Water")
-
-        self.ground_2d = DDDObject2(name="Ground 2D")
-        self.ground_3d = DDDObject3(name="Ground")
-
-        self.other_3d = DDDObject3(name="Other")
-
-        self.customs_1d = DDDObject2(name="Customs 1D")
-        self.customs_3d = DDDObject3(name="Customs")
-
-        #self.sidewalks_3d_l1 = DDDObject3()
-        #self.walls_3d_l1 = DDDObject3()
-        #self.floor_3d_l1 = DDDObject3()
-        '''
+        return obj
 
 
     def load_osmium(self, file):

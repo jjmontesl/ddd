@@ -1,6 +1,6 @@
 [0.6.0]
 
-
+  * Initial support and concept for locale-based config and global config.
 
 [0.5.0]
 

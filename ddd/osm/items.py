@@ -12,6 +12,7 @@ from ddd.geo import terrain
 import sys
 from ddd.pack.sketchy.urban import patio_table
 from collections import defaultdict
+from ddd.core.exception import DDDException
 
 
 # Get instance of logger for this module
@@ -29,43 +30,6 @@ class ItemsOSMBuilder():
 
         self.tree_decimate = 1
         self.tree_decimate_idx = 0
-
-    '''
-    def generate_items_1d(self):
-        logger.info("Generating 1D items")
-
-        for feature in self.osm.features_2d.children:
-
-            if feature.geom.type == 'Point':
-                item = self.generate_item_1d(feature)
-                if item:
-                    #logger.debug("Item: %s", item)
-                    self.osm.items_1d.children.append(item)
-            else:
-                #logger.warn("Unknown item geometry type: %s", feature['geometry']['type'])
-                pass
-
-    def generate_item_1d(self, feature_2d):
-        item = feature_2d.copy(name="Item: %s" % feature_2d.name)
-        return item
-    '''
-
-    '''
-    def generate_items_3d(self):
-        logger.info("Generating 3D items (from %d items_1d)", len(self.osm.items_1d.children))
-
-        for item_2d in self.osm.items_1d.children:
-            #if item_2d.geom.empty: continue
-            item_3d = self.generate_item_3d(item_2d)
-            if item_3d:
-                item_3d.name = item_3d.name if item_3d.name else item_2d.name
-                logger.debug("Generated item: %s", item_3d)
-                self.osm.items_3d.children.append(item_3d)
-
-        # FIXME: Do not alter every vertex, move the entire object instead
-        #self.osm.items_3d = terrain.terrain_geotiff_elevation_apply(self.osm.items_3d, self.osm.ddd_proj)
-        #self.osm.items_3d = self.osm.items_3d.translate([0, 0, -0.20])  # temporary fix snapping
-    '''
 
     def generate_item_3d(self, item_2d):
 
@@ -204,27 +168,33 @@ class ItemsOSMBuilder():
         #    return None
 
 
+        '''
         tree_type = item_2d.extra.get('osm:tree:type')
         if tree_type is None:
             tree_type = random.choice(['default', 'palm'])
+        '''
+        tree_type = item_2d.get('osm:tree:type')
 
-
-        key = "tree-%s-%d" % (tree_type, random.choice([1, 2, 3, 4, 5, 6, 7, 8]))
+        key = "tree-%s-%d" % (tree_type, random.choice([1, 2, 3, 4, 5, 6, 7]))
 
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
             plant_height = random.normalvariate(8.0, 3.0)
-            if plant_height < 3.0: plant_height=random.uniform(3.0, 5.5)
-            if plant_height > 15.0: plant_height=random.uniform(12.0, 15.0)
+            if plant_height < 4.0: plant_height=random.uniform(4.0, 6.5)
+            if plant_height > 35.0: plant_height=random.uniform(30.0, 35.0)
 
             if tree_type == 'default':
+                plant_height += 3
                 item_3d = plants.tree_default(height=plant_height)
             elif tree_type == 'palm':
+                plant_height += 6
                 item_3d = plants.tree_palm(height=plant_height)
+            elif tree_type == 'fir':
+                item_3d = plants.tree_fir(height=plant_height)
             elif tree_type == 'reed':
                 item_3d = plants.reed()
             else:
-                raise AssertionError()
+                raise DDDException("Unknown tree type %r for object %s" % (tree_type, item_2d))
 
             item_3d = self.osm.catalog.add(key, item_3d)
 
@@ -466,8 +436,9 @@ class ItemsOSMBuilder():
             item_3d = urban.lamppost(height=5.5, r=0.35)
             item_3d = self.osm.catalog.add(key, item_3d)
 
+        item_3d.extra.update(item_2d.extra)
         item_3d.prop_set('ddd:static', False, children=False)  # TODO: Make static or not via styling
-        item_3d.extra['yc:layer'] = 'DynamicObjects'  # TODO: Assign layers via styling
+        item_3d.prop_set('yc:layer', 'DynamicObjects')  # TODO: Assign layers via styling
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Lamppost: %s' % item_2d.name
 

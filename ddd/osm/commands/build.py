@@ -17,7 +17,7 @@ from shapely.geometry.geo import shape
 
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.command import DDDCommand
-from ddd.ddd import ddd
+from ddd.ddd import ddd, D1D2D3
 from ddd.geo import terrain
 from ddd.osm import osm
 from ddd.pipeline.pipeline import DDDPipeline
@@ -224,6 +224,8 @@ class OSMBuildCommand(DDDCommand):
 
                     logger.info("Generating: %s", filename)
                     pipeline = DDDPipeline(['pipelines.osm_base.s10_init.py',
+                                            'pipelines.osm_common.s10_locale_config.py',
+
                                             'pipelines.osm_base.s20_osm_features.py',
                                             'pipelines.osm_base.s20_osm_features_export_2d.py',
                                             'pipelines.osm_base.s30_groups.py',
@@ -234,7 +236,6 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_base.s30_groups_items_ways.py',
                                             'pipelines.osm_base.s30_groups_items_areas.py',
                                             'pipelines.osm_base.s30_groups_export_2d.py',
-
 
                                             'pipelines.osm_base.s40_structured.py',
                                             'pipelines.osm_base.s40_structured_export_2d.py',
@@ -248,8 +249,8 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_base.s60_model.py',
                                             'pipelines.osm_base.s60_model_export_3d.py',
 
-                                            'pipelines.osm_augment.plants.py',
-                                            'pipelines.osm_augment.ways.py',
+                                            'pipelines.osm_augment.s50_ways.py',
+                                            'pipelines.osm_augment.s55_plants.py',
 
                                             'pipelines.osm_default_2d.s30_icons.py',
 
@@ -259,6 +260,11 @@ class OSMBuildCommand(DDDCommand):
                                             ], name="OSM Build Pipeline")
                     pipeline.data['osmfiles'] = files
                     pipeline.data['filenamebase'] = filenamebase
+
+                    # Fusion DDD data with pipeline data, so changes to the later affect the former
+                    # TODO: better way to do this without globals and merging data?
+                    D1D2D3.data.update(pipeline.data)
+                    D1D2D3.data = pipeline.data
 
                     try:
 

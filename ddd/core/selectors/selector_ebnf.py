@@ -59,7 +59,7 @@ selector: datafilterstatement
 
 datafilterexpr: datafilter
 
-datafilterand: datafilterexpr datafilterexpr
+datafilterand: datafilterexpr (datafilterexpr | datafilterand+)
 datafilteror: datafilterstatement ";" datafilterstatement
 
 

@@ -8,8 +8,16 @@ items = ddd.group3()
 
 item = industrial.crane_vertical()
 items.append(item)
-item.show()
 
-#items = ddd.align.grid(items)
-#items.append(ddd.helper.all())
-#items.show()
+item = landscape.powertower()
+items.append(item)
+
+item = landscape.lighthouse()
+items.append(item)
+#item.show()
+
+
+
+items = ddd.align.grid(items, 10.0)
+items.append(ddd.helper.all())
+items.show()

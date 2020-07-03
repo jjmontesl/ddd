@@ -23,7 +23,7 @@ from shapely import geometry, affinity, ops
 from shapely.geometry import shape, polygon
 from shapely.geometry.linestring import LineString
 from shapely.geometry.polygon import orient
-from trimesh import creation, primitives, boolean, transformations
+from trimesh import creation, primitives, boolean, transformations, remesh
 import trimesh
 from trimesh.base import Trimesh
 from trimesh.path import segments
@@ -78,6 +78,8 @@ class D1D2D3():
 
     EXTRUSION_METHOD_WRAP = extrusion.EXTRUSION_METHOD_WRAP
     EXTRUSION_METHOD_SUBTRACT = extrusion.EXTRUSION_METHOD_SUBTRACT # For internal/external/vertical extrusions
+
+    data = {}
 
     @staticmethod
     def initialize_logging(debug=True):
@@ -332,11 +334,11 @@ class D1D2D3():
 
     @staticmethod
     def json_serialize(obj):
-        try:
+        if hasattr(obj, 'export'):
             data = obj.export()
-        except Exception as e:
-            #data = None
+        else:
             data = repr(obj)
+            #data = None
         #if data: print(data)
         return data
 
@@ -368,7 +370,7 @@ class DDDMaterial():
         self._trimesh_material_cached = None
 
     def __repr__(self):
-        return "DDDMaterial(name=%s, color=%s)" % (self.name, self.color)
+        return "DDDMaterial(name=%r, color=%r)" % (self.name, self.color)
 
     def __hash__(self):
         return abs(hash((self.name, self.color)))  #, self.extra)))
@@ -417,7 +419,7 @@ class DDDObject():
                 raise DDDException("Invalid children type on %s (not %s): %s" % (self, self.__class__, c), ddd_obj=self)
 
     def __repr__(self):
-        return "<DDDObject (name=%s, children=%d)>" % (self.name, len(self.children) if self.children else 0)
+        return "DDDObject(name=%r, children=%d)" % (self.name, len(self.children) if self.children else 0)
 
     def hash(self):
         h = hashlib.new('sha256')
@@ -477,8 +479,10 @@ class DDDObject():
             # If material has extra metadata, add it but do not replace
             metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
 
+        metadata['ddd:object'] = self
+
         # FIXME: This is suboptimal
-        metadata = {k: v for k, v in metadata.items() if v is not None and k not in ignore_keys}
+        metadata = {k: v for k, v in metadata.items() if k not in ignore_keys}  # and v is not None
         #metadata = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
 
         return metadata
@@ -585,6 +589,47 @@ class DDDObject():
                     method_to_call = getattr(comp, methodname)
                     self.extra[k] = method_to_call(*args, **kwargs)
 
+    def get(self, keys, default=None, extra=None):
+        """
+        Returns a property from dictionary and settings.
+
+        Keys can be a string or an array of strings which will be tried in order.
+        """
+        if isinstance(keys, str):
+            keys = [keys]
+
+        dicts = [self.extra]
+        if extra is not None:
+            if not isinstance(extra, (list, set, tuple)): extra = [extra]
+            dicts.extend(extra)
+        if D1D2D3.data is not None: dicts.append(D1D2D3.data)
+
+        #logger.debug("Resolving %s in %s (def=%s)", keys, dicts, default)
+
+        result = None
+        key = None
+        for k in keys:
+            if key: break
+            for d in dicts:
+                if k in d:
+                    key = k
+                    result = d[k]
+                    # logger.info("Found key in dictionary: %s", result)
+                    break
+
+        if key is None:
+            if default is not None:
+                result = default
+            else:
+                raise DDDException("Cannot resolve property %r in object '%s'." % (keys, self))
+
+        # Resolve lambda
+        if callable(result):
+            result = result()
+            self.extra[key] = result
+
+        return result
+
     def prop_set(self, key, value=None, children=False, default=(None, )):
         """
         """
@@ -653,7 +698,7 @@ class DDDObject2(DDDObject):
         self.geom = geom
 
     def __repr__(self):
-        return "<%s (name=%s, geom=%s (%s verts), children=%d>" % (self.__class__.__name__, self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
+        return "%s(name=%s, geom=%s (%s verts), children=%d)" % (self.__class__.__name__, self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
     def vertex_count(self):
         if not self.geom:
@@ -975,6 +1020,7 @@ class DDDObject2(DDDObject):
         if result.geom and other.geom:
             result.geom = result.geom.intersection(other.geom)
         result.children = [c.intersection(other) for c in self.children]
+        result.children = [c for c in result.children if c.children or (c.geom and not c.geom.is_empty)]
 
         return result
 
@@ -1460,7 +1506,7 @@ class DDDInstance(DDDObject):
         self.transform = DDDTransform()
 
     def __repr__(self):
-        return "<%s (name=%s, ref=%s)>" % (self.__class__.__name__, self.name, self.ref)
+        return "%s(name=%s, ref=%s)" % (self.__class__.__name__, self.name, self.ref)
 
     def copy(self):
         obj = DDDInstance(ref=self.ref, name=self.name, extra=dict(self.extra))
@@ -1609,7 +1655,7 @@ class DDDObject3(DDDObject):
         super().__init__(name, children, extra, material)
 
     def __repr__(self):
-        return "<DDDObject3 (name=%s, faces=%d, children=%d)>" % (self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
+        return "DDDObject3(name=%s, faces=%d, children=%d)" % (self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
 
     def copy(self, name=None):
         if name is None: name = self.name
@@ -1860,6 +1906,31 @@ class DDDObject3(DDDObject):
             #result.append(ddd.mesh(inverted))
             result.mesh = concatenate(result.mesh, inverted)
 
+        return result
+
+    def subdivide_to_size(self, max_edge, max_iter=10):
+        """
+        Subdivide a mesh until every edge is shorter than a specified length.
+
+        This method is based on the Trimesh method of the same name.
+        """
+        result = self.copy()
+
+        result.children = [c.subdivide_to_size(max_edge, max_iter) for c in result.children]
+
+        if result.mesh:
+            vertices, faces = result.mesh.vertices, result.mesh.faces
+            rvertices, rfaces = remesh.subdivide_to_size(vertices, faces, max_edge, max_iter=max_iter)
+            result.mesh.vertices = rvertices
+            result.mesh.faces = rfaces
+
+        return result
+
+    def clean(self):
+        result = self.copy()
+        result.mesh.merge_vertices()
+        result.mesh.remove_degenerate_faces()
+        result.mesh.merge_vertices()
         return result
 
     '''
@@ -2146,6 +2217,7 @@ from ddd.ops.uvmapping import DDDUVMapping
 from ddd.ops.align import DDDAlign
 from ddd.pack.mats.defaultmats import DefaultMaterials
 from ddd.materials.materials import MaterialsCollection
+from ddd.util.dddrandom import DDDRandom
 
 ddd.mats = MaterialsCollection()
 ddd.mats.highlight = D1D2D3.material(color='#ff00ff')
@@ -2162,6 +2234,8 @@ ddd.collision = DDDCollision()
 ddd.uv = DDDUVMapping()
 
 ddd.helper = DDDHelper()
+
+ddd.random = DDDRandom()
 
 
 '''

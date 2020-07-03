@@ -390,34 +390,13 @@ class Ways2DOSMBuilder():
         # ways_2d["1a"] = ways_2d["1a"].subtract(union_l1)
 
 
-    def generate_props_2d(self, ways_2d, pipeline):
-        """
-        Road props (traffic lights, lampposts...).
-        Need roads, areas, coastline, etc... and buildings
-        """
 
-        logger.info("Generating props linked to ways (%d ways)", len(ways_2d.children))
-
-        for way_2d in ways_2d.children:
-            try:
-                self.generate_props_2d_way(way_2d, pipeline)
-            except Exception as e:
-                #raise DDDException("Could not generate props for way: %s" % e, ddd_obj=way_2d)
-                logger.error("Error generating props for way %s: %s", way_2d, e)
-
-    def generate_props_2d_way(self, way_2d, pipeline):
-
-        #if 'way_1d' not in way_2d.extra:
-        #    # May be an intersection, should generate roadlines too
-        #    return
-
+    def generate_roadlines(self, pipeline, way_2d):
         path = way_2d.extra['way_1d']
 
         # print(path.geom.type)
         # if path.geom.type != "LineString": return
         length = path.geom.length
-
-        crop = ddd.shape(self.osm.area_crop)
 
         # Generate lines
         if way_2d.extra.get('ddd:way:roadlines', False):
@@ -448,7 +427,7 @@ class Ways2DOSMBuilder():
 
                 # FIXME: Move cropping to generic site, use itermediate osm.something for storage
                 # Also, cropping shall interpolate UVs (and propagated heights?)
-                line = line.intersection(crop)
+                line = line.intersection(self.osm.area_crop2)
                 line = line.intersection(way_2d)
                 line = line.individualize()
 
@@ -474,6 +453,11 @@ class Ways2DOSMBuilder():
                 # uvmapping.map_2d_path(line_3d, path)
 
                 pipeline.data["Roadlines3"].append(line_3d)
+
+    def generate_lamps(self, pipeline, way_2d):
+
+        path = way_2d.extra['way_1d']
+        length = path.geom.length
 
         # Check if to generate lamps
         if path.extra.get('ddd:way:lamps', False) and (path.extra['ddd:layer'] in (0, "0") or path.extra['osm:layer'] in (0, "0")):
@@ -524,45 +508,14 @@ class Ways2DOSMBuilder():
 
                         item.extra['way_2d'] = way_2d
                         item.extra['osm:highway'] = 'street_lamp'
+                        item.extra['ddd:aug:status'] = 'added'
                         pipeline.root.find("/ItemsNodes").append(item)
 
-        '''
-        # Check if to generate bridge posts
-        if path.geom.length > 15.0 and path.extra['ddd:bridge:posts']:
 
-            # Generate lamp posts
-            interval = 20.0
-            numposts = int(length / interval)
-            idx = 0
+    def generate_traffic_lights(self, pipeline, way_2d):
 
-            # Ignore if street is short
-            #if numposts == 0: return
-
-            logger.debug("Posts for bridge (length=%s, num=%d, way=%s)", length, numlamps, way_2d)
-            for d in numpy.linspace(0.0, length, numlamps, endpoint=False):
-                if d == 0.0: continue
-
-                # Calculate left and right perpendicular intersections with sidewalk, park, land...
-                p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(d)
-
-                dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
-                dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
-                dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
-
-                #perpendicular_vec = (-dir_vec[1], dir_vec[0])
-                #lightlamp_dist = path.extra['ddd:way:width'] * 0.5 + 0.5
-                #left = (p[0] + perpendicular_vec[0] * lightlamp_dist, p[1] + perpendicular_vec[1] * lightlamp_dist)
-                #right = (p[0] - perpendicular_vec[0] * lightlamp_dist, p[1] - perpendicular_vec[1] * lightlamp_dist)
-
-                idx = idx + 1
-                item = ddd.point(p, name="Bridge Post %s" % way_2d.name)
-                #area = self.osm.areas_2d.intersect(item)
-                # Check type of area point is on
-
-                item.extra['way_2d'] = way_2d
-                item.extra['ddd:bridge:post'] = True
-                self.osm.items_1d.children.append(item)
-        '''
+        path = way_2d.extra['way_1d']
+        length = path.geom.length
 
         # Generate traffic lights
         if True and path.geom.length > 45.0 and path.extra['ddd:way:traffic_signals'] and path.extra['ddd:layer'] in (0, "0"):
@@ -597,9 +550,16 @@ class Ways2DOSMBuilder():
                 # area = self.osm.areas_2d.intersect(item)
                 # Check type of area point is on
                 item.extra['way_2d'] = way_2d
+                item.extra['ddd:aug:status'] = 'added'
                 item.extra['osm:highway'] = 'traffic_signals'
                 item.extra['ddd:angle'] = angle #+ math.pi/2
                 pipeline.root.find("/ItemsNodes").append(item)
+
+
+    def generate_traffic_signs(self, pipeline, way_2d):
+
+        path = way_2d.extra['way_1d']
+        length = path.geom.length
 
         # Generate traffic signs
         if path.extra.get('ddd:way:traffic_signs', False) and path.geom.length > 20.0 and path.extra['ddd:layer'] == "0":
@@ -635,6 +595,7 @@ class Ways2DOSMBuilder():
                     # area = self.osm.areas_2d.intersect(item)
                     # Check type of area point is on
                     item.extra['way_2d'] = way_2d
+                    item.extra['ddd:aug:status'] = 'added'
                     item.extra['ddd:angle'] = angle - math.pi / 2
                     item.extra['osm:traffic_sign'] = random.choice(['es:r1', 'es:r2', 'es:p1', 'es:r101', 'es:r303', 'es:r305',
                                                                     'es:r308', 'es:r400c', 'es:r500', 'es:s13'])  # 'es:r301_50',

@@ -4,7 +4,7 @@ import math
 
 from ddd.ddd import ddd
 from ddd.pack.sketchy import urban, landscape, plants
-from ddd.prefab.catalog import PrefabCatalog
+from ddd.catalog.catalog import PrefabCatalog
 
 
 items = ddd.group3()

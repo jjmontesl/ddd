@@ -157,6 +157,9 @@ def palm_leaf(length=3, fallfactor=1):
     obj = obj.vertex_func(leafshape)
 
     obj = obj.scale([length, length, length]).twosided()
+    obj = obj.clean()
+
+    #if 'uv' in obj.extra: del(obj.extra['uv'])
     obj = ddd.uv.map_cubic(obj)
     obj.extra['ddd:collider'] = False
 
@@ -181,9 +184,11 @@ def tree_palm(height=14, r=0.30):
         section = ddd.uv.map_cylindrical(section)
         section = section.material(ddd.mats.bark)
         return section
+
     def leaves_callback(sheight):
         golden = (1 + 5 ** 0.5) / 2
         leaf = ddd.group3(name="Leaf group")
+
         tt = palm_leaf(length=0.5 + height / 5, fallfactor=1.45).material(ddd.mats.treetop)
         tt = ddd.align.matrix_polar(tt, 5)
         leaf.append(tt)

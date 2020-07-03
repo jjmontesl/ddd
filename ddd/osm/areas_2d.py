@@ -20,7 +20,7 @@ class Areas2DOSMBuilder():
 
         self.osm = osmbuilder
 
-    def generate_areas_2d_process(self, areas_2d, subtract):
+    def generate_areas_2d_process(self, areas_2d_group, areas_2d, subtract):
 
         # TODO: Assign area here, it's where it's used
         areas = areas_2d.select('["ddd:area:area"]').children
@@ -43,7 +43,7 @@ class Areas2DOSMBuilder():
         union = subtract.union()
 
         logger.info("Generating 2D areas (%d)", len(areas))
-        for area in areas:
+        for area in reversed(areas):
 
             #feature = area.extra['osm:feature']
             if not area.geom:
@@ -61,64 +61,15 @@ class Areas2DOSMBuilder():
 
             narea = area.subtract(ddd.group2(area.extra['ddd:area:contained']))
             narea = narea.subtract(union)
-            #area = self.generate_area_2d_park(narea)
-            area = narea
 
-
-            if area:
-                logger.debug("Area: %s", area)
+            if narea:
+                logger.debug("Area: %s", narea)
                 #area = area.subtract(union)
 
-                areas_2d.remove(original_area)
-                areas_2d.append(area)
+                areas_2d_group.remove(original_area)
+                areas_2d_group.append(narea)
                 #areas_2d.children.extend(area.individualize().children)
 
-
-    def generate_area_2d_vineyard(self, area):
-        area.name = "Vineyard: %s" % area.name
-        area = self.generate_area_2d_park(area, tree_density_m2=0.001, tree_types={'default': 1})
-        # Generate crops
-        return area
-
-    def generate_area_2d_railway(self, area):
-        feature = area.extra['osm:feature']
-        area.name = "Railway area: %s" % feature['properties'].get('name', None)
-        area = area.material(ddd.mats.dirt)
-        area = self.generate_wallfence_2d(area)
-        return area
-
-
-    def generate_area_2d_unused(self, area, wallfence=True):
-        feature = area.extra['osm:feature']
-        area.name = "Unused land: %s" % feature['properties'].get('name', None)
-        area.extra['ddd:height'] = 0.0
-        area = area.material(ddd.mats.dirt)
-
-        if wallfence:
-            area = self.generate_wallfence_2d(area)
-        #if ruins:
-        #if construction
-        #if ...
-
-        return area
-
-    def generate_wallfence_2d(self, area, fence_ratio=0.0, wall_thick=0.3, doors=1):
-
-        area_original = area.extra['ddd:area:original']
-        reduced_area = area_original.buffer(-wall_thick).clean(eps=0.01)
-
-        wall = area.subtract(reduced_area).material(ddd.mats.bricks)
-        try:
-            wall = wall.subtract(self.osm.buildings_2d)
-        except Exception as e:
-            logger.error("Could not subtract buildings from wall: %s", e)
-
-        wall.extra['ddd:height'] = 1.8
-
-        #ddd.uv.map_2d_polygon(wall, area.linearize())
-        area = ddd.group2([area, wall])
-
-        return area
 
     def generate_union_safe(self, groups):
         """

@@ -7,9 +7,13 @@ import math
 items = ddd.group3()
 
 
-item = urban.bell()
+item = urban.bollard()
 items.append(item)
 items.show()
+
+
+item = urban.bell()
+items.append(item)
 
 item = urban.fire_hydrant()
 items.append(item)
@@ -37,17 +41,10 @@ items.append(item)
 item = urban.patio_umbrella()
 items.append(item)
 
-item = landscape.lighthouse()
-items.append(item)
-#item.show()
-
 item = urban.post_box()
 items.append(item)
 
 item = urban.lamppost()
-items.append(item)
-
-item = landscape.powertower()
 items.append(item)
 
 item = urban.busstop_small(text="Bus Stop")
@@ -117,7 +114,6 @@ item = urban.traffic_sign('es:r505')
 items.append(item)
 item = urban.traffic_sign('es:r506')
 items.append(item)
-
 
 
 #item.show()

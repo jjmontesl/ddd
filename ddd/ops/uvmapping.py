@@ -54,7 +54,11 @@ class DDDUVMapping():
                 v2 = result.mesh.vertices[face[2]] - result.mesh.vertices[face[0]]
                 v = np.cross(v1, v2)
 
-                v = v / np.linalg.norm(v)
+                vnorm = np.linalg.norm(v)
+                if vnorm == 0:
+                    logger.error("Invalid triangle (linear dependent, no normal): %s", obj)
+                else:
+                    v = v / vnorm
 
                 def setuv(face, idx, uv):
                     uv = (uv[0] * scale[0] + offset[0], uv[1] * scale[1] + offset[1])

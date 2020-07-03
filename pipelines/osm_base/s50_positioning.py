@@ -16,12 +16,12 @@ from ddd.pipeline.decorators import dddtask
 """
 
 
-@dddtask(order="50.05.10.+", log=True)
+@dddtask(order="50.50.10.+", log=True)
 def osm_positioning(pipeline, osm, root, logger):
     """Repositions features in different ways."""
     pass
 
-@dddtask(order="50.05.20.+", log=True)
+@dddtask(order="50.50.20.+", log=True)
 def osm_positioning_init(pipeline, osm, root, logger):
     """Repositions features in different ways."""
 
@@ -32,7 +32,7 @@ def osm_positioning_init(pipeline, osm, root, logger):
     pipeline.data['positioning_ways_2d_0_and_buildings'] = ddd.group([pipeline.data['positioning_ways_2d_0'], pipeline.data['positioning_buildings_2d']]).clean(eps=0.01)
 
 # TODO: Tag earlier, during items creation
-@dddtask(order="50.05.30.+", log=True)
+@dddtask(order="50.50.30.+", log=True)
 def osm_positioning_select(pipeline, osm, root, logger):
     pass
 
@@ -136,17 +136,17 @@ def osm_positioning_select_emergency_fire_hydrant(obj, osm, root, logger):
 
 
 # Apply
-@dddtask(order="50.05.50.+", log=True)
+@dddtask(order="50.50.50.+", log=True)
 def osm_positioning_apply(pipeline, osm, root, logger):
     """Apply positioning tagging (ddd:positioning)."""
     pass
 
-@dddtask(order="50.05.50.10.+", select='["ddd:positioning:type" = "snap-project"]')
+@dddtask(order="50.50.50.10.+", select='["ddd:positioning:type" = "snap-project"]')
 def osm_positioning_apply_snap_project(obj, pipeline, osm, root, logger):
     obj = ddd.snap.project(obj, pipeline.data[obj.extra['ddd:positioning:ref']], penetrate=obj.extra.get('ddd:positioning:penetrate', None))
     return obj
 
-@dddtask(order="50.05.50.10.+", select='["ddd:positioning:type" = "orient-project"]')
+@dddtask(order="50.50.50.10.+", select='["ddd:positioning:type" = "orient-project"]')
 def osm_positioning_apply_orient_project(obj, pipeline, osm, root, logger):
     if obj.extra.get('ddd:angle', None) is None:
         projected_point = ddd.snap.project(obj, pipeline.data[obj.extra['ddd:positioning:ref']], penetrate=obj.extra.get('ddd:positioning:penetrate', None))
@@ -154,7 +154,7 @@ def osm_positioning_apply_orient_project(obj, pipeline, osm, root, logger):
     return obj
 
 '''
-@dddtask(order="50.05.50.50.+", select='["ddd:positioning:validate:ref"]')
+@dddtask(order="50.50.50.50.+", select='["ddd:positioning:validate:ref"]')
 def osm_positioning_apply_validate_overlap(obj, pipeline, osm, root, logger):
     """Check if item can be placed."""
     invalid = pipeline.data[obj.extra['ddd:positioning:validate:ref']]
