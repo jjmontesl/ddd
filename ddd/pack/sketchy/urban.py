@@ -781,7 +781,7 @@ def childrens_playground_arc(length=3.25, width=1.0, sides=7, height=None):
 
     return item
 
-def childrens_playground_slide(length=4.5, height=None, width=0.5):
+def childrens_playground_slide(length=4.5, height=None, width=0.60):
 
     slide_thick = 0.03
     side_thick = 0.06

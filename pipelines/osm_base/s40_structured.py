@@ -94,6 +94,7 @@ def osm_structured_generate_areas_interways(pipeline, osm, root, logger):
                         root.find("/Areas").select('["ddd:layer" ~ "0|-1a"]') ])
     #union = union.clean()
     union = osm.areas2.generate_union_safe(union)
+    #union = union.clean()
 
     logger.info("Generating interways from interiors.")
     interiors = osm.areas2.generate_areas_2d_ways_interiors(union)
@@ -119,7 +120,10 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
                         root.find("/Areas").select('["ddd:layer" ~ "^(0|-1a)$"]'),
                         #root.find("/Water")
                         ])
-    union = osm.areas2.generate_union_safe(union)
+    ##union = union.clean(eps=0.01)
+    #union = osm.areas2.generate_union_safe(union)
+    ##union = union.clean(eps=0.0)
+    union = union.copy().union_replace()
 
     terr = ddd.rect(area_crop.bounds, name="Ground")
     terr = terr.material(ddd.mats.terrain)
@@ -128,7 +132,7 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
 
     try:
         terr = terr.subtract(union)
-        terr = terr.clean(eps=0.01)
+        terr = terr.clean(eps=0.0)  #eps=0.01)
     except Exception as e:
         logger.error("Could not subtract areas_2d from terrain.")
         return
@@ -141,7 +145,7 @@ def osm_structured_areas_process(logger, osm, root):
     layers = set([n.extra.get('ddd:layer', '0') for n in root.select(path="*", recurse=True).children])
 
     for layer in layers:
-        logger.info("Processing areas for layers: %s", layer)
+        logger.info("Processing areas for layer: %s", layer)
         areas_2d = root.find("/Areas").select('["ddd:layer" = "%s"]' % layer)
         subtract = root.find("/Ways").select('["ddd:layer" = "%s"]' % layer)
         #subtract = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]')

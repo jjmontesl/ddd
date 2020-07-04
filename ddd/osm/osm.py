@@ -27,6 +27,9 @@ from ddd.osm.osmops.osmops import OSMBuilderOps
 from ddd.osm.ways_1d import Ways1DOSMBuilder
 from ddd.osm.ways_2d import Ways2DOSMBuilder
 from ddd.osm.ways_3d import Ways3DOSMBuilder
+from shapely import validation
+from shapely.geometry.base import geom_factory
+from shapely.geos import lgeos
 
 
 # Get instance of logger for this module
@@ -144,6 +147,7 @@ class OSMBuilder():
         features = dedup
 
         # Project to local
+        # TODO: Do this with self.project coordinates after creating shapes (TEST!)
         transformer = pyproj.Transformer.from_proj(self.osm_proj, self.ddd_proj)
         for f in features:
             f['geometry']['coordinates'] = project_coordinates(f['geometry']['coordinates'], transformer)
@@ -158,9 +162,12 @@ class OSMBuilder():
 
             try:
                 geom = shape(f['geometry'])
+
             except Exception as e:
                 logger.warn("Could not load feature with invalid geometry (%s): %s", str(f.properties)[:240], e)
                 continue
+
+            #geom = make_valid(geom)
 
             #if self.area_filter.contains(geom.centroid):
             try:

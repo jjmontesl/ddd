@@ -89,6 +89,19 @@ class D1D2D3():
         D1D2D3Bootstrap.initialize_logging(debug)
 
     @staticmethod
+    def trace(local=None):
+        """
+        Start an interactive session.
+        Normally, users will use: "ddd.trace(locals())"
+        """
+        #import pdb; pdb.set_trace()
+        import code
+        if local is None: local = {}
+        local = dict(globals(), **local)
+        logger.info("Debugging console: %s", local)
+        code.interact(local=local)
+
+    @staticmethod
     def material(name=None, color=None, extra=None, **kwargs):
         #material = SimpleMaterial(diffuse=color, )
         #return (0.3, 0.9, 0.3)
@@ -698,7 +711,7 @@ class DDDObject2(DDDObject):
         self.geom = geom
 
     def __repr__(self):
-        return "%s(name=%s, geom=%s (%s verts), children=%d)" % (self.__class__.__name__, self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
+        return "%s(%s, name=%s, geom=%s (%s verts), children=%d)" % (self.__class__.__name__, id(self), self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
     def vertex_count(self):
         if not self.geom:
@@ -846,10 +859,14 @@ class DDDObject2(DDDObject):
 
     def clean(self, eps=None, remove_empty=True, validate=True):
         result = self.copy()
-        if result.geom and not self.children and eps is not None:
+        if result.geom and eps is not None:
             #result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
             if eps != 0:
-                result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
+                result.geom = result.geom.buffer(eps, 1, join_style=ddd.JOIN_MITRE, cap_style=ddd.CAP_FLAT)
+                #if result.geom and result.geom.is_valid and not result.geom.is_empty:
+                result.geom = result.geom.buffer(-eps, 1, join_style=ddd.JOIN_MITRE, cap_style=ddd.CAP_FLAT)
+                #else:
+                #    result.geom = None
             else:
                 result = result.buffer(0)
         if result.geom and result.geom.is_empty:
@@ -857,11 +874,46 @@ class DDDObject2(DDDObject):
         if result.geom and not result.geom.is_valid:
             logger.warn("Removed invalid geometry: %s", result)
             result.geom = None
-        if result.geom and not result.geom.is_simple:
+        if result.geom and (result.geom.type != 'GeometryCollection' and not result.geom.is_simple):
             logger.warn("Removed geometry that crosses itself: %s", result)
             result.geom = None
 
         result.children = [c.clean(eps=eps, remove_empty=remove_empty, validate=validate) for c in self.children]
+
+        if remove_empty:
+            result.children = [c for c in result.children if (c.children or c.geom)]
+
+        if validate:
+            try:
+                result.validate()
+            except DDDException as e:
+                logger.warn("Removed geom that didn't pass validation check (%s): %s", result, e)
+                result.geom = None
+
+        return result
+
+    def clean_replace(self, eps=None, remove_empty=True, validate=True):
+        result = self
+        if result.geom and eps is not None:
+            #result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
+            if eps != 0:
+                result.geom = result.geom.buffer(eps, 1, join_style=ddd.JOIN_MITRE, cap_style=ddd.CAP_FLAT)
+                #if result.geom and result.geom.is_valid and not result.geom.is_empty:
+                result.geom = result.geom.buffer(-eps, 1, join_style=ddd.JOIN_MITRE, cap_style=ddd.CAP_FLAT)
+                #else:
+                #    result.geom = None
+            else:
+                result = result.buffer(0)
+        if result.geom and result.geom.is_empty:
+            result.geom = None
+        if result.geom and not result.geom.is_valid:
+            logger.warn("Removed invalid geometry: %s", result)
+            result.geom = None
+        if result.geom and (result.geom.type != 'GeometryCollection' and not result.geom.is_simple):
+            logger.warn("Removed geometry that crosses itself: %s", result)
+            result.geom = None
+
+        result.children = [c.clean_replace(eps=eps, remove_empty=remove_empty, validate=validate) for c in self.children]
 
         if remove_empty:
             result.children = [c for c in result.children if (c.children or c.geom)]
@@ -973,15 +1025,26 @@ class DDDObject2(DDDObject):
         If the second object is None, all children of this are unioned.
         """
 
+        result = self
+        #result = result.flatten().clean()
+
+        #
         '''
-        thisgeom = self.recurse_geom()
-        othergeom = [] if other is None else other.recurse_geom()
-        uniongeom = unary_union(MultiPolygon(thisgeom + othergeom))
-        result.geom = uniongeom
+        geoms = result.geom_recursive() + (other.geom_recursive() if other else [])
+        geoms = [g for g in geoms if g is not None]
+        if geoms:
+            try:
+                result.geom = ops.unary_union(geoms)
+                result.validate()
+            except Exception as e:
+                logger.warn("Could not calculate union for: %s", geoms)
+                raise DDDException("Could not calculate union for: %s", self)
+        else:
+            result.geom = None
+        result.children = []
+        #result = result.clean()
         return result
         '''
-
-        result = self
 
         objs = result.children
         result.children = []
@@ -995,15 +1058,16 @@ class DDDObject2(DDDObject):
                 result.geom = objs[0].geom
 
         if other:
-            union = other.union()
+            union = other.union().clean()
             if result.geom and union.geom:
                 try:
                     result.geom = result.geom.union(union.geom)
                 except Exception as e:
                     logger.error("Cannot perform union (1st try) between %s and %s.", result, other)
-                    result = result.clean(eps=0.001)
-                    other = other.clean(eps=0.001)
-                    result.geom = result.geom.union(union.geom)
+                    result.geom = ops.unary_union([result.geom, union.geom])
+                    #result = result.clean(eps=0.001).simplify(0.001)
+                    #other = other.clean(eps=0.001).simplify(0.001)
+                    #result.geom = result.geom.union(union.geom)
             elif union.geom:
                 result.geom = union.geom
 
@@ -1012,7 +1076,9 @@ class DDDObject2(DDDObject):
     def intersection(self, other):
         """
         Calculates the intersection of this object and children with
-        the other object (and children).
+        the other object (and children). Does not perform a union on this object, so
+        if this object contains children, each intersection will be calculated
+        separately.
         """
         result = self.copy()
         other = other.union()
@@ -1043,9 +1109,45 @@ class DDDObject2(DDDObject):
                 return True
         return False
 
-    def contains(self, other):
+    def overlaps(self, other):
+        """
+        """
         other = other.union()
         if self.geom:
+            if self.geom.overlaps(other.geom):
+                return True
+        for c in self.children:
+            if c.overlaps(other):
+                return True
+        return False
+
+    def crosses(self, other):
+        """
+        """
+        other = other.union()
+        if self.geom:
+            if self.geom.crosses(other.geom):
+                return True
+        for c in self.children:
+            if c.crosses(other):
+                return True
+        return False
+
+    def touches(self, other):
+        """
+        """
+        geom = self.union()
+        other = other.union()
+        if self.geom and other.geom:
+            return geom.geom.touches(other.geom)
+        return False
+
+    def contains(self, other):
+        """
+        Note: distinctio between union self or each of the children (currently, each children in self vs other union)
+        """
+        other = other.union()
+        if self.geom and not self.geom.is_empty and other.geom and not other.geom.is_empty:
             if self.geom.contains(other.geom):
                 return True
         for c in self.children:
@@ -1137,17 +1239,33 @@ class DDDObject2(DDDObject):
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)
                 #vertices, faces = creation.triangulate_polygon(self.geom)  # , min_angle=math.pi / 180.0)
-                vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
-                if twosided:
-                    faces2 = np.fliplr(faces)
-                    faces = np.concatenate((faces, faces2))
+                try:
+                    vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
+                except Exception as e:
+                    logger.info("Could not triangulate geometry %s: %s", self.geom, e)
+                    raise
+                    try:
+                        self.geom = self.clean(eps=0.01).geom
+                        vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
+                    except Exception as e:
+                        logger.error("Could not triangulate geometry (after clean) %s: %s", self.geom, e)
+                        #raise DDDException("Could triangulate geometry (after convex hull) %s: %s" % (self.geom, e), ddd_obj=self)
+                        vertices, faces = None, None
+                        raise
 
-                mesh = Trimesh([(v[0], v[1], 0.0) for v in vertices], faces)
-                #mesh = creation.extrude_triangulation(vertices=vertices, faces=faces, height=0.2)
-                mesh.merge_vertices()
-                result = DDDObject3(mesh=mesh, name=self.name)
+                if vertices is not None:
+                    if twosided:
+                        faces2 = np.fliplr(faces)
+                        faces = np.concatenate((faces, faces2))
+
+                    mesh = Trimesh([(v[0], v[1], 0.0) for v in vertices], faces)
+                    #mesh = creation.extrude_triangulation(vertices=vertices, faces=faces, height=0.2)
+                    mesh.merge_vertices()
+                    result = DDDObject3(mesh=mesh, name=self.name)
+                else:
+                    result = DDDObject3(name="Could not triangulate (error during triangulation)")
             else:
-                result = DDDObject3()
+                result = DDDObject3("Cannot triangulate: unknown geometry type")
         else:
             result = DDDObject3()
 
@@ -1655,7 +1773,7 @@ class DDDObject3(DDDObject):
         super().__init__(name, children, extra, material)
 
     def __repr__(self):
-        return "DDDObject3(name=%s, faces=%d, children=%d)" % (self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
+        return "%s(%s, name=%s, faces=%d, children=%d)" % (self.__class__.__name__, id(self), self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
 
     def copy(self, name=None):
         if name is None: name = self.name

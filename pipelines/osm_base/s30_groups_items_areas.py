@@ -42,6 +42,7 @@ def osm_groups_items_areas_leisure_outdoor_seating(obj, root, osm):
 def osm_groups_items_areas_leisure_playground(obj, root, osm):
     """Define area data."""
     obj.extra['ddd:elevation:base_ref'] = "container"
+    #print(obj.geom)
     items = osm.items2.generate_item_2d_childrens_playground(obj)
     root.find("/ItemsNodes").children.extend([i for i in items.flatten().children if i.geom])
 

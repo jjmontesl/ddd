@@ -76,12 +76,17 @@ class DDDSVG():
             view_box = "{} {} {} {}".format(xmin, ymin, dx, dy)
             transform = "matrix(1,0,0,-1,0,{})".format(ymax + ymin)
 
+            try:
+                svg_obj = DDDSVG.svg_obj(obj, instance_mesh=instance_mesh, instance_marker=instance_marker)
+            except Exception as e:
+                logger.error("Could not export SVG object %s: %s", obj, e)
+                raise DDDException("Could not export SVG object %s: %s" % (obj, e))
+
             return svg_top + (
                 'width="{1}" height="{2}" viewBox="{0}" '
                 'preserveAspectRatio="xMinYMin meet">'
                 '<g transform="{3}">{4}</g></svg>'
-                ).format(view_box, width, height, transform,
-                         DDDSVG.svg_obj(obj, instance_mesh=instance_mesh, instance_marker=instance_marker))
+                ).format(view_box, width, height, transform, svg_obj)
 
     @staticmethod
     def svg_obj(obj, path_prefix="", name_suffix="", instance_mesh=True, instance_marker=False):

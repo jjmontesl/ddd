@@ -152,6 +152,7 @@ class BuildingOSMBuilder():
         buildings_3d = ddd.group3(name="Buildings")
         for building_2d in buildings_2d.children:
             if building_2d.extra.get('ddd:building:parent', None) in (None, building_2d):
+                logger.info("Generating building: %s", building_2d)
                 building_3d = self.generate_building_3d_generic(building_2d)
                 if building_3d:
                     self.generate_building_3d_amenities(building_3d)
@@ -452,6 +453,7 @@ class BuildingOSMBuilder():
     def generate_building_3d_elevation(self, building_3d):
         building_3d = terrain.terrain_geotiff_min_elevation_apply(building_3d, self.osm.ddd_proj)
         building_3d.extra['ddd:building:feature'].extra['ddd:building:elevation'] = building_3d.extra['_terrain_geotiff_min_elevation_apply:elevation']
+        #logger.info("Assigning elevation %s to building: %s -> %s", building_3d.extra['_terrain_geotiff_min_elevation_apply:elevation'], building_3d, building_3d.extra['ddd:building:feature'])
         building_3d = building_3d.translate([0, 0, -0.20])  # temporary hack floor snapping
         return building_3d
 

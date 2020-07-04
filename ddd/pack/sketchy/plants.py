@@ -245,7 +245,8 @@ def tree_fir(height=20, r=0.2):
         lobj = ddd.uv.map_cubic(lobj)
         leaves.append(lobj)
 
-    obj = ddd.group3([section, leaves], name="Fir")
+
+    obj = ddd.group3([section.combine(), leaves.combine()], name="Fir")
     #obj.show()
     return obj
 

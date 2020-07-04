@@ -6,6 +6,7 @@
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 from ddd.geo import terrain
+from ddd.core.exception import DDDException
 
 
 @dddtask(order="60.10.+", log=True)
@@ -61,7 +62,7 @@ def osm_model_generate_ways_roadlines(osm, root, pipeline):
 @dddtask()
 def osm_model_generate_areas(osm, root):
     areas_2d = root.find("/Areas")
-    areas_3d = osm.areas3.generate_areas_3d(areas_2d)
+    areas_3d = osm.areas3.generate_areas_3d(areas_2d)  # areas_2d.clean()
 
     root.remove(areas_2d)
     root.append(areas_3d)
@@ -149,10 +150,17 @@ def osm_model_elevation_apply_terrain(obj, osm, root):
     return obj
 
 @dddtask(path="/Items3/*", select='["ddd:elevation" = "building"]')
-def osm_model_elevation_apply_building(obj, osm, root):
+def osm_model_elevation_apply_building(logger, obj, osm, pipeline, root):
     """Apply elevation to items contained in a building."""
-    building_elevation = float(obj.extra['ddd:building:parent'].extra['ddd:building:elevation'])
-    obj = obj.translate([0, 0, building_elevation])
+    building_parent = obj.extra['ddd:building:parent']
+    logger.info("Building parent: %s %s", building_parent, building_parent.extra)
+    if 'ddd:building:elevation' in building_parent.extra:
+        building_elevation = float(building_parent.extra['ddd:building:elevation'])
+        obj = obj.translate([0, 0, building_elevation])
+    else:
+        ddd.trace(locals())
+        logger.error("No parent building elevation found for object %s (parent building: %s)", obj, building_parent)
+        raise DDDException("No parent building elevation found for object %s (parent building: %s)" % (obj, building_parent))
     obj = obj.translate([0, 0, -0.20])
     return obj
 

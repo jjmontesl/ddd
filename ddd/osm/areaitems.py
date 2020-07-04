@@ -59,6 +59,7 @@ class AreaItemsOSMBuilder():
         # For now, using center:
 
         center = feature.centroid()
+        #if center.geom.is_empty: return ddd.group2()
 
         items = [ddd.point(name="Swingset Swing", extra={'osm:playground': 'swing'}),
                  ddd.point(name="Swingset Monkey Bar", extra={'osm:playground': 'monkey_bar'})]

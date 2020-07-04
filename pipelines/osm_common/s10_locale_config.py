@@ -24,7 +24,7 @@ def osm_config_locale_es_salamanca(root, osm, pipeline):
 
 @dddtask()
 def osm_config_locale_es_vigo(root, osm, pipeline):
-    config = ddd.point([-5.664, 40.965], name="Vigo Config")
+    config = ddd.point([-8.723, 42.238], name="Vigo Config")
     config.extra['osm:tree:type'] = lambda: weighted_choice({'default': 1, 'fir': 1, 'palm': 0.25})
     #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
 
@@ -32,7 +32,7 @@ def osm_config_locale_es_vigo(root, osm, pipeline):
 
 @dddtask()
 def osm_config_locale_es_vilanovailageltru(root, osm, pipeline):
-    config = ddd.point([-5.664, 40.965], name="Vilanova i la Geltrú Config")
+    config = ddd.point([1.725,41.224], name="Vilanova i la Geltrú Config")
     config.extra['osm:tree:type'] = lambda: weighted_choice({'default': 0.5, 'fir': 0.25, 'palm': 1})
     #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
 

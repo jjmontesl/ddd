@@ -55,6 +55,13 @@ def osm_positioning_select_waste_basket(obj, osm, root, logger):
     obj.extra['ddd:positioning:penetrate'] = -1.0
     obj.extra['ddd:positioning:validate:ref'] = 'positioning_ways_2d_0_and_buildings'
 
+
+@dddtask(path="/ItemsNodes/*", select='["osm:barrier" = "bollard"]')
+def osm_positioning_select_sculpture(obj, osm, root, logger):
+    obj.extra['ddd:positioning:type'] = 'orient-project'
+    obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
+
+
 @dddtask(path="/ItemsNodes/*", select='["osm:highway" = "bus_stop"]')
 def osm_positioning_select_bus_stop(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'snap-project'

@@ -61,8 +61,9 @@ class Areas2DOSMBuilder():
 
             narea = area.subtract(ddd.group2(area.extra['ddd:area:contained']))
             narea = narea.subtract(union)
+            #narea = narea.clean()  #eps=0.0)
 
-            if narea:
+            if narea and narea.geom:
                 logger.debug("Area: %s", narea)
                 #area = area.subtract(union)
 
@@ -105,69 +106,22 @@ class Areas2DOSMBuilder():
             if c.type == "LineString":
                 logger.warning("Interways areas union resulted in LineString geometry. Skipping.")
                 continue
-            for interior in c.interiors:
-                area = ddd.polygon(interior.coords, name="Interways area")
-                if area:
-                    area = area.subtract(union)
-                    area = area.clean(eps=0.01)
-                    result.append(area)
-                else:
-                    logger.warn("Invalid interways area.")
-        return result
-
-
-    '''
-    def generate_areas_2d_interways(self):
-
-        logger.info("Generating 2D areas between ways.")
-
-        #self.osm.ways_2d['0'].dump()
-        #self.osm.ways_2d['-1a'].dump()
-        #self.osm.areas_2d.dump()
-
-        areas_2d = self.osm.areas_2d
-        #areas_2d_unsubtracted = ddd.group2()
-        #for a in self.osm.areas_2d.children:
-        #    if a.extra.get('ddd:area:original', None):
-        #        areas_2d.append(a.extra.get('ddd:area:original'))
-
-        try:
-            union = ddd.group([self.osm.ways_2d["0"], self.osm.ways_2d['-1a'], areas_2d]).union()
-        except TopologicalError as e:
-            logger.error("Error calculating interways: %s", e)
-            l0 = self.osm.ways_2d["0"].union()
-            lm1a = self.osm.ways_2d['-1a'].union()
-            #l0a = self.osm.ways_2d['0a'].union()  # shall be trimmed  # added to avoid height conflicts but leaves holes
-            c = areas_2d.clean(eps=0.01).union()
-            try:
-                union = ddd.group2([c, l0, lm1a])
-                #union = union.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
-                union = union.clean(eps=0.01)
-                union = union.union()
-            except TopologicalError as e:
-                logger.error("Error calculating interways (2): %s", e)
-                union = ddd.group2()
-                #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], areas_2d]).union()
-
-        #union = union.buffer(0.5)
-        #union = union.buffer(-0.5)
-        if not union.geom: return
-
-        for c in ([union.geom] if union.geom.type == "Polygon" else union.geom):
-            if c.type == "LineString":
-                logger.warning("Interways areas union resulted in LineString geometry. Skipping.")
+            if len(c.interiors) == 0:
                 continue
+
+            logger.info("Generating %d interiors.", len(c.interiors))
             for interior in c.interiors:
                 area = ddd.polygon(interior.coords, name="Interways area")
                 if area:
                     area = area.subtract(union)
                     area = area.clean(eps=0.01)
-                    area = area.material(ddd.mats.pavement)
-                    area.extra['ddd:area:type'] = 'sidewalk'
-                    self.osm.areas_2d.children.append(area)
+                    #area = area.clean()
+                    if area.geom:
+                        result.append(area)
                 else:
                     logger.warn("Invalid interways area.")
-    '''
+
+        return result
 
     '''
     def generate_areas_ways_relations(self):

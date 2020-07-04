@@ -28,7 +28,6 @@ class Ways2DOSMBuilder():
     def __init__(self, osmbuilder):
         self.osm = osmbuilder
 
-
     def get_way_2d(self, way_1d, ways_2d):
         for way_2d in ways_2d.children:
             if 'way_1d' in way_2d.extra and way_2d.extra['way_1d'] == way_1d:
@@ -36,16 +35,6 @@ class Ways2DOSMBuilder():
         logger.warn("Tried to get way 2D for not existing way 1D: %s", way_1d)
         # raise ValueError("Tried to get way 2D for not existing way 1D: %s" % way_1d)
         return DDDObject2()
-    '''
-    def get_way_2d(self, way_1d, ways_2d):
-        for l in ways_2d.values():
-            for way_2d in l.children:
-                if 'way_1d' in way_2d.extra and way_2d.extra['way_1d'] == way_1d:
-                    return way_2d
-        logger.warn("Tried to get way 2D for not existing way 1D: %s", way_1d)
-        # raise ValueError("Tried to get way 2D for not existing way 1D: %s" % way_1d)
-        return DDDObject2()
-    '''
 
     def generate_ways_2d(self, ways_1d):
 
@@ -58,6 +47,7 @@ class Ways2DOSMBuilder():
                 ways_2d.children.extend(layerways.children)
 
         self.generate_ways_2d_intersections(ways_2d)
+        self.generate_ways_2d_intersection_intersections(ways_2d)
 
         return ways_2d
 
@@ -117,6 +107,8 @@ class Ways2DOSMBuilder():
         return way_2d
 
     def generate_ways_2d_intersections(self, ways_2d):
+
+        logger.info("Generating ways intersections (%d ways).", len(ways_2d.children))
 
         # Generate intersections (crossroads)
         intersections_2d = []
@@ -206,20 +198,7 @@ class Ways2DOSMBuilder():
                     #ddd.group([join_ways, intersection_shape, perpendicular.buffer(1.0).material(ddd.mats.highlight), join_ways]).show()
 
                     join_way_split = None
-                    '''
-                    if join_way_splits:
-                        if join_way_splits[0].intersects(intersection_shape.geom):
-                            join_way_split = join_way_splits[0]
-                        elif len(join_way_splits) > 1 and join_way_splits[1].intersects(intersection_shape.geom):
-                            join_way_split = join_way_splits[1]
-                        elif len(join_way_splits) > 2 and join_way_splits[2].intersects(intersection_shape.geom):
-                            join_way_split = join_way_splits[1]
-                        else:
-                            logger.error("Could not find split side for intersection extension: %s", join_way)
-                        #else:
-                        #    logger.error("Could not find split side for intersection extension (no splits): %s", join_way)
-                        #    #raise AssertionError()
-                    '''
+
                     if join_way_splits[0].overlaps(intersection_shape.buffer(-0.05).geom):
                         join_way_split = join_way_splits[0]
                     elif len(join_way_splits) > 1 and join_way_splits[1].overlaps(intersection_shape.buffer(-0.05).geom):
@@ -233,31 +212,12 @@ class Ways2DOSMBuilder():
                     if join_way_split:
                         join_splits.append(ddd.shape(join_way_split))
 
-            intersection_shape = intersection_shape.union(join_splits.union()).clean(eps=0.005)
-
-            #ddd.group([intersection_shape.material(ddd.mats.highlight), join_ways]).dump()
-            #ddd.group([intersection_shape.material(ddd.mats.highlight), join_ways]).show()
+            #intersection_shape = intersection_shape.union(join_splits.union()).clean(eps=0.005)
+            intersection_shape = intersection_shape.union(join_splits.union()).individualize().clean(eps=0.005)
 
             # Resolve intersection
             # print(intersection_shape)
             if intersection_shape and intersection_shape.geom and intersection_shape.geom.type in ('Polygon', 'MultiPolygon') and not intersection_shape.geom.is_empty:
-
-                '''
-                # Get intersection way type by vote
-                votes = defaultdict(list)
-                for join in intersection:
-                    votes[join.way.extra['ddd:way:weight']].append(join.way)
-                max_voted_ways_weight = list(reversed(sorted(votes.items(), key=lambda w: len(w[1]))))[0][0]
-                highest_ways = votes[max_voted_ways_weight]
-                '''
-
-                # Createintersection from highest way value from joins
-                '''
-                highest_way = None
-                for join in intersection:
-                    if highest_way is None or join.way.extra['ddd:way:weight'] < highest_way.extra['ddd:way:weight'] :
-                        highest_way = join.way
-                '''
 
                 # Prepare way_1d (joining ways if needed)
                 highest_way = highest_ways[0].copy()
@@ -300,7 +260,8 @@ class Ways2DOSMBuilder():
         # Add intersections to respective layers
         for int_2d in intersections_2d.children:
             # print(int_2d.extra)
-            ways_2d.append(int_2d)
+            int_2d = int_2d.clean()
+            if int_2d.geom: ways_2d.append(int_2d)
 
         # Subtract intersections from ways
         ways = []
@@ -321,29 +282,8 @@ class Ways2DOSMBuilder():
             wayminus = way.subtract(connected_2d).buffer(0.001)
             '''
             way = way.buffer(0.001)
+            # Checks
             if True or (way.geom and way.geom.is_valid):
-
-                # print(way)
-                # print(way.geom.type)
-                '''
-                if way.geom.type == "Polygon":
-                    #way.geom = way.geom.buffer(0.0)
-                    if way.geom.exterior == None:
-                        way = None
-                    else:
-                        #print(list(way.geom.exterior.coords))
-                        pass
-                    if way.geom.interiors:
-                        #print("INTERIORS:")
-                        #print([list(i.coords) for i in way.geom.interiors])
-                        #print([i.is_valid for i in way.geom.interiors])
-                        pass
-
-                #elif way.geom.type == "MultiPolygon":
-                #    print([list(p.exterior.coords) for p in way.geom])
-                #else:
-                #    print(list(way.geom.coords))
-                '''
 
                 if way:
                     try:
@@ -358,44 +298,50 @@ class Ways2DOSMBuilder():
                         except Exception as e:
                             logger.error("Could not generate way due to exception in extrude check: %s", way)
 
-        ways_2d.replace(ddd.group(ways, empty="2", name="Ways"))
+        ways_2d.replace(ddd.group2(ways, name="Ways"))
 
-        # logger.info("Saving intersections 2D.")
-        # ddd.group([ways_2d["0"].extrude(1.0), self.osm.intersections_2d.material(ddd.mats.highlight).extrude(1.5)]).save("/tmp/ddd-intersections.glb")
+    def generate_ways_2d_intersection_intersections(self, ways_2d):
+        intersections = ways_2d.select('["intersection"]', recurse=False)
+        logger.info("Resolving intersection intersections (%d objects)", len(intersections.children))
+        #intersections.show()
 
-        # Subtract connected ways
-        # TODO: This shall be possibly done when creating ways not after
-        # union_lm1 = ways_2d["-1"].union()
-        # union_l0 = ways_2d["0"].union()
-        # union_l1 = ways_2d["1"].union()
-        '''
-        for layer_idx in ["-1a", "0a", "1a"]:
-            ways = []
-            for way in ways_2d[layer_idx].children:
-                connected = self.follow_way(way.extra['way_1d'], 1)
-                connected.remove(way.extra['way_1d'])
-                connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
-                wayminus = way.subtract(connected_2d).buffer(0.001)
-                ways.append(wayminus)
-            ways_2d[layer_idx] = ddd.group(ways, empty="2")
-        '''
+        intersections.children.sort(key=lambda c: c.get('ddd:way:weight'))
+        for idx, way in enumerate(intersections.children):
 
-        # ways_2d["-1a"] = ways_2d["-1a"].material(ddd.mat_highlight)
-        # ways_2d["-1a"].children[0].dump()
-        # print(ways_2d["-1a"].children[0].extra)
-        # print(list(ways_2d["-1a"].children[0].extra['way_1d'].geom.coords))
-        # sys.exit(0)
+            if way.geom is None: continue
 
-        # ways_2d["0a"] = ways_2d["0a"].subtract(union_l0).subtract(union_l1)
-        # ways_2d["1a"] = ways_2d["1a"].subtract(union_l1)
+            # Find ovelap with other intersections
+            for other in intersections.children[idx+1:]:
+
+                if other == way or other.geom is None: continue
+                #if other.get("ddd:layer") != way.get("ddd:layer"): continue
+
+                isec = way.intersection(other).union()
+                if isec.geom and isec.geom.area > 0:  #and not way.touches(other):
+                    logger.info("Intersection intersection: %s > %s", way, other)
+                    #ddd.group2([main, minor.material(ddd.mats.highlight), way.intersection(other).material(ddd.mats.red)]).show()
+                    #ddd.group2([way.intersection(other).material(ddd.mats.red)]).show()
+
+                    new_other = other.subtract(way).clean().union()
+                    if new_other.geom and new_other.geom.area < 0.01: new_other.geom = None
+                    if new_other.geom and new_other.geom.type == "LineString": new_other.geom.type = None
+
+                    other.replace(new_other)
 
 
+        #ways_2d.replace(ways_2d.clean())
+        #ways_2d.dump()
+        #ways_2d.show()
 
     def generate_roadlines(self, pipeline, way_2d):
         path = way_2d.extra['way_1d']
 
         # print(path.geom.type)
-        # if path.geom.type != "LineString": return
+
+        if path.geom.type != "LineString":
+            logger.warn("Cannot generate roadlines for %s: way_1d %s is not a LineString.", way_2d, path)
+            return
+
         length = path.geom.length
 
         # Generate lines
@@ -555,11 +501,14 @@ class Ways2DOSMBuilder():
                 item.extra['ddd:angle'] = angle #+ math.pi/2
                 pipeline.root.find("/ItemsNodes").append(item)
 
-
     def generate_traffic_signs(self, pipeline, way_2d):
 
         path = way_2d.extra['way_1d']
         length = path.geom.length
+
+        if path.geom.type != "LineString":
+            logger.warn("Cannot generate traffic signs for %s: way_1d %s is not a LineString.", way_2d, path)
+            return
 
         # Generate traffic signs
         if path.extra.get('ddd:way:traffic_signs', False) and path.geom.length > 20.0 and path.extra['ddd:layer'] == "0":

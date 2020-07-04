@@ -33,7 +33,8 @@ def osm_generate_items(root, osm, obj):
     """Generate items for point features."""
     item = obj.copy(name="Item: %s" % obj.name)
     item = item.material(ddd.mats.red)
-    root.find("/ItemsNodes").append(item)
+    if item.geom:
+        root.find("/ItemsNodes").append(item)
 
 @dddtask(order="30.20.20", log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
 def osm_generate_items_process(root, osm, obj):

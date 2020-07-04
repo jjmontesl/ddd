@@ -183,7 +183,7 @@ def extrude_between_geoms_subtract(shape_a, shape_b, offset, base_height):
         if (x, y) in shape_a_coords or (x, y, z) in shape_a_coords: z = base_height
         elif (x, y) in shape_b_coords or (x, y, z) in shape_b_coords: z = base_height + offset
         else:
-            logger.warn("Could not match Z coordinate.")
+            logger.warn("Could not match coordinate during extrusion-subtract (%s, %s, %s) between %s and %s.", x, y, z, shape_a, shape_b)
             z = base_height
         return x, y, z
 

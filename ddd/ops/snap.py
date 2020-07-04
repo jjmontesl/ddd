@@ -33,7 +33,11 @@ class DDDSnap():
 
         dirvec_d = [coords_p[0] - point.geom.coords[0][0], coords_p[1] - point.geom.coords[0][1]]
         dirvec_l = math.sqrt(dirvec_d[0] ** 2 + dirvec_d[1] ** 2)
-        dirvec = [dirvec_d[0] / dirvec_l, dirvec_d[1] / dirvec_l]
+        if dirvec_l > 0:
+            dirvec = [dirvec_d[0] / dirvec_l, dirvec_d[1] / dirvec_l]
+        else:
+            logger.warn("Could not calculate closest segment director vector for align project point %s onto %s", point, obj)
+            dirvec = [0, 0]
 
         # Find side (TODO: for linear -not rings- there is no winding direction)
         exterior = 1

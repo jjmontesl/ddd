@@ -112,7 +112,7 @@ class ItemsOSMBuilder():
         elif item_2d.extra.get('osm:barrier', None) == 'hedge':
             item_3d = self.generate_item_3d_hedge(item_2d)
         elif item_2d.extra.get('osm:barrier', None) == 'bollard':
-            item_3d = self.generate_item_3d_generic(item_3d, urban.bollard, "Bollard")
+            item_3d = self.generate_item_3d_generic(item_2d, urban.bollard, "Bollard")
 
         #elif item_2d.extra.get('osm:leisure', None) == 'playground':
 

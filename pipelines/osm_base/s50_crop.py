@@ -69,5 +69,4 @@ def osm_crop_cleanup(root, logger):
     """
     Remove empty geometries.
     """
-    root.replace(root.clean())
-
+    root.clean_replace()
