@@ -224,11 +224,15 @@ class Ways2DOSMBuilder():
                 if len(highest_ways) == 2:
                     #highest_way.geom = ddd.group(highest_ways).union().geom  # Leaves multilinestrings
                     try:
-                        highest_way.geom = linemerge(ddd.group(highest_ways).union().remove_z().geom)  # Merges multilinestrings into linestrings if possible
+                        highest_way.geom = ddd.group(highest_ways).union().geom  # .remove_z()  # Merges multilinestrings into linestrings if possible
+                        #highest_way.dump()
+                        highest_way.geom = linemerge([highest_way.geom])
+                        #logger.debug("Merged intersection lines %s.", highest_ways)
+                        #ddd.group(highest_ways).buffer(0.1).show()
                     except ValueError as e:
-                        logger.error("Cannot merge intersection lines: %s", e)
+                        logger.error("Cannot merge intersection lines %s: %s", highest_ways, e)
+                        ddd.group(highest_ways).buffer(0.1).show()
                         #raise DDDException("Cannot merge intersection lines: %s" % e, ddd_obj=ddd.group(highest_ways).buffer(1).triangulate())
-
 
                 intersection_2d = highest_way.copy(name="Intersection (%s)" % highest_way.name)
                 intersection_2d.extra['way_1d'] = highest_way
@@ -316,17 +320,18 @@ class Ways2DOSMBuilder():
                 if other == way or other.geom is None: continue
                 #if other.get("ddd:layer") != way.get("ddd:layer"): continue
 
-                isec = way.intersection(other).union()
-                if isec.geom and isec.geom.area > 0:  #and not way.touches(other):
-                    logger.info("Intersection intersection: %s > %s", way, other)
-                    #ddd.group2([main, minor.material(ddd.mats.highlight), way.intersection(other).material(ddd.mats.red)]).show()
-                    #ddd.group2([way.intersection(other).material(ddd.mats.red)]).show()
+                if way.intersects(other):
+                    isec = way.intersection(other).union()
+                    if isec.geom and isec.geom.area > 0:  #and not way.touches(other):
+                        logger.info("Intersection intersection: %s > %s", way, other)
+                        #ddd.group2([main, minor.material(ddd.mats.highlight), way.intersection(other).material(ddd.mats.red)]).show()
+                        #ddd.group2([way.intersection(other).material(ddd.mats.red)]).show()
 
-                    new_other = other.subtract(way).clean().union()
-                    if new_other.geom and new_other.geom.area < 0.01: new_other.geom = None
-                    if new_other.geom and new_other.geom.type == "LineString": new_other.geom.type = None
+                        new_other = other.subtract(way).clean().union()
+                        if new_other.geom and new_other.geom.area < 0.01: new_other.geom = None
+                        if new_other.geom and new_other.geom.type == "LineString": new_other.geom.type = None
 
-                    other.replace(new_other)
+                        other.replace(new_other)
 
 
         #ways_2d.replace(ways_2d.clean())
@@ -377,11 +382,11 @@ class Ways2DOSMBuilder():
                 line = line.intersection(way_2d)
                 line = line.individualize()
 
-                # if line.geom and not line.geom.is_empty:
-                # try:
-                uvmapping.map_2d_path(line, pathline, line_x_offset / 0.05)
-
-                pipeline.root.find("/Roadlines2").append(line)
+                if line.geom and not line.geom.is_empty and line.geom.area > 0:
+                    uvmapping.map_2d_path(line, pathline, line_x_offset / 0.05)
+                    pipeline.root.find("/Roadlines2").append(line)
+                else:
+                    continue
 
                 # except Exception as e:
                 #    logger.error("Could not UV map Way 2D from path: %s %s %s: %s", line, line.geom, pathline.geom, e)
@@ -458,7 +463,7 @@ class Ways2DOSMBuilder():
                         pipeline.root.find("/ItemsNodes").append(item)
 
 
-    def generate_traffic_lights(self, pipeline, way_2d):
+    def generate_traffic_signals(self, pipeline, way_2d):
 
         path = way_2d.extra['way_1d']
         length = path.geom.length

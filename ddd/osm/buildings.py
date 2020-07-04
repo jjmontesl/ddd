@@ -152,7 +152,7 @@ class BuildingOSMBuilder():
         buildings_3d = ddd.group3(name="Buildings")
         for building_2d in buildings_2d.children:
             if building_2d.extra.get('ddd:building:parent', None) in (None, building_2d):
-                logger.info("Generating building: %s", building_2d)
+                logger.debug("Generating building: %s", building_2d)
                 building_3d = self.generate_building_3d_generic(building_2d)
                 if building_3d:
                     self.generate_building_3d_amenities(building_3d)

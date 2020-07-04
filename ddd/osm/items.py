@@ -466,11 +466,15 @@ class ItemsOSMBuilder():
 
     def generate_item_3d_traffic_signals(self, item_2d):
 
+        #logger.debug("Generating traffic signals: %s %s", item_2d, item_2d.extra)
+
         key = "trafficlights-default-1"
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
             item_3d = urban.trafficlights()
             item_3d = self.osm.catalog.add(key, item_3d)
+
+        item_3d.extra.update(item_2d.extra)  # TODO: This is agressive
 
         #osm_way = item_2d.extra.get('osm:item:way', None)
         #osm_ways = item_2d.extra.get('osm:item:ways', None)

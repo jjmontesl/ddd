@@ -79,7 +79,7 @@ class Areas2DOSMBuilder():
         This is used for generation of interways, as the resulting union interiors are the target areas.
         """
         try:
-            union = groups.union()
+            union = groups.copy().union_replace()
             union = union.clean(eps=0.01)
         except TopologicalError as e:
             logger.debug("Error calculating safe union_safe (1/2): %s", e)

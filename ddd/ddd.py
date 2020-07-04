@@ -643,7 +643,7 @@ class DDDObject():
 
         return result
 
-    def prop_set(self, key, value=None, children=False, default=(None, )):
+    def set(self, key, value=None, children=False, default=(None, )):
         """
         """
         if children:
@@ -651,12 +651,15 @@ class DDDObject():
             for o in self.select().children:
                 o.prop_set(key, value, False, default)
         else:
-            if default is self.prop_set.__defaults__[2]:
+            if default is self.set.__defaults__[2]:
                 self.extra[key] = value
             else:
                 if key not in self.extra or self.extra[key] is None:
                     self.extra[key] = default
         return self
+
+    def prop_set(self, key, *args, **kwargs):
+        return self.set(key, *args, **kwargs)
 
     def grouptyped(self, children=None):
         if isinstance(self, DDDObject2):
@@ -871,7 +874,7 @@ class DDDObject2(DDDObject):
                 result = result.buffer(0)
         if result.geom and result.geom.is_empty:
             result.geom = None
-        if result.geom and not result.geom.is_valid:
+        if result.geom and not validate and not result.geom.is_valid:
             logger.warn("Removed invalid geometry: %s", result)
             result.geom = None
         if result.geom and (result.geom.type != 'GeometryCollection' and not result.geom.is_simple):
@@ -1058,7 +1061,7 @@ class DDDObject2(DDDObject):
                 result.geom = objs[0].geom
 
         if other:
-            union = other.union().clean()
+            union = other.union().clean(eps=0)
             if result.geom and union.geom:
                 try:
                     result.geom = result.geom.union(union.geom)
@@ -1068,6 +1071,7 @@ class DDDObject2(DDDObject):
                     #result = result.clean(eps=0.001).simplify(0.001)
                     #other = other.clean(eps=0.001).simplify(0.001)
                     #result.geom = result.geom.union(union.geom)
+                    result = result.clean(eps=0)
             elif union.geom:
                 result.geom = union.geom
 

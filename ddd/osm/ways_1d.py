@@ -183,12 +183,12 @@ class Ways1DOSMBuilder():
         vertex_cache = defaultdict(list)
         for way in ways_1d.children:
             for c in list(way.geom.coords):
-                vertex_cache[c].append(way)
+                vertex_cache[tuple(c[:2])].append(way)
 
-        logger.warn("Asociating Items to Ways via nodes. This shall be done outside and AFTER split_ways (and it's causing items_1d to be passed in)")
+        logger.warn("Asociating Items to Ways via nodes.")
         for item in items_1d.children:
-            if item.geom.coords[0] in vertex_cache:
-                #logger.debug("Associating item to ways: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
+            if tuple(item.geom.coords[0][:2]) in vertex_cache:
+                logger.debug("Associating item to way: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
                 item.extra['osm:item:way'] = vertex_cache[item.geom.coords[0]][0]
                 item.extra['osm:item:ways'] = vertex_cache[item.geom.coords[0]]
                 #if len(vertex_cache[item.geom.coords[0]]):

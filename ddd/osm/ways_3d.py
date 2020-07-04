@@ -63,9 +63,11 @@ class Ways3DOSMBuilder():
                 ways_3d.append(way_3d)
 
             except ValueError as e:
-                logger.error("Could not generate 3D way: %s", e)
+                logger.error("Could not generate 3D way %s: %s", way_2d, e)
             except IndexError as e:
-                logger.error("Could not generate 3D way: %s", e)
+                logger.error("Could not generate 3D way %s: %s", way_2d, e)
+            except Exception as e:
+                logger.error("Could not generate 3D way %s: %s", way_2d, e)
 
         ways_3d = ddd.group3(ways_3d)
 

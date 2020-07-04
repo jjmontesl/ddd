@@ -30,6 +30,7 @@ class OSMBuilderOps():
         and according to way width.
         """
 
+        logger.info("Positioning %s along way %s", obj, way_1d)
 
         closest_seg = way_1d.closest_segment(obj)
         (coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d) = closest_seg

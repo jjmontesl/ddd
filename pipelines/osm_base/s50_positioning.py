@@ -57,7 +57,7 @@ def osm_positioning_select_waste_basket(obj, osm, root, logger):
 
 
 @dddtask(path="/ItemsNodes/*", select='["osm:barrier" = "bollard"]')
-def osm_positioning_select_sculpture(obj, osm, root, logger):
+def osm_positioning_select_barrier_bollard(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
 

@@ -121,9 +121,9 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
                         #root.find("/Water")
                         ])
     ##union = union.clean(eps=0.01)
-    #union = osm.areas2.generate_union_safe(union)
+    union = osm.areas2.generate_union_safe(union)
     ##union = union.clean(eps=0.0)
-    union = union.copy().union_replace()
+    #union = union.copy().union_replace()
 
     terr = ddd.rect(area_crop.bounds, name="Ground")
     terr = terr.material(ddd.mats.terrain)

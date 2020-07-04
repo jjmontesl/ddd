@@ -373,7 +373,7 @@ def osm_select_ways_barrier_retaining_wall(root, osm, obj):
     obj.name = "Retaining Wall: %s" % obj.name
     #obj.extra['ddd:way:weight'] = 90
     #obj.extra['ddd:way:lanes'] = None
-    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 0.70))
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 0.50))
     obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 1.4))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
@@ -408,7 +408,7 @@ def osm_select_ways_barrier_city_wall(root, osm, obj):
     obj = obj.material(ddd.mats.stone)
     root.find("/ItemsWays").append(obj)
 
-@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:barrier" = "castle_wall"]')
+@dddtask(path="/Features/*", select='["geom:type"="LineString"](["osm:barrier" = "castle_wall"];["osm:historic" = "castle_wall"])')
 def osm_select_ways_barrier_castle_wall(root, osm, obj):
     """Define item data."""
     obj = obj.copy()
@@ -556,7 +556,7 @@ def osm_select_ways_calculated_data(obj, root, logger):
     # TODO: use these generic attribs? possibly avoid
     obj.extra['ddd:height'] = obj.extra.get('ddd:way:height', None)
     obj.extra['ddd:extra_height'] = obj.extra['ddd:height']
-    obj.extra['ddd:width'] = obj.extra['ddd:way:width']
+    obj.set('ddd:width', default=obj.extra['ddd:way:width'])
 
     # path.extra['ddd:item'] = create_as_item
 
