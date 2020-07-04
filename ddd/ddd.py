@@ -874,7 +874,7 @@ class DDDObject2(DDDObject):
                 result = result.buffer(0)
         if result.geom and result.geom.is_empty:
             result.geom = None
-        if result.geom and not validate and not result.geom.is_valid:
+        if result.geom and not result.geom.is_valid:  # Removing this check causes a core dump during 3D generation
             logger.warn("Removed invalid geometry: %s", result)
             result.geom = None
         if result.geom and (result.geom.type != 'GeometryCollection' and not result.geom.is_simple):

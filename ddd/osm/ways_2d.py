@@ -47,7 +47,7 @@ class Ways2DOSMBuilder():
                 ways_2d.children.extend(layerways.children)
 
         self.generate_ways_2d_intersections(ways_2d)
-        self.generate_ways_2d_intersection_intersections(ways_2d)
+        #self.generate_ways_2d_intersection_intersections(ways_2d)
 
         return ways_2d
 

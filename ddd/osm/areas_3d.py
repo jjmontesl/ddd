@@ -144,6 +144,9 @@ class Areas3DOSMBuilder():
 
         for area_2d in areas_2d.children:
 
+            #area_2d = area_2d.clean_replace(eps=0.0)
+            #if (not area_2d or not area_2d.geom): continue
+
             try:
                 area_2d.validate()
             except Exception as e:
@@ -198,7 +201,7 @@ class Areas3DOSMBuilder():
                 # But also, we should have an individualize that work, correct iterators, and a generic cleanup/flatten method
                 # to flatten areas, which might solve this.
                 areas_3d = []
-                for a in area_2d.individualize().clean().children:
+                for a in area_2d.individualize().clean_replace().children:
                     areas_3d.append(self.generate_area_3d(a))
                 return ddd.group(areas_3d, empty=3)
 
