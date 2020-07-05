@@ -24,11 +24,24 @@ for h in heights:
     item = plants.tree_fir(height=h)
     items.append(item)
 
+items_org = items.copy()
+
+items = items_org.copy()
+
 items = ddd.align.grid(items)
 items.append(ddd.helper.all())
 items.show()
 
-items.save("/tmp/test.glb")
-items.save("/tmp/test.json"
+items = ddd.meshops.reduce(items_org)
 
-           )
+items = ddd.align.grid(items)
+items.append(ddd.helper.all())
+items.show()
+
+items = ddd.meshops.reduce_bounds(items_org)
+
+items = ddd.align.grid(items)
+items.append(ddd.helper.all())
+items.show()
+
+

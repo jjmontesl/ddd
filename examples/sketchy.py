@@ -9,8 +9,6 @@ items = ddd.group3()
 
 item = urban.bollard()
 items.append(item)
-items.show()
-
 
 item = urban.bell()
 items.append(item)
@@ -117,6 +115,22 @@ items.append(item)
 
 
 #item.show()
+
+items_org = items.copy()
+
+items = ddd.meshops.reduce(items_org)
+
+items = ddd.align.grid(items)
+items.append(ddd.helper.all())
+items.show()
+
+items = ddd.meshops.reduce_bounds(items_org)
+
+items = ddd.align.grid(items)
+items.append(ddd.helper.all())
+items.show()
+
+
 
 
 items = ddd.align.grid(items)

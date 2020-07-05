@@ -50,6 +50,7 @@ from ddd.core.selectors.selector_ebnf import selector_ebnf
 from ddd.core.selectors.selector import DDDSelector
 from ddd.formats.json import DDDJSONFormat
 from ddd.formats.svg import DDDSVG
+from trimesh.convex import convex_hull
 
 
 # Get instance of logger for this module
@@ -2030,6 +2031,20 @@ class DDDObject3(DDDObject):
 
         return result
 
+    def convex_hull(self):
+        result = self.copy()
+        if result.mesh:
+            result.mesh = convex_hull(result.mesh)
+
+        for c in result.children:
+            result = result.combine(c.convex_hull())
+            result.mesh = convex_hull(result.mesh)
+
+        return result
+
+
+
+
     def subdivide_to_size(self, max_edge, max_iter=10):
         """
         Subdivide a mesh until every edge is shorter than a specified length.
@@ -2333,6 +2348,7 @@ ddd = D1D2D3
 
 from ddd.ops.collision import DDDCollision
 from ddd.ops.geometry import DDDGeometry
+from ddd.ops.reduction import DDDMeshOps
 from ddd.ops.helper import DDDHelper
 from ddd.ops.snap import DDDSnap
 from ddd.ops.uvmapping import DDDUVMapping
@@ -2343,9 +2359,12 @@ from ddd.util.dddrandom import DDDRandom
 
 ddd.mats = MaterialsCollection()
 ddd.mats.highlight = D1D2D3.material(color='#ff00ff')
+ddd.MAT_HIGHLIGHT = ddd.mats.highlight
 ddd.mats.load_from(DefaultMaterials())
 
 ddd.geomops = DDDGeometry()
+
+ddd.meshops = DDDMeshOps()
 
 ddd.align = DDDAlign()
 
