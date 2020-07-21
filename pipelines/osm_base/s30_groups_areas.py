@@ -68,10 +68,10 @@ def osm_groups_areas_landuse_forest(obj, osm):
 def osm_groups_areas_landuse_vineyard(obj, osm):
     """Define area data."""
     obj.name = "Vineyard: %s" % obj.name
-    obj.extra['ddd:area:type'] = "terrain"
+    obj.extra['ddd:area:type'] = "default"
     obj.extra['ddd:aug:itemfill:density'] = 0.001
     obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
-    obj = obj.material(ddd.mats.park)
+    obj = obj.material(ddd.mats.terrain)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:landuse" = "grass"]')

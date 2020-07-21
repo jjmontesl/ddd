@@ -94,7 +94,6 @@ def osm_groups_areas(root, osm, obj, logger):
             root.find("/Areas").append(a)
 
     #root.find("/Areas").append(item)
-    osm.areas_2d = root.find("/Areas")
 
 @dddtask(order="30.50.20")
 def osm_groups_areas_process(pipeline, osm, root, logger):

@@ -138,7 +138,7 @@ class Areas3DOSMBuilder():
     def generate_areas_3d(self, areas_2d):
 
         # TODO: Move to pipeline
-        logger.info("Generating 3D areas (%d)", len(self.osm.areas_2d.children))
+        logger.info("Generating 3D areas (%d)", len(areas_2d.children))
 
         areas_3d = ddd.group3(name="Areas")
 
@@ -285,7 +285,7 @@ class Areas3DOSMBuilder():
             area_3d = DDDObject3()
 
         # Test (doesn't work, subdividing causes bad behavior in large trams):
-        #area_3d = area_3d.subdivide_to_size(10.0)
+        #area_3d = area_3d.subdivide_to_size(20.0)
         #area_3d = ddd.uv.map_cubic(area_3d)
 
         if area_3d.mesh or area_3d.children:

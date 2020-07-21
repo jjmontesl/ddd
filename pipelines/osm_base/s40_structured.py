@@ -120,10 +120,10 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
                         root.find("/Areas").select('["ddd:layer" ~ "^(0|-1a)$"]'),
                         #root.find("/Water")
                         ])
+    #union = union.clean_replace(eps=0.01)
     ##union = union.clean(eps=0.01)
     union = osm.areas2.generate_union_safe(union)
-    ##union = union.clean(eps=0.0)
-    #union = union.copy().union_replace()
+    union = union.clean(eps=0.01)  # Removing this causes a core dump during 3D generation
 
     terr = ddd.rect(area_crop.bounds, name="Ground")
     terr = terr.material(ddd.mats.terrain)
@@ -148,10 +148,14 @@ def osm_structured_areas_process(logger, osm, root):
         logger.info("Processing areas for layer: %s", layer)
         areas_2d = root.find("/Areas").select('["ddd:layer" = "%s"]' % layer)
         subtract = root.find("/Ways").select('["ddd:layer" = "%s"]' % layer)
-        #subtract = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]')
+
         subtract = osm.areas2.generate_union_safe(subtract)
+
         osm.areas2.generate_areas_2d_process(root.find("/Areas"), areas_2d, subtract)
 
+@dddtask()
+def osm_structured_areas_subtract(logger, osm, root):
+    pass
 
 @dddtask(log=True)
 def osm_structured_building_link_items_nodes(root, osm):

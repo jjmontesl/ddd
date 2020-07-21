@@ -46,6 +46,8 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_fountain(item_2d)
         elif item_2d.extra.get('osm:amenity', None) == 'bench':  # not to be confused with seat
             item_3d = self.generate_item_3d_bench(item_2d)
+        elif item_2d.extra.get('osm:amenity', None) == 'drinking_water':
+            item_3d = self.generate_item_3d_generic(item_2d, urban.drinking_water, "Drinking water")
         elif item_2d.extra.get('osm:amenity', None) == 'post_box':
             item_3d = self.generate_item_3d_post_box(item_2d)
 
@@ -279,7 +281,7 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_taxi(self, item_2d):
-        #item_2d = ddd.snap.project(item_2d, self.osm.areas_2d, penetrate=0.5)
+        #item_2d = ddd.snap.project(item_2d, areas_2d, penetrate=0.5)
         item_2d = ddd.snap.project(item_2d, self.osm.ways_2d["0"], penetrate=-1)
         coords = item_2d.geom.coords[0]
         item_3d = urban.trafficsign_sign_rect(signtype="info", icon="i", text="TAXI").translate([coords[0], coords[1], 0.0])

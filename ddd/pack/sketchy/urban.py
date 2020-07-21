@@ -15,6 +15,7 @@ import random
 from trimesh import transformations
 import numpy as np
 from ddd.ops.extrusion import extrude_step_multi, extrude_dome
+from ddd.pack.sketchy import interior
 
 
 # Get instance of logger for this module
@@ -520,6 +521,20 @@ def sculpture_text(text, d=1.0, height=4.0, vertical=False):
     #item = ddd.group([pedestal, item], name="Urban sculpture: %s" % text)
     item.name = "Urban sculpture: %s" % text
 
+    return item
+
+
+def drinking_water(height=1.4, r=0.2):
+    base = ddd.rect([r * 2, r * 2], name="Drinking water").recenter()
+    item = base.scale(0.8)
+    item = item.extrude_step(base, height)
+    item = item.extrude_step(base.scale(0.8), 0)
+    item = item.extrude_step(base.scale(0.8), -0.04)
+    item = item.material(ddd.mats.stone)
+    item = ddd.uv.map_cubic(item)
+    tap = interior.tap()
+    tap = tap.translate([0, r * 0.9, height])
+    item.append(tap)
     return item
 
 

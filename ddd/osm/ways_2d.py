@@ -128,6 +128,7 @@ class Ways2DOSMBuilder():
             max_voted_ways_weight = list(reversed(sorted(votes.items(), key=lambda w: len(w[1]))))[0][0]
             highest_ways = votes[max_voted_ways_weight]
 
+
             # Generate intersection geometry
 
             join_ways = ddd.group([self.get_way_2d(j.way, ways_2d) for j in intersection])

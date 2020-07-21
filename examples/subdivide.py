@@ -5,15 +5,28 @@ from ddd.ddd import ddd
 import math
 import sys
 from ddd.text import fonts
+from trimesh.grouping import merge_vertices
 
 items = ddd.group3()
 
 
-# Extrusion to line (explicit)
+#
 fig1 = ddd.rect().extrude(1)
 fig1 = fig1.subdivide_to_size(0.5)
 items.append(fig1)
 #fig1.show()
+
+#
+fig1 = ddd.rect([1, 3]).extrude(1)
+fig1 = fig1.subdivide_to_size(0.5)
+items.append(fig1)
+
+# Pointy end
+fig = ddd.point().buffer(0.5, cap_style=ddd.CAP_ROUND)
+fig = fig.extrude_step(ddd.point(), 2)
+fig = fig.subdivide_to_size(0.5)
+items.append(fig)
+
 
 
 # All items

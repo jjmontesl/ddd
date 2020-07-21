@@ -3,19 +3,15 @@
 # Jose Juan Montes 2020
 
 from collections import defaultdict, namedtuple
-from functools import partial
-from functools import partial
 import logging
+from shapely.geometry.geo import shape
+from shapely.ops import transform
 import sys
 
 import geojson
 import pyproj
-import pyproj
-from shapely.geometry.geo import shape
-from shapely.ops import transform
 
 from ddd.catalog.catalog import PrefabCatalog
-from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.osm.areaitems import AreaItemsOSMBuilder
 from ddd.osm.areas_2d import Areas2DOSMBuilder
@@ -27,9 +23,6 @@ from ddd.osm.osmops.osmops import OSMBuilderOps
 from ddd.osm.ways_1d import Ways1DOSMBuilder
 from ddd.osm.ways_2d import Ways2DOSMBuilder
 from ddd.osm.ways_3d import Ways3DOSMBuilder
-from shapely import validation
-from shapely.geometry.base import geom_factory
-from shapely.geos import lgeos
 
 
 # Get instance of logger for this module
@@ -150,15 +143,19 @@ class OSMBuilder():
         # TODO: Do this with self.project coordinates after creating shapes (TEST!)
         transformer = pyproj.Transformer.from_proj(self.osm_proj, self.ddd_proj)
         for f in features:
-            f['geometry']['coordinates'] = project_coordinates(f['geometry']['coordinates'], transformer)
+            if not f['geometry']['coordinates']:
+                logger.info("Feature with no coordinates: %s", f)
+            else:
+                try:
+                    f['geometry']['coordinates'] = project_coordinates(f['geometry']['coordinates'], transformer)
+                except Exception as e:
+                    logger.error("Cannot project coordinates for: %s", f)
 
         # Filter "supertile"
         filtered = []
         for f in features:
 
-            #feature = f
-            #if 'Río Tormes' in feature['properties'].get('name', ""):
-            #    print(feature['properties']['name'], feature['geometry']['type'])
+            if not f['geometry']['coordinates']: continue
 
             try:
                 geom = shape(f['geometry'])
@@ -257,93 +254,4 @@ class OSMBuilder():
         #    if f.extra.get('osm:tourism', None) != None:
         #        print(f)
         #sys.exit(1)
-
-    '''
-    def generate_old(self):
-
-        logger.info("Generating geometry (area_filter=%s, area_crop=%s)", self.area_filter, self.area_crop)
-
-        self.preprocess_features()
-
-        #self.features_2d.filter(lambda o: o.extra.get('osm:building:part', None) is not None).dump()
-
-        # Generate items for point features
-        #self.items.generate_items_1d()
-
-        # Roads sorted + intersections + metadata
-        self.ways.generate_ways_1d()
-        #self.ways.generate_ways_1d_pipelined()
-
-        # Generate buildings
-        self.buildings.generate_buildings_2d()
-
-        # Ways depend on buildings
-        self.ways.generate_ways_2d()
-
-        self.save_tile_2d("/tmp/tile.svg")
-        self.areas.generate_areas_2d()
-        self.areas.generate_areas_2d_interways()  # and assign types
-
-        self.areas.generate_areas_2d_postprocess()
-        self.areas.generate_areas_2d_postprocess_water()
-
-        # Associate features (amenities, etc) to 2D objects (buildings, etc)
-        self.buildings.link_features_2d()
-
-        # Coastline and ground (do earlier)
-        self.areas.generate_coastline_3d(self.area_crop if self.area_crop else self.area_filter)  # must come before ground
-        self.areas.generate_ground_3d(self.area_crop if self.area_crop else self.area_filter) # separate in 2d + 3d, also subdivide (calculation is huge - core dump-)
-
-        # Generates items defined as areas (area fountains, football fields...)
-        self.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
-
-        # Road props (traffic lights, lampposts, fountains, football fields...) - needs. roads, areas, coastline, etc... and buildings
-        self.ways.generate_props_2d()  # Objects related to ways
-
-        # 2D output (before cropping, crop here -so buildings and everything is cropped-)
-        #self.save_tile_2d("/tmp/osm2d.png")
-        #self.save_tile_2d("/tmp/osm2d.svg")
-
-        # Crop if necessary
-        if self.area_crop:
-            logger.info("Cropping to: %s" % (self.area_crop.bounds, ))
-            crop = ddd.shape(self.area_crop)
-            self.areas_2d = self.areas_2d.intersection(crop)
-            self.ways_2d = {k: self.ways_2d[k].intersection(crop) for k in self.layer_indexes}
-
-            #self.items_1d = self.items_1d.intersect(crop)
-            self.items_1d = ddd.group([b for b in self.items_1d.children if self.area_crop.contains(b.geom.centroid)], empty=2)
-            self.items_2d = ddd.group([b for b in self.items_2d.children if self.area_crop.contains(b.geom.centroid)], empty=2)
-            self.buildings_2d = ddd.group([b for b in self.buildings_2d.children if self.area_crop.contains(b.geom.centroid)], empty=2)
-
-        # 3D Build
-
-        # Ways 3D
-        self.ways.generate_ways_3d()
-        self.ways.generate_ways_3d_intersections()
-        # Areas 3D
-        self.areas.generate_areas_3d()
-        # Buildings 3D
-        self.buildings.generate_buildings_3d()
-
-        # Walls and fences(!) (2D?)
-
-        # Urban decoration (trees, fountains, etc)
-        self.items.generate_items_3d()
-        self.items2.generate_items_3d()
-
-        # Generate custom items
-        self.customs.generate_customs()
-
-        # Trees, parks, gardens...
-
-        scene = [self.areas_3d, self.ground_3d, self.water_3d,
-                 #self.sidewalks_3d_lm1, self.walls_3d_lm1, self.ceiling_3d_lm1,
-                 #self.sidewalks_3d_l1, self.walls_3d_l1, self.floor_3d_l1,
-                 self.buildings_3d, self.items_3d,
-                 self.other_3d, self.roadlines_3d]
-        scene = ddd.group(scene + list(self.ways_3d.values()), name="Scene")
-
-        return scene
-    '''
 

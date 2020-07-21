@@ -82,8 +82,11 @@ class OSMBuildCommand(DDDCommand):
     def get_data(self, datapath, name, center_wgs84, area):
 
         # Extract area from PBF
-        mainpbffile = os.path.join(datapath, "spain-latest.osm.pbf")
+        #mainpbffile = os.path.join(datapath, "spain-latest.osm.pbf")
+        mainpbffile = os.path.join(datapath, "south-africa-latest.osm.pbf")
+
         selectedpbffile = os.path.join(datapath, "%s.pbf" % name)
+
         sides = 15 * 0.01  # Approximate degrees
         bounds = [center_wgs84[0] - sides, center_wgs84[1] - sides, center_wgs84[0] + sides, center_wgs84[1] + sides]
 

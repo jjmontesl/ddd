@@ -1067,12 +1067,19 @@ class DDDObject2(DDDObject):
                 try:
                     result.geom = result.geom.union(union.geom)
                 except Exception as e:
-                    logger.error("Cannot perform union (1st try) between %s and %s.", result, other)
-                    result.geom = ops.unary_union([result.geom, union.geom])
-                    #result = result.clean(eps=0.001).simplify(0.001)
-                    #other = other.clean(eps=0.001).simplify(0.001)
-                    #result.geom = result.geom.union(union.geom)
-                    result = result.clean(eps=0)
+                    logger.error("Cannot perform union (1st try) between %s and %s: %s", result, other, e)
+                    try:
+                        result.geom = ops.unary_union([result.geom, union.geom])
+                        #result = result.clean(eps=0.001).simplify(0.001)
+                        #other = other.clean(eps=0.001).simplify(0.001)
+                        #result.geom = result.geom.union(union.geom)
+                        result = result.clean(eps=0)
+                    except Exception as e:
+                        logger.error("Cannot perform union (2nd try) between %s and %s: %s", result, other, e)
+                        result = result.clean(eps=0.001) #.simplify(0.001)
+                        other = other.clean(eps=0.001) #.simplify(0.001)
+                        result.geom = result.geom.union(union.geom)
+
             elif union.geom:
                 result.geom = union.geom
 
@@ -1386,6 +1393,14 @@ class DDDObject2(DDDObject):
         if self.mat is not None:
             result = result.material(self.mat)
 
+        return result
+
+    def extrude_along(self, path):
+        trimesh_path = path.geom.coords
+        mesh = creation.sweep_polygon(self.geom, trimesh_path, triangle_args="p", engine='triangle')
+        mesh.fix_normals()
+        result = self.copy3()
+        result.mesh = mesh
         return result
 
     def extrude_step(self, obj_2d, offset, cap=True, base=True, method=D1D2D3.EXTRUSION_METHOD_WRAP):
@@ -1980,8 +1995,8 @@ class DDDObject3(DDDObject):
                 #offset = len(result.extra['uv'])
                 result.extra['uv'] = result.extra['uv'] + list(cc.extra['uv'])
 
+        #result.mesh.merge_vertices()  # This would vertices duplicated for UV coords
         #result.mesh.fix_normals()
-        #result.mesh.merge_vertices()
 
         result.children = []
         return result
@@ -2044,7 +2059,6 @@ class DDDObject3(DDDObject):
 
 
 
-
     def subdivide_to_size(self, max_edge, max_iter=10):
         """
         Subdivide a mesh until every edge is shorter than a specified length.
@@ -2058,10 +2072,10 @@ class DDDObject3(DDDObject):
         if result.mesh:
             vertices, faces = result.mesh.vertices, result.mesh.faces
             rvertices, rfaces = remesh.subdivide_to_size(vertices, faces, max_edge, max_iter=max_iter)
-            result.mesh.vertices = rvertices
-            result.mesh.faces = rfaces
+            result.mesh = Trimesh(rvertices, rfaces)
 
         return result
+
 
     def clean(self):
         result = self.copy()

@@ -30,6 +30,7 @@ def osm_positioning_init(pipeline, osm, root, logger):
     #pipeline.data['positioning_ways_2d_0_traffic_sign'] = root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False).flatten().filter(lambda i: i.extra.get('osm:highway', None) not in ('path', 'track', 'footway', None))
     pipeline.data['positioning_buildings_2d'] = root.select(path="/Buildings/*", recurse=False)
     pipeline.data['positioning_ways_2d_0_and_buildings'] = ddd.group([pipeline.data['positioning_ways_2d_0'], pipeline.data['positioning_buildings_2d']]).clean(eps=0.01)
+    pipeline.data['positioning_areas_ways_2d_outline'] = ddd.group([root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False).outline(), root.select(path="/Areas/*", selector='["osm:layer" = "0"]', recurse=False).outline()])
 
 # TODO: Tag earlier, during items creation
 @dddtask(order="50.50.30.+", log=True)
@@ -40,7 +41,14 @@ def osm_positioning_select(pipeline, osm, root, logger):
 @dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "bench"]')
 def osm_positioning_select_bench(obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'orient-project'
-    obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
+    #obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
+    obj.extra['ddd:positioning:ref'] = 'positioning_areas_ways_2d_outline'
+
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "drinking_water"]')
+def osm_positioning_select_amenity_drinking_water(obj, osm, root, logger):
+    obj.extra['ddd:positioning:type'] = 'orient-project'
+    #obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
+    obj.extra['ddd:positioning:ref'] = 'positioning_areas_ways_2d_outline'
 
 @dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "post_box"]')
 def osm_positioning_select_postbox (obj, osm, root, logger):

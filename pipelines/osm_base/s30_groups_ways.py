@@ -254,6 +254,7 @@ def osm_select_ways_stairs(obj, root):
     obj.extra['ddd:way:weight'] = 31
     obj.extra['ddd:way:height'] = 0.2
     obj.extra['ddd:way:width'] = 1.5
+    obj.extra['ddd:area:type'] = "stairs"
     obj = obj.material(ddd.mats.pathwalk)
     # TODO: Do later, after applying elevations, in a select ("add fences to elevated ways")... improve
     # obj.extra['ddd:way:elevated:border'] = 'fence'

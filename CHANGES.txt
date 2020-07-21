@@ -1,5 +1,7 @@
 [0.6.0]
 
+  * Added support for amenity:drinking_water.
+  * Added extrude_along() method to extrude along paths.
   * Added profiling option.
   * Initial support and concept for locale-based config and global config.
 

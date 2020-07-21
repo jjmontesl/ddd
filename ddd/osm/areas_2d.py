@@ -26,7 +26,8 @@ class Areas2DOSMBuilder():
         areas = areas_2d.select('["ddd:area:area"]').children
 
         logger.info("Sorting 2D areas (%d).", len(areas))
-        areas.sort(key=lambda a: a.extra['ddd:area:area'])
+        areas.sort(key=lambda a: a.extra['ddd:area:area'])  # extra['ddd:area:area'])
+        #areas.sort(key=lambda a: a.geom.area)  # extra['ddd:area:area'])
 
         for idx in range(len(areas)):
             area = areas[idx]
@@ -35,7 +36,7 @@ class Areas2DOSMBuilder():
                     #logger.info("Area %s contains %s.", larger, area)
                     area.extra['ddd:area:container'] = larger
                     larger.extra['ddd:area:contained'].append(area)
-                    break
+                    #break   # Using this break causes some area containments to be incorrectly assigned
 
         # Union all roads in the plane to subtract
         logger.info("Generating 2D areas subtract.")
@@ -82,19 +83,18 @@ class Areas2DOSMBuilder():
             union = groups.copy().union_replace()
             union = union.clean(eps=0.01)
         except TopologicalError as e:
-            logger.debug("Error calculating safe union_safe (1/2): %s", e)
+            logger.debug("Error calculating safe union_safe (1/3): %s", e)
             children_unions = []
             for g in groups.children:
                 u = g.clean(eps=0.01).union()
                 children_unions.append(u)
             try:
                 union = ddd.group2(children_unions)
-                #union = union.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
                 union = union.union()
             except TopologicalError as e:
-                logger.error("Error calculating union_safe (2/2): %s", e)
+                logger.error("Error calculating union_safe (2/3): %s", e)
+                #union = groups.clean(eps=0.05).union()  # causes areas overlap?
                 union = ddd.group2()
-                #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a'], areas_2d]).union()
         return union
 
     def generate_areas_2d_ways_interiors(self, union):
@@ -122,13 +122,6 @@ class Areas2DOSMBuilder():
                     logger.warn("Invalid interways area.")
 
         return result
-
-    '''
-    def generate_areas_ways_relations(self):
-        logger.info("Areas - Ways relations (%d areas, %d ways['0']).", len(self.osm.areas_2d.children), len(self.osm.ways_2d['0'].children))
-        for area in self.osm.areas_2d.children:
-            if area.extra.get('ddd:area:type', None) != 'sidewalk': continue
-    '''
 
     def generate_areas_2d_postprocess(self):
         """

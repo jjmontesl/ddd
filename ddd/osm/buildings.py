@@ -51,6 +51,7 @@ class BuildingOSMBuilder():
         # TODO: create nested buildings them separately, consider them part of the bigger building for subtraction)
 
         # Assign each building part to a building, or transform it into a building if needed
+        #features = sorted(features_2d.children, key=lambda f: f.geom.area)
         features_2d_original = list(features_2d.children)
         for feature in list(features_2d.children):
             if feature.geom.type == 'Point': continue
@@ -154,7 +155,7 @@ class BuildingOSMBuilder():
             if building_2d.extra.get('ddd:building:parent', None) in (None, building_2d):
                 logger.debug("Generating building: %s", building_2d)
                 building_3d = self.generate_building_3d_generic(building_2d)
-                if building_3d:
+                if building_3d and len(list(building_3d.vertex_iterator())) > 0:
                     self.generate_building_3d_amenities(building_3d)
                     building_3d = self.generate_building_3d_elevation(building_3d)
                     buildings_3d.append(building_3d)
