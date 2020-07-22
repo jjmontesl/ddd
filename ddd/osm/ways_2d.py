@@ -556,3 +556,69 @@ class Ways2DOSMBuilder():
                                                                     'es:r308', 'es:r400c', 'es:r500', 'es:s13'])  # 'es:r301_50',
                     pipeline.root.find("/ItemsNodes").append(item)
 
+
+    def generate_stairs_simple(self, pipeline, obj):
+        """
+        Takes a 2D area and splits in steps according to original way_1d and metadata.
+
+        This takes the remaning area and keeps splitting it along path perpendiculars.
+        """
+
+        path = obj.extra['way_1d']
+        length = path.geom.length
+
+        # Interpolate path line and split area with perpendiculars
+        step_depth = obj.get('ddd:steps:depth', 0.375)
+
+        # Generate lamp posts
+        interval = step_depth
+        numsteps = int(length / interval)
+
+
+        # Ignore if street is short
+        if numsteps > 1:
+            remaining = obj.copy()
+            stairs = ddd.group2(name="Stairs: %s" % obj.name)
+
+            logger.debug("Steps for way (length=%s, num=%d, way=%s)", length, numsteps, obj)
+            idx = 0
+            for d in numpy.linspace(0.0, length, numsteps, endpoint=False):
+                if d == 0.0: continue
+                idx += 1
+
+                cut_dist = path.extra['ddd:way:width'] * 0.5 + 0.5
+                perp = path.perpendicular(d, length=cut_dist, double=True)
+
+                splits = ops.split(remaining.geom, perp.geom)
+
+                splits = [s for s in splits]
+                splits.sort(key=lambda s: s.area)
+
+                if len(splits) > 1:
+
+                    step = obj.copy(name="Step %s: %s" % (idx, obj.name))
+                    step.children = []
+                    step.geom = splits[0]
+                    step.extra['ddd:elevation:level'] = 0.90
+                    step.extra['ddd:area:elevation'] = 'max'
+                    step.extra['ddd:area:type'] = 'default'
+                    #step.extra['ddd:extra_height'] = 0.0
+                    stairs.append(step)
+
+                    remaining.geom = splits[1]
+                    for s in splits[2:]:
+                        remaining.geom = remaining.geom.union(s)
+
+            remaining.name = "Step 0: %s" % (obj.name)
+            remaining.extra['ddd:elevation:level'] = 0.90
+            remaining.extra['ddd:area:elevation'] = 'max'
+            remaining.extra['ddd:area:type'] = 'default'
+            stairs.append(remaining)
+            stairs = stairs.individualize().flatten()
+            obj.replace(stairs)
+            #obj.show()
+
+        return obj
+
+
+

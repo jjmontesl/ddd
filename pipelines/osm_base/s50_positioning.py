@@ -15,6 +15,10 @@ from ddd.pipeline.decorators import dddtask
 """
 """
 
+@dddtask(order="50.50", condition=True)
+def osm_positioning_condition(pipeline):
+    return bool(pipeline.data.get('ddd:osm:positioning', True))
+
 
 @dddtask(order="50.50.10.+", log=True)
 def osm_positioning(pipeline, osm, root, logger):

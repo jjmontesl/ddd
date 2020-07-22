@@ -7,6 +7,7 @@ from ddd.pipeline.decorators import dddtask
 from ddd.core.exception import DDDException
 from ddd.pack.sketchy import sports
 from ddd.util.dddrandom import weighted_choice
+import functools
 
 #@dddgroupgeocondition(select='osm.center [contains()')
 @dddtask(order="10.10.10.+")  # [!contains(["natural"="tree"])]
@@ -17,7 +18,7 @@ def osm_config_locale(root, osm, pipeline):
 @dddtask()
 def osm_config_locale_es_salamanca(root, osm, pipeline):
     config = ddd.point([-5.664, 40.965], name="Salamanca Config")
-    config.extra['osm:tree:type'] = lambda: weighted_choice({'default': 1, 'fir': 0.5})
+    config.extra['osm:tree:type'] = {'default': 1, 'fir': 0.5}
     #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
 
     pipeline.data['ddd:config:items'].append(config)
@@ -25,7 +26,7 @@ def osm_config_locale_es_salamanca(root, osm, pipeline):
 @dddtask()
 def osm_config_locale_es_vigo(root, osm, pipeline):
     config = ddd.point([-8.723, 42.238], name="Vigo Config")
-    config.extra['osm:tree:type'] = lambda: weighted_choice({'default': 1, 'fir': 1, 'palm': 0.25})
+    config.extra['osm:tree:type'] = {'default': 1, 'fir': 1, 'palm': 0.25}
     #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
 
     pipeline.data['ddd:config:items'].append(config)
@@ -33,7 +34,7 @@ def osm_config_locale_es_vigo(root, osm, pipeline):
 @dddtask()
 def osm_config_locale_es_vilanovailageltru(root, osm, pipeline):
     config = ddd.point([1.725,41.224], name="Vilanova i la Geltrú Config")
-    config.extra['osm:tree:type'] = lambda: weighted_choice({'default': 0.5, 'fir': 0.25, 'palm': 1})
+    config.extra['osm:tree:type'] = {'default': 0.5, 'fir': 0.25, 'palm': 1}
     #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
 
     pipeline.data['ddd:config:items'].append(config)

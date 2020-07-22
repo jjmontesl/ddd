@@ -7,6 +7,11 @@ from ddd.pipeline.decorators import dddtask
 from ddd.ddd import ddd
 
 
+@dddtask(order="59.90", condition=True)
+def osm_processed_export_2d_condition(pipeline):
+    return bool(pipeline.data.get('ddd:osm:output:itermediate', False))
+
+
 @dddtask(order="59.90.+")
 def osm_processed_export_2d(root, osm):
 

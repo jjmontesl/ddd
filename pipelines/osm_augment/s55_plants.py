@@ -9,11 +9,16 @@ from ddd.ddd import ddd
 from ddd.util.dddrandom import weighted_choice
 
 
+@dddtask(order="55.50", condition=True)
+def osm_augment_plants_condition(pipeline):
+    return bool(pipeline.data.get('ddd:osm:augment:plants', False))
+
 
 # TODO: implement [!contains(["natural"="tree"])]
 @dddtask(order="55.50.+", path="/Areas/*", select='["ddd:area:type" = "park"]')  # [!contains(["natural"="tree"])]
 def osm_augment_trees_annotate(obj, root):
 
+    # Select areas only if they do not already contain plants
     trees = root.find("/ItemsNodes").filter(lambda o: o.extra.get('osm:natural') == 'tree')
     has_trees = obj.intersects(trees)
     add_trees = not has_trees # and area.geom.area > 100

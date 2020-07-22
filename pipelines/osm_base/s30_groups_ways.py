@@ -254,6 +254,7 @@ def osm_select_ways_stairs(obj, root):
     obj.extra['ddd:way:weight'] = 31
     obj.extra['ddd:way:height'] = 0.2
     obj.extra['ddd:way:width'] = 1.5
+    obj.extra['ddd:way:stairs'] = True
     obj.extra['ddd:area:type'] = "stairs"
     obj = obj.material(ddd.mats.pathwalk)
     # TODO: Do later, after applying elevations, in a select ("add fences to elevated ways")... improve
@@ -560,4 +561,11 @@ def osm_select_ways_calculated_data(obj, root, logger):
     obj.set('ddd:width', default=obj.extra['ddd:way:width'])
 
     # path.extra['ddd:item'] = create_as_item
+
+
+@dddtask(path="/Ways/*", select='["osm:highway"="pedestrian"]["osm:bridge"]')
+def osm_select_ways_calculated_adjustments_pedestrian_bridge(obj, root):
+    """
+    """
+    obj.extra['ddd:way:width'] = obj.extra['ddd:way:width'] * 0.5
 

@@ -59,3 +59,11 @@ def stage_11_hide_boundaries(obj):
     #obj.data['ddd:visible': False]
     return False
 '''
+
+@dddtask(order="20.95.+", cache=True)
+def osm_features_cache(pipeline, osm, root, logger):
+    """
+    Caches current state to allow for faster reruns.
+    """
+    return pipeline.data['filenamebase'] + ".s20.cache"
+

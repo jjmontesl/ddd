@@ -1,5 +1,10 @@
+[0.6.1]
+
 [0.6.0]
 
+  * Basic (draft) support for stairs.
+  * Added state caching support to pipelines.
+  * Added support for skipping sections in pipelines (for options).
   * Added support for amenity:drinking_water.
   * Added extrude_along() method to extrude along paths.
   * Added profiling option.

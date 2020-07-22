@@ -9,6 +9,11 @@ from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 
 
+@dddtask(order="30.40", condition=True)
+def osm_generate_buildings_condition(pipeline):
+    return bool(pipeline.data.get('ddd:osm:buildings', True))
+
+
 @dddtask(order="30.40.5.+")
 def osm_generate_buildings_preprocess(pipeline, osm, root, logger):
     """Preprocesses buildings at OSM feature level, associating buildings and building parts."""

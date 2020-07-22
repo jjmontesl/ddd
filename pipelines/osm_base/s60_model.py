@@ -42,10 +42,24 @@ def osm_model_generate_coastline(osm, root, obj):
     root.find("/Other3").append(coastlines_3d)
 
 
+@dddtask(path="/Ways/*", select='["ddd:area:type"]')
+def osm_model_generate_ways(osm, root, pipeline, obj):
+
+    way_3d = osm.areas3.generate_area_3d(obj)
+
+    if not '_ways_areas_new' in pipeline.data:
+        pipeline.data['_ways_areas_new'] = ddd.group3()
+    pipeline.data['_ways_areas_new'].append(way_3d)
+
+
 @dddtask()
-def osm_model_generate_ways(osm, root):
+def osm_model_generate_ways_old(osm, root, pipeline):
     ways_2d = root.find("/Ways")
     ways_3d = osm.ways3.generate_ways_3d(ways_2d)
+
+    # While old and new ways are together
+    for o in pipeline.data['_ways_areas_new'].children: ways_3d.append(o)
+    del(pipeline.data['_ways_areas_new'])
 
     root.remove(ways_2d)
     root.append(ways_3d)
@@ -57,7 +71,6 @@ def osm_model_generate_ways_roadlines(osm, root, pipeline):
     roadlines = pipeline.data["Roadlines3"]
     del(pipeline.data["Roadlines3"])
     root.append(roadlines)
-
 
 @dddtask()
 def osm_model_generate_areas(osm, root):
@@ -76,6 +89,11 @@ def osm_model_generate_buildings(osm, root):
     root.remove(buildings_2d)
     root.append(buildings_3d)
 
+
+
+@dddtask(path="/ItemsNodes/*", select='[!"ddd:angle"]')
+def osm_positioning_ensure_angles(pipeline, obj):
+    obj.prop_set('ddd:angle', default=0)
 
 
 @dddtask(path="/ItemsNodes/*")

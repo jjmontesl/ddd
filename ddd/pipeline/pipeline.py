@@ -2,6 +2,7 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
+import datetime
 import importlib
 import logging
 import os
@@ -11,10 +12,11 @@ from doit import cmd_run
 import doit
 from doit.task import dict_to_task
 
+from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import DDDTask
-import datetime
+import pickle
 
 
 # Get instance of logger for this module
@@ -30,7 +32,7 @@ class DDDPipeline():
 
         self.root = ddd.group2()
 
-        self.data = {}
+        self.data = dict(D1D2D3Bootstrap.data)
 
         if configfiles:
             self.load(configfiles)
@@ -93,13 +95,61 @@ class DDDPipeline():
         tasks.sort(key=lambda t: (t._order_num, ))
         return tasks
 
+    def cache_save(self, path):
+        logger.info("Saving DDD Pipeline cache data to: %s", path)
+        data = {'root': self.root, 'data': self.data}
+        with open(path, "wb") as f:
+            pickle.dump(data, f)
+
+    def cache_load(self, path):
+        logger.info("Loading DDD Pipeline cache data from: %s", path)
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+        self.root = data['root']
+        self.data.update(data['data'])
+
+        # This shouldn't be done by osm build pipeline, but this fix is needed meanwhile
+        #D1D2D3.data = pipeline.data
+
     def run_pipeline_internal(self):
+
         tasks = self.tasks_sorted()
         for task in tasks:
             print("  " + str(task))
+
+        # Find cached task
+        first_task_idx = 0
+        for task_idx, task in enumerate(reversed(tasks)):
+            if task.cache:
+                filename = task.run(self)
+                if os.path.exists(filename):
+                    logger.info("Continuing from cached state: %s", filename)
+                    self.cache_load(filename)
+                    first_task_idx = len(tasks) - task_idx
+                    break
+        tasks = tasks[first_task_idx:]
+
+
+        skip_tasks = None
         for task in tasks:
+
+            if skip_tasks and task._order_num[:len(skip_tasks)] == skip_tasks:
+                logger.info("Skipping: %s", task)
+                continue
+            skip_tasks = None
+
             try:
-                task.run(self)
+                result = task.run(self)
+
+                if task.condition and not result:
+                    # Skip remaining tasks in order
+                    skip_tasks = task._order_num
+                    logger.debug("Skipping tasks: %s", ".".join([str(s) for s in skip_tasks]))
+
+                if task.cache and result:
+                    logger.info("Caching state to: %s", result)
+                    self.cache_save(result)
+
             except Exception as e:
                 logger.error("Error running task %s: %s", task, e)
                 #raise DDDException("Error running task %s: %s" % (task, e))

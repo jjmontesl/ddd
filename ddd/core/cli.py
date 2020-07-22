@@ -23,8 +23,8 @@ class D1D2D3Bootstrap():
     export_mesh = False
 
     # TODO: make classes that provide help, leave "run" for user scripts
-    commands = OrderedDict(
-        {"catalog-show": ("ddd.catalog.commands.show", "Show catalog"),
+    commands = OrderedDict({
+        "catalog-show": ("ddd.catalog.commands.show", "Show catalog"),
         "catalog-export": ("ddd.catalog.commands.export", "Export catalog to file"),
         "catalog-clear": ("ddd.catalog.commands.clear", "Clear catalog"),
         "texture-pack": ("ddd.materials.commands.texturepack", "Pack textures into texture atlases"),
@@ -84,6 +84,7 @@ class D1D2D3Bootstrap():
         parser.add_argument("-r", "--profile", type=str, default=False, help="profile execution writing results to filename")
 
         parser.add_argument("-c", "--config", action="append", help="load config file before running")
+        parser.add_argument("-p", action="append", type=str, nargs="?", dest="properties", default=None, help="set property (key=value)")
 
         parser.add_argument("--export-meshes", action="store_true", default=False, help="export instance meshes")
         parser.add_argument("--export-markers", action="store_true", default=False, help="export instance markers (default)")
@@ -125,14 +126,17 @@ class D1D2D3Bootstrap():
 
         self.debug = args.debug
         self.command = args.command
+
         self.configs = args.config if args.config else []
+        self.configs = ['~/.ddd.conf', './ddd.conf'] + self.configs
+
         self.visualize_errors = args.visualize_errors
         self.overwrite = args.overwrite
-
+        self.properties = args.properties
 
         if args.help:
+            print(parser.format_help())
             if not self.command:
-                print(parser.format_help())
                 sys.exit(0)
             else:
                 unparsed_args = unparsed_args + ['-h']
@@ -151,17 +155,35 @@ class D1D2D3Bootstrap():
         D1D2D3Bootstrap.catalog_overwrite = args.catalog_overwrite
         D1D2D3Bootstrap.catalog_ignore = args.catalog_ignore
 
+        D1D2D3Bootstrap.data = {}
+        if args.properties:
+            for prop in args.properties:
+                key, value = prop.split("=", 1)
+                D1D2D3Bootstrap.data[key] = value
+
         if self.command in self.commands:
             self.command = self.commands[self.command][0]
 
         self._unparsed_args = unparsed_args
 
     def runconfig(self):
+        data = {}
         for configname in self.configs:
-            logger.info("Running config file: %s", configname)
-            self.runcommand(configname)
+            path = configname
+            path = os.path.expanduser(path)
+            path = os.path.abspath(path)
+            if os.path.exists(path):
+                logger.info("Running config file: %s", configname)
+                source = None
+                with open(path) as f:
+                    source = f.read()
+                exec(source, globals(), {'data': data})
+        data.update(D1D2D3Bootstrap.data)
+        D1D2D3Bootstrap.data = data
+
 
     def runcommand(self, command):
+        logger.info("Properties: %s", D1D2D3Bootstrap.data)
         if not self.profile:
             self._runcommand(command)
         else:

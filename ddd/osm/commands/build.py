@@ -160,7 +160,11 @@ class OSMBuildCommand(DDDCommand):
             trans_func = partial(pyproj.transform, osm_proj, ddd_proj)
             area_ddd = ops.transform(trans_func, self.area)
         else:
-            area_ddd = ddd.point().buffer(self._radius, cap_style=ddd.CAP_ROUND, resolution=8).geom
+            resolution = 8
+            if resolution > 1:
+                area_ddd = ddd.point().buffer(self._radius, cap_style=ddd.CAP_ROUND, resolution=resolution).geom
+            else:
+                area_ddd = ddd.rect([-self._radius, -self._radius, self._radius, self._radius]).geom
 
         logger.info("Complete polygon area: %.1f km2 (%d at 500, %d at 250, %d at 200)", area_ddd.area / (1000 * 1000), math.ceil(area_ddd.area / (500 * 500)), math.ceil(area_ddd.area / (250 * 250)), math.ceil(area_ddd.area / (200 * 200)))
 
@@ -192,7 +196,7 @@ class OSMBuildCommand(DDDCommand):
             else:
 
                 area_crop = area_ddd
-                area_filter = area_ddd.buffer(self.chunk_size_extra_filter)
+                area_filter = area_ddd.buffer(self.chunk_size_extra_filter, join_style=ddd.JOIN_MITRE)
 
                 shortname = '%s_%dr_%.3f,%.3f' % (name, self._radius if self._radius else 0, self.center[0], self.center[1])
                 filenamebase = 'output/%s/%s' % (name, shortname)
@@ -245,6 +249,7 @@ class OSMBuildCommand(DDDCommand):
 
                                             'pipelines.osm_common.s45_pitch.py',
 
+                                            'pipelines.osm_base.s50_stairs.py',
                                             'pipelines.osm_base.s50_positioning.py',
                                             'pipelines.osm_base.s50_crop.py',
                                             'pipelines.osm_base.s50_90_export_2d.py',

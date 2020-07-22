@@ -7,8 +7,13 @@ from ddd.pipeline.decorators import dddtask
 from ddd.ddd import ddd
 
 
+@dddtask(order="40.90", condition=True)
+def osm_structured_export_2d_condition(pipeline):
+    return bool(pipeline.data.get('ddd:osm:output:itermediate', False))
+
+
 @dddtask(order="40.90.+")
-def osm_structured_export_2d(root, osm):
+def osm_structured_export_2d(root, pipeline):
 
 
     root = root.copy()
@@ -21,7 +26,9 @@ def osm_structured_export_2d(root, osm):
     #root.find("/Buildings").replace(root.find("/Buildings").material(ddd.mats.stone).prop_set('svg:fill-opacity', 0.7, True))
     #root.find("/Items").replace(root.find("/Items").buffer(1.0).material(ddd.mats.highlight))
 
-    root.save("/tmp/osm-structured.json")
+    if bool(pipeline.data.get('ddd:osm:output:json', False)):
+        root.save("/tmp/osm-structured.json")
+
     root.save("/tmp/osm-structured.svg")
 
 

@@ -30,6 +30,7 @@ class Ways3DOSMBuilder():
 
     def generate_ways_3d(self, ways_2d):
         #for layer_idx in self.osm.layer_indexes:
+        ways_2d = ways_2d.individualize().flatten().clean()
         ways_3d = self.generate_ways_3d_base(ways_2d)
 
         #self.generate_ways_3d_subways()

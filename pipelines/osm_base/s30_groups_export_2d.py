@@ -6,6 +6,10 @@ from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 
 
+@dddtask(order="30.90", condition=True)
+def osm_features_export_2d_condition(pipeline):
+    return bool(pipeline.data.get('ddd:osm:output:itermediate', False))
+
 
 @dddtask(order="30.90.+", path="/Ways/*")
 def osm_groups_ways_svg_style(obj):

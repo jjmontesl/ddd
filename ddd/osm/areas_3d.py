@@ -154,7 +154,7 @@ class Areas3DOSMBuilder():
                 continue
 
             try:
-                if area_2d.extra.get('ddd:area:type', 'default') is 'default':
+                if area_2d.extra.get('ddd:area:type', 'default') == 'default':
                     area_3d = self.generate_area_3d(area_2d)
                 elif area_2d.extra['ddd:area:type'] == 'sidewalk':
                     area_3d = self.generate_area_3d(area_2d)
@@ -293,6 +293,10 @@ class Areas3DOSMBuilder():
             area_elevation = area_2d.extra.get('ddd:area:elevation', 'geotiff')
             if area_elevation == 'geotiff':
                 area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
+            elif area_elevation == 'min':
+                area_3d = terrain.terrain_geotiff_min_elevation_apply(area_3d, self.osm.ddd_proj)
+            elif area_elevation == 'max':
+                area_3d = terrain.terrain_geotiff_max_elevation_apply(area_3d, self.osm.ddd_proj)
             elif area_elevation == 'none':
                 pass
             else:

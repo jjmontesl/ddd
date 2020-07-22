@@ -13,6 +13,7 @@ import sys
 from ddd.pack.sketchy.urban import patio_table
 from collections import defaultdict
 from ddd.core.exception import DDDException
+from ddd.util.dddrandom import weighted_choice
 
 
 # Get instance of logger for this module
@@ -175,7 +176,10 @@ class ItemsOSMBuilder():
         if tree_type is None:
             tree_type = random.choice(['default', 'palm'])
         '''
+
         tree_type = item_2d.get('osm:tree:type')
+        if isinstance(tree_type, dict):
+            tree_type = weighted_choice(tree_type)
 
         key = "tree-%s-%d" % (tree_type, random.choice([1, 2, 3, 4, 5, 6, 7]))
 

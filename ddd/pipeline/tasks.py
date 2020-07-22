@@ -24,16 +24,22 @@ class DDDTask(object):
 
     _tasks = []
 
-    def __init__(self, name=None, path=None, select=None, filter=None, order=None, parent=None, before=None, after=None, log=None, recurse=False):
+    def __init__(self, name=None, path=None, select=None, filter=None,
+                 order=None, #parent=None, before=None, after=None,
+                 log=None, recurse=False,
+                 condition=False, cache=False):
 
         self.name = name
 
         self.order = order
         self._order_num = None
 
-        self.parent = parent
-        self.before = before
-        self.after = after
+        #self.parent = parent
+        #self.before = before
+        #self.after = after
+
+        self.condition = condition
+        self.cache = cache
 
         self.log = log
 
@@ -48,6 +54,10 @@ class DDDTask(object):
             logger.error("Invalid selector: %s", select)
             #raise DDDException("Invalid selector: %s", select)
             raise
+
+        # Sanity check
+        if (self.path or self.selector or self.filter) and (self.condition):
+            raise DDDException("A task cannot have both path/selector/filter and a condition parameters.")
 
         # TODO: Do this in the decorator, not here. Registry shall possisbly be separate, what if someone needs an unregistered task
         DDDTask._tasks.append(self)
@@ -92,7 +102,9 @@ class DDDTask(object):
             elif arg == 'logger': kwargs['logger'] = logging.getLogger(func.__module__)
             elif arg in pipeline.data: kwargs[arg] = pipeline.data[arg]
 
-        func(**kwargs)
+        result = func(**kwargs)
+
+        return result
 
     def run_each(self, pipeline):
 

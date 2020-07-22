@@ -212,6 +212,15 @@ def osm_structured_rest(root, osm):
     pass
 
 
-@dddtask(order="40.90")
+@dddtask(order="49.50")
 def osm_structured_finished(pipeline, osm, root, logger):
     pass
+
+
+@dddtask(order="49.95.+", cache=True)
+def osm_structured_cache(pipeline, osm, root, logger):
+    """
+    Caches current state to allow for faster reruns.
+    """
+    return pipeline.data['filenamebase'] + ".s40.cache"
+

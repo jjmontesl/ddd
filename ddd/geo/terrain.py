@@ -112,3 +112,23 @@ def terrain_geotiff_min_elevation_apply(obj, ddd_proj):
     obj.extra['_terrain_geotiff_min_elevation_apply:elevation'] = min_h
     #mesh.mesh.invert()
     return obj
+
+def terrain_geotiff_max_elevation_apply(obj, ddd_proj):
+    elevation = ElevationChunk.load(dem_file)
+
+    max_h = None
+    for v in obj.vertex_iterator():
+        v_h = elevation.value(transform_ddd_to_geo(ddd_proj, [v[0], v[1]]))
+        if max_h is None:
+            max_h = v_h
+        if v_h > max_h:
+            max_h = v_h
+
+    if max_h is None:
+        raise DDDException("Cannot calculate max value for elevation: %s" % obj)
+
+    #func = lambda x, y, z, i: [x, y, z + max_h]
+    obj = obj.translate([0, 0, max_h])
+    obj.extra['_terrain_geotiff_max_elevation_apply:elevation'] = max_h
+    #mesh.mesh.invert()
+    return obj
