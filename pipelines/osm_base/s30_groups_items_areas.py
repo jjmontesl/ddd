@@ -49,6 +49,7 @@ def osm_groups_items_areas_leisure_playground(obj, root, osm):
     obj = obj.material(ddd.mats.pitch_blue)
     obj.name = "Playground: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"
+    obj.extra['ddd:height'] = 0.2
     root.find("/Areas").append(obj)
 
 

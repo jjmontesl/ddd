@@ -140,6 +140,8 @@ class ItemsOSMBuilder():
 
         # FIXME: This shuld not be done here, but by each element (some are snapped at their center, some min_vertex...)
         if item_3d:
+
+            # Apply height
             height_mapping = item_3d.extra.get('_height_mapping', 'terrain_geotiff_min_elevation_apply')
             if height_mapping == 'terrain_geotiff_elevation_apply':
                 item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
@@ -157,8 +159,18 @@ class ItemsOSMBuilder():
             else:
                 item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
 
-            #if ("Julio Verne" in item_3d.name):
-            #    print(item_3d.show())
+            # Apply base height
+            base_height = item_2d.get('ddd:height:base', None)
+            if base_height:
+                item_3d = item_3d.translate([0, 0, base_height])
+
+            # Copy item_2d attributes
+            for k, v in item_2d.extra.items():
+                item_3d.set(k, default=v, children=True)
+            #data = dict(item_2d.extra)
+            #data.update(item_3d.extra)
+            #item_3d.extra = data
+
 
         return item_3d
 

@@ -127,3 +127,11 @@ def osm_groups_finished(pipeline, osm, root, logger):
 
 
 
+@dddtask(order="39.95.+", cache=True)
+def osm_groups_cache(pipeline, osm, root, logger):
+    """
+    Caches current state to allow for faster reruns.
+    """
+    return pipeline.data['filenamebase'] + ".s30.cache"
+
+

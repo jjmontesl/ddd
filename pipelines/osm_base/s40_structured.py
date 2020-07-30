@@ -15,7 +15,7 @@ def osm_structured_init(root, osm):
 
 @dddtask()
 def osm_structured_split_ways(osm, root):
-    osm.ways1.split_ways_1d(root.find("/Ways"))  # Where to put?
+    osm.ways1.split_ways_1d(root.find("/Ways"))  # Move earlier?
 
 @dddtask()
 def osm_structured_link_ways_items(osm, root):
@@ -77,12 +77,13 @@ def osm_structured_areas_layer(osm, root, obj):
     obj.prop_set('ddd:layer', layer)
 
 
+
 @dddtask()
-def osm_structured_areas_postprocess(root, osm):
+def osm_structured_areas_postprocess_water(root, osm):
     areas_2d = root.find("/Areas")
     ways_2d = root.find("/Ways")
-    #osm.areas2.generate_areas_2d_postprocess()
     osm.areas2.generate_areas_2d_postprocess_water(areas_2d, ways_2d)
+
 
 
 @dddtask()
@@ -101,6 +102,7 @@ def osm_structured_generate_areas_interways(pipeline, osm, root, logger):
     interiors = interiors.material(ddd.mats.pavement)
     interiors.prop_set('ddd:area:type', 'sidewalk', children=True)
     interiors.prop_set('ddd:kerb', True, children=True)
+    interiors.prop_set('ddd:height', 0.2, children=True)
     interiors.prop_set('ddd:layer', "0", children=True)
     #interiors = interiors.clean()
 
@@ -153,9 +155,26 @@ def osm_structured_areas_process(logger, osm, root):
 
         osm.areas2.generate_areas_2d_process(root.find("/Areas"), areas_2d, subtract)
 
+
 @dddtask()
-def osm_structured_areas_subtract(logger, osm, root):
-    pass
+def osm_structured_areas_postprocess_cut_outlines(root, osm):
+    areas_2d = root.find("/Areas")
+    ways_2d = root.find("/Ways")
+    osm.areas2.generate_areas_2d_postprocess_cut_outlines(areas_2d, ways_2d)
+
+
+@dddtask()
+def osm_structured_areas_link_items_nodes(root, osm):
+    """Associate features (amenities, etc) to buildings."""
+    # TODO: There is some logic for specific items inside: use tagging for linkable items.
+    items = root.find("/ItemsNodes")
+
+    areas = root.find("/Areas")
+    ways = root.find("/Ways")
+    areas.children.extend(ways.children)
+
+    osm.areas2.link_items_to_areas(areas, items)
+
 
 @dddtask(log=True)
 def osm_structured_building_link_items_nodes(root, osm):

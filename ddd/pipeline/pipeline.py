@@ -123,10 +123,15 @@ class DDDPipeline():
             if task.cache:
                 filename = task.run(self)
                 if os.path.exists(filename):
-                    logger.info("Continuing from cached state: %s", filename)
-                    self.cache_load(filename)
-                    first_task_idx = len(tasks) - task_idx
-                    break
+                    # Delete cached file if so specified
+                    if D1D2D3Bootstrap.cache_clear is not None and tuple(task._order_num) >= D1D2D3Bootstrap.cache_clear:
+                        logger.info("Deleting cached pipeline state (--cache-clear=%s): %s", D1D2D3Bootstrap.cache_clear, filename)
+                        os.unlink(filename)
+                    else:
+                        logger.info("Continuing from cached state: %s", filename)
+                        self.cache_load(filename)
+                        first_task_idx = len(tasks) - task_idx
+                        break
         tasks = tasks[first_task_idx:]
 
 

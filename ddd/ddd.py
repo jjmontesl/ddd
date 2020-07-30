@@ -603,7 +603,7 @@ class DDDObject():
                     method_to_call = getattr(comp, methodname)
                     self.extra[k] = method_to_call(*args, **kwargs)
 
-    def get(self, keys, default=None, extra=None):
+    def get(self, keys, default=(None, ), extra=None):
         """
         Returns a property from dictionary and settings.
 
@@ -632,7 +632,7 @@ class DDDObject():
                     break
 
         if key is None:
-            if default is not None:
+            if default is not self.get.__defaults__[0]:
                 result = default
             else:
                 raise DDDException("Cannot resolve property %r in object '%s'." % (keys, self))
@@ -716,22 +716,6 @@ class DDDObject2(DDDObject):
 
     def __repr__(self):
         return "%s(%s, name=%s, geom=%s (%s verts), children=%d)" % (self.__class__.__name__, id(self), self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
-
-    def vertex_count(self):
-        if not self.geom:
-            return 0
-        if self.geom.type == 'MultiPolygon':
-            return sum([len(p.exterior.coords) for p in self.geom.geoms])
-        if self.geom.type == 'Polygon':
-            if self.geom.is_empty: return 0
-            return len(self.geom.exterior.coords) + sum([len(i.coords) for i in self.geom.interiors])
-        else:
-            try:
-                return len(self.geom.coords)
-            except Exception as e:
-                #logger.debug("Invalid vertex count (multi-part geometry involved): %s", self)
-                pass
-        return None
 
     def copy(self, name=None):
         obj = DDDObject2(name=name if name else self.name, children=[c.copy() for c in self.children], geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
@@ -997,6 +981,44 @@ class DDDObject2(DDDObject):
             geoms.extend(c.recurse_geom())
 
         return geoms
+
+    def coords_iterator(self):
+        if self.geom.type == 'MultiPolygon':
+            for g in self.geom.geoms:
+                for coord in g.exterior.coords:
+                    yield coord
+        elif self.geom.type == 'Polygon':
+            for coord in self.geom.exterior.coords:
+                yield coord
+        elif self.geom.type == 'GeometryCollection':
+            for g in self.geom.geoms:
+                for coord in D1D2D3.shape(g).coords_iterator():
+                    yield coord
+        elif self.geom.type == 'LineString':
+            for coord in self.geom.coords:
+                yield coord
+        else:
+            raise NotImplementedError("Not implemented coords_iterator for geom: %s" % self.geom.type)
+
+        for c in self.children:
+            for coord in c.coords_iterator():
+                yield coord
+
+    def vertex_count(self):
+        if not self.geom:
+            return 0
+        if self.geom.type == 'MultiPolygon':
+            return sum([len(p.exterior.coords) for p in self.geom.geoms])
+        if self.geom.type == 'Polygon':
+            if self.geom.is_empty: return 0
+            return len(self.geom.exterior.coords) + sum([len(i.coords) for i in self.geom.interiors])
+        else:
+            try:
+                return len(self.geom.coords)
+            except Exception as e:
+                #logger.debug("Invalid vertex count (multi-part geometry involved): %s", self)
+                pass
+        return None
 
     def remove_z(self):
         result = self.copy()
@@ -1443,6 +1465,17 @@ class DDDObject2(DDDObject):
 
         return result
 
+    def orient_from(self, other):
+        """
+        Orients a line so it starts from the closest point to other
+        """
+        result = self.copy()
+        dist_0 = other.distance(ddd.point(self.geom.coords[0]))
+        dist_1 = other.distance(ddd.point(self.geom.coords[-1]))
+        if dist_1 < dist_0:
+            result.geom.coords = reversed(list(result.geom.coords))
+        return result
+
     def simplify(self, distance):
         result = self.copy()
         if self.geom:
@@ -1627,7 +1660,10 @@ class DDDObject2(DDDObject):
 
         # Show in 3D view
         #self.extrude(0.2).show()
-        self.triangulate().show()
+        try:
+            self.triangulate().show()
+        except Exception as e:
+            logger.error("Could not show object %s: %s", self, e)
 
         # Show in browser
         #logger.info("Showing 2D image via shell.")

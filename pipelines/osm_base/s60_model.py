@@ -9,6 +9,39 @@ from ddd.geo import terrain
 from ddd.core.exception import DDDException
 
 
+def set_base_height(obj):
+    container = obj.get('ddd:area:container', None)
+    base_height = 0.0
+    if container:
+        set_base_height(container)
+        base_height = container.get('ddd:height:base', 0)
+        obj_height = container.get('ddd:height', 0)
+        base_height = (base_height if base_height else 0) + (obj_height if obj_height else 0)
+    obj.set('ddd:height:base', base_height)
+
+@dddtask(order="60.05.+", path="/Areas/*", select='[!"ddd:height:base"]')
+def osm_model_pre_propagate_base_height_areas(root, obj):
+    """
+    Propagates height and height:base, using already calculated containment relations between areas.
+    """
+    set_base_height(obj)
+
+@dddtask(order="60.05.+", path="/Ways/*", select='[!"ddd:height:base"]')
+def osm_model_pre_propagate_base_height_ways(root, obj):
+    """
+    Propagates height and height:base, using already calculated containment relations between areas.
+    """
+    set_base_height(obj)
+
+@dddtask(order="60.05.+", path="/ItemsNodes/*", select='[!"ddd:height:base"]')
+def osm_model_pre_propagate_base_height_items_nodes(root, obj):
+    """
+    Propagates height and height:base, using already calculated containment relations between areas.
+    """
+    set_base_height(obj)
+
+
+
 @dddtask(order="60.10.+", log=True)
 def osm_model_init(root, osm):
 

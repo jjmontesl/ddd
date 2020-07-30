@@ -156,6 +156,8 @@ class Areas3DOSMBuilder():
             try:
                 if area_2d.extra.get('ddd:area:type', 'default') == 'default':
                     area_3d = self.generate_area_3d(area_2d)
+                elif area_2d.extra.get('ddd:area:type', 'default') == 'stairs':
+                    area_3d = self.generate_area_3d(area_2d)
                 elif area_2d.extra['ddd:area:type'] == 'sidewalk':
                     area_3d = self.generate_area_3d(area_2d)
                 elif area_2d.extra['ddd:area:type'] == 'park':

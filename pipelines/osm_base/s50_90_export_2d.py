@@ -29,3 +29,11 @@ def osm_processed_export_2d(root, osm):
     root.save("/tmp/osm-processed.json")
     root.save("/tmp/osm-processed.svg")
 
+
+@dddtask(order="59.95.+", cache=True)
+def osm_processed_cache(pipeline, osm, root, logger):
+    """
+    Caches current state to allow for faster reruns.
+    """
+    return pipeline.data['filenamebase'] + ".s50.cache"
+

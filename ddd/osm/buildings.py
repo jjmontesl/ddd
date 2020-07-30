@@ -102,6 +102,9 @@ class BuildingOSMBuilder():
             if not building:
                 continue
 
+            if distance > 10:
+                continue
+
             feature.extra['osm:building'] = building
 
             if feature.extra.get('osm:amenity', None) or feature.extra.get('osm:shop', None):

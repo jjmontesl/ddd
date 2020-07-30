@@ -9,6 +9,7 @@ from shapely.geometry.polygon import LinearRing
 
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd
+from shapely.strtree import STRtree
 
 
 # Get instance of logger for this module
@@ -31,6 +32,7 @@ class Areas2DOSMBuilder():
 
         for idx in range(len(areas)):
             area = areas[idx]
+            area.extra['ddd:area:original'] = area
             for larger in areas[idx + 1:]:
                 if larger.contains(area):
                     #logger.info("Area %s contains %s.", larger, area)
@@ -54,12 +56,7 @@ class Areas2DOSMBuilder():
             original_area = area
             area.extra['ddd:area:original'] = original_area  # Before subtracting any internal area
 
-            '''
             # Subtract areas contained (use contained relationship)
-            for contained in narea.extra['ddd:area:contained']:
-                narea = narea.subtract(contained)
-            '''
-
             narea = area.subtract(ddd.group2(area.extra['ddd:area:contained']))
             narea = narea.subtract(union)
             #narea = narea.clean()  #eps=0.0)
@@ -94,7 +91,7 @@ class Areas2DOSMBuilder():
             except TopologicalError as e:
                 logger.error("Error calculating union_safe (2/3): %s", e)
                 #union = groups.clean(eps=0.05).union()  # causes areas overlap?
-                union = ddd.group2()
+                #union = ddd.group2()
         return union
 
     def generate_areas_2d_ways_interiors(self, union):
@@ -123,26 +120,28 @@ class Areas2DOSMBuilder():
 
         return result
 
-    def generate_areas_2d_postprocess(self):
+    def generate_areas_2d_postprocess_cut_outlines(self, areas_2d, ways_2d):
         """
         """
-
-        logger.info("Postprocessing areas and ways (%d areas, %d ways['0']).", len(self.osm.areas_2d.children), len(self.osm.ways_2d['0'].children))
 
         #
         areas_2d_original = ddd.group2()
-        for a in self.osm.areas_2d.children:
+        for a in areas_2d.children:
             if a.extra.get('ddd:area:original', None):
                 if a.extra.get('ddd:area:original') not in areas_2d_original.children:
                     areas_2d_original.append(a.extra.get('ddd:area:original'))
 
+        logger.info("Postprocessing areas and ways (%d areas_2d_original, %d ways).", len(areas_2d_original.children), len(ways_2d.children))
+
         # Remove paths from some areas (sidewalks), and reincorporate to them
         #to_remove = []
-        for way_2d in self.osm.ways_2d['0'].children:
-            if way_2d.extra.get('osm:highway', None) not in ('footway', 'path', 'track', None): continue
-            if way_2d.extra.get('ddd:area:type', None) == 'water': continue
+        to_append = []
+        for way_2d in ways_2d.children:
 
             for area in areas_2d_original.children:  #self.osm.areas_2d.children:  # self.osm.areas_2d.children:
+
+                #if way_2d.extra.get('osm:highway', None) not in ('footway', 'path', 'track', None): continue
+                if way_2d.extra.get('ddd:area:type', None) == 'water': continue
 
                 #area_original = area.extra.get('ddd:area:original', None)
                 #if area_original is None: continue
@@ -153,7 +152,7 @@ class Areas2DOSMBuilder():
 
                 intersects = False
                 try:
-                    intersects = area_original.intersects(way_2d)
+                    intersects = area_original.intersects(way_2d) and area_original.outline().intersects(way_2d)
                 except Exception as e:
                     logger.error("Could not calculate intersections between way and area: %s %s", way_2d, area)
                     raise DDDException("Could not calculate intersections between way and area: %s %s" % (way_2d, area))
@@ -161,19 +160,27 @@ class Areas2DOSMBuilder():
                 if intersects:
                     logger.debug("Path %s intersects area: %s (subtracting and arranging)", way_2d, area)
                     way_2d.extra['ddd:area:container'] = area_original
-                    #to_remove.append(area
 
-                    intersection = way_2d.intersection(area_original)
+                    #ddd.group2([way_2d, area_original]).show()
+
                     remainder = way_2d.subtract(area_original)
 
-                    way_2d.replace(intersection)  # way_2d.subtract(intersection))
+                    intersection = way_2d.intersection(area_original)
+                    #intersection.extra['ddd:area:container'].append(area)
 
-                    remainder = remainder.material(ddd.mats.pavement)
-                    area.extra['ddd:area:type'] = 'sidewalk'
+                    #remainder = remainder.material(ddd.mats.pavement)
+                    #area.extra['ddd:area:type'] = 'sidewalk'
                     remainder.name = "Path to interways: %s" % way_2d.name
                     remainder.clean(eps=0.001)
-                    self.osm.areas_2d.append(remainder)
-                    #area = area.union().clean(eps=0.001)
+
+                    way_2d.replace(remainder)  # way_2d.subtract(intersection))
+
+                    #ways_2d.append(remainder)
+                    # Delay appending
+                    to_append.append(intersection)
+
+        for a in to_append:
+            ways_2d.append(a)
 
         #self.osm.areas_2d.children = [c for c in self.osm.areas_2d.children if c not in to_remove]
 
@@ -298,4 +305,27 @@ class Areas2DOSMBuilder():
         #    self.osm.water_3d = ddd.group(areas)
         #else:
         #    logger.debug("No water areas from coastline generated.")
+
+
+    def link_items_to_areas(self, areas_2d, items_1d):
+
+        logger.info("Linking %d items to %d areas.", len(items_1d.children), len(areas_2d.children))
+        # TODO: Link to building parts, inspect facade, etc.
+
+        #logger.debug("Sorting 2D areas (%d).", len(areas_2d))
+
+        #items_1d_query = STRtree(items_1d.)
+
+        for item in items_1d.children:
+            if not self.osm.area_crop2.contains(item): continue
+            # Find closest building
+            #point = feature.copy(name="Point: %s" % (feature.extra.get('name', None)))
+            areas = areas_2d.select(func=lambda a: a.contains(item)).children
+            if areas:
+                areas.sort(key=lambda a: a.geom.area if a.geom else float("inf"))  # extra['ddd:area:area'])
+                #logger.debug("Assigning point feature to area: %s -> %s", item, areas[0])
+                item.set('ddd:area:container', areas[0])
+            else:
+                #logger.debug("Point feature with no container area: %s", item)
+                pass
 

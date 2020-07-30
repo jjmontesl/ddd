@@ -96,6 +96,9 @@ class D1D2D3Bootstrap():
         parser.add_argument("--catalog-overwrite", action="store_true", default=False, help="overwrite catalog items")
         parser.add_argument("--catalog-ignore", action="store_true", default=False, help="do not use catalog (read, write or store)")
 
+        # Cache should be part of a more general pipeline build approach
+        parser.add_argument("--cache-clear", action="store", nargs="?", default=None, const=(1, ), help="clear pipeline cache (from task order 1 or argument if set)")
+
 
         parser.add_argument("command", help="script or command to run", nargs="?")
 
@@ -154,6 +157,10 @@ class D1D2D3Bootstrap():
 
         D1D2D3Bootstrap.catalog_overwrite = args.catalog_overwrite
         D1D2D3Bootstrap.catalog_ignore = args.catalog_ignore
+
+        D1D2D3Bootstrap.cache_clear = args.cache_clear
+        if isinstance(D1D2D3Bootstrap.cache_clear, str):
+            D1D2D3Bootstrap.cache_clear = tuple(int(v) for v in D1D2D3Bootstrap.cache_clear.split("."))
 
         D1D2D3Bootstrap.data = {}
         if args.properties:

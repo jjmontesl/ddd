@@ -195,6 +195,12 @@ fig = fig.extrude_step(fig1.buffer(-2.5), 0.5, method=ddd.EXTRUSION_METHOD_SUBTR
 fig = fig.extrude_step(fig1.buffer(-2.5), 0.5, method=ddd.EXTRUSION_METHOD_SUBTRACT)
 items.append(fig)
 
+# Triangulate/Extrude with colinear segments
+fig1 = ddd.polygon([[0, 0], [1, 0], [2, 0], [2, 1], [1, 1], [0, 1]])
+#fig = fig1.triangulate()
+fig = fig1.extrude(1.0)
+items.append(fig)
+
 
 # All items
 items = ddd.align.grid(items, space=10.0)
