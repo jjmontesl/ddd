@@ -1004,6 +1004,29 @@ class DDDObject2(DDDObject):
             for coord in c.coords_iterator():
                 yield coord
 
+    def _vertex_func_coords(self, func, coords):
+        ncoords = []
+        for iv, v in enumerate(coords):
+            res = func(v[0], v[1], v[2] if len(v) > 2 else 0.0, iv)
+            ncoords.append(res[:len(v)])
+            #print("%s > %s" % (v, res))
+        return ncoords
+
+    def vertex_func(self, func):
+        obj = self.copy()
+        if obj.geom:
+            if obj.geom.type == 'MultiPolygon':
+                logger.warn("Unknown geometry for 2D vertex func")
+                for g in obj.geom.geoms:
+                    g.exterior.coords = self._vertex_func_coords(func, g.exterior.coords)
+            elif obj.geom.type == 'Polygon':
+                obj.geom = ddd.polygon(self._vertex_func_coords(func, obj.geom.exterior.coords)).geom
+            else:
+                logger.warn("Unknown geometry for 2D vertex func")
+
+        obj.children = [c.vertex_func(func) for c in self.children]
+        return obj
+
     def vertex_count(self):
         if not self.geom:
             return 0
@@ -1218,7 +1241,7 @@ class DDDObject2(DDDObject):
         for c in self.children:
             c.validate()
 
-    def individualize(self, remove_interiors=False):
+    def individualize(self, remove_interiors=False, always=False):
         """
         Return a group of multiple DDD2Objects if the object is a GeometryCollection.
         """
@@ -1251,6 +1274,13 @@ class DDDObject2(DDDObject):
             result.geom = None
             newobj = self.copy()
             newobj.geom = self.geom.exterior
+            newchildren.append(newobj)
+
+        elif always:
+            # Move as a children for consistency
+            result.geom = None
+            newobj = self.copy()
+            newobj.geom = self.geom
             newchildren.append(newobj)
 
         result.children = [c.individualize() for c in (self.children + newchildren)]
