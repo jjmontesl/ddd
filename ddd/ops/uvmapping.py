@@ -106,9 +106,29 @@ class DDDUVMapping():
     #def map_wrap(self, obj):
     #    raise NotImplementedError
 
+
+    def map_2d_linear(self, obj):
+
+        def uv_apply_func(x, y, z, idx):
+            # Find nearest point in path
+            return (x, y)
+
+        result = obj
+        if obj.geom:
+            if obj.geom.type == "MultiPolygon":
+                logger.error("Geometry to map 2D path to does not have exterior coordinates: %s" % obj)
+            elif obj.geom.exterior:
+                result.extra['uv'] = [uv_apply_func(v[0], v[1], 0.0, idx) for idx, v in enumerate(obj.geom.exterior.coords)]
+            else:
+                logger.error("Geometry to map 2D path to does not have exterior coordinates: %s" % obj)
+
+        result.children = [self.map_2d_linear(c) for c in obj.children]
+        return result
+
+
 def map_2d_path(obj, path, line_x_offset=0.0, line_x_width=0.1):
     """
-    Assigns UV coordinates to a shape for a line along a path.
+    Assigns UV coordinates to a 2D shape for a line along a 2D path.
     This method does not create a copy of objects, affecting the hierarchy.
     """
 
@@ -136,6 +156,7 @@ def map_2d_path(obj, path, line_x_offset=0.0, line_x_width=0.1):
 
     result.children = [map_2d_path(c, path) for c in obj.children]
     return result
+
 
 
 def map_3d_from_2d(obj_3d, obj_2d):

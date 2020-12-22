@@ -8,7 +8,7 @@ from ddd.pipeline.decorators import dddtask
 
 @dddtask(order="20.90.10", condition=True)
 def osm_features_export_2d_condition(pipeline):
-    return bool(pipeline.data.get('ddd:osm:output:itermediate', False))
+    return bool(pipeline.data.get('ddd:osm:output:intermediate', False))
 
 @dddtask(order="20.90.10.+")
 def osm_features_export_2d(root):

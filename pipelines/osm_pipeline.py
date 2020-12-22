@@ -52,8 +52,8 @@ pipeline = DDDPipeline(['pipelines.osm_base.s10_init.py',
                         ], name="OSM Build Pipeline")
 
 
-pipeline.data['ddd:osm:output_json'] = True  # associate to debug config if not set
-pipeline.data['ddd:osm:output_itermediate'] = True  # associate to debug config if not set
+pipeline.data['ddd:osm:output:json'] = True  # associate to debug config if not set
+pipeline.data['ddd:osm:output:intermediate'] = True  # associate to debug config if not set
 
 pipeline.data['ddd:osm:water'] = False
 pipeline.data['ddd:osm:underwater'] = False

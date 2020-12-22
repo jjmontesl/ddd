@@ -9,7 +9,7 @@ from ddd.ddd import ddd
 
 @dddtask(order="40.90", condition=True)
 def osm_structured_export_2d_condition(pipeline):
-    return bool(pipeline.data.get('ddd:osm:output:itermediate', False))
+    return bool(pipeline.data.get('ddd:osm:output:intermediate', False))
 
 
 @dddtask(order="40.90.+")

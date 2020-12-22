@@ -20,5 +20,3 @@ import pyproj
 import math
 
 
-
-

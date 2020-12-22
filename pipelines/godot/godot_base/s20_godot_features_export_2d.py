@@ -8,7 +8,7 @@ from ddd.pipeline.decorators import dddtask
 
 @dddtask(order="20.90.10", condition=True)
 def features_export_2d_condition(pipeline):
-    return bool(pipeline.data.get('ddd:godot:output:itermediate', False))
+    return bool(pipeline.data.get('ddd:godot:output:intermediate', False))
 
 @dddtask(order="20.90.10.+")
 def features_export_2d(root):

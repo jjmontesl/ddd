@@ -58,7 +58,7 @@ def lines_line(path, line_distance = 0.0):
     line = pathline.buffer(0.15).material(ddd.mats.roadline)
     line.extra['way_1d'] = pathline
 
-    # FIXME: Move cropping to generic site, use itermediate osm.something for storage
+    # FIXME: Move cropping to generic site, use intermediate osm.something for storage
     # Also, cropping shall interpolate UVs
     crop = ddd.shape(self.osm.area_crop)
     line = line.intersect(crop)

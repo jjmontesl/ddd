@@ -94,9 +94,6 @@ def solids_collider(root, pipeline, obj):
     obj.extra['ddd:occluder'] = True
     obj.extra['solid'] = True
 
-
-
-
 @dddtask(path="/Rooms", select='[geom:type="Polygon"]', log=True)
 def solids_borders(root, pipeline, obj):
     floors = ddd.group2(name="Floors")
@@ -129,17 +126,15 @@ def solids_borders(root, pipeline, obj):
     floors = ddd.line([[0, 0], [1, 1]], name="Floors")
     floors.geom = linemerge([g.geom for g in floor_lines.children])
     # Iterate merged lines
-    floors = floors.individualize(always=True).clean()
+    floors = floors.individualize(always=True)
     for line in floors.children:
         floor = line.buffer(10.0)
         floor = floor.material(ddd.mats.grass)
-        floor.extra['floor_line'] = line.copy()
+        floor.extra['floor_line'] = line
         floor.extra['ddd:z_index'] = 40
         floor = uvmapping.map_2d_path(floor, line, line_x_offset=64.0, line_x_width=64.0)
-        if 'uv' in floor.extra:
-            floor.extra['uv'] = [(v[0], v[1] * 2.0) for v in floor.extra['uv']]  # temp: transposed and scaled
         #ddd.trace(locals())
-        #print(floor.get('uv', None))
+        print(floor.get('uv', None))
         line.replace(floor)
 
     #floors.extra['ddd:z_index'] = 40
@@ -208,8 +203,47 @@ def floor_items(root, pipeline, obj):
 '''
 
 
+@dddtask(path="/Features/*", select='[ddd:polygon:type="hollow"]', log=True)
+def room_items(root, pipeline, obj):
+
+    points = obj.random_points(5)
+    for p in points:
+        pos = [p[0], p[1]]
+        item = ddd.point(pos, "ItemRandom")
+        item.extra['godot:instance'] = "res://scenes/items/ItemGeneric.tscn"
+        root.find("/Items").append(item)
 
 
+@dddtask(path="/Rooms/*", select='[ceiling_line]', log=True)
+def ceiling_lamps(root, pipeline, obj):
+
+    line = obj.extra['ceiling_line']
+    l = line.geom.length
+    d = l / 2
+    p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
+
+    pos = [p[0], p[1] + 20.0]
+    item = ddd.point(pos, "Light")
+    item = ddd.snap.project(item, obj)
+    item.extra['ddd:angle'] = item.extra['ddd:angle'] + math.pi / 2
+    item.extra['godot:instance'] = "res://scenes/items/lamps/LampGrid.tscn"
+    item.geom.coords = [p[0], p[1]]
+    root.find("/Items").append(item)
+
+
+@dddtask(log=True)
+def rooms_test_show(root, pipeline):
+    root.dump()
+    items = root.find("/Rooms")
+    nitems = ddd.group3()
+
+    items = items.flatten()
+    for item in items.children:
+        item = item.extrude(20.0 + item.get('ddd:z_index', 0))
+        item = item.translate([0, 0, -item.get('ddd:z_index', 0)])
+        nitems.append(item)
+
+    nitems.show()
 
 
 # Separate floors, ceiling, walls

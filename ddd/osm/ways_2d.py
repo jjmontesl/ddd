@@ -687,7 +687,7 @@ class Ways2DOSMBuilder():
                 line = pathline.buffer(0.15).material(ddd.mats.roadline)
                 line.extra['way_1d'] = pathline
 
-                # FIXME: Move cropping to generic site, use itermediate osm.something for storage
+                # FIXME: Move cropping to generic site, use intermediate osm.something for storage
                 # Also, cropping shall interpolate UVs (and propagated heights?)
                 line = line.intersection(self.osm.area_crop2)
                 line = line.intersection(way_2d)

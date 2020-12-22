@@ -78,7 +78,7 @@ def godot_export_scene(root, pipeline, logger):
                         extresources[obj.mat.texture] = scene.add_ext_resource(obj.mat.texture, "Texture")
                     texture_res = extresources[obj.mat.texture]
                     gdnode['texture'] = texture_res.reference
-                    #gdnode['texture_scale'] = GDObject("Vector2", 2.0, 1.0)  # TODO: this is temp For grass tests
+                    gdnode['texture_scale'] = GDObject("Vector2", 2.0, 1.0)  # TODO: this is temp For grass tests
 
 
             if 'ddd:z_index' in obj.extra:

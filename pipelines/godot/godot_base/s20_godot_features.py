@@ -21,7 +21,9 @@ def godot_vector2(data):
 
 @dddtask(order="20.1", log=True)
 def features_load(pipeline, root, logger):
-    filename = 'TestProcedural.tscn'
+    #filename = 'Trial1.tscn'
+    #filename = 'TestProcedural.tscn'
+    filename = '/tmp/_ddd-godot-tmp.tscn'
     logger.info("Loading Godot file: %s" % filename)
     scene = godot_parser.load(filename)
 
@@ -35,9 +37,11 @@ def features_load(pipeline, root, logger):
             #print(node['polygon'].__class__.__name__)
             coords = godot_vector2array(node['polygon'].args)
             position = godot_vector2(node['position'].args) if ('position' in node.properties) else [0, 0]
+            #scale = godot_vector2(node['scale'].args) if ('scale' in node.properties) else [1, 1]
 
             feat = ddd.polygon(coords, name=node.name)
             feat = feat.translate(position)  # Transform should be maintained
+            feat = feat.scale([0.6, 0.6])
 
             feat.extra['godot:node:path'] = node_path
             #print(node_path)
@@ -64,7 +68,7 @@ def features_load(pipeline, root, logger):
 
 @dddtask(log=True, path="/Features/*")
 def osm_features_filter(pipeline, root, obj):
-    filter_path = './Main/Scene/TestDevel/ZoneProc/DDDProc/Data'
+    filter_path = './Main/Scene/Trial1/ZoneProc/DDDProc/Data'
     if not obj.extra['godot:node:path'].startswith(filter_path):
         return False
 
@@ -79,8 +83,6 @@ def osm_features_preprocess(pipeline):
     #pipeline.data['osm'].preprocess_features()
     #pipeline.root.append(osm.features_2d)
     pass
-
-
 
 
 '''

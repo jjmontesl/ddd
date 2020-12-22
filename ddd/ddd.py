@@ -1515,6 +1515,7 @@ class DDDObject2(DDDObject):
 
     def random_points(self, num_points=1, density=None):
         # TODO: use density or count, accoridng to polygon area :?
+        # TODO: support line geometries
         result = []
         minx, miny, maxx, maxy = self.geom.bounds
         while len(result) < num_points:

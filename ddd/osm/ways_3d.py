@@ -167,7 +167,7 @@ class Ways3DOSMBuilder():
         floors_2d = union_sidewalks.copy()
         ceilings_2d = union.buffer(0.6, cap_style=2, join_style=2).subtract(self.osm.ways_2d["-1a"])
 
-        # FIXME: Move cropping to generic site, use itermediate osm.something for storage
+        # FIXME: Move cropping to generic site, use interintermediatemediate osm.something for storage
         crop = ddd.shape(self.osm.area_crop)
         sidewalks_2d = sidewalks_2d.intersection(crop)
         walls_2d = walls_2d.intersection(crop)

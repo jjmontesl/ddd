@@ -222,7 +222,8 @@ def traffic_sign_code(signtype, thick=0.1):
 
         # Create decal (TODO: should replace sign, creating shape and extruding, with single bbox
         decal = ddd.rect(name="Traffic Sign Decal")
-        # TODO: move atlas decal mapping and rotation to atlas/uvmapping libs
+        # TODO: move atlas decal mapping and rotation to atlas/uvmapping libs (currently some code is copied to 'atlas')
+
 
         # Cut decal (original extruded shape shall be centered at 0)
         shape_aligned = head.extra['extruded_shape']

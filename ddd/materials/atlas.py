@@ -69,14 +69,46 @@ class TextureAtlas():
             rotated = frame['rotated']
             sprite = TextureAtlasSprite(key, bounds_pixel, bounds_norm, rotated)
             atlas.sprites[key.lower()] = sprite
+            logger.debug("")
 
         logger.info("Loaded texture atlas %s with %d sprites.", filepath, len(atlas.sprites))
-
         return atlas
 
     def keys(self):
         return list(self.sprites.keys())
 
     def sprite(self, key):
-        return self.sprites[key]
+        return self.sprites[key.lower()]
+
+
+class TextureAtlasUtils():
+
+    def create_sprite_rect(self, material, sprite_key):
+        from ddd.ddd import ddd
+        sprite = material.atlas.sprite(sprite_key)
+
+        plane = ddd.rect(name="Texture Atlas Sprite Rect: %s" % sprite_key)  #.triangulate().material(material)
+        plane = plane.material(material)
+        plane = ddd.uv.map_2d_linear(plane)
+
+        plane = plane.recenter()
+
+        if sprite.rot:
+            plane.extra['uv'] = [(sprite.bounds_norm[0] + (sprite.bounds_norm[3] - sprite.bounds_norm[1]) * v[1],
+                                  1.0 - (sprite.bounds_norm[1] + (sprite.bounds_norm[2] - sprite.bounds_norm[0]) * v[0]))
+                                  for v in plane.extra['uv']]
+        else:
+            plane.extra['uv'] = [(sprite.bounds_norm[0] + (sprite.bounds_norm[2] - sprite.bounds_norm[0]) * v[0],
+                                  1.0 - (sprite.bounds_norm[1] + (sprite.bounds_norm[3] - sprite.bounds_norm[1]) * (1 - v[1])))
+                                  for v in plane.extra['uv']]
+
+        #plane = plane.translate([-0.5, -0.5, 0]).scale([plane, plane, 1]).translate([0, plane / 2, 0])
+        #decal = decal.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, -thick / 2 - 0.005, 0])
+        #decal.extra['ddd:shadows'] = False
+        #decal.extra['ddd:collider'] = False
+
+        plane.extra['uv'] = [(1024 - v[1] * 1024.0, v[0] * 1024.0) for v in plane.extra['uv']]  # temp: transposed and scaled
+
+        return plane
+
 
