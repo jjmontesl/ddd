@@ -8,11 +8,17 @@ from godot_parser import GDScene, GDObject, Node
 from godot_parser.files import GDResource
 
 def coords_to_godot_vector2array(coords):
+    # TODO: Return the actual GDObject("..."=
     v = []
     for c in coords:
         v.append(c[0])
         v.append(c[1])
     return v
+
+def color_to_godot_color(value):
+    #TODO: Support hex notation
+    value = [x / 255.0 for x in value]
+    GDObject("Color", *value)
 
 
 @dddtask(order="69.90.+")
@@ -34,19 +40,38 @@ def godot_export_scene(root, pipeline, logger):
             idx += 1
             nodename = obj.name.replace(":", "_")
 
-            polygon = GDObject("PoolVector2Array", *coords_to_godot_vector2array(obj.geom.exterior.coords))
-            gdnode = Node(nodename + "_" + str(idx),
-                          type="Polygon2D",
-                          properties={'polygon': polygon})
-            tree.root.add_child(gdnode)
+            # TODO: Resolve material and extra properties earlier, as this is copied in every place it's used.
+            # TODO: Moreover, in this case, this is modifying object metadata directly.
+            if obj.mat and obj.mat.extra:
+                obj.extra.update({k: v for k, v in obj.mat.extra.items()})
 
 
-            if obj.get('uv', None):
-                uvs = obj.get('uv')
-                # TODO: Do not transpose here! transpose when assigining UVs (this was done to overcome uvmapping.path_2d working on Y not X)
-                uvs = [(uv[1], uv[0]) for uv in uvs]
-                uvs = GDObject("PoolVector2Array", *coords_to_godot_vector2array(uvs))
-                gdnode['uv'] = uvs
+            if obj.extra.get('ddd:sprite', False):
+                gdnode = Node(nodename + "_" + str(idx),
+                              type="Sprite",
+                              properties={'position': GDObject("Vector2", *obj.centroid().geom.coords[0]) } )
+                tree.root.add_child(gdnode)
+
+                if obj.extra.get('ddd:sprite:bounds', None):
+                    gdnode['region_enabled'] = True
+                    gdnode['region_rect'] = GDObject("Rect2", obj.extra['ddd:sprite:bounds'][0],
+                                                              obj.extra['ddd:sprite:bounds'][1],
+                                                              obj.extra['ddd:sprite:bounds'][2] - obj.extra['ddd:sprite:bounds'][0],
+                                                              obj.extra['ddd:sprite:bounds'][3] - obj.extra['ddd:sprite:bounds'][1])
+
+            else:
+                polygon = GDObject("PoolVector2Array", *coords_to_godot_vector2array(obj.geom.exterior.coords))
+                gdnode = Node(nodename + "_" + str(idx),
+                              type="Polygon2D",
+                              properties={'polygon': polygon})
+                tree.root.add_child(gdnode)
+
+                if obj.get('uv', None):
+                    uvs = obj.get('uv')
+                    # TODO: Do not transpose here! transpose when assigining UVs (this was done to overcome uvmapping.path_2d working on Y not X)
+                    uvs = [(uv[1], uv[0]) for uv in uvs]
+                    uvs = GDObject("PoolVector2Array", *coords_to_godot_vector2array(uvs))
+                    gdnode['uv'] = uvs
 
 
             if obj.extra.get('ddd:collider', False):
@@ -78,12 +103,34 @@ def godot_export_scene(root, pipeline, logger):
                         extresources[obj.mat.texture] = scene.add_ext_resource(obj.mat.texture, "Texture")
                     texture_res = extresources[obj.mat.texture]
                     gdnode['texture'] = texture_res.reference
+
+                    if obj.mat.texture_normal:
+                        if obj.mat.texture_normal not in extresources:
+                            extresources[obj.mat.texture_normal] = scene.add_ext_resource(obj.mat.texture_normal, "Texture")
+                        texture_res = extresources[obj.mat.texture_normal]
+                        gdnode['normal_map'] = texture_res.reference
+
                     #gdnode['texture_scale'] = GDObject("Vector2", 2.0, 1.0)  # TODO: this is temp For grass tests
 
 
             if 'ddd:z_index' in obj.extra:
                 gdnode['z_index'] = obj.extra['ddd:z_index']
                 gdnode['z_as_relative'] = False
+
+            if 'ddd:angle' in obj.extra:
+                gdnode['rotation'] = obj.extra['ddd:angle']
+            if 'godot:scale' in obj.extra:
+                gdnode['scale'] = GDObject("Vector2", *obj.extra['godot:scale'])
+
+            if 'godot:texture_rotation' in obj.extra:
+                gdnode['texture_rotation'] = obj.extra['godot:texture_rotation']
+            if 'godot:texture_scale' in obj.extra:
+                gdnode['texture_scale'] = GDObject("Vector2", *obj.extra['godot:texture_scale'])
+
+            if 'godot:self_modulate' in obj.extra:
+                gdnode['self_modulate'] = color_to_godot_color(obj.extra['godot:texture_scale'])
+            if 'godot:light_mask' in obj.extra:
+                gdnode['light_mask'] = obj.extra['godot:light_mask']
 
 
         nodes = root.find("/Items")
@@ -114,6 +161,8 @@ def godot_export_scene(root, pipeline, logger):
 
             if 'ddd:angle' in obj.extra:
                 gdnode['rotation'] = obj.extra['ddd:angle']
+            if 'godot:scale' in obj.extra:
+                gdnode['scale'] = GDObject("Vector2", *obj.extra['godot:scale'])
 
 
     output_path = "/tmp/ddd-godot.tscn"

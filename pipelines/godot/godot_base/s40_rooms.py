@@ -18,6 +18,7 @@ def rooms_init(root, pipeline):
     pipeline.data['rooms:empty_union'] = ddd.group2()
     pipeline.data['rooms:solid_union'] = ddd.group2()
     pipeline.data['rooms:background_union'] = ddd.group2()
+    pipeline.data['rooms:bg_hole_union'] = ddd.group2()
 
     rooms = ddd.group2(name="Rooms")
     root.append(rooms)
@@ -44,6 +45,11 @@ def rooms_init(root, pipeline):
     ddd.group([rooms_solid.extrude(30.0), bg3dtest]).show()
     """
 
+@dddtask(path="/Features/*", select='[ddd:polygon:type="bg_hole"]', log=True)
+def rooms_generate_bghole(root, pipeline, obj):
+    """Add empty rooms to empty union."""
+    pipeline.data['rooms:bg_hole_union'] = pipeline.data['rooms:bg_hole_union'].union(obj)
+
 
 @dddtask(path="/Features/*", select='[ddd:polygon:type~"empty|hollow"]', log=True)
 def rooms_generate_empty(root, pipeline, obj):
@@ -57,6 +63,7 @@ def rooms_generate_solid(root, pipeline, obj):
     room_solid = obj.copy()
     room_solid.name = "Room: %s" % obj.name
     room_solid = room_solid.material(ddd.mats.rock)
+    room_solid.extra['ddd:z_index'] = 40
     root.find("/Rooms").append(room_solid)
 
     pipeline.data['rooms:solid_union'] = pipeline.data['rooms:solid_union'].union(room_solid)
@@ -70,7 +77,7 @@ def rooms_generate_hollow(root, pipeline, obj):
     empty_union = pipeline.data['rooms:empty_union']
     solid_union = pipeline.data['rooms:solid_union']
 
-    room_thickness = 150.0
+    room_thickness = 900.0 # 150.0
     room_buffered = obj.buffer(room_thickness)
 
     room_solid = room_buffered.subtract(empty_union)
@@ -80,6 +87,7 @@ def rooms_generate_hollow(root, pipeline, obj):
     room_solid = room_solid.clean(eps=-1)
     room_solid.name = "Room: %s" % obj.name
     room_solid = room_solid.material(ddd.mats.rock)
+    room_solid.extra['ddd:z_index'] = 40
     root.find("/Rooms").append(room_solid)
 
 
@@ -119,11 +127,15 @@ def solids_borders(root, pipeline, obj):
         if (angle > angles_ceiling[0] and angle < angles_ceiling[1]):
             ceilings.append(ddd.line([a, b]))
 
+    '''
     ddd.mats.grass = ddd.material(name="Grass", color='#2dd355',
                                   texture_path="res://assets/scene/props/grass-texture-tiled.png",
                                   #alpha_cutoff=0.05,
                                   #extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05}
                                   )
+    '''
+
+    floors2 = ddd.group2(name="Floors Background")
 
     floor_lines = floors
     floors = ddd.line([[0, 0], [1, 1]], name="Floors")
@@ -131,16 +143,33 @@ def solids_borders(root, pipeline, obj):
     # Iterate merged lines
     floors = floors.individualize(always=True).clean()
     for line in floors.children:
-        floor = line.buffer(10.0)
-        floor = floor.material(ddd.mats.grass)
+        floor = line.buffer(8.0, resolution=1, cap_style=ddd.CAP_ROUND)  # cap_style=ddd.CAP_FLAT)
+        floor = floor.material(ddd.mats.grass_fore)
         floor.extra['floor_line'] = line.copy()
-        floor.extra['ddd:z_index'] = 40
-        floor = uvmapping.map_2d_path(floor, line, line_x_offset=64.0, line_x_width=64.0)
+        floor.extra['ddd:z_index'] = 46
+        #floor = floor.subtract(obj)
+        floor = uvmapping.map_2d_path(floor, line, line_x_offset=64.0, line_x_width=63.0)
         if 'uv' in floor.extra:
             floor.extra['uv'] = [(v[0], v[1] * 2.0) for v in floor.extra['uv']]  # temp: transposed and scaled
+        #floor = filters.noise_random(floor, scale=3.0)
         #ddd.trace(locals())
         #print(floor.get('uv', None))
+
+        floor2 = line.buffer(18.0, resolution=3, cap_style=ddd.CAP_ROUND)
+        floor2 = floor2.material(ddd.mats.grass)
+        floor2.extra['floor_line'] = line.copy()
+        floor2.extra['ddd:z_index'] = -1
+        floor2 = uvmapping.map_2d_path(floor2, line, line_x_offset=64.0, line_x_width=63.0)
+        if 'uv' in floor2.extra:
+            floor2.extra['uv'] = [(v[0], 16.0 + v[1] * 4.0)for v in floor2.extra['uv']]  # temp: transposed and scaled
+        #floor2 = filters.noise_random(floor2, scale=3.0)
+        floors2.append(floor2)
+
         line.replace(floor)
+
+    # for f2 in floors2:  floors.append(f2)
+    floors.append(floors2)
+
 
     #floors.extra['ddd:z_index'] = 40
     #newobj = ddd.group2([obj, floors], name="Solid")
@@ -160,7 +189,7 @@ def solids_borders(root, pipeline, obj):
         c = filters.noise_random(c, scale=10.0)
         pc.replace(c)
     ceilings = ceilings.material(ddd.mats.bricks)
-    ceilings.mat.color_rgba[3] = 128
+    #ceilings.mat.color_rgba[3] = 128
     ceilings = ceilings.clean()
     #newobj = ddd.group2([obj, floors], name="Solid")
     #obj.replace(newobj)
@@ -174,10 +203,12 @@ def hollow_background(root, pipeline, obj):
     bgunion = pipeline.data['rooms:background_union']
 
     bg = obj.copy()
+    bg = bg.subtract(pipeline.data['rooms:bg_hole_union'])
     bg = bg.subtract(bgunion)
     bg.name = "Hollow Room Background"
-    bg = bg.material(ddd.mats.stone)
-    bg.mat.color_rgba[3] = 220
+    bg = bg.material(ddd.mats.bricks)
+    #bg.mat.color_rgba[3] = 220
+    bg = ddd.uv.map_2d_linear(bg)
     bg.extra['ddd:z_index'] = -10
     root.find("/Rooms").append(bg)
 

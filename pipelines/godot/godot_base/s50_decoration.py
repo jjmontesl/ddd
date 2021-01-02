@@ -49,19 +49,25 @@ sprites_signs = ["signArrow_BL", "signArrow_BR", "signArrow_TL", "signArrow_TR",
 sprites_spikes = ["spikesHigh", "spikesLow", ]
 
 
-@dddtask(path="/Features/*", select='[ddd:polygon:type="hollow"]', log=True)
+#@dddtask(path="/Features/*", select='[ddd:polygon:type="hollow"]', log=True)
+@dddtask(path="/Features", log=True)
 def room_decoration(root, pipeline, obj):
 
-    points = obj.random_points(5)
+    obj = pipeline.data['rooms:background_union']
+
+    points = obj.random_points(50)
     for p in points:
         pos = [p[0], p[1]]
         sprite_key = random.choice(sprites_bg + sprites_solid)
         item = TextureAtlasUtils().create_sprite_rect(pipeline.data['spritesheet'], sprite_key + ".png")
         #item.extra['godot:instance'] = "res://scenes/items/ItemGeneric.tscn"
         item = item.material(pipeline.data['spritesheet'])
+
+        # TODO: Scale to sprite dimensions
         item = item.scale([64.0, 64.0])
 
         rndscale = random.uniform(0.7, 3)
+        item.extra['godot:scale'] = [rndscale, rndscale]
         item = item.scale([rndscale, rndscale])
 
         item = item.translate(pos)
@@ -78,41 +84,101 @@ def ceiling_lamps(root, pipeline, obj):
     d = l / 2
     p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
 
-    pos = [p[0], p[1] + 20.0]
+    pos = [p[0], p[1] - 20.0]
     item = ddd.point(pos, "Light")
-    item = ddd.snap.project(item, obj)
-    item.extra['ddd:angle'] = item.extra['ddd:angle'] + math.pi / 2
+    item = ddd.snap.project(item, line)
+    item.extra['ddd:angle'] = item.extra['ddd:angle'] - math.pi / 2.0
     item.extra['godot:instance'] = "res://scenes/items/lamps/LampGrid.tscn"
-    item.geom.coords = [p[0], p[1]]
+    #item.geom.coords = [p[0], p[1]]
     root.find("/Items").append(item)
+
+
+@dddtask(path="/Rooms/*", select='[ceiling_line]', log=True)
+def ceiling_decoration_items(root, pipeline, obj):
+
+    line = obj.extra['ceiling_line']
+    l = line.geom.length
+
+    for d in (l/3, 2*l/3):
+        p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
+
+        pos = [p[0], p[1] - 20.0]
+        rndscale = random.uniform(1.0, 2.5)
+
+        itempos = ddd.point(pos, "Ceiling Deco")
+        itempos = ddd.snap.project(itempos, line, 16.0 * rndscale)
+
+        sprites_ceiling = sprites_flags + sprites_plants + sprites_vine + sprites_vine
+        sprite_key = random.choice(sprites_ceiling)
+
+        item = TextureAtlasUtils().create_sprite_rect(pipeline.data['spritesheet'], sprite_key + ".png")
+        item = item.material(pipeline.data['spritesheet'])
+
+        # TODO: Scale to sprite dimensions
+        item = item.scale([32.0, -32.0])
+
+        item.extra['godot:scale'] = [1.0, rndscale]
+        item = item.scale([rndscale, rndscale])
+
+        item = item.translate(itempos.centroid())
+        item.extra['ddd:angle'] = itempos.extra['ddd:angle'] + math.pi / 2.0
+        item.extra['ddd:z_index'] = -2
+
+        root.find("/Rooms/").append(item)
+
+@dddtask(path="/Rooms/*", select='[ceiling_line][geom:type="Polygon"]', log=True)
+def ceiling_line_remove(root, pipeline, obj):
+    return False
 
 
 @dddtask(path="/Rooms/*", select='[floor_line]', log=True)
 def floor_decoration_items(root, pipeline, obj):
 
-
     line = obj.extra['floor_line']
     l = line.geom.length
-    d = l / 2
-    p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
 
-    pos = [p[0], p[1] - 20.0]
+    for d in (l/3, 2*l/3):
+        p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
 
-    sprites_floor = sprites_flags + sprites_plants + sprites_signs
-    sprite_key = random.choice(sprites_floor)
+        pos = [p[0], p[1] - 20.0]
+        rndscale = random.uniform(0.8, 1.3)
 
-    item = TextureAtlasUtils().create_sprite_rect(pipeline.data['spritesheet'], sprite_key + ".png")
-    item = item.material(pipeline.data['spritesheet'])
-    item = item.scale([32.0, -32.0])
+        itempos = ddd.point(pos, "Floor Deco")
+        itempos = ddd.snap.project(itempos, line, -16.0 * rndscale)
 
-    rndscale = random.uniform(0.8, 1.3)
-    item = item.scale([rndscale, rndscale])
+        sprites_floor = sprites_flags + sprites_plants + sprites_signs
+        sprite_key = random.choice(sprites_floor)
 
-    item = item.translate(pos)
-    item.extra['ddd:z_index'] = -2
+        item = TextureAtlasUtils().create_sprite_rect(pipeline.data['spritesheet'], sprite_key + ".png")
+        item = item.material(pipeline.data['spritesheet'])
 
-    root.find("/Rooms/").append(item)
+        # TODO: Scale to sprite dimensions
+        item = item.scale([32.0, -32.0])
 
+        item.extra['godot:scale'] = [rndscale, rndscale]
+        item = item.scale([rndscale, rndscale])
+
+        item = item.translate(itempos.centroid())
+        item.extra['ddd:angle'] = itempos.extra['ddd:angle'] - math.pi / 2.0
+        item.extra['ddd:z_index'] = -2
+
+        root.find("/Rooms/").append(item)
+
+
+@dddtask(path="/Rooms/*", log=True)
+def outside_decoration_remove(root, pipeline, obj):
+    if not obj.buffer(2.0).intersects(pipeline.data['rooms:background_union']):
+        return False
+
+@dddtask(path="/Rooms/Floors/*", log=True)
+def outside_floors_remove(root, pipeline, obj):
+    if not obj.buffer(2.0).intersects(pipeline.data['rooms:background_union']):
+        return False
+
+@dddtask(path="/Items/*", log=True)
+def outside_items_remove(root, pipeline, obj):
+    if not obj.buffer(2.0).intersects(pipeline.data['rooms:background_union']):
+        return False
 
     '''
     item = ddd.point(pos, "Light")

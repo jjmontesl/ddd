@@ -12,10 +12,13 @@ from shapely.ops import linemerge
 from ddd.ops import filters, uvmapping
 
 
-@dddtask(path="/Features/*", select='[ddd:polygon:type="hollow"]', log=True)
+@dddtask(path="/Features", log=True)
 def room_items(root, pipeline, obj):
 
-    points = obj.random_points(5)
+    obj = pipeline.data['rooms:background_union']
+
+    points = obj.random_points(50)
+
     for p in points:
         pos = [p[0], p[1]]
         item = ddd.point(pos, "ItemRandom")

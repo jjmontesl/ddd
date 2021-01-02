@@ -490,7 +490,8 @@ class DDDObject():
         if self.mat and self.mat.color:
             metadata['ddd:material:color'] = self.mat.color  # hex
         if self.mat and self.mat.extra:
-            # If material has extra metadata, add it but do not replace
+            # TODO: Resolve material and extra properties earlier, as this is copied in every place it's used.
+            # If material has extra metadata, add it but do not replace (it's restored later)
             metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
 
         metadata['ddd:object'] = self
@@ -795,6 +796,10 @@ class DDDObject2(DDDObject):
         return result
 
     def translate(self, coords):
+
+        if hasattr(coords, 'geom'):
+            coords = coords.geom.coords[0]
+
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
         result = self.copy()
         if self.geom:

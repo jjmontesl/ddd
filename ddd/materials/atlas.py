@@ -108,6 +108,8 @@ class TextureAtlasUtils():
         #decal.extra['ddd:collider'] = False
 
         plane.extra['uv'] = [(1024 - v[1] * 1024.0, v[0] * 1024.0) for v in plane.extra['uv']]  # temp: transposed and scaled
+        plane.extra['ddd:sprite'] = True
+        plane.extra['ddd:sprite:bounds'] = sprite.bounds_pixel
 
         return plane
 

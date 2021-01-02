@@ -38,12 +38,14 @@ def features_load(pipeline, root, logger):
             coords = godot_vector2array(node['polygon'].args)
             position = godot_vector2(node['position'].args) if ('position' in node.properties) else [0, 0]
             #scale = godot_vector2(node['scale'].args) if ('scale' in node.properties) else [1, 1]
+            visible = node['visible'] if ('visible' in node.properties) else True
 
             feat = ddd.polygon(coords, name=node.name)
             feat = feat.translate(position)  # Transform should be maintained
             feat = feat.scale([0.6, 0.6])
 
             feat.extra['godot:node:path'] = node_path
+            feat.extra['godot:visible'] = visible
             #print(node_path)
 
             meta = node['__meta__'] if '__meta__' in node.properties else {}
@@ -71,9 +73,12 @@ def osm_features_filter(pipeline, root, obj):
     filter_path = './Main/Scene/Trial1/ZoneProc/DDDProc/Data'
     if not obj.extra['godot:node:path'].startswith(filter_path):
         return False
+    if not obj.extra['godot:visible']:
+        return False
+
 
 @dddtask(order="30.50.90.+", path="/Areas/*", select='[! "ddd:area:type"]')
-def osm_groups_areas_remove_ignored(root, obj, logger):
+def osm_groups_areas_remove_untagged(root, obj, logger):
     """Remove ignored areas."""
     return False
 
