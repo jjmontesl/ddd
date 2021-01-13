@@ -17,10 +17,19 @@ sprites_bg = ["outlineDisc", "outlineDisc_alt", "outlineCrystal", "outlineGem", 
               "outlinePuzzle", ]
 
 sprites_solid = ["blockBrown", "blockBrown_broken",
-                 "blockGreen",
+                 "blockGreen", "blockGreen_puzzle",
                  "blockGrey", "blockGrey_broken",
                  "blockRed", "blockRed_puzzle",
                  ]
+
+sprites_bg_rc = ["outlineCowbell", "outlineCowbell_solid",
+                 "outlineHappyMilk", "outlineHappyMilk_solid"]
+
+sprites_solid_rc = ["blockBrown_cowbell", "blockBrown_happymilk",
+                    "blockGreen_cowbell", "blockGreen_happymilk",
+                    "blockGrey_cowbell", "blockGrey_happymilk", "blockGrey_broken_happymilk",
+                    "blockRed_cowbell", "blockRed_happymilk",]
+
 
 sprites_fence = ["fence", "fenceBroken", "fenceLeft", "fenceMid", "fenceRight", "fenceOpen"]
 sprites_ladder = ["ladderNarrow_mid", "ladderNarrow_top",
@@ -58,7 +67,7 @@ def room_decoration(root, pipeline, obj):
     points = obj.random_points(50)
     for p in points:
         pos = [p[0], p[1]]
-        sprite_key = random.choice(sprites_bg + sprites_solid)
+        sprite_key = random.choice(sprites_bg + sprites_solid + sprites_bg_rc + sprites_solid_rc)
         item = TextureAtlasUtils().create_sprite_rect(pipeline.data['spritesheet'], sprite_key + ".png")
         #item.extra['godot:instance'] = "res://scenes/items/ItemGeneric.tscn"
         item = item.material(pipeline.data['spritesheet'])

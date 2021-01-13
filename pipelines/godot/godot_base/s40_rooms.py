@@ -77,7 +77,7 @@ def rooms_generate_hollow(root, pipeline, obj):
     empty_union = pipeline.data['rooms:empty_union']
     solid_union = pipeline.data['rooms:solid_union']
 
-    room_thickness = 900.0 # 150.0
+    room_thickness = 900.0  #900.0 # 150.0
     room_buffered = obj.buffer(room_thickness)
 
     room_solid = room_buffered.subtract(empty_union)
@@ -85,6 +85,7 @@ def rooms_generate_hollow(root, pipeline, obj):
 
     room_solid = room_solid.subtract(solid_union)
     room_solid = room_solid.clean(eps=-1)
+    room_solid = ddd.geomops.remove_holes_split(room_solid)
     room_solid.name = "Room: %s" % obj.name
     room_solid = room_solid.material(ddd.mats.rock)
     room_solid.extra['ddd:z_index'] = 40
@@ -120,11 +121,11 @@ def solids_borders(root, pipeline, obj):
     segments = zip(polygon.coords, polygon.coords[1:] + polygon.coords[:1])
     for a, b in segments:
         angle = math.atan2(b[1] - a[1], b[0] - a[0])
-        if (angle > angles_floor1[0] and angle < angles_floor1[1]):
+        if (angle >= angles_floor1[0] and angle <= angles_floor1[1]):
             floors.append(ddd.line([a, b]))
-        if (angle > angles_floor2[0] and angle < angles_floor2[1]):
+        if (angle >= angles_floor2[0] and angle <= angles_floor2[1]):
             floors.append(ddd.line([a, b]))
-        if (angle > angles_ceiling[0] and angle < angles_ceiling[1]):
+        if (angle >= angles_ceiling[0] and angle <= angles_ceiling[1]):
             ceilings.append(ddd.line([a, b]))
 
     '''
@@ -161,7 +162,7 @@ def solids_borders(root, pipeline, obj):
         floor2.extra['ddd:z_index'] = -1
         floor2 = uvmapping.map_2d_path(floor2, line, line_x_offset=64.0, line_x_width=63.0)
         if 'uv' in floor2.extra:
-            floor2.extra['uv'] = [(v[0], 16.0 + v[1] * 4.0)for v in floor2.extra['uv']]  # temp: transposed and scaled
+            floor2.extra['uv'] = [(v[0], 16.0 + v[1] * 4.0 )for v in floor2.extra['uv']]  # temp: transposed and scaled
         #floor2 = filters.noise_random(floor2, scale=3.0)
         floors2.append(floor2)
 
@@ -205,6 +206,8 @@ def hollow_background(root, pipeline, obj):
     bg = obj.copy()
     bg = bg.subtract(pipeline.data['rooms:bg_hole_union'])
     bg = bg.subtract(bgunion)
+    bg = ddd.geomops.remove_holes_split(bg)
+
     bg.name = "Hollow Room Background"
     bg = bg.material(ddd.mats.bricks)
     #bg.mat.color_rgba[3] = 220

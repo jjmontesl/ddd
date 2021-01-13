@@ -59,7 +59,7 @@ class TexturePackCommand(DDDCommand):
         #      reduce_border_artifacts=False):
 
         #packer.pack("es/", "traffic_signs_es_%d")
-        packer.pack("sprites/", "spritesheets/sprites_%d")
+        packer.pack("sprites/", "spritesheet_%d")
 
 
     def run(self):

@@ -3,8 +3,10 @@
 # Jose Juan Montes 2020
 
 import logging
-from ddd.ddd import ddd
+from ddd.ddd import ddd, DDDObject2
 import math
+from ddd.core.exception import DDDException
+import shapely
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -70,4 +72,33 @@ class DDDGeometry():
 
         return (major_seg, minor_seg, angle)  #, length_seg, width_seg)
 
+    def remove_holes_split(self, obj):
+        """
+        Splits a polygon with holes generating several polygons with no holes.
+        Returns the same object if it has no interior holes.
+        """
+        result = obj.copy()
+        if result.geom.type == "MultiPolygon":
+            result = result.individualize()
+
+        if result.geom:
+            if result.geom.type == "Polygon":
+                # Walk inner holes
+                if len(result.geom.interiors) > 0:
+                    splitter_coords = [result.geom.interiors[0].centroid.coords[0], result.geom.interiors[0].centroid.coords[0]]
+                    splitter_coords[0] = (splitter_coords[0][0], splitter_coords[0][1] - 9999999)
+                    splitter_coords[1] = (splitter_coords[1][0], splitter_coords[1][1] + 9999999)
+                    splitter = ddd.line(splitter_coords)
+                    splitgeoms = shapely.ops.split(obj.geom, splitter.geom)
+                    result.geom = None
+                    for splitgeom in splitgeoms:
+                        splitobj = result.copy()
+                        splitobj.geom = splitgeom
+                        result.children.extend(splitobj.individualize().flatten().children)
+            else:
+                raise DDDException("Unknown geometry for removing holes: %s" % obj)
+
+        result.children = [self.remove_holes_split(c) for c in result.children]
+
+        return result.flatten()
 

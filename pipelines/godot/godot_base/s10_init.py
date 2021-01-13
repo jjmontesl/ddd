@@ -23,9 +23,9 @@ def godot_init(pipeline, root):
 def godot_materials(pipeline, root):
 
     pipeline.data['spritesheet'] = ddd.material(name="SpriteSheet", color="#ffffff", #color="#e01010",
-                                                texture_path="spritesheets/sprites_0.png",
-                                                texture_normal_path="spritesheets/sprites_0_map.png",
-                                                atlas_path="spritesheets/sprites_0.plist")
+                                                texture_path="res://assets/spritesheets/ropecow/spritesheet_0.png",
+                                                texture_normal_path="res://assets/spritesheets/ropecow/spritesheet_0_n.png",
+                                                atlas_path="/home/jjmontes/git/NinjaCow/assets/spritesheets/ropecow/spritesheet_0.plist")
 
     ddd.mats.grass = ddd.material(name="Grass", color='#2dd355',
                                   texture_path="res://assets/scene/props/grass-texture-tiled.png",

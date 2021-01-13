@@ -42,7 +42,7 @@ def features_load(pipeline, root, logger):
 
             feat = ddd.polygon(coords, name=node.name)
             feat = feat.translate(position)  # Transform should be maintained
-            feat = feat.scale([0.6, 0.6])
+            #feat = feat.scale([0.6, 0.6])  #T TODO: support scale somehow (ideally through godot hierarchy, but at least in metadata)
 
             feat.extra['godot:node:path'] = node_path
             feat.extra['godot:visible'] = visible
