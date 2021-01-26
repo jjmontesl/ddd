@@ -83,7 +83,9 @@ class TextureAtlas():
 
 class TextureAtlasUtils():
 
-    def create_sprite_rect(self, material, sprite_key):
+    def create_sprite_from_atlas(self, material, sprite_key):
+        """
+        """
         from ddd.ddd import ddd
         sprite = material.atlas.sprite(sprite_key)
 
@@ -113,4 +115,42 @@ class TextureAtlasUtils():
 
         return plane
 
+    def create_sprite_rect(self, material):
+        """
+        Createds a sprite rect using a single image (from a material).
+        """
+
+        from ddd.ddd import ddd
+
+        plane = ddd.rect(name="Sprite Rect")  #.triangulate().material(material)
+        plane = plane.material(material)
+        plane = ddd.uv.map_2d_linear(plane)
+
+        plane = plane.recenter()
+
+        texture_size = material.get_texture().size
+        sprite = TextureAtlasSprite("sprite", [0, 0, texture_size[0], texture_size[1]], [0.0, 0.0, 1.0, 1.0], False)
+
+        if sprite.rot:
+            plane.extra['uv'] = [(sprite.bounds_norm[0] + (sprite.bounds_norm[3] - sprite.bounds_norm[1]) * v[1],
+                                  1.0 - (sprite.bounds_norm[1] + (sprite.bounds_norm[2] - sprite.bounds_norm[0]) * v[0]))
+                                  for v in plane.extra['uv']]
+        else:
+            plane.extra['uv'] = [(sprite.bounds_norm[0] + (sprite.bounds_norm[2] - sprite.bounds_norm[0]) * v[0],
+                                  1.0 - (sprite.bounds_norm[1] + (sprite.bounds_norm[3] - sprite.bounds_norm[1]) * (1 - v[1])))
+                                  for v in plane.extra['uv']]
+
+        plane = plane.scale(texture_size)
+
+        #plane = plane.translate([-0.5, -0.5, 0]).scale([plane, plane, 1]).translate([0, plane / 2, 0])
+        #decal = decal.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, -thick / 2 - 0.005, 0])
+        #decal.extra['ddd:shadows'] = False
+        #decal.extra['ddd:collider'] = False
+
+        plane.extra['uv'] = [(texture_size[1] - v[1] * texture_size[1], v[0] * texture_size[0]) for v in plane.extra['uv']]  # temp: transposed and scaled
+        plane.extra['ddd:sprite'] = True
+        plane.extra['ddd:sprite:bounds'] = sprite.bounds_pixel
+
+
+        return plane
 

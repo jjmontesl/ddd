@@ -57,13 +57,14 @@ def rooms_generate_empty(root, pipeline, obj):
     pipeline.data['rooms:empty_union'] = pipeline.data['rooms:empty_union'].union(obj)
 
 
-@dddtask(path="/Features/*", select='[ddd:polygon:type="solid"];[!ddd:polygon:type]', log=True)
+@dddtask(path="/Features/*", select='[geom:type="Polygon"]([ddd:polygon:type="solid"];[!ddd:polygon:type])', log=True)
 def rooms_generate_solid(root, pipeline, obj):
     """Generate solid from polygon."""
     room_solid = obj.copy()
     room_solid.name = "Room: %s" % obj.name
     room_solid = room_solid.material(ddd.mats.rock)
     room_solid.extra['ddd:z_index'] = 40
+    #room_solid.extra['godot:light_mask'] = 0
     root.find("/Rooms").append(room_solid)
 
     pipeline.data['rooms:solid_union'] = pipeline.data['rooms:solid_union'].union(room_solid)
@@ -85,11 +86,14 @@ def rooms_generate_hollow(root, pipeline, obj):
 
     room_solid = room_solid.subtract(solid_union)
     room_solid = room_solid.clean(eps=-1)
-    room_solid = ddd.geomops.remove_holes_split(room_solid)
-    room_solid.name = "Room: %s" % obj.name
-    room_solid = room_solid.material(ddd.mats.rock)
-    room_solid.extra['ddd:z_index'] = 40
-    root.find("/Rooms").append(room_solid)
+    rooms_solid = ddd.geomops.remove_holes_split(room_solid)
+
+    for room_solid in rooms_solid.children:
+        room_solid.name = "Room: %s" % obj.name
+        room_solid = room_solid.material(ddd.mats.rock)
+        room_solid.extra['ddd:z_index'] = 40
+        room_solid.extra['godot:light_mask'] = 0
+        root.find("/Rooms").append(room_solid)
 
 
 @dddtask(log=True)
@@ -104,6 +108,23 @@ def solids_collider(root, pipeline, obj):
     obj.extra['solid'] = True
 
 
+@dddtask(path="/Features/*", select='[ddd:polygon:type="fore"]', log=True)
+def rooms_fore(root, pipeline, obj):
+
+    bg = obj.copy()
+    bg = bg.subtract(pipeline.data['rooms:solid_union'])
+
+    bgs = ddd.geomops.remove_holes_split(bg)
+
+    for bg in bgs.children:
+        bg.name = "Foreground"
+        bg = bg.material(ddd.mats.rock)
+        #bg.mat.color_rgba[3] = 220
+        #bg = ddd.uv.map_2d_linear(bg)
+        bg.extra['ddd:z_index'] = 40
+        bg.extra['godot:light_mask'] = 0
+        if 'godot:material' in obj.extra: bg.extra['godot:material'] = obj.extra['godot:material']
+        root.find("/Rooms").append(bg)
 
 
 @dddtask(path="/Rooms", select='[geom:type="Polygon"]', log=True)
@@ -204,179 +225,66 @@ def hollow_background(root, pipeline, obj):
     bgunion = pipeline.data['rooms:background_union']
 
     bg = obj.copy()
+
+
     bg = bg.subtract(pipeline.data['rooms:bg_hole_union'])
     bg = bg.subtract(bgunion)
-    bg = ddd.geomops.remove_holes_split(bg)
 
-    bg.name = "Hollow Room Background"
-    bg = bg.material(ddd.mats.bricks)
-    #bg.mat.color_rgba[3] = 220
-    bg = ddd.uv.map_2d_linear(bg)
-    bg.extra['ddd:z_index'] = -10
-    root.find("/Rooms").append(bg)
+    intersects = root.select(path="/Features/*", selector='[ddd:polygon:type="intersect"]').union()
+    bg = bg.subtract(intersects)
+
+    bgs = ddd.geomops.remove_holes_split(bg)
+
+    for bg in bgs.children:
+        bg.name = "Hollow Room Background"
+        bg = bg.material(ddd.mats.bricks)
+        #bg.mat.color_rgba[3] = 220
+        bg = ddd.uv.map_2d_linear(bg)
+        bg.extra['ddd:z_index'] = -10
+        if 'godot:material' in obj.extra: bg.extra['godot:material'] = obj.extra['godot:material']
+
+        # Do not add to rooms if no background
+        # TODO: We may need separate groups for "areas" and "bgground", or remove afterwards
+        if obj.get('godot:bg', "default") in (None, "null", "None"):
+            continue
+
+        root.find("/Rooms").append(bg)
 
     pipeline.data['rooms:background_union'] = bgunion.union(obj)
 
 
-'''
-@dddtask(path="/Rooms/*", select='[solid]', log=True)
-def floor_items(root, pipeline, obj):
+@dddtask(path="/Features/*", select='[ddd:polygon:type="intersect"]', log=True)
+def hollow_background_intersect(root, pipeline, obj):
 
-    if ('floors' not in obj.extra):
-        return
+    bgunion = pipeline.data['rooms:background_union']
 
-    floors = obj.extra['floors']
-    floor_lines = floors.extra['floor_lines']
+    bg = obj.copy()
+    bg = bg.intersection(pipeline.data['rooms:background_union'])
 
-    floor_lines = floor_lines.individualize()
-    if len(floor_lines.children) < 1: return
-    line = floor_lines.children[0]
-    l = line.geom.length
-    d = l / 2
-    p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
+    bgs = ddd.geomops.remove_holes_split(bg)
 
-    pos = [p[0], p[1] - 50.0]
-    item = ddd.point(pos, "Item")
-    item.extra['godot:instance'] = "res://scenes/items/ItemGeneric.tscn"
-    root.find("/Items").append(item)
-'''
+    for bg in bgs.children:
+        bg.name = "Hollow Room Background Intersect"
+        bg = bg.material(ddd.mats.bricks)
+        #bg.mat.color_rgba[3] = 220
+        bg = ddd.uv.map_2d_linear(bg)
+        bg.extra['ddd:z_index'] = -10
+        if 'godot:material' in obj.extra: bg.extra['godot:material'] = obj.extra['godot:material']
+        root.find("/Rooms").append(bg)
 
+        # Subtract from background
+        #for room in root.find("/Rooms").children:
+        #    room.replace(room.subtract(bg))
+        #root.find("/Rooms").replace(root.find("/Rooms").subtract(bg).individualize().flatten())
 
-
-
-
-
-# Separate floors, ceiling, walls
-#  foreach room, separate segments, each can be generated and have the empty space subtracted (also using weight)#
-
-# Add floor surfaces, ceiling surfaces
-# Add props, etc...
-# Background (hollow), foreground....
-# Assign colliders meta, etc
-
-# Generate Godot tscn (export colliders correctly, etc)
+    #pipeline.data['rooms:background_union'] = bgunion.union(obj)
 
 
+@dddtask(path="/Rooms/*", select='[godot:material]', log=True)
+def room_materials(root, pipeline, obj):
+    mat_name = obj.extra['godot:material']
+    mat = getattr(ddd.mats, mat_name)
+    obj = obj.material(mat)
+    return obj
 
-'''
-@dddtask(order="40.10.+", log=True)
-def rooms_split_parts(root, osm, pipeline):
-
-    items = ddd.group2(name="Ceiling")
-    root.append(items)
-    items = ddd.group2(name="Ways")
-    root.append(items)
-    items = ddd.group2(name="Buildings")
-    root.append(items)
-    items = ddd.group2(name="ItemsNodes")
-    root.append(items)
-    items = ddd.group2(name="ItemsAreas")
-    root.append(items)
-    items = ddd.group2(name="ItemsWays")
-    root.append(items)
-    items = ddd.group2(name="Meta")  # 2D meta information (boundaries, etc...)
-    root.append(items)
-
-    #root.dump(data=True)
-
-@dddtask(order="30.20.10", path="/Features/*", select='[geom:type="Point"]', log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
-def osm_generate_items(root, osm, obj):
-    """Generate items for point features."""
-    item = obj.copy(name="Item: %s" % obj.name)
-    item = item.material(ddd.mats.red)
-    if item.geom:
-        root.find("/ItemsNodes").append(item)
-
-@dddtask(order="30.20.20", log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
-def osm_generate_items_process(root, osm, obj):
-    """Generate items for point features."""
-    #root.save("/tmp/osm-31-items.svg")
-    pass
-
-
-
-@dddtask(order="30.30.10.+", log=True)
-def osm_select_ways(root):
-    # Ways depend on buildings
-    pass
-
-
-
-
-@dddtask(order="30.30.20", log=True)
-def osm_groups_ways_process(pipeline, osm, root, logger):
-    #osm.ways_1d = root.find("/Ways")
-    #osm.ways.generate_ways_1d()
-    #root.find("/Ways").replace(osm.ways_1d)
-    pass
-
-
-
-# Generate buildings (separate file)
-
-
-@dddtask(order="30.50.10", path="/Features/*", select='["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"][!"osm:building"]')
-def osm_groups_areas(root, osm, obj, logger):
-
-    item = obj.copy(name="Area: %s" % obj.name)
-
-    try:
-        area = item.individualize().flatten()
-        area.validate()
-    except DDDException as e:
-        logger.warn("Invalid geometry (cropping area) for area %s (%s): %s", area, area.extra, e)
-        try:
-            area = area.clean(eps=0.001).intersection(ddd.shape(osm.area_crop))
-            area = area.individualize().flatten()
-            area.validate()
-        except DDDException as e:
-            logger.warn("Invalid geometry (ignoring area) for area %s (%s): %s", area, area.extra, e)
-            return
-
-    for a in area.children:
-        if a.geom:
-            a.extra['ddd:area:area'] = a.geom.area
-            root.find("/Areas").append(a)
-
-    #root.find("/Areas").append(item)
-
-@dddtask(order="30.50.20")
-def osm_groups_areas_process(pipeline, osm, root, logger):
-    pass
-
-
-@dddtask(order="30.50.90.+", path="/Areas/*", select='[! "ddd:area:type"]')
-def osm_groups_areas_remove_ignored(root, obj, logger):
-    """Remove ignored areas."""
-    return False
-
-
-@dddtask(order="30.60.+")
-def osm_generate_areas_coastline_2d(osm, root, logger):
-    #osm.areas.generate_coastline_2d(osm.area_crop if osm.area_crop else osm.area_filter)  # must come before ground
-    water_2d = osm.areas2.generate_coastline_2d(osm.area_filter)  # must come before ground
-    logger.info("Coastline 2D areas generated: %s", water_2d)
-    if water_2d:
-        root.find("/Areas").children.extend(water_2d.children)
-
-
-@dddtask(order="30.70.+")
-def osm_groups_items_areas(osm, root, logger):
-    # In separate file
-    pass
-
-
-@dddtask(order="30.90")
-def osm_groups_finished(pipeline, osm, root, logger):
-    pass
-
-
-
-@dddtask(order="39.95.+", cache=True)
-def osm_groups_cache(pipeline, osm, root, logger):
-    """
-    Caches current state to allow for faster reruns.
-    """
-    return pipeline.data['filenamebase'] + ".s30.cache"
-'''
 

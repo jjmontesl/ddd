@@ -71,3 +71,13 @@ class DDDAlign():
 
         return result
 
+    def anchor(self, obj, anchor):
+        """
+        Recenters an object around a given anchor.
+        Anchor is a normalized vector relative to the object's bounding box.
+        """
+        xmin, ymin, xmax, ymax = obj.bounds()
+        center = ((xmax - xmin) * anchor[0], (ymax - ymin) * anchor[1])
+        result = obj.translate([-center[0], -center[1], 0])
+        return result
+

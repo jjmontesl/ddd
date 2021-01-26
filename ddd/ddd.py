@@ -375,6 +375,7 @@ class DDDMaterial():
         self.alpha_mode = alpha_mode
 
         self.texture = texture_path
+        self._texture_cached = None  # currently a PIL image, shall be a DDDTexture
         self.texture_normal = texture_normal_path
 
         self.atlas = None
@@ -413,6 +414,14 @@ class DDDMaterial():
 
     def load_atlas(self, filepath):
         self.atlas = TextureAtlas.load_atlas(filepath)
+
+    def get_texture(self):
+        """
+        Returns the texture (currently a PIL image)
+        """
+        if not self._texture_cached:
+            self._texture_cached = PIL.Image.open(self.texture)
+        return self._texture_cached
 
 
 class DDDObject():

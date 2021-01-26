@@ -78,7 +78,7 @@ class DDDGeometry():
         Returns the same object if it has no interior holes.
         """
         result = obj.copy()
-        if result.geom.type == "MultiPolygon":
+        if result.geom and result.geom.type == "MultiPolygon":
             result = result.individualize()
 
         if result.geom:
@@ -86,19 +86,24 @@ class DDDGeometry():
                 # Walk inner holes
                 if len(result.geom.interiors) > 0:
                     splitter_coords = [result.geom.interiors[0].centroid.coords[0], result.geom.interiors[0].centroid.coords[0]]
-                    splitter_coords[0] = (splitter_coords[0][0], splitter_coords[0][1] - 9999999)
-                    splitter_coords[1] = (splitter_coords[1][0], splitter_coords[1][1] + 9999999)
+                    splitter_coords[0] = (splitter_coords[0][0], splitter_coords[0][1] - 99999999.0)
+                    splitter_coords[1] = (splitter_coords[1][0], splitter_coords[1][1] + 99999999.0)
                     splitter = ddd.line(splitter_coords)
-                    splitgeoms = shapely.ops.split(obj.geom, splitter.geom)
+                    splitgeoms = shapely.ops.split(result.geom, splitter.geom)
                     result.geom = None
                     for splitgeom in splitgeoms:
                         splitobj = result.copy()
                         splitobj.geom = splitgeom
+                        splitobj.children = []
                         result.children.extend(splitobj.individualize().flatten().children)
             else:
                 raise DDDException("Unknown geometry for removing holes: %s" % obj)
 
         result.children = [self.remove_holes_split(c) for c in result.children]
 
-        return result.flatten()
+        #ddd.group2([obj, result]).dump()
+        #ddd.group2([obj, result]).extrude(10.0).show()
+        result = result.flatten()
+
+        return result
 

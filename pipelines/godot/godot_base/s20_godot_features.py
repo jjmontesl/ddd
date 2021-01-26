@@ -10,6 +10,7 @@ import godot_parser
 from ddd.pipeline.decorators import dddtask
 import random
 import math
+from ddd.core.exception import DDDException
 
 def godot_vector2array(data):
     coords = [(x, y) for x, y in zip(data[0::2], data[1::2])]
@@ -29,6 +30,18 @@ def features_load(pipeline, root, logger):
 
     features = ddd.group2(name="Features")
 
+    def process_node_meta(feat, node):
+        meta = node['__meta__'] if '__meta__' in node.properties else {}
+        if '_editor_description_' in meta:
+            for l in meta['_editor_description_'].split("\n"):
+                try:
+                    l = l.strip()
+                    if not l or l.startswith('#'): continue
+                    k, v = l.split("=", 2)
+                    feat.extra[k] = v
+                except Exception as e:
+                    raise DDDException("Cannot read meta key=value (%s) from node %s: %s" % (l, node, e))
+
     def process_node(prefix, node):
         node_path = prefix + "/" + node.name
 
@@ -38,9 +51,11 @@ def features_load(pipeline, root, logger):
             coords = godot_vector2array(node['polygon'].args)
             position = godot_vector2(node['position'].args) if ('position' in node.properties) else [0, 0]
             #scale = godot_vector2(node['scale'].args) if ('scale' in node.properties) else [1, 1]
+            rotation = node['rotation'] if ('rotation' in node.properties) else 0.0
             visible = node['visible'] if ('visible' in node.properties) else True
 
             feat = ddd.polygon(coords, name=node.name)
+            feat = feat.rotate(rotation)
             feat = feat.translate(position)  # Transform should be maintained
             #feat = feat.scale([0.6, 0.6])  #T TODO: support scale somehow (ideally through godot hierarchy, but at least in metadata)
 
@@ -48,15 +63,23 @@ def features_load(pipeline, root, logger):
             feat.extra['godot:visible'] = visible
             #print(node_path)
 
-            meta = node['__meta__'] if '__meta__' in node.properties else {}
-            if '_editor_description_' in meta:
-                for l in meta['_editor_description_'].split("\n"):
-                    l = l.strip()
-                    if not l or l.startswith('#'): continue
-                    k, v = l.split("=", 2)
-                    feat.extra[k] = v
-
+            process_node_meta(feat, node)
             features.append(feat)
+
+        elif (node.type == "Line2D"):
+            coords = godot_vector2array(node['points'].args)
+            position = godot_vector2(node['position'].args) if ('position' in node.properties) else [0, 0]
+            visible = node['visible'] if ('visible' in node.properties) else True
+
+            feat = ddd.line(coords, name=node.name)
+            feat = feat.translate(position)
+
+            feat.extra['godot:node:path'] = node_path
+            feat.extra['godot:visible'] = visible
+
+            process_node_meta(feat, node)
+            features.append(feat)
+
 
         for c in node.get_children():
             process_node(prefix + "/" + node.name, c)
@@ -70,7 +93,7 @@ def features_load(pipeline, root, logger):
 
 @dddtask(log=True, path="/Features/*")
 def osm_features_filter(pipeline, root, obj):
-    filter_path = './Main/Scene/Trial1/ZoneProc/DDDProc/Data'
+    filter_path = './Main/Scene/Trial/ZoneProc/DDDProc/Data'
     if not obj.extra['godot:node:path'].startswith(filter_path):
         return False
     if not obj.extra['godot:visible']:

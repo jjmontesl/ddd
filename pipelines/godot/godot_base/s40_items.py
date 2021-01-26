@@ -10,6 +10,7 @@ import sys
 import math
 from shapely.ops import linemerge
 from ddd.ops import filters, uvmapping
+import numpy
 
 
 @dddtask(path="/Features", log=True)
@@ -17,11 +18,30 @@ def room_items(root, pipeline, obj):
 
     obj = pipeline.data['rooms:background_union']
 
-    points = obj.random_points(50)
+    points = obj.random_points(5)  #50
 
     for p in points:
         pos = [p[0], p[1]]
         item = ddd.point(pos, "ItemRandom")
+        item.extra['godot:instance'] = "res://scenes/items/ItemGeneric.tscn"
+        root.find("/Items").append(item)
+
+
+
+@dddtask(path="/Features/*", select='[geom:type="LineString"]', log=True)
+def room_items_line(root, pipeline, obj):
+    """
+    Creates items along a line.
+    """
+
+    # Sample line
+    length = obj.length()
+    itemdensity = 150.0
+    numpoints = length / itemdensity
+    for d in numpy.linspace(0.0, length, numpoints, endpoint=True):
+        p, segment_idx, segment_coords_a, segment_coords_b = obj.interpolate_segment(d)
+        pos = [p[0], p[1]]
+        item = ddd.point(pos, "ItemLine")
         item.extra['godot:instance'] = "res://scenes/items/ItemGeneric.tscn"
         root.find("/Items").append(item)
 

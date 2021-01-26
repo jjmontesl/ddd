@@ -18,7 +18,7 @@ def coords_to_godot_vector2array(coords):
 def color_to_godot_color(value):
     #TODO: Support hex notation
     value = [x / 255.0 for x in value]
-    GDObject("Color", *value)
+    return GDObject("Color", *value)
 
 
 @dddtask(order="69.90.+")
@@ -95,18 +95,19 @@ def godot_export_scene(root, pipeline, logger):
                                     properties={'occluder': occluderpolygon_res.reference})
                 gdnode.add_child(gdstaticbody)
 
-            if obj.mat and obj.mat.color:
-                gdnode['self_modulate'] = GDObject("Color", *[x / 255.0 for x in obj.mat.color_rgba])
+            if obj.mat:
+                if obj.mat.color:
+                    gdnode['self_modulate'] = GDObject("Color", *[x / 255.0 for x in obj.mat.color_rgba])
 
                 if obj.mat.texture:
                     if obj.mat.texture not in extresources:
-                        extresources[obj.mat.texture] = scene.add_ext_resource(obj.mat.texture, "Texture")
+                        extresources[obj.mat.texture] = scene.add_ext_resource("res://" + obj.mat.texture, "Texture")
                     texture_res = extresources[obj.mat.texture]
                     gdnode['texture'] = texture_res.reference
 
                     if obj.mat.texture_normal:
                         if obj.mat.texture_normal not in extresources:
-                            extresources[obj.mat.texture_normal] = scene.add_ext_resource(obj.mat.texture_normal, "Texture")
+                            extresources[obj.mat.texture_normal] = scene.add_ext_resource("res://" + obj.mat.texture_normal, "Texture")
                         texture_res = extresources[obj.mat.texture_normal]
                         gdnode['normal_map'] = texture_res.reference
 
@@ -128,7 +129,7 @@ def godot_export_scene(root, pipeline, logger):
                 gdnode['texture_scale'] = GDObject("Vector2", *obj.extra['godot:texture_scale'])
 
             if 'godot:self_modulate' in obj.extra:
-                gdnode['self_modulate'] = color_to_godot_color(obj.extra['godot:texture_scale'])
+                gdnode['self_modulate'] = color_to_godot_color(obj.extra['godot:self_modulate'])
             if 'godot:light_mask' in obj.extra:
                 gdnode['light_mask'] = obj.extra['godot:light_mask']
 
@@ -163,6 +164,11 @@ def godot_export_scene(root, pipeline, logger):
                 gdnode['rotation'] = obj.extra['ddd:angle']
             if 'godot:scale' in obj.extra:
                 gdnode['scale'] = GDObject("Vector2", *obj.extra['godot:scale'])
+
+            if 'godot:self_modulate' in obj.extra:
+                gdnode['self_modulate'] = color_to_godot_color(obj.extra['godot:self_modulate'])
+            if 'godot:light_mask' in obj.extra:
+                gdnode['light_mask'] = obj.extra['godot:light_mask']
 
 
     output_path = "/tmp/ddd-godot.tscn"
