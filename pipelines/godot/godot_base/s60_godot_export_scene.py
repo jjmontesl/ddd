@@ -113,6 +113,13 @@ def godot_export_scene(root, pipeline, logger):
 
                     #gdnode['texture_scale'] = GDObject("Vector2", 2.0, 1.0)  # TODO: this is temp For grass tests
 
+                if obj.get('godot:material:resource', None):
+                    mat_res_path = obj.get('godot:material:resource')
+                    if mat_res_path not in extresources:
+                        extresources[mat_res_path] = scene.add_ext_resource(mat_res_path, "Material")
+                    mat_res = extresources[mat_res_path]
+                    gdnode['material'] = mat_res.reference
+
 
             if 'ddd:z_index' in obj.extra:
                 gdnode['z_index'] = obj.extra['ddd:z_index']

@@ -143,11 +143,17 @@ def solids_borders(root, pipeline, obj):
     for a, b in segments:
         angle = math.atan2(b[1] - a[1], b[0] - a[0])
         if (angle >= angles_floor1[0] and angle <= angles_floor1[1]):
-            floors.append(ddd.line([a, b]))
+            borderline = ddd.line([a, b])
+            borderline.extra.update(obj.extra)
+            floors.append(borderline)
         if (angle >= angles_floor2[0] and angle <= angles_floor2[1]):
-            floors.append(ddd.line([a, b]))
+            borderline = ddd.line([a, b])
+            borderline.extra.update(obj.extra)
+            floors.append(borderline)
         if (angle >= angles_ceiling[0] and angle <= angles_ceiling[1]):
-            ceilings.append(ddd.line([a, b]))
+            borderline = ddd.line([a, b])
+            borderline.extra.update(obj.extra)
+            ceilings.append(borderline)
 
     '''
     ddd.mats.grass = ddd.material(name="Grass", color='#2dd355',
@@ -161,33 +167,48 @@ def solids_borders(root, pipeline, obj):
 
     floor_lines = floors
     floors = ddd.line([[0, 0], [1, 1]], name="Floors")
+    floors.extra.update(obj.extra)
     floors.geom = linemerge([g.geom for g in floor_lines.children])
     # Iterate merged lines
     floors = floors.individualize(always=True).clean()
     for line in floors.children:
-        floor = line.buffer(8.0, resolution=1, cap_style=ddd.CAP_ROUND)  # cap_style=ddd.CAP_FLAT)
+        floor = line.buffer(8.0, resolution=1, cap_style=ddd.CAP_FLAT)  # cap_style=ddd.CAP_FLAT)
         floor = floor.material(ddd.mats.grass_fore)
+        floor.name = "Floor Fore: %s" % line.name
         floor.extra['floor_line'] = line.copy()
         floor.extra['ddd:z_index'] = 46
         #floor = floor.subtract(obj)
         floor = uvmapping.map_2d_path(floor, line, line_x_offset=64.0, line_x_width=63.0)
         if 'uv' in floor.extra:
-            floor.extra['uv'] = [(v[0], v[1] * 2.0) for v in floor.extra['uv']]  # temp: transposed and scaled
+            floor.extra['uv'] = [(v[0], v[1] * 4.0) for v in floor.extra['uv']]  # temp: transposed and scaled
+        floor.extra['ddd:collider'] = False
+        floor.extra['ddd:occluder'] = False
+        floor.extra['solid'] = False
+        floor.extra['godot:light_mask'] = 0
         #floor = filters.noise_random(floor, scale=3.0)
         #ddd.trace(locals())
         #print(floor.get('uv', None))
 
-        floor2 = line.buffer(18.0, resolution=3, cap_style=ddd.CAP_ROUND)
+        floor2 = line.buffer(18.0, resolution=3, cap_style=ddd.CAP_FLAT)
         floor2 = floor2.material(ddd.mats.grass)
+        floor2.name = "Floor: %s" % line.name
         floor2.extra['floor_line'] = line.copy()
         floor2.extra['ddd:z_index'] = -1
         floor2 = uvmapping.map_2d_path(floor2, line, line_x_offset=64.0, line_x_width=63.0)
         if 'uv' in floor2.extra:
-            floor2.extra['uv'] = [(v[0], 16.0 + v[1] * 4.0 )for v in floor2.extra['uv']]  # temp: transposed and scaled
+            floor2.extra['uv'] = [(v[0], 16.0 + v[1] * 3.5 )for v in floor2.extra['uv']]  # temp: transposed and scaled
         #floor2 = filters.noise_random(floor2, scale=3.0)
-        floors2.append(floor2)
+        floor2.extra['ddd:collider'] = False
+        floor2.extra['ddd:occluder'] = False
+        floor2.extra['solid'] = False
+        floor2.extra['godot:light_mask'] = 1
 
-        line.replace(floor)
+        min_length = 50
+        if line.length() > min_length and not obj.get('border:floor', None) == 'false':
+            floors2.append(floor2)
+            line.replace(floor)
+        else:
+            line.geom = None
 
     # for f2 in floors2:  floors.append(f2)
     floors.append(floors2)
@@ -202,6 +223,7 @@ def solids_borders(root, pipeline, obj):
     ceiling_lines = ceilings
     lines = linemerge([g.geom for g in ceiling_lines.children])
     ceilings = DDDObject2(name="Ceilings", geom=lines)
+    ceilings.extra.update(obj.extra)
     ceilings.extra['ddd:z_index'] = 40
     ceilings = ceilings.individualize(always=True).clean()
     for pc in ceilings.children:
@@ -213,6 +235,12 @@ def solids_borders(root, pipeline, obj):
     ceilings = ceilings.material(ddd.mats.bricks)
     #ceilings.mat.color_rgba[3] = 128
     ceilings = ceilings.clean()
+
+    ceilings.set('ddd:collider', False, children=True)
+    ceilings.set('ddd:occluder', False, children=True)
+    ceilings.set('solid', False, children=True)
+    ceilings.set('godot:light_mask', 1, children=True)
+
     #newobj = ddd.group2([obj, floors], name="Solid")
     #obj.replace(newobj)
     root.find("/Rooms").append(ceilings)
@@ -287,4 +315,20 @@ def room_materials(root, pipeline, obj):
     obj = obj.material(mat)
     return obj
 
+
+@dddtask(path="/Features/*", select='[ddd:polygon:type="bg_hole"][ddd:polygon:frame:material]', log=True)
+def holes_frames(root, pipeline, obj):
+    mat_name = obj.extra['ddd:polygon:frame:material']
+    mat = getattr(ddd.mats, mat_name)
+    dist = float(obj.get('ddd:polygon:frame:dist', 10))
+
+    obj = obj.copy()
+    obj = obj.subtract(obj.buffer(-dist))
+    bgs = ddd.geomops.remove_holes_split(obj)
+    for bg in bgs.children:
+        bg = bg.material(mat)
+        bg = ddd.uv.map_2d_linear(bg)
+        bg.extra['ddd:z_index'] = -10
+        bg.name = "Frame: %s" % bg.name
+        root.find("/Rooms").append(bg)
 

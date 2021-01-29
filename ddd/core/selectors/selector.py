@@ -97,7 +97,8 @@ class TreeToSelector(Transformer):
         datavalue = t[1]
         def datafilter_attr_neq_func(obj):
             metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
-            return (datakey in metadata and metadata[datakey] != datavalue)
+            #return (datakey in metadata and metadata[datakey] != datavalue)
+            return (datakey not in metadata or metadata[datakey] != datavalue)  # If data is not present, consider it not equal
         return datafilter_attr_neq_func
 
     def datafilter_attr_def(self, t):

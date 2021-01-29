@@ -19,7 +19,7 @@ sprites_bg = ["outlineDisc", "outlineDisc_alt", "outlineCrystal", "outlineGem", 
 sprites_solid = ["blockBrown", "blockBrown_broken",
                  "blockGreen", "blockGreen_puzzle",
                  "blockGrey", "blockGrey_broken",
-                 #"blockRed", "blockRed_puzzle",
+                 # "blockRed", "blockRed_puzzle",
                  ]
 
 sprites_bg_rc = ["outlineCowbell", "outlineCowbell_solid",
@@ -28,7 +28,7 @@ sprites_bg_rc = ["outlineCowbell", "outlineCowbell_solid",
 sprites_solid_rc = ["blockBrown_cowbell", "blockBrown_happymilk",
                     "blockGreen_cowbell", "blockGreen_happymilk",
                     "blockGrey_cowbell", "blockGrey_happymilk", "blockGrey_broken_happymilk",
-                    #"blockRed_cowbell", "blockRed_happymilk",
+                    # "blockRed_cowbell", "blockRed_happymilk",
                     ]
 
 sprites_fence = ["fence", "fenceBroken", "fenceLeft", "fenceMid", "fenceRight", "fenceOpen"]
@@ -139,7 +139,7 @@ def ceiling_decoration_items(root, pipeline, obj):
 @dddtask(path="/Rooms/*", select='[ceiling_line]', log=True)
 def ceiling_decoration_objects(root, pipeline, obj):
 
-    sprites_obj_ceiling = [#ddd.mats.obj_pipes,
+    sprites_obj_ceiling = [  # ddd.mats.obj_pipes,
                            ddd.mats.obj_vines1, ddd.mats.obj_vines2,
 
                            ddd.mats.obj_vines_h1, ddd.mats.obj_vines_h2,
@@ -166,14 +166,14 @@ def ceiling_decoration_objects(root, pipeline, obj):
         item = item.material(material)
 
         # TODO: Scale to sprite dimensions
-        #item = item.scale([32.0, -32.0])
+        # item = item.scale([32.0, -32.0])
         item.extra['godot:scale'] = [rndscale, rndscale]
         item = item.scale([rndscale, rndscale])
 
         item = ddd.align.anchor(item, [0.5, -0.5])
 
         item = item.translate(itempos.centroid())
-        #item.extra['ddd:angle'] = itempos.extra['ddd:angle'] - math.pi / 2.0
+        # item.extra['ddd:angle'] = itempos.extra['ddd:angle'] - math.pi / 2.0
         item.extra['ddd:z_index'] = -2
 
         root.find("/Rooms/").append(item)
@@ -182,13 +182,13 @@ def ceiling_decoration_objects(root, pipeline, obj):
 @dddtask(path="/Rooms/*", select='[ceiling_line]', log=True)
 def ceiling_decoration_objects_aligned(root, pipeline, obj):
 
-    sprites_obj_ceiling = [#ddd.mats.obj_pipes,
+    sprites_obj_ceiling = [  # ddd.mats.obj_pipes,
                            ddd.mats.obj_lamp_fluor, ]
 
     line = obj.extra['ceiling_line']
     l = line.length()
 
-    for d in (random.uniform(0.0, 1.0) * l, ):
+    for d in (random.uniform(0.0, 1.0) * l,):
         p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
 
         pos = [p[0], p[1] - 20.0]
@@ -205,7 +205,7 @@ def ceiling_decoration_objects_aligned(root, pipeline, obj):
         item = item.material(material)
 
         # TODO: Scale to sprite dimensions
-        #item = item.scale([32.0, -32.0])
+        # item = item.scale([32.0, -32.0])
         item.extra['godot:scale'] = [rndscale, rndscale]
         item = item.scale([rndscale, rndscale])
 
@@ -221,7 +221,7 @@ def ceiling_decoration_objects_aligned(root, pipeline, obj):
 @dddtask(path="/Rooms/*", select='[ceiling_line]', log=True)
 def ceiling_decoration_objects_fore(root, pipeline, obj):
 
-    sprites_obj_ceiling = [#ddd.mats.obj_pipes,
+    sprites_obj_ceiling = [  # ddd.mats.obj_pipes,
                            ddd.mats.obj_vines1, ddd.mats.obj_vines2,
 
                            ddd.mats.obj_vines_h1, ddd.mats.obj_vines_h2,
@@ -248,20 +248,19 @@ def ceiling_decoration_objects_fore(root, pipeline, obj):
         item = item.material(material)
 
         # TODO: Scale to sprite dimensions
-        #item = item.scale([32.0, -32.0])
+        # item = item.scale([32.0, -32.0])
         item.extra['godot:scale'] = [rndscale, rndscale]
         item = item.scale([rndscale, rndscale])
 
         item = ddd.align.anchor(item, [0.5, -0.5])
 
         item = item.translate(itempos.centroid())
-        #item.extra['ddd:angle'] = itempos.extra['ddd:angle'] - math.pi / 2.0
-        item.extra['ddd:z_index'] =  39  #  39  # 45
+        # item.extra['ddd:angle'] = itempos.extra['ddd:angle'] - math.pi / 2.0
+        item.extra['ddd:z_index'] = 39  #  39  # 45
         item.extra['godot:self_modulate'] = [0.35 * 255, 0.3 * 255, 0.3 * 255, 255]
         item.extra['godot:light_mask'] = 0
 
         root.find("/Rooms/").append(item)
-
 
 
 @dddtask(path="/Rooms/*", select='[ceiling_line][geom:type="Polygon"]', log=True)
@@ -269,7 +268,7 @@ def ceiling_line_remove(root, pipeline, obj):
     return False
 
 
-@dddtask(path="/Rooms/*", select='[floor_line]', log=True)
+@dddtask(path="/Rooms/*", select='[floor_line]["decoration:floor"!="false"]', log=True)
 def floor_decoration_items(root, pipeline, obj):
 
     line = obj.extra['floor_line']
@@ -303,12 +302,15 @@ def floor_decoration_items(root, pipeline, obj):
         root.find("/Rooms/").append(item)
 
 
-@dddtask(path="/Rooms/*", select='[floor_line]', log=True)
+@dddtask(path="/Rooms/*", select='[floor_line]["decoration:floor"!="false"]', log=True)
 def floor_decoration_objects(root, pipeline, obj):
 
     sprites_obj_floor = [ddd.mats.obj_bush_def, ddd.mats.obj_bush_wide,
-                         ddd.mats.obj_tree1, ddd.mats.obj_tree2, ddd.mats.obj_tree3, ddd.mats.obj_tree4, # ddd.mats.obj_tree_intro,
+                         ddd.mats.obj_tree1, ddd.mats.obj_tree2, ddd.mats.obj_tree3, ddd.mats.obj_tree4,  # ddd.mats.obj_tree_intro,
                          ddd.mats.obj_barsx4, ddd.mats.obj_pipes, ddd.mats.obj_plant,
+                         ddd.mats.obj_plantsx1, ddd.mats.obj_plantsx3,
+                         ddd.mats.obj_flowerpot, ddd.mats.obj_flowers1, ddd.mats.obj_flowers2,
+                         #ddd.mats.obj_mailbox, ddd.mats.obj_bin, ddd.mats.obj_bench,
                          ]
 
     line = obj.extra['floor_line']
@@ -330,7 +332,8 @@ def floor_decoration_objects(root, pipeline, obj):
         item = item.material(material)
 
         # TODO: Scale to sprite dimensions
-        #item = item.scale([32.0, -32.0])
+        # item = item.scale([32.0, -32.0])
+        rndscale = rndscale * material.extra.get("godot:obj:scale", 1.0)
         item.extra['godot:scale'] = [rndscale, rndscale]
         item = item.scale([rndscale, rndscale])
 
@@ -343,18 +346,22 @@ def floor_decoration_objects(root, pipeline, obj):
         root.find("/Rooms/").append(item)
 
 
-@dddtask(path="/Rooms/*", select='[floor_line]', log=True)
+@dddtask(path="/Rooms/*", select='[floor_line]["decoration:floor"!="false"]', log=True)
 def floor_decoration_objects_fore(root, pipeline, obj):
 
     sprites_obj_floor = [ddd.mats.obj_bush_def, ddd.mats.obj_bush_wide,
-                         ddd.mats.obj_tree1, ddd.mats.obj_tree2, ddd.mats.obj_tree3, ddd.mats.obj_tree4, # ddd.mats.obj_tree_intro,
+                         ddd.mats.obj_tree1, ddd.mats.obj_tree2, ddd.mats.obj_tree3, ddd.mats.obj_tree4,  # ddd.mats.obj_tree_intro,
                          ddd.mats.obj_barsx4, ddd.mats.obj_plant,
-                         ddd.mats.obj_grid_panel, ddd.mats.obj_grid_panel_broken ]
+                         ddd.mats.obj_grid_panel, ddd.mats.obj_grid_panel_broken,
+                          ddd.mats.obj_plantsx1, ddd.mats.obj_plantsx3,
+                          ddd.mats.obj_flowerpot, ddd.mats.obj_flowers1, ddd.mats.obj_flowers2,
+                         # ddd.mats.obj_mailbox, ddd.mats.obj_bin, ddd.mats.obj_bench,
+                        ]
 
     line = obj.extra['floor_line']
     l = line.geom.length
 
-    for d in (random.uniform(0.0, 1.0) * l,): # random.uniform(0.0, 1.0) * l):
+    for d in (random.uniform(0.0, 1.0) * l,):  # random.uniform(0.0, 1.0) * l):
         p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
 
         pos = [p[0], p[1] - 20.0]
@@ -370,7 +377,8 @@ def floor_decoration_objects_fore(root, pipeline, obj):
         item = item.material(material)
 
         # TODO: Scale to sprite dimensions
-        #item = item.scale([32.0, -32.0])
+        # item = item.scale([32.0, -32.0])
+        rndscale = rndscale * material.extra.get("godot:obj:scale", 1.0)
         item.extra['godot:scale'] = [rndscale, rndscale]
         item = item.scale([rndscale, rndscale])
 
@@ -378,7 +386,7 @@ def floor_decoration_objects_fore(root, pipeline, obj):
 
         item = item.translate(itempos.centroid())
         item.extra['ddd:angle'] = itempos.extra['ddd:angle'] - math.pi / 2.0
-        item.extra['ddd:z_index'] =  39  #  39  # 45
+        item.extra['ddd:z_index'] = 39  #  39  # 45
         item.extra['godot:self_modulate'] = [0.45 * 255, 0.4 * 255, 0.4 * 255, 255]
         item.extra['godot:light_mask'] = 0
         root.find("/Rooms/").append(item)
