@@ -20,9 +20,12 @@ def room_items(root, pipeline, obj):
 
     points = obj.random_points(5)  #50
 
+    return  # No random objects
+
     for p in points:
         pos = [p[0], p[1]]
         item = ddd.point(pos, "ItemRandom")
+        item.extra['gdc:item'] = True
         item.extra['godot:instance'] = "res://scenes/items/ItemGeneric.tscn"
         root.find("/Items").append(item)
 
@@ -42,6 +45,7 @@ def room_items_line(root, pipeline, obj):
         p, segment_idx, segment_coords_a, segment_coords_b = obj.interpolate_segment(d)
         pos = [p[0], p[1]]
         item = ddd.point(pos, "ItemLine")
+        item.extra['gdc:item'] = True
         item.extra['godot:instance'] = "res://scenes/items/ItemGeneric.tscn"
         root.find("/Items").append(item)
 

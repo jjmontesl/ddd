@@ -46,12 +46,29 @@ def godot_materials(pipeline, root):
                                           'godot:material:resource': 'res://assets/materials/textures/material-brick-normal.tres'
                                    })
 
-    ddd.mats.rock = ddd.material(name="Stone", color='#5f5f4d',
+    ddd.mats.paintedplaster = ddd.material(name="Bricks", color='#89796a',  # #d49156',
+                                   texture_path="assets/textures/PaintedPlaster006_2K_Color.jpg",
+                                   texture_normal_path="assets/textures/PaintedPlaster006_2K_Normal.jpg",
+                                   extra={'godot:texture_scale': [8.0, 8.0],
+                                          'godot:texture_rotation': math.pi / 2.0,
+                                          'godot:material:resource': 'res://assets/materials/textures/material-brick-normal.tres'
+                                   })
+
+
+    ddd.mats.rock = ddd.material(name="Rock", color='#5f5f4d',
                                  texture_path="assets/textures/Rock22_col.jpg",
                                  #extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05}
                                  extra={#'godot:texture_scale': [8.0, 8.0],
                                         'godot:texture_rotation': math.pi / 2.0,
                                         'godot:material:resource': 'res://assets/materials/textures/material-rock-normal.tres'
+                                 })
+    ddd.mats.rock2 = ddd.material(name="Rock2(Background)(flat,grey,rock,smooth,wet)", color='#a0a0a0',
+                                 texture_path="assets/textures/Rock020_2K_Color.jpg",
+                                 texture_normal_path="assets/textures/Rock020_2K_Normal.jpg",
+                                 #extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05}
+                                 extra={'godot:texture_scale': [4.0, 4.0],
+                                        'godot:texture_rotation': math.pi / 2.0,
+                                        #'godot:material:resource': 'res://assets/materials/textures/material-rock-normal.tres'
                                  })
 
     ddd.mats.wood = ddd.material(name="Wood", color='#5f5f4d',
@@ -63,12 +80,20 @@ def godot_materials(pipeline, root):
                                  })
 
     # Concrete with Moss
-    ddd.mats.concrete_moss = ddd.material(name="ConcreteMoss", color='#d0d0d0',
+    ddd.mats.concrete_moss = ddd.material(name="ConcreteMoss", color='#b0b0b0',
                                  texture_path="assets/textures/Concrete026_2K_Color.jpg",
                                  texture_normal_path="assets/textures/Concrete026_2K_Normal.jpg",
                                  extra={'godot:texture_scale': [6.0, 6.0],
                                         'godot:texture_rotation': math.pi / 2.0,
                                         'godot:material:resource': 'res://assets/materials/textures/material-concrete_moss-normal.tres'
+                                 })
+
+    ddd.mats.tiles_checker = ddd.material(name="ConcreteMoss", color='#474747',
+                                 texture_path="assets/textures/Tiles012_2K_Color.jpg",
+                                 texture_normal_path="assets/textures/Tiles012_2K_Normal.jpg",
+                                 extra={'godot:texture_scale': [12.0, 12.0],
+                                        'godot:texture_rotation': math.pi / 2.0,
+                                        #'godot:material:resource': 'res://assets/materials/textures/material-concrete_moss-normal.tres'
                                  })
 
 

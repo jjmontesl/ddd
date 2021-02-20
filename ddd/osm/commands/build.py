@@ -83,7 +83,8 @@ class OSMBuildCommand(DDDCommand):
 
         # Extract area from PBF
         #mainpbffile = os.path.join(datapath, "spain-latest.osm.pbf")
-        mainpbffile = os.path.join(datapath, "south-africa-latest.osm.pbf")
+        mainpbffile = os.path.join(datapath, "france-latest.osm.pbf")
+        #mainpbffile = os.path.join(datapath, "south-africa-latest.osm.pbf")
 
         selectedpbffile = os.path.join(datapath, "%s.pbf" % name)
 

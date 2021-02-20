@@ -108,7 +108,8 @@ def ceiling_decoration_items(root, pipeline, obj):
     line = obj.extra['ceiling_line']
     l = line.geom.length
 
-    for d in (l / 3, 2 * l / 3):
+    positions = [random.uniform(0.0, 1.0) * l for _ in range(1 + int(l / 200.0))]
+    for d in positions:
         p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
 
         pos = [p[0], p[1] - 20.0]
@@ -149,7 +150,11 @@ def ceiling_decoration_objects(root, pipeline, obj):
     line = obj.extra['ceiling_line']
     l = line.length()
 
-    for d in (random.uniform(0.0, 1.0) * l, random.uniform(0.0, 1.0) * l, random.uniform(0.0, 1.0) * l, random.uniform(0.0, 1.0) * l, random.uniform(0.0, 1.0) * l,):
+    min_length = 50
+    if l < min_length: return
+
+    positions = [random.uniform(0.0, 1.0) * l for _ in range(1 + int(l / 200.0))]
+    for d in positions:
         p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
 
         pos = [p[0], p[1] - 20.0]
@@ -187,6 +192,9 @@ def ceiling_decoration_objects_aligned(root, pipeline, obj):
 
     line = obj.extra['ceiling_line']
     l = line.length()
+
+    min_length = 50
+    if l < min_length: return
 
     for d in (random.uniform(0.0, 1.0) * l,):
         p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
@@ -231,7 +239,11 @@ def ceiling_decoration_objects_fore(root, pipeline, obj):
     line = obj.extra['ceiling_line']
     l = line.length()
 
-    for d in (random.uniform(0.0, 1.0) * l, random.uniform(0.0, 1.0) * l, random.uniform(0.0, 1.0) * l, random.uniform(0.0, 1.0) * l, random.uniform(0.0, 1.0) * l,):
+    min_length = 50
+    if l < min_length: return
+
+    positions = [random.uniform(0.0, 1.0) * l for _ in range(1 + int(l / 200.0))]
+    for d in positions:
         p, segment_idx, segment_coords_a, segment_coords_b = line.interpolate_segment(d)
 
         pos = [p[0], p[1] - 20.0]
@@ -394,20 +406,25 @@ def floor_decoration_objects_fore(root, pipeline, obj):
 
 @dddtask(path="/Rooms/*", log=True)
 def outside_decoration_remove(root, pipeline, obj):
-    if not obj.buffer(2.0).intersects(pipeline.data['rooms:background_union']):
+    if (not obj.buffer(2.0).intersects(pipeline.data['rooms:background_union']) and
+        not obj.buffer(2.0).intersects(pipeline.data['rooms:user_solid_union'])):
         return False
 
 
 @dddtask(path="/Rooms/Floors/*", log=True)
 def outside_floors_remove(root, pipeline, obj):
-    if not obj.buffer(2.0).intersects(pipeline.data['rooms:background_union']):
+    if (not obj.buffer(2.0).intersects(pipeline.data['rooms:background_union']) and
+        not obj.buffer(2.0).intersects(pipeline.data['rooms:user_solid_union'])):
         return False
 
 
 @dddtask(path="/Items/*", log=True)
 def outside_items_remove(root, pipeline, obj):
-    if not obj.buffer(2.0).intersects(pipeline.data['rooms:background_union']):
-        return False
+    if (not obj.buffer(2.0).intersects(pipeline.data['rooms:background_union']) and
+        not obj.buffer(2.0).intersects(pipeline.data['rooms:user_solid_union'])):
+        # TODO: Use separate nodes so items are not mixed with decoration
+        if not obj.get('gdc:item', None):  # Exclude items
+            return False
 
     '''
     item = ddd.point(pos, "Light")
