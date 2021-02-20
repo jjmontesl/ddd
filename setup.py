@@ -3,8 +3,8 @@ import ddd
 
 setup(
 
-    name = 'ddd123',
-    package = 'ddd123',
+    name = 'ddd',
+    package = 'ddd',
     version = ddd.APP_VERSION,
 
     author = 'Jose Juan Montes',
