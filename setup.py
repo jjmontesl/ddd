@@ -33,16 +33,27 @@ setup(
     ],
 
     install_requires = [
-        "GDAL >= 2.2.3",
+        "CairoSVG >= 2.4.2",
+        "freetype-py >= 2.1.0.post1",
+        #"GDAL >= 2.2.3",
+        "GDAL == 2.2.3",
         "geographiclib >= 1.50",
         "geojson >= 2.5.0",
-        #"MeshPy >= 2018.2.1",
-        "pyproj >= 2.4.2.post1",
+        "lark-parser >= 0.8.5",
+        "networkx >= 2.2",
+        "noise >= 1.2.2",
+        "pint >= 0.12",
+        "pyglet >= 1.4.0b1",
+        "PyOpenGL == 3.1.0",
+        "PyOpenGL-accelerate == 3.1.5",
+        "pyproj < 3.0.0",
         "pycsg >= 0.3.3",
+        "scipy >= 1.3.3",
         "Shapely >= 1.6.4.post2",
         "trimesh >= 3.5.0",  # -e git+https://github.com/mikedh/trimesh.git@8c5633028984b4abb1b7911208f7652119a3c96d#egg=trimesh
         "triangle >= 20190115.3",
 
+        'matplotlib < 3.4',
         'svgpath2mpl >= 0.2.1',
         'svgpathtools >= 1.3.3',
 
