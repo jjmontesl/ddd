@@ -47,7 +47,7 @@ def char(ch):
 
     from freetype import Face
     #face = Face('/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf')
-    face = Face(ddd.BASE_DIR + '/data/fonts/OpenSansEmoji.ttf')
+    face = Face(ddd.DATA_DIR + '/fonts/OpenSansEmoji.ttf')
     face.set_char_size(48*64)
     face.load_char(ch)
 

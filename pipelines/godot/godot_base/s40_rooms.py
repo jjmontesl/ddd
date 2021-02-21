@@ -141,7 +141,7 @@ def rooms_fore(root, pipeline, obj):
         root.find("/Rooms").append(bg)
 
 
-@dddtask(path="/Rooms", select='[geom:type="Polygon"]', log=True)
+@dddtask(path="/Rooms", select='[geom:type="Polygon"][!floor_line][!ceiling_line]', log=True)
 def solids_borders(root, pipeline, obj):
 
     if 'godot:material' in obj.extra:
@@ -274,6 +274,8 @@ def hollow_background(root, pipeline, obj):
     bg = obj.copy()
 
     bg = bg.subtract(pipeline.data['rooms:bg_hole_union'])
+    bg = bg.subtract(pipeline.data['rooms:solid_union'])
+
     bg = bg.subtract(bgunion)
 
     intersects = root.select(path="/Features/*", selector='[ddd:polygon:type="intersect"]').union()

@@ -3,9 +3,11 @@
 # Jose Juan Montes 2020
 
 import logging
+import os
 import plistlib
 import sys
 
+from ddd.core.exception import DDDException
 from trimesh.visual.material import SimpleMaterial
 
 
@@ -46,8 +48,11 @@ class TextureAtlas():
         """
 
         # Open file
-        with open(filepath, 'rb') as fp:
-            pl = plistlib.load(fp)
+        try:
+            with open(filepath, 'rb') as fp:
+                pl = plistlib.load(fp)
+        except:
+            raise DDDException("Could not load atlas texture definition from: %s" % (filepath,) )
 
         atlas = TextureAtlas()
         texture_size = pl['metadata']['size'][1:-1].split(",")

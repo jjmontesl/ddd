@@ -58,12 +58,11 @@ Allow easy programatic definition of 1D, 2D and 3D objects.
 
 Workflow oriented to scenegraph, manipulate entire hierarchies.
 
-Solve Anastutia Minigolf minigame needs and possibly others (snake 3D, tanks, boxes / voxels, karts?).
-
 Based on Shapely and Trimesh
 
-(Screenshots)
+Example uses: OSM, procedural game scenes (eg. minigolf), polygonal 2D game maps
 
+(Screenshots)
 
 ## Installation
 

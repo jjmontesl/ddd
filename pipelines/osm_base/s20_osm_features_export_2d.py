@@ -15,4 +15,5 @@ def osm_features_export_2d(root):
     root = root.copy()
     root.find("/Features").prop_set('svg:stroke-width', 1.0, children=True)
     root.find("/Features").save("/tmp/osm-features.svg")
+    root.find("/Features").save("/tmp/osm-features.json")
 

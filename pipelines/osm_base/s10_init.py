@@ -16,13 +16,24 @@ from ddd.pipeline.decorators import dddtask
 """
 
 
+# Materials used by this pipeline
+ddd.mats.railway = ddd.material(name="RoadRailway", color="#47443e")
+ddd.mats.roadline = ddd.material(name="Roadline", color='#e8e8e8',
+                             texture_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_alb.png",
+                             texture_normal_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_normal.jpg",
+                             alpha_cutoff=0.05,
+                             extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05})
+ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
+                                  texture_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.png",
+                                  atlas_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.plist")
+
+
 @dddtask(order="10")
 def osm_init(pipeline, root):
     """
     Pipeline initialization (variables, etc).
     """
     pass
-
 
 
 @dddtask(order="50.999999", log=True)

@@ -131,6 +131,26 @@ class DDDTask(object):
         #else:
         #    logger.debug("Running task %ws for %d objects.", self, objs.count())
 
+        def task_select_apply(o):
+            try:
+                if 'o' in kwargs: kwargs['o'] = o
+                if 'obj' in kwargs: kwargs['obj'] = o
+                result = func(**kwargs)
+                if self.replace:
+                    return result
+                else:
+                    if result or result is False:
+                        logger.error("Task function returned a replacement object or a delete (None), but task replace is set to False.")
+                        raise DDDException("Task function returned a replacement object or a delete (None), but task replace is set to False.")
+                    return o
+
+            except Exception as e:
+                logger.error("Error running task %s on %s: %s", self, o, e)
+                raise DDDException("Error running task %s on %s: %s" % (self, o, e), ddd_obj=o)
+
+        pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=self.recurse, apply_func=task_select_apply)
+
+        '''
         for o in objs.children:
             #logger.debug("Running task %s for object: %s", self, o)
             try:
@@ -147,6 +167,7 @@ class DDDTask(object):
                 raise DDDException("Error running task %s on %s: %s" % (self, o, e), ddd_obj=o)
 
             #interactive.showbg(pipeline.root)
+        '''
 
 
 

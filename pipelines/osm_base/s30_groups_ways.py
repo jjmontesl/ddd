@@ -541,6 +541,8 @@ def osm_select_ways_calculated_oneway_lane_margins(obj):
 def osm_select_ways_calculated_data(obj, root, logger):
     """Sets calculated data for ways."""
 
+    #obj.dump(data=True)
+
     # Use osm:lanes if set, otherwise use lanes
     try:
         obj.extra['ddd:way:lanes'] = int(obj.extra.get('osm:lanes', obj.extra.get('ddd:way:lanes', 0)))

@@ -51,6 +51,7 @@ from ddd.core.selectors.selector import DDDSelector
 from ddd.formats.json import DDDJSONFormat
 from ddd.formats.svg import DDDSVG
 from trimesh.convex import convex_hull
+import os
 
 
 # Get instance of logger for this module
@@ -59,7 +60,9 @@ logger = logging.getLogger(__name__)
 
 class D1D2D3():
 
-    BASE_DIR = "../"
+    #BASE_DIR = os.path.join(os.getenv('PWD'), "..") if os.getenv('PWD') else "../"
+    #DATA_DIR = os.path.join(BASE_DIR, "/data")
+    DATA_DIR = os.path.expanduser("~/git/ddd/data/")
 
     CAP_ROUND = 1
     CAP_FLAT = 2
@@ -460,6 +463,18 @@ class DDDObject():
         #print(self.__class__.__name__, self.name, hash((self.__class__.__name__, self.name)))
         #return abs(hash((self.__class__.__name__, self.name)))  #, ((k, self.extra[k]) for k in sorted(self.extra.keys())))))
 
+    def copy_from(self, obj):
+        """
+        Copies metadata and children from another. Returns self.
+        """
+        if obj.name:
+            self.name = obj.name
+
+        self.children = list(obj.children)
+        self.extra.update(obj.extra)
+        self.material = obj.material
+
+        return self
 
     def uniquename(self):
         # Hashing
@@ -512,7 +527,9 @@ class DDDObject():
         return metadata
 
     def dump(self, indent_level=0, data=False):
-        strdata = str(self.extra) if data else ""
+        strdata = ""
+        if data:
+            strdata = strdata + " " + str(self.extra)
         print("  " * indent_level + str(self) + strdata)
         for c in self.children:
             c.dump(indent_level=indent_level + 1, data=data)
@@ -542,11 +559,9 @@ class DDDObject():
             raise DDDException("Find '%s' expected 1 object but found %s." % (path, len(result.children)), ddd_obj=self)
         return result.one()
 
-    def select(self, selector=None, path=None, func=None, recurse=True, _rec_path=None):
+    def select(self, selector=None, path=None, func=None, recurse=True, apply_func=None, _rec_path=None):
         """
-        Returns copies of objects!
         """
-
         if selector and not isinstance(selector, DDDSelector):
             selector = DDDSelector(selector)
 
@@ -577,17 +592,49 @@ class DDDObject():
         if selector:
             selected = selected and selector.evaluate(self)
 
+        remove_object = False
+        add_object = False
+
+        o = self
         if selected:
             result.append(self)
+            if apply_func:
+                o = apply_func(self)
+                if o is False or (o and o is not self):  # new object or delete
+                    add_object = o
+                    remove_object = True
+            if o is None:
+                o = self
 
-        if not selected or recurse:
-            for c in self.children:
-                cr = c.select(func=func, selector=selector, path=path, recurse=recurse, _rec_path=_rec_path)
-                if cr: result.extend(cr.children)
+        # If a list was returned, children are not evaluated
+        if o and (not isinstance(o, list)) and (not selected or recurse):
+            to_remove = []
+            to_add = []
+            for c in o.children:
+                cr = c.select(func=func, selector=selector, path=path, recurse=recurse, apply_func=apply_func, _rec_path=_rec_path)
+                if cr.extra['_remove_object']:
+                    to_remove.append(c)
+                if cr.extra['_add_object']:
+                    if isinstance(cr.extra['_add_object'], list):
+                        to_add.extend(cr.extra['_add_object'])
+                    else:
+                        to_add.append(cr)
+                        #to_add.extend(cr.children)
+                del(cr.extra['_remove_object'])
+                del(cr.extra['_add_object'])
+                result.extend(cr.children)
+            o.children = [coc for coc in o.children if coc not in to_remove]
+            o.children.extend(to_add)
+
+        #if (isinstance(o, list)):
+        #    o.children.extend()
 
         #self.children = [c for c in self.children if c not in result]
 
-        return self.grouptyped(result)
+        res = self.grouptyped(result)
+        res.extra['_remove_object'] = remove_object
+        res.extra['_add_object'] = add_object
+        return res
 
     def filter(self, func):
         return self.select(func=func)
@@ -1018,6 +1065,7 @@ class DDDObject2(DDDObject):
             for coord in c.coords_iterator():
                 yield coord
 
+
     def _vertex_func_coords(self, func, coords):
         ncoords = []
         for iv, v in enumerate(coords):
@@ -1035,11 +1083,17 @@ class DDDObject2(DDDObject):
                     g.exterior.coords = self._vertex_func_coords(func, g.exterior.coords)
             elif obj.geom.type == 'Polygon':
                 obj.geom = ddd.polygon(self._vertex_func_coords(func, obj.geom.exterior.coords)).geom
+            elif obj.geom.type == 'LineString':
+                obj.geom = ddd.line(self._vertex_func_coords(func, obj.geom.coords)).geom
             else:
-                logger.warn("Unknown geometry for 2D vertex func")
+                #logger.warn("Unknown geometry for 2D vertex func")
+                raise DDDException("Unknown geometry for 2D vertex func: %s" % self)
 
         obj.children = [c.vertex_func(func) for c in self.children]
         return obj
+
+    def vertex_list(self, ):
+        return list(self.coords_iterator())
 
     def vertex_count(self):
         if not self.geom:
@@ -2440,6 +2494,10 @@ class DDDObject3(DDDObject):
 
 
 ddd = D1D2D3
+
+Node = DDDObject
+Geometry2D = DDDObject2
+Mesh = DDDObject3
 
 from ddd.ops.collision import DDDCollision
 from ddd.ops.geometry import DDDGeometry

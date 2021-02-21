@@ -228,14 +228,16 @@ def osm_groups_areas_artwork_sculpture(root, obj):
 @dddtask(path="/Areas/*", select='["osm:waterway" ~ "riverbank|stream"];["osm:natural" = "water"];["osm:water" = "river"]')
 def osm_groups_areas_riverbank(obj, root):
     """Define area data."""
+    obj.dump()
     obj.name = "Riverbank: %s" % obj.name
     obj.extra['ddd:area:type'] = "water"
     obj.extra['ddd:height'] = 0.0
     obj = obj.material(ddd.mats.sea)
     obj = obj.individualize().clean(eps=0.01).flatten()
-    root.find("/Areas").children.extend(obj.children)
-    return False
+    #root.find("/Areas").children.extend(obj.children)
+    #return False
     #return obj
+    return obj.children  # return array, so the original object is replaced by children
 
 
 @dddtask(path="/Areas/*", select='["osm:man_made" = "bridge"]')

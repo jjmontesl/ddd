@@ -20,18 +20,6 @@ class DefaultMaterials(MaterialsCollection):
         self.asphalt = ddd.material(name="Asphalt", color='#202020')
         self.pathwalk = ddd.material(name="WayPedestrian", color='#78281e')
 
-        # Ways/roads special
-        # TODO: Move non-standard (textured) materials to their own project like RITTC does
-        self.railway = ddd.material(name="RoadRailway", color="#47443e")
-        #self.roadline = ddd.material(name="Roadline", color='#e8e8e8',
-        #                             texture_path="../data/materials/road_signs/RoadLines_alb.png",
-        #                             texture_normal_path="../data/materials/road_signs/RoadLines_normal.jpg",
-        #                             alpha_cutoff=0.05,
-        #                             extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05})
-        #self.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
-        #                                  texture_path="../data/materials/traffic_signs/traffic_signs_es_0.png",
-        #                                  atlas_path="../data/materials/traffic_signs/traffic_signs_es_0.plist")
-
         # Areas
         self.sea = ddd.material(name="Water4Advanced", color='#3d43b5', extra={'ddd:collider': False, 'ddd:shadows': False, 'ddd:transparent': True})
         self.water = ddd.material(name="WaterBasicDaytime", color='#4d53c5', extra={'ddd:collider': False, 'ddd:shadows': False, 'ddd:transparent': True})
