@@ -8,7 +8,6 @@ import math
 import random
 import sys
 
-
 import json
 import requests
 import os

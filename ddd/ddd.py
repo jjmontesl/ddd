@@ -83,6 +83,8 @@ class D1D2D3():
     EXTRUSION_METHOD_WRAP = extrusion.EXTRUSION_METHOD_WRAP
     EXTRUSION_METHOD_SUBTRACT = extrusion.EXTRUSION_METHOD_SUBTRACT # For internal/external/vertical extrusions
 
+    _uid_last = 0
+
     data = {}
 
     @staticmethod
@@ -359,6 +361,22 @@ class D1D2D3():
         #if data: print(data)
         return data
 
+    @staticmethod
+    def load(name):
+
+        def load_glb():
+            scene = trimesh.load("some_file.glb")
+            #mesh = trimesh.load_mesh('./test.stl',process=False) mesh.is_watertight
+            geometries = list(scene.geometry.values())
+            geometry = geometries[0]
+            return D1D2D3.mesh(geometry, geometry.name)
+            #adjacency_matrix = geometry.edges_sparse
+
+        if (name.endswith(".glb")):
+            return load_glb(name)
+        else:
+            raise DDDException("Cannot load file (unknown extension): %s" % (name))
+
 
 class DDDMaterial():
 
@@ -482,7 +500,8 @@ class DDDObject():
 
         # Random number
         if self._uid is None:
-            self._uid = random.randint(0, 2 ** 32)
+            D1D2D3._uid_last += 1
+            self._uid = D1D2D3._uid_last  # random.randint(0, 2 ** 32)
 
         node_name = "%s_%s" % (self.name if self.name else 'Node', self._uid)
 
@@ -610,7 +629,7 @@ class DDDObject():
         if o and (not isinstance(o, list)) and (not selected or recurse):
             to_remove = []
             to_add = []
-            for c in o.children:
+            for c in list(o.children):
                 cr = c.select(func=func, selector=selector, path=path, recurse=recurse, apply_func=apply_func, _rec_path=_rec_path)
                 if cr.extra['_remove_object']:
                     to_remove.append(c)
@@ -618,7 +637,7 @@ class DDDObject():
                     if isinstance(cr.extra['_add_object'], list):
                         to_add.extend(cr.extra['_add_object'])
                     else:
-                        to_add.append(cr)
+                        to_add.append(cr.extra['_add_object'])
                         #to_add.extend(cr.children)
                 del(cr.extra['_remove_object'])
                 del(cr.extra['_add_object'])
@@ -1779,7 +1798,7 @@ class DDDInstance(DDDObject):
         self.transform = DDDTransform()
 
     def __repr__(self):
-        return "%s(name=%s, ref=%s)" % (self.__class__.__name__, self.name, self.ref)
+        return "%s(%s, ref=%s)" % (self.__class__.__name__, self.uniquename(), self.ref)
 
     def copy(self):
         obj = DDDInstance(ref=self.ref, name=self.name, extra=dict(self.extra))
@@ -1827,47 +1846,59 @@ class DDDInstance(DDDObject):
         ref.extra.update(self.extra)
         return ref
 
-    def _recurse_scene(self, path_prefix, name_suffix, instance_mesh, instance_marker):
+    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, scene=None, scene_parent_node_name=None):
 
-        node_name = self.uniquename() + name_suffix
+
+        #node_name = self.uniquename() + name_suffix
+        node_name = self.uniquename()
 
         # Add metadata to name
-        if True:
-            metadata = self.metadata(path_prefix, name_suffix)
-            serialized_metadata = base64.b64encode(json.dumps(metadata, default=D1D2D3.json_serialize).encode("utf-8")).decode("ascii")
-            encoded_node_name = node_name + "_" + str(serialized_metadata)
+        metadata = self.metadata(path_prefix, name_suffix)
+
+        #if True:
+        #    serialized_metadata = base64.b64encode(json.dumps(metadata, default=D1D2D3.json_serialize).encode("utf-8")).decode("ascii")
+        #    encoded_node_name = node_name + "_" + str(serialized_metadata)
 
         scene = Scene()
 
+        scene_node_name = node_name.replace(" ", "_")
+
+        node_transform = transformations.concatenate_matrices(
+            transformations.quaternion_matrix(self.transform.rotation),
+            transformations.translation_matrix(self.transform.position))
+
         if instance_mesh:
             if self.ref:
-                ref = self.ref.copy()
+
                 if self.transform.scale != [1, 1, 1]:
                     raise DDDException("Invalid scale for an instance object (%s): %s", self.transform.scale, self)
-                #ref = ref.scale(self.transform.scale)
-                ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
-                ref = ref.translate(self.transform.position)
-                refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker)
-                scene = append_scenes([scene] + [refscene])
+
+                # TODO: Use a unique buffer! (same geom name for trimesh?)
+                #ref = self.ref.copy()
+                ref = self.ref
+
+                ##ref = ref.scale(self.transform.scale)
+                #ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+                #ref = ref.translate(self.transform.position)
+
+                #refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker)
+                #scene = append_scenes([scene] + [refscene])
+
+                # Empty node with transform
+                #scene.add_geometry(geometry=D1D2D3.marker().mesh, node_name=scene_node_name, geom_name="Geom %s" % scene_node_name, parent_node_name=scene_parent_node_name, transform=node_transform)
+                scene.graph.update(frame_to=scene_node_name, frame_from=scene_parent_node_name, matrix=node_transform, geometry_flags={'visible': True})
+
+                # Child
+                ref._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker, scene=scene, scene_parent_node_name=scene_node_name)
+
             else:
                 if type(self) == type(DDDInstance):
                     raise DDDException("Instance should reference another object: %s" % (self, ))
 
         if instance_marker:
+            # Marker
             ref = self.marker()
-            refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#marker", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            scene = append_scenes([scene] + [refscene])
-
-
-        '''
-        cscenes = []
-        if self.children:
-            for c in self.children:
-                cscene = c._recurse_scene(path_prefix=path_prefix + node_name + "/")
-                cscenes.append(cscene)
-
-        scene = append_scenes([scene] + cscenes)
-        '''
+            scene.add_geometry(geometry=ref.mesh, node_name=scene_node_name + "_marker", geom_name="Marker %s" % scene_node_name, parent_node_name=scene_parent_node_name, transform=node_transform)
 
         return scene
 
@@ -1928,7 +1959,7 @@ class DDDObject3(DDDObject):
         super().__init__(name, children, extra, material)
 
     def __repr__(self):
-        return "%s(%s, name=%s, faces=%d, children=%d)" % (self.__class__.__name__, id(self), self.name, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
+        return "%s(%s, faces=%d, children=%d)" % (self.__class__.__name__, self.uniquename(), len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
 
     def copy(self, name=None):
         if name is None: name = self.name
@@ -2224,9 +2255,14 @@ class DDDObject3(DDDObject):
         return self
     '''
 
+    '''
     def _recurse_scene(self, path_prefix, name_suffix, instance_mesh, instance_marker):
+        """
+        Produces a Trimesh scene.
+        """
 
         scene = Scene()
+
         node_name = self.uniquename()
 
         # Add metadata to name
@@ -2271,6 +2307,7 @@ class DDDObject3(DDDObject):
         """
 
         return scene
+    '''
 
     def _process_mesh(self):
         if self.extra.get('uv', None):
@@ -2315,55 +2352,65 @@ class DDDObject3(DDDObject):
 
         return self.mesh
 
-    '''
-    def _recurse_scene_ALT(self, base_frame=None, graph=None):
-
-        if graph is None:
-            graph = TransformForest()
-        if base_frame is None:
-            base_frame = "world"
-
-        scene = Scene(base_frame=base_frame, graph=None)
+    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, scene=None, scene_parent_node_name=None):
+        """
+        Produces a Trimesh scene.
+        """
 
         node_name = self.uniquename()
-        #node_name = node_name.replace(" ", "_")
-        scene.add_geometry(geometry=self.mesh, node_name=node_name)
 
-        #tf = TransformForest()
+        # Add metadata to name
+        metadata = self.metadata(path_prefix, name_suffix)
 
-        cscenes = []
+        if False:  # serialize metadata in name
+            #print(json.dumps(metadata))
+            serialized_metadata = base64.b64encode(json.dumps(metadata, default=D1D2D3.json_serialize).encode("utf-8")).decode("ascii")
+            encoded_node_name = node_name + "_" + str(serialized_metadata)
+
+        #scene.metadata['extras'] = test_metadata
+
+        # Do not export nodes indicated 'ddd:export-as-marker' if not exporting markers
+        if metadata.get('ddd:export-as-marker', False) and not instance_marker:
+            return scene
+        if metadata.get('ddd:marker', False) and not instance_marker:
+            return scene
+
+        mesh = self.mesh
+
+        # UV coords test
+        if mesh:
+            try:
+                mesh = self._process_mesh()
+            except Exception as e:
+                logger.error("Could not process mesh for serialization (%s %s): %s", self, metadata, e,)
+                raise DDDException("Could not process mesh for serialization: %s" % e, ddd_obj=self)
+
+
+        node_transform = transformations.translation_matrix([0, 0, 0])
+        # transformations.euler_from_quaternion(obj.transform.rotation, axes='sxyz')
+        #node_name = encoded_node_name.replace(" ", "_")
+        scene_node_name = node_name.replace(" ", "_")
+
+        if scene is None:
+            scene = Scene(base_frame=scene_node_name)
+
+        #if mesh is None: mesh = ddd.marker().mesh
+        if mesh is None:
+            scene.graph.update(frame_to=scene_node_name, frame_from=scene_parent_node_name, matrix=node_transform, geometry_flags={'visible': True})
+        else:
+            scene.add_geometry(geometry=mesh, node_name=scene_node_name, geom_name="Geom %s" % scene_node_name, parent_node_name=scene_parent_node_name, transform=node_transform)
+
         if self.children:
-            for c in self.children:
-                cscene = c._recurse_scene(node_name, graph)
+            for idx, c in enumerate(self.children):
+                c._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx), instance_mesh=instance_mesh, instance_marker=instance_marker, scene=scene, scene_parent_node_name=scene_node_name)
 
-                sauto_name = "node_%s" % (id(c))
-                cscene_name = c.name + "_%s" % id(c) if c.name else sauto_name
-                cscene_name = cscene_name.replace(" ", "_")
-
-                scene.add_geometry(geometry=cscene, node_name=cscene_name)
-                cscenes.append(cscene)
-
-                #changed = scene.graph.transforms.add_edge(node_name, cscene_name)
-
-        #matrix = np.eye(4)
-        #scene.graph.update(frame_from=new_base,
-        #                   frame_to=self.graph.base_frame,
-        #                   matrix=matrix)
-        #scene.graph.base_frame = new_base
-
-        #scene = append_scenes([scene] + cscenes)
-
-        """
-        # rotate the camera view transform
-        camera_old, _geometry = scene.graph[scene.camera.name]
-        camera_new = np.dot(camera_old, rotate)
-
-        # apply the new transform
-        scene.graph[scene.camera.name] = camera_new
-        """
+        # Serialize metadata as dict
+        #if False:
+        #    #serializable_metadata_dict = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
+        #    #scene.metadata['extras'] = serializable_metadata_dict
 
         return scene
-    '''
+
 
     def __rezero(self):
         # From Trimesh as graph example
@@ -2408,6 +2455,8 @@ class DDDObject3(DDDObject):
 
         logger.info("Showing: %s", self)
 
+        self.dump()
+
         if instance_marker is None:
             instance_marker = D1D2D3Bootstrap.export_marker
         if instance_mesh is None:
@@ -2416,13 +2465,17 @@ class DDDObject3(DDDObject):
         if D1D2D3Bootstrap.renderer == 'pyglet':
 
             # OpenGL
-            rotated = self.rotate([-math.pi / 2.0, 0, 0])
-            scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            #rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            rotated = ddd.group([self]).rotate([-math.pi / 2.0, 0, 0])
+
+            #scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+
             # Example code light
             #light = trimesh.scene.lighting.DirectionalLight()
             #light.intensity = 10
             #scene.lights = [light]
-            scene.show('gl')
+            trimesh_scene.show('gl')
 
         elif D1D2D3Bootstrap.renderer == 'pyrender':
 
@@ -2441,6 +2494,7 @@ class DDDObject3(DDDObject):
         else:
 
             raise DDDException("Unknown rendering backend: %s" % D1D2D3Bootstrap.renderer)
+
 
     def save(self, path, instance_marker=None, instance_mesh=None):
         """
@@ -2475,8 +2529,18 @@ class DDDObject3(DDDObject):
 
         elif path.endswith('.glb'):
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
-            scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            data = trimesh.exchange.gltf.export_glb(scene, include_normals=D1D2D3Bootstrap.export_normals)
+            #scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = trimesh.exchange.gltf.export_glb(trimesh_scene, include_normals=D1D2D3Bootstrap.export_normals)
+
+        #elif path.endswith('.gltf'):
+        #    rotated = self.rotate([-math.pi / 2.0, 0, 0])
+        #    scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+        #    #scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+        #    data = trimesh.exchange.gltf.export_gltf(scene, include_normals=D1D2D3Bootstrap.export_normals)
+        #    print(files["model.gltf"])
+        #    for k, v in files.items(): print(k, v)
+        #    data = None
 
         elif path.endswith('.json'):
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
@@ -2491,6 +2555,7 @@ class DDDObject3(DDDObject):
         #scene.export(path)
         with open(path, 'wb') as f:
             f.write(data)
+
 
 
 ddd = D1D2D3

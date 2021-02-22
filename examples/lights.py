@@ -35,9 +35,12 @@ items.append(item)
 # All items
 items = ddd.align.grid(items, space=10.0)
 items.append(ddd.helper.all())
-items.save("/tmp/lights.json")
-items.save("/tmp/lights.glb")
-catalog.export("/tmp/catalog.glb")
+items.save("lights.json")
+items.dump()
+items.save("lights.glb")
+
+#catalog.export("/tmp/catalog.glb")
+
 items.show()
 
 

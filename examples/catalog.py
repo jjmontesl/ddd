@@ -1,4 +1,7 @@
-# Jose Juan Montes 2019-2020
+# ddd - D1D2D3
+# Library for simple scene modelling.
+# Jose Juan Montes 2020
+
 
 import math
 

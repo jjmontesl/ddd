@@ -26,8 +26,8 @@ pipeline = DDDPipeline(['periodictable_pipeline_base.py', 'periodictable_pipelin
 pipeline.run()
 
 # Show an alternative styling
-pipeline = DDDPipeline(['periodictable_pipeline_base.py', 'periodictable_pipeline_variant.py'])
-pipeline.run()
+#pipeline = DDDPipeline(['periodictable_pipeline_base.py', 'periodictable_pipeline_variant.py'])
+#pipeline.run()
 
 # Style via generation of OSM elements and processing through the OSM pipeline
 #pipeline = DDDPipeline.load(['periodictable_pipeline_base.py', 'periodictable_pipeline_osm.py', '../osm/osm_sketchy/*.py'])

@@ -5,6 +5,11 @@ from ddd.pack.sketchy import urban, landscape, industrial
 from ddd.ddd import ddd
 import math
 
+ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
+                                  texture_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.png",
+                                  atlas_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.plist")
+
+
 items = ddd.group3()
 
 for key in ddd.mats.traffic_signs.atlas.keys():

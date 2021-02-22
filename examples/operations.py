@@ -1,4 +1,8 @@
-# Jose Juan Montes 2019-2020
+# Jose Juan Montes 2019-2021
+
+"""
+Tests several 2D and 3D geometry operations.
+"""
 
 from ddd.pack.sketchy import urban, landscape
 from ddd.ddd import ddd

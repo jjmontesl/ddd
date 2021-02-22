@@ -55,7 +55,7 @@ def start_run(root):
     root.append(features)
     #root.dump()
 
-@dddtask(parent="generate_scenario")
+@dddtask()
 def generate_scenario_run(root):
     """
     Create a circular platform for articles.
@@ -75,7 +75,7 @@ def generate_scenario_run(root):
     #result.buffer(1.0).show()
     #root.dump()
 
-@dddtask(parent="generate_scenario")
+@dddtask()
 def generate_scenario_run_plus(root):
     """
     Create a periodic table platform for articles.
@@ -94,8 +94,8 @@ def each(root, obj):
     pass
 '''
 
-@dddtask(path="/Elements2/*", filter=lambda o: 'element:symbol' in o.extra, parent="generate_articles")  # select="wp:article=*",
-def each(root, obj):
+@dddtask(path="/Elements2/*", filter=lambda o: 'element:symbol' in o.extra)  # select="wp:article=*",
+def periodictable_pilars(root, obj):
     """
     Create a pilar for each element.
 
@@ -124,17 +124,17 @@ def each(root, obj):
     root.find("/Elements3").append(item)
 
 @dddtask(path="/Elements3/*", filter=lambda o: o.extra.get('element:type', None) == 'Metal')
-def each(root, obj):
+def type_metal(root, obj):
     obj = obj.material(ddd.mats.steel)
     return obj
 
 @dddtask(path="/Elements3/*", filter=lambda o: o.extra.get('element:type', None) == 'Noble Gas')
-def each(root, obj):
+def type_noble_gas(root, obj):
     obj = obj.material(ddd.mats.metal_paint_green)
     return obj
 
 @dddtask(path="/Elements3/*", filter=lambda o: o.extra.get('element:type', None) == 'Halogen')
-def each(root, obj):
+def type_halogen(root, obj):
     obj = obj.material(ddd.mats.water)
     return obj
 
@@ -161,7 +161,7 @@ def position(root, obj):
 
 
 
-@dddtask(parent="generate_scenario")
+@dddtask()
 def show(root):
     """
     """
