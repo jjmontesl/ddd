@@ -35,16 +35,6 @@ process and present larger areas in chunks.
 - Geometry catalog and object reuse (allows for 3D geometry buffering and instancing)
 - Extensible and configurable
 
-## Currently "under contract only" services
-
-- Unity3D import scripts
-- Orthophoto texturing of ways and surface areas (and downloading from WMS)
-- Mapillary API queries, image downloading and embedding
-- Data augmentation (heuristics)
-- Data augmentation (image processing and other datasets) (TODO)
-- Server infrastructure stack (TODO)
-- Consultancy
-
-## Feature gallery
+## Screenshots
 
 
