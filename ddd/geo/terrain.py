@@ -28,10 +28,10 @@ class DDDGeoTerrain():
         self.path_egm = 'data/dem/egm/egm2008-2_5.tif'
 
 
-#dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'  # Galicia, Salamanca
+dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'  # Galicia, Salamanca
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40e000.tif'  # Vilanova i la Geltrú
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w005.tif'  # Madrid, Huesca
-dem_file = '/home/jjmontes/git/ddd/data/dem/eudem11/eu_dem_v11_E30N20.TIF'  # France, La Rochelle
+#dem_file = '/home/jjmontes/git/ddd/data/dem/eudem11/eu_dem_v11_E30N20.TIF'  # France, La Rochelle
 #dem_file = '/home/jjmontes/git/ddd/data/dem/srtm/srtm_40_19.tif'  # Cape Town, from: https://dwtkns.com/srtm/
 
 
@@ -68,8 +68,8 @@ transformer = None  # rmeove globals, move into classes
 def transformer_ddd_to_geo(ddd_proj):
     global transformer
     if transformer is None:
-        #transformer = pyproj.Transformer.from_proj(ddd_proj, pyproj.Proj(init='epsg:4326'))  # for old DEM files
-        transformer = pyproj.Transformer.from_proj(ddd_proj, pyproj.Proj(init='epsg:3035'))  # for EUDEM 1.1 files
+        transformer = pyproj.Transformer.from_proj(ddd_proj, pyproj.Proj(init='epsg:4326'))  # for old DEM files
+        #transformer = pyproj.Transformer.from_proj(ddd_proj, pyproj.Proj(init='epsg:3035'))  # for EUDEM 1.1 files
 
     return transformer
 

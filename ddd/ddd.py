@@ -1676,14 +1676,19 @@ class DDDObject2(DDDObject):
 
     def interpolate_segment(self, d):
         """
-        Interpolates along a LineString, returning:
+        Interpolates a distance along a LineString, returning:
             coords_p, segment_idx, segment_coords_a, segment_coords_b
 
         Note that returns coordinates, not DDD objects.
         """
         # Walk segment
         l = 0.0
-        coords = self.geom.coords
+        coords = None
+        try:
+            coords = self.geom.coords
+        except Exception as e:
+            raise DDDException("Could not interpolate distance on segment %s: %s" % (self, e))
+
         #length = self.geom.length
         for idx in range(len(coords) - 1):
             p, pn = coords[idx:idx+2]
@@ -1846,8 +1851,8 @@ class DDDInstance(DDDObject):
         ref.extra.update(self.extra)
         return ref
 
-    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, scene=None, scene_parent_node_name=None):
 
+    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, scene=None, scene_parent_node_name=None):
 
         #node_name = self.uniquename() + name_suffix
         node_name = self.uniquename()
@@ -1859,13 +1864,13 @@ class DDDInstance(DDDObject):
         #    serialized_metadata = base64.b64encode(json.dumps(metadata, default=D1D2D3.json_serialize).encode("utf-8")).decode("ascii")
         #    encoded_node_name = node_name + "_" + str(serialized_metadata)
 
-        scene = Scene()
-
         scene_node_name = node_name.replace(" ", "_")
+        scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
 
         node_transform = transformations.concatenate_matrices(
-            transformations.quaternion_matrix(self.transform.rotation),
-            transformations.translation_matrix(self.transform.position))
+            transformations.translation_matrix(self.transform.position),
+            transformations.quaternion_matrix(self.transform.rotation)
+            )
 
         if instance_mesh:
             if self.ref:
@@ -1875,7 +1880,7 @@ class DDDInstance(DDDObject):
 
                 # TODO: Use a unique buffer! (same geom name for trimesh?)
                 #ref = self.ref.copy()
-                ref = self.ref
+                ref = self.ref.copy()  #.copy()
 
                 ##ref = ref.scale(self.transform.scale)
                 #ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
@@ -1885,6 +1890,7 @@ class DDDInstance(DDDObject):
                 #scene = append_scenes([scene] + [refscene])
 
                 # Empty node with transform
+                #print("Instancing %s on %s" % (scene_node_name, scene_parent_node_name))
                 #scene.add_geometry(geometry=D1D2D3.marker().mesh, node_name=scene_node_name, geom_name="Geom %s" % scene_node_name, parent_node_name=scene_parent_node_name, transform=node_transform)
                 scene.graph.update(frame_to=scene_node_name, frame_from=scene_parent_node_name, matrix=node_transform, geometry_flags={'visible': True})
 
@@ -1902,17 +1908,23 @@ class DDDInstance(DDDObject):
 
         return scene
 
-    def recurse_meshes(self):
+    def _recurse_meshes(self, instance_mesh, instance_marker):
 
         cmeshes = []
 
-        if self.ref:
-            ref = self.ref.copy()
-            ref = ref.scale(self.transform.scale)
-            ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
-            ref = ref.translate(self.transform.position)
+        if instance_mesh:
+            if self.ref:
+                ref = self.ref.copy()
+                ref = ref.scale(self.transform.scale)
+                ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+                ref = ref.translate(self.transform.position)
 
-            cmeshes.extend(ref.recurse_meshes())
+                cmeshes.extend(ref._recurse_meshes(instance_mesh, instance_marker))
+
+        if instance_marker:
+            # Marker
+            ref = self.marker()
+            cmeshes.extend(ref._recurse_meshes(instance_mesh, instance_marker))
 
         '''
         if hasattr(ref, 'mesh'):
@@ -1964,6 +1976,7 @@ class DDDObject3(DDDObject):
     def copy(self, name=None):
         if name is None: name = self.name
         obj = DDDObject3(name=name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
+        #obj = DDDObject3(name=name, children=[c.copy() for c in self.children], mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
         return obj
 
     def replace(self, obj):
@@ -2084,7 +2097,7 @@ class DDDObject3(DDDObject):
         return obj
 
     def vertex_iterator(self):
-        meshes = self.recurse_meshes()
+        meshes = self._recurse_meshes(instance_mesh=False, instance_marker=False)
         for m in meshes:
             for idx, v in enumerate(m.vertices):
                 yield (v[0], v[1], v[2], idx)
@@ -2390,11 +2403,13 @@ class DDDObject3(DDDObject):
         # transformations.euler_from_quaternion(obj.transform.rotation, axes='sxyz')
         #node_name = encoded_node_name.replace(" ", "_")
         scene_node_name = node_name.replace(" ", "_")
+        scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
 
         if scene is None:
             scene = Scene(base_frame=scene_node_name)
 
         #if mesh is None: mesh = ddd.marker().mesh
+        #print("Adding: %s to %s" % (scene_node_name, scene_parent_node_name))
         if mesh is None:
             scene.graph.update(frame_to=scene_node_name, frame_from=scene_parent_node_name, matrix=node_transform, geometry_flags={'visible': True})
         else:
@@ -2435,14 +2450,14 @@ class DDDObject3(DDDObject):
                           matrix=matrix)
         self.graph.base_frame = new_base
 
-    def recurse_meshes(self):
+    def _recurse_meshes(self, instance_mesh, instance_marker):
         cmeshes = []
         if self.mesh:
             mesh = self._process_mesh()
             cmeshes = [mesh]
         if self.children:
             for c in self.children:
-                cmeshes.extend(c.recurse_meshes())
+                cmeshes.extend(c._recurse_meshes(instance_mesh, instance_marker))
         return cmeshes
 
     def recurse_objects(self):
@@ -2483,7 +2498,7 @@ class DDDObject3(DDDObject):
             import pyrender
             #pr_scene = pyrender.Scene.from_trimesh_scene(rotated)
             # Scene not rotated, as pyrender seems to use Z for vertical.
-            meshes = self.recurse_meshes()  # rotated
+            meshes = self._recurse_meshes(instance_mesh=instance_mesh, instance_marker=instance_marker)  # rotated
             pr_scene = pyrender.Scene()
             for m in meshes:
                 prm = pyrender.Mesh.from_trimesh(m, smooth=False) #, wireframe=True)

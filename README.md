@@ -7,7 +7,7 @@ shapes and models and at the same time closely reflect the hierarchy and metadat
 that usually needs to accompany your built 2D or 3D documents.
 
 DDD follows an object graph (or in 3D, a scene graph) approach. Documents (scenes)
-are composed by nodes that form a **node tree**. A key concept in DDD is that 
+are composed by nodes that form a **node tree**. A key concept in DDD is that
 operations can be applied to individual nodes, entire branches, or selected
 nodes within a hierarchy.
 
@@ -139,10 +139,18 @@ Resize with margin:
 
 ## Gallery
 
+Videos:
+
+- [OSM 3D generation pipeline (Lighting talk at OSM SOTM 2020)](https://youtu.be/R_AHn_eLpso)
+- [Godot integration example](https://youtu.be/wQVSpBloGj0)
+
+
+
 ![ddd-gallery-salamanca2](doc/gallery/2020062x-salamanca-cathedral-river.png "Salamanca Cathedral generated from OSM data (render by Three.js)")
 ![ddd-gallery-periodictable](doc/gallery/20200628-periodictable.png "Periodic Table generated from CSV file")
 ![ddd-gallery-salamanca](doc/gallery/20200628-salamanca-cathedral-from-blender3-night.png "Salamanca Cathedral generated from OSM data (rendered by Blender)")
 ![ddd-gallery-hercules](doc/gallery/acoruna_hercules_750r_-8.406,43.386.png "Torre de Hercules 2D rendered from OSM data")
+
 
 
 ## FAQ

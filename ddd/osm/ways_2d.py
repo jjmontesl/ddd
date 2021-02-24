@@ -721,6 +721,10 @@ class Ways2DOSMBuilder():
         path = way_2d.extra['way_1d']
         length = path.geom.length
 
+        if path.geom.type != "LineString":
+            logger.warn("Cannot generate lamps for %s: way_1d %s is not a LineString.", way_2d, path)
+            return
+
         # Check if to generate lamps
         if path.extra.get('ddd:way:lamps', False) and (path.extra['ddd:layer'] in (0, "0") or path.extra['osm:layer'] in (0, "0")):
 

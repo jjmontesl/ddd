@@ -28,11 +28,18 @@ class ElevationChunk(object):
         self.layer = None
 
     def value(self, point, interpolate=True):
-        return 0.0
+        #return 0.0
+        result = 0.0
+
         if interpolate:
-            return self.value_interpolated(point)
+            result = self.value_interpolated(point)
         else:
-            return self.value_simple(point)
+            result = self.value_simple(point)
+
+        if not math.isfinite(result):
+            result = - 0.01
+
+        return result
 
     def value_simple(self, point):
 
