@@ -4,7 +4,7 @@ DDD OSM is an OpenStreetMap 2D and 3D renderer. It has been built
 from the ground up with the purpose of building correct city and
 landscape 3D models.
 
-It consists of a set of [DDD Pipelines]() that process OSM data and
+It consists of a set of [DDD Pipelines](pipelines.md) that process OSM data and
 build a 2D or 3D representation of it. These pipelines can export SVG,
 PNG or 3D models of an area of interest with different styles.
 
@@ -36,5 +36,39 @@ process and present larger areas in chunks.
 - Extensible and configurable
 
 ## Screenshots
+
+
+
+
+
+### OSM data import (preprocessing)
+
+Note: latest versions are doing and caching the extraction automatically from country-latest.pbf,
+so this step needs not to be done manually.
+
+Using PBFs:
+
+    osmconvert spain-latest.osm.pbf -b=-5.870,40.760,-5.470,41.160 -o=salamanca-latest.osm.pbf
+    osmconvert spain-latest.osm.pbf -b=-8.980,41.980,-8.480,42.480 -o=vigo-latest.osm.pbf
+    osmconvert spain-latest.osm.pbf -b=-8.600,43.170,-8.200,43.570 -o=acoruna-latest.osm.pbf
+
+Then, geojson (TODO: use osmium directly):
+
+    ./osmtogeojson city-latest.osm.pbf > /tmp/city.geojson
+
+
+
+### Converting carto icons to texture atlas
+
+
+(TODO) ddd has now a command line option to do this... review and document.
+
+Using:
+
+    for a in $(ls *.svg) ; do inkscape -w 64 -h 64 $a --export-filename ../amenity-$a.png ; done
+
+Resize with margin:
+
+    mogrify -path x -resize 120x120 -gravity Center -extent 128x128 *.png
 
 
