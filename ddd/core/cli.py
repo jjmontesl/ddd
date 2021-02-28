@@ -1,15 +1,17 @@
-# ddd - D1D2D3
+# ddd - DDD123
 # Library for simple scene modelling.
-# Jose Juan Montes 2020
+# Jose Juan Montes and Contributors 2019-2021
 
+import argparse
+from collections import OrderedDict
+import importlib
 import logging
 import os
 import sys
-import argparse
-from ddd.core.exception import DDDException
-import importlib
-from collections import OrderedDict
 
+from ddd.core.exception import DDDException
+
+from ddd.core import settings
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -31,6 +33,7 @@ class D1D2D3Bootstrap():
         "osm-build": ("ddd.osm.commands.build.OSMBuildCommand", "Build a scene or tile using the OSM Builder"),
         "osm-datainfo": ("ddd.osm.commands.areainfo.OSMDataInfoCommand", "Dump information about generated tiles"),
         "osm-query": ("ddd.osm.commands.query", None),
+        "geo-raster-collect": ("ddd.geo.commands.georastercollect.GeoRasterCollectCommand", "Collect georaster files and generate config."),
         "run": ("ddd.core.commands.run", "Runs a user-given script (default)"),  # default
         })
 
@@ -63,7 +66,7 @@ class D1D2D3Bootstrap():
         logging.getLogger('invoke').setLevel(logging.WARN)
 
         logger.info("DDD logging initialized.")
-        logger.debug("DDD debug logging enabled.")
+        logger.debug("DDD debug logging enabled (%d settings).", len(settings.__dict__))
 
 
     def parse_args(self, st):

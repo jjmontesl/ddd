@@ -24,10 +24,9 @@ test_metadata = {'test_key_str': 'test_value',
 def gltf_trimesh():
     sphere1 = primitives.Sphere(radius=1.0)
     sphere2 = primitives.Sphere(radius=2.0)
-    #sphere1.metadata = test_metadata
-
     sphere1.metadata['extras'] = test_metadata
-    #sphere1.extras = test_metadata
+    #sphere2.metadata = test_metadata
+
 
     # transformations.euler_from_quaternion(obj.transform.rotation, axes='sxyz')
     node1_transform = transformations.translation_matrix([0, 0, -2])
@@ -39,13 +38,12 @@ def gltf_trimesh():
     #transform=None
 
     scene1.metadata['extras'] = test_metadata
-    scene1.metadata['sphere1'] = {'extras': test_metadata}
 
     #scene1.export("gltf-hierarchy-trimesh.gltf", extras=test_metadata)
     files = scene1.export(None, "gltf")  #, extras=test_metadata)
-    #print(files["model.gltf"])
-    for k, v in files.items():
-        print(k, v)
+    print(files["model.gltf"])
+    #for k, v in files.items():
+    #    print(k, v)
     #"gltf-hierarchy-trimesh.gltf"
     #scene1.show()
 
@@ -66,8 +64,8 @@ def gltf_ddd():
     scene1.show()
 
 
-#gltf_trimesh()
-gltf_ddd()
+gltf_trimesh()
+#gltf_ddd()
 
 
 

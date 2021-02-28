@@ -21,15 +21,11 @@ meshes and geometry instancing.
 The library is strongly based and relies on the underlying Shapely and Trimesh
 packages which provide most of the geometry operations.
 
-DDD is accompanied by its sibling projects:
+Related projects:
 
-- DDD(123) OSM: a build pipeline that generates 2D/3D tiles from OpenStreetMap data (included in this repo).
+- DDD OSM: a build pipeline that generates 2D/3D tiles from OpenStreetMap data (included in this repo).
 
-- DDD(123) Viewer: HTML5 2D and 3D viewer.
-
-- DDD(123) Unity Tools: tools for Unity3D that postprocess DDD exported GLB files
-  and handles prefab objects, lights, colliders, and materials from DDD metadata
-  (not open source).
+- DDD Viewer: HTML5 2D and 3D viewer.
 
 
 ## Features
@@ -48,11 +44,28 @@ DDD is accompanied by its sibling projects:
 
 ## Installation
 
-(TODO)
+Clone the source repository:
+
+    git clone https://github.com/jjmontesl/ddd
+
+Create a virtual environment:
+
+    cd ddd
+    python3 -m venv env
+
+Activate the virtualenv (run this on ever new shell in order to use `ddd`):
+
+    . env/bin/activate
+
+Install DDD inside the virtualenv set up to run from the source:
+
+    python setup.py
+
 
 **For Osmium package (reading OSM files)**
 
     sudo apt-get install build-essential cmake libboost-dev libexpat1-dev zlib1g-dev libbz2-dev
+
 
 **For GDAL installation (accessing GIS datasources) - Ubuntu 18.04**
 
@@ -77,7 +90,7 @@ typing `ddd` followed by the script name:
 
 **Quickly generate 3D from OSM**
 
-    ddd osm-build --center=41.224, 1.725 --radius=125
+    ddd osm-build --name my_osm_model --center=41.224, 1.725 --radius=125
 
 
 

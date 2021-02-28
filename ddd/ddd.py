@@ -1,6 +1,6 @@
-# ddd - D1D2D3
+# ddd - DDD123
 # Library for simple scene modelling.
-# Jose Juan Montes 2020
+# Jose Juan Montes and Contributors 2020-2021
 
 from _collections_abc import Iterable
 import base64

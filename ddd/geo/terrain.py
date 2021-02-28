@@ -1,40 +1,26 @@
-'''
-'''
+# ddd - DDD123
+# Library for simple scene modelling.
+# Jose Juan Montes and Contributors 2019-2021
 
-from shapely import geometry
-from trimesh.path import segments
-from trimesh.scene.scene import Scene, append_scenes
-from trimesh.base import Trimesh
-from trimesh.path.path import Path
-from trimesh.visual.material import SimpleMaterial
-from trimesh import creation, primitives, boolean
-import trimesh
-from csg.core import CSG
-from csg import geom as csggeom
 import random
-from ddd.ddd import ddd
+
 import noise
-from ddd.geo.georaster import ElevationChunk
 import pyproj
+
 from ddd.core.exception import DDDException
+from ddd.ddd import ddd
+from ddd.geo.elevation import ElevationModel
 
 
-class DDDGeoTerrain():
-    """
-    """
-
-    def __init__(self, ):
-        self.path_data = 'data/dem/'
-        self.path_egm = 'data/dem/egm/egm2008-2_5.tif'
-
-
-dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'  # Galicia, Salamanca
+#dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'  # Galicia, Salamanca
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40e000.tif'  # Vilanova i la Geltrú
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w005.tif'  # Madrid, Huesca
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem11/eu_dem_v11_E30N20.TIF'  # France, La Rochelle
+#dem_file = '/home/jjmontes/git/ddd/data/dem/eudem11/eu_dem_v11_E50N30.TIF'  # Riga, Latvia
 #dem_file = '/home/jjmontes/git/ddd/data/dem/srtm/srtm_40_19.tif'  # Cape Town, from: https://dwtkns.com/srtm/
 
 
+# TODO: Move to terrain utils outside "geo"
 def terrain_grid(bounds, detail=1.0, height=1.0, scale=0.025):
     '''
     If bounds is a single number, it's used as L1 distance.
@@ -56,19 +42,14 @@ def terrain_grid(bounds, detail=1.0, height=1.0, scale=0.025):
 
     return mesh
 
-'''
-def _cr(p):
-    offset_x = -8.723
-    offset_y = 42.238
-    return [offset_x + p[0] / 100000, offset_y + p[1] / 100000, 0.0]
-'''
 
-transformer = None  # rmeove globals, move into classes
+
+transformer = None  # remove globals, move into classes
 
 def transformer_ddd_to_geo(ddd_proj):
     global transformer
     if transformer is None:
-        transformer = pyproj.Transformer.from_proj(ddd_proj, pyproj.Proj(init='epsg:4326'))  # for old DEM files
+        transformer = pyproj.Transformer.from_proj(ddd_proj, 'epsg:4326', always_xy=True)  # for old DEM files
         #transformer = pyproj.Transformer.from_proj(ddd_proj, pyproj.Proj(init='epsg:3035'))  # for EUDEM 1.1 files
 
     return transformer
@@ -77,10 +58,15 @@ def transform_ddd_to_geo(ddd_proj, point):
     x, y = transformer_ddd_to_geo(ddd_proj).transform(point[0], point[1])
     return [x, y]
 
+
 def terrain_geotiff(bounds, ddd_proj, detail=1.0):
+    """
+    Generates a square grid and applies terrain elevation to it.
+    """
     # TODO: we should load the chunk as a heightmap, and load via terrain_heightmap for reuse
     #elevation = ElevationChunk.load('/home/jjmontes/git/ddd/data/elevation/eudem/eudem_dem_5deg_n40w010.tif')
-    elevation = ElevationChunk.load(dem_file)
+    #elevation = ElevationChunk.load(dem_file)
+    elevation = ElevationModel.instance()
 
     mesh = terrain_grid(bounds, detail=detail)
     func = lambda x, y, z, i: [x, y, elevation.value(transform_ddd_to_geo(ddd_proj, [x, y]))]
@@ -89,7 +75,7 @@ def terrain_geotiff(bounds, ddd_proj, detail=1.0):
     return mesh
 
 def terrain_geotiff_elevation_apply(obj, ddd_proj):
-    elevation = ElevationChunk.load(dem_file)
+    elevation = ElevationModel.instance()
     #print(transform_ddd_to_geo(ddd_proj, [obj.mesh.vertices[0][ 0], obj.mesh.vertices[0][1]]))
     func = lambda x, y, z, i: [x, y, z + elevation.value(transform_ddd_to_geo(ddd_proj, [x, y]))]
     obj = obj.vertex_func(func)
@@ -97,7 +83,7 @@ def terrain_geotiff_elevation_apply(obj, ddd_proj):
     return obj
 
 def terrain_geotiff_min_elevation_apply(obj, ddd_proj):
-    elevation = ElevationChunk.load(dem_file)
+    elevation = ElevationModel.instance()
 
     min_h = None
     for v in obj.vertex_iterator():
@@ -117,7 +103,7 @@ def terrain_geotiff_min_elevation_apply(obj, ddd_proj):
     return obj
 
 def terrain_geotiff_max_elevation_apply(obj, ddd_proj):
-    elevation = ElevationChunk.load(dem_file)
+    elevation = ElevationModel.instance()
 
     max_h = None
     for v in obj.vertex_iterator():

@@ -43,6 +43,7 @@ setup(
         "networkx >= 2.2",
         "noise >= 1.2.2",
         "pint >= 0.12",
+        "pyGeoTile >= 1.0.6",
         "pyglet >= 1.4.0b1",
         "PyOpenGL == 3.1.0",
         "PyOpenGL-accelerate == 3.1.5",

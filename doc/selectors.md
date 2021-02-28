@@ -12,6 +12,6 @@ to select which nodes a pipeline task apply to.
 
 ## Refs
 
-- [DDD Selectors EBNF Grammar](ddd/core/selectors/selector_ebnf.py)
-- [OSM Overpass Turbo Selectors](https://wiki.openstreetmap.org/wiki/Overpass_turbo/MapCSS) (this language inspired DDD selectors)
+- [DDD Selectors EBNF Grammar](../ddd/core/selectors/selector_ebnf.py)
+
 

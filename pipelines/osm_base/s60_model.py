@@ -87,6 +87,11 @@ def osm_model_generate_ways(osm, root, pipeline, obj):
 
 @dddtask()
 def osm_model_generate_ways_old(osm, root, pipeline):
+
+    # TODO: Added to avoid bug with no areas being generated above (review this broken transition between old/new ways/areas)
+    if not '_ways_areas_new' in pipeline.data:
+        pipeline.data['_ways_areas_new'] = ddd.group3()
+
     ways_2d = root.find("/Ways")
     ways_3d = osm.ways3.generate_ways_3d(ways_2d)
 

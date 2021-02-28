@@ -12,6 +12,7 @@ import subprocess
 
 import geojson
 import pyproj
+from pygeotile.tile import Tile
 from shapely import ops
 from shapely.geometry.geo import shape
 
@@ -59,13 +60,12 @@ class OSMBuildCommand(DDDCommand):
         parser.add_argument("--center", type=str, default=None, help="center of target area (lon, lat)")
         parser.add_argument("--area", type=str, default=None, help="target area polygon GeoJSON")
         parser.add_argument("--radius", type=float, default=None, help="radius of target area (m)")
-        parser.add_argument("--tile", type=float, default=None, help="tile size or 0 (m)")
+        parser.add_argument("--size", type=float, default=None, help="tile size or 0 (m)")
+        parser.add_argument("--xyztile", type=str, default=None, help="XYZ grid tile")
 
         args = parser.parse_args(args)
-        self.limit = args.limit
 
-        center = args.center.split(",")
-        self.center = (float(center[0]), float(center[1]))
+        self.limit = args.limit
 
         self.name = args.name
 
@@ -76,19 +76,33 @@ class OSMBuildCommand(DDDCommand):
             self.area = None
             self._radius = args.radius
 
-        self.chunk_size = args.tile
+        self.chunk_size = args.size
+
+        self.xyztile = None
+        if (args.xyztile):
+            if (args.radius or args.center or args.size):
+                logger.error("Option --xyztile cannot be used with --radius, --center or --size .")
+                sys.exit(2)
+
+            x, y, z = args.xyztile.split(",")
+            self.xyztile = int(x), int(y), int(z)
+
+        else:
+            center = args.center.split(",")
+            self.center = (float(center[0]), float(center[1]))
 
 
-    def get_data(self, datapath, name, center_wgs84, area):
+    def get_data(self, datapath, dataname, center_wgs84, area):
 
         # Extract area from PBF
-        #mainpbffile = os.path.join(datapath, "spain-latest.osm.pbf")
-        mainpbffile = os.path.join(datapath, "france-latest.osm.pbf")
+        mainpbffile = os.path.join(datapath, "spain-latest.osm.pbf")
+        #mainpbffile = os.path.join(datapath, "latvia-latest.osm.pbf")
+        #mainpbffile = os.path.join(datapath, "france-latest.osm.pbf")
         #mainpbffile = os.path.join(datapath, "south-africa-latest.osm.pbf")
 
-        selectedpbffile = os.path.join(datapath, "%s.pbf" % name)
+        selectedpbffile = os.path.join(datapath, "%s.pbf" % dataname)
 
-        sides = 15 * 0.01  # Approximate degrees
+        sides = 15 * 0.01  # Approximate degrees to km
         bounds = [center_wgs84[0] - sides, center_wgs84[1] - sides, center_wgs84[0] + sides, center_wgs84[1] + sides]
 
         # Run osmconvert to select the area of interes
@@ -99,12 +113,26 @@ class OSMBuildCommand(DDDCommand):
                                      '-o=%s' % selectedpbffile])
 
         # Run osmtogeojson
-        outputgeojsonfile = os.path.join(datapath, "%s.osm.geojson" % name)
+        outputgeojsonfile = os.path.join(datapath, "%s.osm.geojson" % dataname)
         osmtogeojson_path = "/home/jjmontes/git/osmtogeojson/osmtogeojson"
         logger.info("Converting to GeoJSON from %s to %s", selectedpbffile, outputgeojsonfile)
         with open(outputgeojsonfile, "w") as outfile:
             command = [osmtogeojson_path, "-m", selectedpbffile]
             subprocess.run(command, stdout=outfile)
+
+    def process_xyztile(self):
+        x, y, z = self.xyztile
+        tile = Tile.from_google(x, y, zoom=z)
+        point_min, point_max = tile.bounds
+
+        min_lat, min_lon = point_min.latitude_longitude
+        max_lat, max_lon = point_max.latitude_longitude
+
+        center_lat = (min_lat + max_lat) / 2.0
+        center_lon = (min_lon + max_lon) / 2.0
+
+        self.center = (center_lon, center_lat)
+        self.area = ddd.rect([min_lon, min_lat, max_lon, max_lat]).geom
 
     def run(self):
 
@@ -124,11 +152,14 @@ class OSMBuildCommand(DDDCommand):
         #area_vigo_huge_rande = { "type": "MultiPolygon", "coordinates": [ [ [ [ -8.678739229779634, 42.285406246127017 ], [ -8.679768244461799, 42.286124008658462 ], [ -8.679944646978743, 42.287581258944734 ], [ -8.679709443622819, 42.290212924049762 ], [ -8.680473854529568, 42.292192037766931 ], [ -8.68123826543632, 42.293540409297322 ], [ -8.680326852432117, 42.296345799483696 ], [ -8.67829822348728, 42.296019597743189 ], [ -8.676534198317855, 42.296367546206326 ], [ -8.673329552593403, 42.296258812518111 ], [ -8.67153612700449, 42.297955036674374 ], [ -8.668243280021565, 42.299129318941247 ], [ -8.665009233877623, 42.299738197421469 ], [ -8.661275380602341, 42.30252156692557 ], [ -8.652602256852674, 42.303152156982897 ], [ -8.648603799801982, 42.298759639848647 ], [ -8.641165493670913, 42.289147221675357 ], [ -8.65072063000529, 42.282382853576621 ], [ -8.65730632397114, 42.275465481810826 ], [ -8.65965835753037, 42.268242761434706 ], [ -8.661657586055718, 42.260758105800491 ], [ -8.664597628004756, 42.257189526957589 ], [ -8.676240194122952, 42.251009315195994 ], [ -8.676475397478876, 42.245350843851035 ], [ -8.651308638395097, 42.239953059756857 ], [ -8.63943086892098, 42.244741439740103 ], [ -8.620496998769166, 42.249181249186741 ], [ -8.612147279633895, 42.243870852227474 ], [ -8.618144965209934, 42.226543662551634 ], [ -8.628493912870553, 42.213566923726354 ], [ -8.647192579666443, 42.210082781391023 ], [ -8.654366282022099, 42.200674637101095 ], [ -8.654601485378024, 42.190132366865519 ], [ -8.663421611225139, 42.175492249420188 ], [ -8.672476940428181, 42.164509936746896 ], [ -8.666949661563988, 42.158059118335679 ], [ -8.666949661563988, 42.154048818664116 ], [ -8.682355481376954, 42.151782015135495 ], [ -8.698584512935652, 42.151956387519974 ], [ -8.707522240460731, 42.154397550462775 ], [ -8.715166349528236, 42.158756535815868 ], [ -8.726103305578659, 42.167473605784153 ], [ -8.732806601222471, 42.173139057222009 ], [ -8.735041033103739, 42.180982690717805 ], [ -8.742685142171242, 42.189173891460896 ], [ -8.762559825746747, 42.185688403840906 ], [ -8.7798472724071, 42.182987018755384 ], [ -8.786903373084794, 42.188041129063663 ], [ -8.795605897253949, 42.187256897051611 ], [ -8.80536683652476, 42.191744315452596 ], [ -8.808248077634818, 42.2020249661402 ], [ -8.796664312355604, 42.206990444093883 ], [ -8.792077846915102, 42.202939688770883 ], [ -8.780905687508753, 42.212608803743251 ], [ -8.782493310161234, 42.223582762359229 ], [ -8.764500253433113, 42.235425529931319 ], [ -8.743625955594931, 42.241781393183061 ], [ -8.719870416646694, 42.248049562726422 ], [ -8.709756672341998, 42.260366442379272 ], [ -8.691763615613878, 42.264500544688026 ], [ -8.688235565275031, 42.262498802682778 ], [ -8.678357024326258, 42.271506141210914 ], [ -8.66950749805965, 42.283774937233652 ], [ -8.669514848164527, 42.286255869446485 ], [ -8.669597536844341, 42.286667762707708 ], [ -8.669812527411864, 42.286814575496322 ], [ -8.670181870181713, 42.28682680987994 ], [ -8.678739229779634, 42.285406246127017 ] ] ] ] }
         #name = "vilanovailagertru"
 
+        if self.xyztile:
+            self.process_xyztile()
 
         #name = "vigo"
         #center_wgs84 = vigo_wgs84
         #area = area_vigo_huge_rande
         center_wgs84 = self.center
+
 
         # Name
         if self.name is None:
@@ -139,12 +170,17 @@ class OSMBuildCommand(DDDCommand):
 
         # Prepare data
         # Check if geojson file is available
-        if not os.path.isfile(os.path.join(path, "%s.osm.geojson" % name)):
-            logger.info("Data path file %s not found. Trying to produce data.")
-            self.get_data(path, name, center_wgs84, self.area)
+        sides = 15 * 0.01  # Approximate degrees to km
+        roundto = sides / 3
+        datacenter = int(self.center[0] / roundto) * roundto, int(self.center[1] / roundto) * roundto
+        dataname = name + "_%.4f_%.4f" % datacenter
+        datafile = os.path.join(path, "%s.osm.geojson" % dataname)
+        if not os.path.isfile(datafile):
+            logger.info("Data file '%s' not found. Trying to produce data." % datafile)
+            self.get_data(path, dataname, datacenter, self.area)
 
-        files = [os.path.join(path, f) for f in [name + '.osm.geojson'] if os.path.isfile(os.path.join(path, f)) and f.endswith(".geojson")]
-        logger.info("Reading %d files from %s" % (len(files), path))
+        files = [os.path.join(path, f) for f in [dataname + '.osm.geojson'] if os.path.isfile(os.path.join(path, f)) and f.endswith(".geojson")]
+        logger.info("Reading %d files from %s: %s" % (len(files), path, files))
 
         osm_proj = pyproj.Proj(init='epsg:4326')  # FIXME: API reocmends using only 'epsg:4326' but seems to give weird coordinates?
         ddd_proj = pyproj.Proj(proj="tmerc",
@@ -182,7 +218,10 @@ class OSMBuildCommand(DDDCommand):
                 logger.info("Limit of %d tiles hit.", self.limit)
                 break
 
+
             if self.chunk_size:
+
+                logger.info("Chunk size: %s", self.chunk_size)
 
                 bbox_crop = [x * self.chunk_size, y * self.chunk_size, (x + 1) * self.chunk_size, (y + 1) * self.chunk_size]
                 bbox_filter = [bbox_crop[0] - self.chunk_size_extra_filter, bbox_crop[1] - self.chunk_size_extra_filter,
@@ -194,9 +233,20 @@ class OSMBuildCommand(DDDCommand):
                 filenamebase = 'output/%s/%s' % (name, shortname)
                 filename = filenamebase + ".glb"
 
+            elif self.xyztile:
+                area_crop = area_ddd
+                area_filter = area_ddd.buffer(self.chunk_size_extra_filter, join_style=ddd.JOIN_MITRE)
+
+                shortname = '%s_%d_%d_%d' % (name, self.xyztile[2], self.xyztile[0], self.xyztile[1])
+                filenamebase = 'output/%s/%s' % (name, shortname)
+                filename = filenamebase + ".glb"
+
             else:
 
+                #logger.info("No chunk size defined (area was given)")
+
                 area_crop = area_ddd
+                #print(area_crop)
                 area_filter = area_ddd.buffer(self.chunk_size_extra_filter, join_style=ddd.JOIN_MITRE)
 
                 shortname = '%s_%dr_%.3f,%.3f' % (name, self._radius if self._radius else 0, self.center[0], self.center[1])

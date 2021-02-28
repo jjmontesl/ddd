@@ -1,6 +1,6 @@
-# ddd - D1D2D3
+# ddd - DDD123
 # Library for simple scene modelling.
-# Jose Juan Montes 2020
+# Jose Juan Montes and Contributors 2019-2021
 
 import logging
 import math
@@ -9,9 +9,12 @@ from geographiclib.geodesic import Geodesic
 import numpy
 from osgeo import gdal
 from osgeo.gdalconst import GA_ReadOnly
+import pyproj
 from scipy.interpolate.interpolate import interp2d
 from shapely.geometry.linestring import LineString
 
+from ddd.core import settings
+from ddd.core.exception import DDDException
 import numpy as np
 
 
@@ -19,14 +22,45 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-class ElevationChunk(object):
+class GeoRasterTile:
 
-    _chunk = None
+    _cache = {}
 
     def __init__(self):
-
         self.geotransform = None
         self.layer = None
+        self.crs = None
+        self.crs_transformer = None
+
+    @staticmethod
+    def load_cached(self, georaster_file, crs):
+        if georaster_file not in GeoRasterTile._cache:
+            GeoRasterTile._cache[georaster_file] = GeoRasterTile.load(georaster_file, crs)
+        return GeoRasterTile._cache[georaster_file]
+
+    @staticmethod
+    def load(georaster_file, crs):
+
+        logger.info("Loading georaster file: %s" % georaster_file)
+
+        tile = GeoRasterTile()
+        tile.crs = crs.lower()
+        tile.crs_transformer = pyproj.Transformer.from_proj('epsg:4326', tile.crs, always_xy=True)
+
+        try:
+            tile.layer = gdal.Open(georaster_file, GA_ReadOnly)
+            bands = tile.layer.RasterCount
+
+            tile.geotransform = tile.layer.GetGeoTransform()
+            logger.debug("Opened georaster [bands=%d, geotransform=%s]" % (bands, tile.geotransform))
+
+            #if (bands != 1):
+            #    raise DDDException("Georaster file must have 1 band only.")
+
+        except Exception as e:
+            raise DDDException("Could not read georaster file %s: %s", georaster_file, e)
+
+        return tile
 
     def value(self, point, interpolate=True):
         if interpolate:
@@ -41,6 +75,8 @@ class ElevationChunk(object):
             raise AssertionError
 
         x, y = (point[0], point[1])
+        if self.crs != 'epsg:4326':
+            x, y = self.crs_transformer.transform(x, y)
 
         # Transform to raster point coordinates
         raster_x = int((x - self.geotransform[0]) / self.geotransform[1])
@@ -60,6 +96,8 @@ class ElevationChunk(object):
             raise AssertionError("No elevation data available for the given point.")
 
         x, y = (point[0], point[1])
+        if self.crs != 'epsg:4326':
+            x, y = self.crs_transformer.transform(x, y)
 
         # Transform to raster point coordinates
         pixel_is_area = True  # in Vigo, True seems more accurate
@@ -94,54 +132,52 @@ class ElevationChunk(object):
 
         return float(value)
 
-    @staticmethod
-    def load(geotiff_file):
 
-        if ElevationChunk._chunk:
-            return ElevationChunk._chunk
+class GeoRasterLayer:
+    """
+    Groups several GeoRasterTile configurations.
+    """
 
-        logger.info("Loading GeoTIFF with elevation data: %s" % geotiff_file)
+    def __init__(self, tiles_config):
+        self.tiles_config = tiles_config
 
-        chunk = ElevationChunk()
+        self._last_tile = None
+        self._last_tile_config = None
 
-        try:
-            chunk.layer = gdal.Open(geotiff_file, GA_ReadOnly)
-
-            bands = chunk.layer.RasterCount
-            if (bands != 1):
-                raise AssertionError("DEM GeoTIFF file must have 1 band only.")
-
-            chunk.geotransform = chunk.layer.GetGeoTransform()
-
-            logger.debug("Opened GeoTIFF with %d bands [geotransform=%s]" % (bands, chunk.geotransform))
-
-        except Exception as e:
-            logger.error("Could not read elevation data file: %s" % geotiff_file)
-
-        ElevationChunk._chunk = chunk
-        return chunk
-
-
-class ElevationModel(object):
-
-    def _chunk_config(self, point):
+    def tile_from_point(self, point):
         """
-        Return the chunk configuration entry for the DEM file that contains
-        the given point, using ELEVATION_DEM_GEOTIFF_FILES setting.
-        """
-        if self._lastchunk and (point[0] >= self._lastchunk['bounds'][0] and point[0] < self._lastchunk['bounds'][2] and
-           point[1] >= self._lastchunk['bounds'][1] and point[1] < self._lastchunk['bounds'][3]):
-            return self._lastchunk
+        Returns the GeoRasterTile for the given point.
 
-        for cc in settings.ELEVATION_DEM_GEOTIFF_FILES:
-            if ( point[0] >= cc['bounds'][0] and point[0] < cc['bounds'][2] and
-                 point[1] >= cc['bounds'][1] and point[1] < cc['bounds'][3] ):
-                self._lastchunk = cc
-                return cc
+        This method caches the last accessed tile, as it is more likely to be hit next.
+        """
+
+        # This is incorect but cheap (the point should be projected to the target CRS and compared with the original bounds)
+        # TODO: Allow for both approaches via setting (?)
+
+        if (self._last_tile and
+            (point[0] >= self._last_tile_config['bounds_wgs84_xy'][0] and point[0] < self._last_tile_config['bounds_wgs84_xy'][2] and
+             point[1] >= self._last_tile_config['bounds_wgs84_xy'][1] and point[1] < self._last_tile_config['bounds_wgs84_xy'][3])):
+            return self._last_tile
+
+        for cc in self.tiles_config:
+            if (point[0] >= cc['bounds_wgs84_xy'][0] and point[0] < cc['bounds_wgs84_xy'][2] and
+                point[1] >= cc['bounds_wgs84_xy'][1] and point[1] < cc['bounds_wgs84_xy'][3]):
+                self._last_tile_config = cc
+                self._last_tile = GeoRasterTile.load(cc['path'], cc['crs'])
+                return self._last_tile
 
         return None
 
+    def value(self, point, interpolate=True):
+        tile = self.tile_from_point(point)
+        if tile is None:
+            raise DDDException("No raster tile found for point: %s" % point)
+        if interpolate:
+            return tile.value_interpolated(point)
+        else:
+            return tile.value_simple(point)
 
+    '''
     def area(self, bounds):
         # FIXME: This won't  work if area crosses chunks.
         # TODO: This method should do stitching if necessary.
@@ -200,57 +236,6 @@ class ElevationModel(object):
 
         return result_line
 
-    def elevation(self, point):
-
-        # FIXME: Note that the chunk may exist (is defined) but the geotransform may be not available
-        # (file is not available). This is currently not correctly handled by this module, and zeros
-        # are returned without appropriate tracking of the fact that data was not available.
-
-        chunk = self.chunk(point)
-
-        if not chunk:
-            return 0.0
-
-        try:
-            value = chunk.value(point)
-        except Exception as e:
-            value = 0.0
-            if self._log_throttler.throttle():
-                logger.exception("Error obtaining elevation for point (%s) (silenced for %.1fs): %s", point, self._log_throttler.seconds, e)
-
-        return value
-
-    def elevation_info(self, longitude, latitude, altitude, alt_type):
-        """
-        Calculates elevation related information (ground altitude, terrain altitude...).
-        """
-
-        # TODO: This method should return information about whether elevation information is valid
-
-        terrain_alt_msl = self.elevation([longitude, latitude])
-        alt_egm = self.egm([longitude, latitude])
-
-        if alt_type == ElevationInfo.ALTITUDE_WGS84:
-            alt_wgs84 = altitude
-            alt_msl = alt_wgs84 - alt_egm
-        elif alt_type == ElevationInfo.ALTITUDE_MSL:
-            alt_msl = altitude
-            alt_wgs84 = alt_msl + alt_egm
-        elif alt_type == ElevationInfo.ALTITUDE_GROUND:
-            alt_msl = terrain_alt_msl + altitude
-            alt_wgs84 = alt_msl + alt_egm
-        else:
-            raise NotImplementedError("Elevation type not supported: %s" % (alt_type))
-
-        alt_grnd = alt_msl - terrain_alt_msl
-
-        valid_alt = self._egm is not None
-        # valid_terrain =
-
-        data = ElevationInfo(longitude, latitude, altitude, alt_wgs84, alt_msl, alt_grnd, terrain_alt_msl, alt_egm, alt_type, valid_alt, None)
-
-        return data
-
     def circle_func(self, point, radius, func=numpy.sum):
         # Calculate square coordinartes to retrieve raster area
         dst = Geodesic.WGS84.Direct(point[1], point[0], 0, radius)
@@ -270,4 +255,4 @@ class ElevationModel(object):
         value = float(func(values))
 
         return value
-
+    '''

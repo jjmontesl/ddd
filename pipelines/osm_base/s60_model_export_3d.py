@@ -19,7 +19,7 @@ def osm_model_export_3d(root, osm, pipeline):
         root.save("/tmp/osm-model.json")
 
     #if bool(pipeline.data.get('ddd:osm:output:intermediate', False)):
-    root.save("/tmp/osm-model.glb")
+    #root.save("/tmp/osm-model.glb")
 
     root.save(pipeline.data['filenamebase'] + ".glb")
 
