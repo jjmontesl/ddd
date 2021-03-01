@@ -9,21 +9,21 @@ import logging
 import math
 import os
 import subprocess
+import sys
 
 import geojson
-import pyproj
 from pygeotile.tile import Tile
+import pyproj
 from shapely import ops
 from shapely.geometry.geo import shape
 
+from ddd.core import settings
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.command import DDDCommand
 from ddd.ddd import ddd, D1D2D3
 from ddd.geo import terrain
 from ddd.osm import osm
 from ddd.pipeline.pipeline import DDDPipeline
-import sys
-from ddd.core import settings
 
 
 #from osm import OSMDDDBootstrap

@@ -50,7 +50,7 @@ setup(
         "PyOpenGL == 3.1.0",
         "PyOpenGL-accelerate == 3.1.5",
         "pyproj < 3.0.0",
-        "pyrender >= 0.1.45",
+        #"pyrender >= 0.1.45",  # optional, doesn't install on containers
         "scipy < 1.6.0",
         "Shapely >= 1.6.4.post2",
         "trimesh >= 3.5.0",  # -e git+https://github.com/mikedh/trimesh.git@8c5633028984b4abb1b7911208f7652119a3c96d#egg=trimesh
