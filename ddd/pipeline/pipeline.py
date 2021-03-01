@@ -8,10 +8,6 @@ import logging
 import os
 import sys
 
-from doit import cmd_run
-import doit
-from doit.task import dict_to_task
-
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd
@@ -160,16 +156,19 @@ class DDDPipeline():
                 #raise DDDException("Error running task %s: %s" % (task, e))
                 raise
 
+    '''
     def run_pipeline_doit(self):
         from doit.doit_cmd import DoitMain
         args = {}  # sys.argv[1:]
         doit_run_cmd = cmd_run.Run(task_loader=DDDDoItTaskLoader(self))
         doit_run_cmd.parse_execute(args)
+    '''
 
     def run(self):
         logger.info("Running pipeline: %s (%s configured tasks)", self, len(self.tasks))
-        #self.run_pipeline_doit()
+
         time_start = datetime.datetime.now()
+        #self.run_pipeline_doit()
         self.run_pipeline_internal()
         time_end = datetime.datetime.now()
 
@@ -182,6 +181,7 @@ class DDDPipeline():
         return self.root
 
 
+'''
 class DDDDoItTaskLoader(doit.cmd_base.TaskLoader2):
 
     def __init__(self, pipeline, **kwargs):
@@ -210,3 +210,4 @@ class DDDDoItTaskLoader(doit.cmd_base.TaskLoader2):
 
     def setup(self, opt_values):
         pass
+'''

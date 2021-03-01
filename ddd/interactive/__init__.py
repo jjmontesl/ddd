@@ -9,7 +9,6 @@ import sys
 from ddd.ddd import ddd, DDDObject3, DDDObject, DDDObject2
 from ddd.core.cli import D1D2D3Bootstrap
 from multiprocessing import Process, Queue
-from trimesh.viewer.windowed import SceneViewer
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -25,6 +24,8 @@ def showbg(obj):
 
     Scene is updated each time showbg() is called.
     """
+
+    from trimesh.viewer.windowed import SceneViewer
 
     if D1D2D3Bootstrap.renderer != 'pyglet':
         logger.debug("Ignoring 'showbg' (only supported with pyglet renderer, try --help).")

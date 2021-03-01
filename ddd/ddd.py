@@ -2506,6 +2506,10 @@ class DDDObject3(DDDObject):
             pyrender.Viewer(pr_scene, lighting="direct")  #, viewport_size=resolution)
             #pyrender.Viewer(scene, lighting="direct")  #, viewport_size=resolution)
 
+        elif D1D2D3Bootstrap.renderer == 'none':
+
+            logger.info("Skipping rendering (renderer=none).")
+
         else:
 
             raise DDDException("Unknown rendering backend: %s" % D1D2D3Bootstrap.renderer)

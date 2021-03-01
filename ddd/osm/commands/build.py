@@ -23,6 +23,7 @@ from ddd.geo import terrain
 from ddd.osm import osm
 from ddd.pipeline.pipeline import DDDPipeline
 import sys
+from ddd.core import settings
 
 
 #from osm import OSMDDDBootstrap
@@ -114,11 +115,12 @@ class OSMBuildCommand(DDDCommand):
 
         # Run osmtogeojson
         outputgeojsonfile = os.path.join(datapath, "%s.osm.geojson" % dataname)
-        osmtogeojson_path = "/home/jjmontes/git/osmtogeojson/osmtogeojson"
+        osmtogeojson_path = os.path.expanduser(settings.OSMTOGEOJSON_PATH)
         logger.info("Converting to GeoJSON from %s to %s", selectedpbffile, outputgeojsonfile)
+        # TODO: Use temporary file
         with open(outputgeojsonfile, "w") as outfile:
             command = [osmtogeojson_path, "-m", selectedpbffile]
-            subprocess.run(command, stdout=outfile)
+            processresult = subprocess.run(command, stdout=outfile)
 
     def process_xyztile(self):
         x, y, z = self.xyztile

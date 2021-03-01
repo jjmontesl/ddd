@@ -12,7 +12,6 @@ from lark.lark import Lark
 from ddd.core.selectors.selector import DDDSelector
 from ddd.core.selectors.selector_ebnf import selector_ebnf
 from ddd.ddd import ddd
-from ddd import interactive
 from ddd.core.exception import DDDException
 
 

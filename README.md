@@ -25,7 +25,7 @@ Related projects:
 
 - DDD OSM: a build pipeline that generates 2D/3D tiles from OpenStreetMap data (included in this repo).
 
-- DDD Viewer: HTML5 2D and 3D viewer.
+- DDD OSM Viewer: HTML5 2D and 3D map viewer.
 
 
 ## Features
