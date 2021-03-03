@@ -15,7 +15,7 @@ items = ddd.group3()
 
 item = urban.drinking_water()
 items.append(item)
-item.show()
+#item.show()
 
 
 item = urban.bollard()

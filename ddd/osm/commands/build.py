@@ -24,6 +24,7 @@ from ddd.ddd import ddd, D1D2D3
 from ddd.geo import terrain
 from ddd.osm import osm
 from ddd.pipeline.pipeline import DDDPipeline
+from ddd.osm.commands import downloader
 
 
 #from osm import OSMDDDBootstrap
@@ -103,7 +104,8 @@ class OSMBuildCommand(DDDCommand):
 
         selectedpbffile = os.path.join(datapath, "%s.pbf" % dataname)
 
-        sides = 15 * 0.01  # Approximate degrees to km
+        # TODO: Use area bounds!
+        #sides = 15 * 0.01  # Approximate degrees to km
         bounds = [center_wgs84[0] - sides, center_wgs84[1] - sides, center_wgs84[0] + sides, center_wgs84[1] + sides]
 
         # Run osmconvert to select the area of interes
@@ -121,6 +123,34 @@ class OSMBuildCommand(DDDCommand):
         with open(outputgeojsonfile, "w") as outfile:
             command = [osmtogeojson_path, "-m", selectedpbffile]
             processresult = subprocess.run(command, stdout=outfile)
+
+
+    def get_data_osm(self, datapath, dataname, center_wgs84, area):
+        """
+        """
+        #TODO: Use bounds if area is passed?
+
+        selectedosmfile = os.path.join(datapath, "%s.osm" % dataname)
+
+        #sides = 15 * 0.01  # Approximate degrees to km
+        sides = 5 * 0.001  # Approximate degrees to km
+        bounds = [center_wgs84[0] - sides, center_wgs84[1] - sides, center_wgs84[0] + sides, center_wgs84[1] + sides]
+        #bounds = area.bounds()
+
+        # Retrieve
+        if not os.path.isfile(selectedosmfile):
+            logger.info("Retrieving data to %s (%s)", selectedosmfile, bounds)
+            downloader.download_block(bounds, selectedosmfile)
+
+        # Run osmtogeojson
+        outputgeojsonfile = os.path.join(datapath, "%s.osm.geojson" % dataname)
+        osmtogeojson_path = os.path.expanduser(settings.OSMTOGEOJSON_PATH)
+        logger.info("Converting to GeoJSON from %s to %s", selectedosmfile, outputgeojsonfile)
+        # TODO: Use temporary file
+        with open(outputgeojsonfile, "w") as outfile:
+            command = [osmtogeojson_path, "-m", selectedosmfile]
+            processresult = subprocess.run(command, stdout=outfile)
+
 
     def process_xyztile(self):
         x, y, z = self.xyztile
@@ -172,14 +202,15 @@ class OSMBuildCommand(DDDCommand):
 
         # Prepare data
         # Check if geojson file is available
-        sides = 15 * 0.01  # Approximate degrees to km
+        #sides = 15 * 0.01  # Approximate degrees to km
+        sides = 5 * 0.001
         roundto = sides / 3
         datacenter = int(self.center[0] / roundto) * roundto, int(self.center[1] / roundto) * roundto
         dataname = name + "_%.4f_%.4f" % datacenter
         datafile = os.path.join(path, "%s.osm.geojson" % dataname)
         if not os.path.isfile(datafile):
             logger.info("Data file '%s' not found. Trying to produce data." % datafile)
-            self.get_data(path, dataname, datacenter, self.area)
+            self.get_data_osm(path, dataname, datacenter, self.area)
 
         files = [os.path.join(path, f) for f in [dataname + '.osm.geojson'] if os.path.isfile(os.path.join(path, f)) and f.endswith(".geojson")]
         logger.info("Reading %d files from %s: %s" % (len(files), path, files))

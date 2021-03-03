@@ -44,7 +44,7 @@ class DDDPipeline():
             return
 
         # Load file
-        logger.info("Loading pipeline config: %s", configfiles)
+        logger.debug("Loading pipeline config: %s", configfiles)
 
         if configfiles.endswith(".py"): configfiles = configfiles[:-3]
         try:

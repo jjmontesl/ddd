@@ -5,8 +5,11 @@
 from collections import defaultdict, namedtuple
 import logging
 import math
+import os
 import random
 import sys
+from urllib.error import HTTPError
+import urllib.request
 
 import geojson
 import noise
@@ -17,20 +20,21 @@ from shapely.geometry.geo import shape
 from shapely.geometry.linestring import LineString
 from shapely.ops import transform
 
-import urllib.request
-from urllib.error import HTTPError
-import os
-
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-def download_block(bounds, name):
+def download_block(bounds, filename):
+    """
+    Example URL: https://www.openstreetmap.org/api/0.6/map?bbox=12.99765%2C49.75022%2C13.00776%2C49.75531
+    """
 
-    osm_download_url = 'https://www.openstreetmap.org/api/0.6/map?bbox=%.5f%%2C%.5f%%2C%.5f%%2C%.5f'
+    osm_download_url = r'https://www.openstreetmap.org/api/0.6/map?bbox=%.5f,%.5f,%.5f,%.5f'
 
     url = osm_download_url % (bounds[0], bounds[1], bounds[2], bounds[3])
-    filename = "private/data/osm/" + "%s/%s-%.3f,%.3f.osm" % (name, name, bounds[0], bounds[1])
+    #url = url.replace('-', r'%2D')
+    #url = url.replace('-', r'%2D')
+    #filename = "private/data/osm/" + "%s/%s-%.3f,%.3f.osm" % (name, name, bounds[0], bounds[1])
 
     if os.path.exists(filename):
         logger.debug("Exists: %s (skipping)", filename)
@@ -46,16 +50,21 @@ def download_block(bounds, name):
         logger.error("Could not retrieve '%s': %s", url, e)
         raise
 
-def download_area(bounds, chunk=0.01, name="osm"):
+
+'''
+def download_area(bounds, chunk=0.01, filename=None):
     logger.info("Downloading area: %s", bounds)
     posy = math.floor(bounds[1] / chunk) * chunk
     while posy < bounds[3]:
         posx = math.floor(bounds[0] / chunk) * chunk
         while posx < bounds[2]:
-            download_block([posx, posy, posx + chunk, posy + chunk], name=name)
+            download_block([posx, posy, posx + chunk, posy + chunk], filename=filename)
             posx += chunk
         posy += chunk
+'''
 
+
+'''
 # Test
 logging.basicConfig(level=logging.DEBUG)
 vigo_wgs84 = [-8.723, 42.238]
@@ -69,7 +78,7 @@ name = "salamanca"
 download_area([center_wgs84[0] - size_km * km, center_wgs84[1] - size_km * km,
                center_wgs84[0] + size_km * km, center_wgs84[1] + size_km * km],
                name=name)
-
+'''
 
 
 # Using PBFs:

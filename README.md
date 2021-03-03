@@ -42,6 +42,34 @@ Related projects:
 - OpenStreetMap data 2D and 3D generation pipelines.
 
 
+## Current status notes (Work in progress! Expect changes!)
+
+DDD was built as a series of proof-of-concept scripts and is now slowly being
+transformed into a more widely usable tool. If you are using or contributing
+to the project, note:
+
+- Treat operations as if they modified the object (many operations currently return
+  a copy of the object but this will change for performance and consistency reasons):
+- Accessors and usage of metadata and children will possibly change.
+- Usage will gravitate towards a Node hierarchy where each node has a transform
+  (currently only DDDInstance objects have a transform and everything else is
+  in global space).
+
+
+## Contributing
+
+Please use the Issue tracker for questions, discussions and pull requests.
+If you need some ideas, here are some areas that need help:
+
+- Adding and documenting examples and tutorials.
+- Help with OSM the road and roadlines connectity code.
+- Improving the OSM generation pipeline.
+- Create a simple and flexible tree procedural generator and tree prefabs.
+- Adding other model packs and/or improving the aspect of the current assets pack.
+
+Do not hesitate to get in touch though Issues if you have any question.
+
+
 ## Installation
 
 Clone the source repository:
@@ -66,7 +94,6 @@ Install DDD inside the virtualenv set up to run from the source:
 
     sudo apt-get install build-essential cmake libboost-dev libexpat1-dev zlib1g-dev libbz2-dev
 
-
 **For GDAL installation (accessing GIS datasources) - Ubuntu 18.04**
 
 The Python package GDAL 2.2.3 matches Ubuntu 18.04 libgdal version (check with `gdal-config --version`). In order
@@ -76,6 +103,10 @@ for the pip install to succeed, the path to the GDAL library needs to be defined
     export CPLUS_INCLUDE_PATH=/usr/include/gdal/
     export C_INCLUDE_PATH=/usr/include/gdal/
     pip install gdal==2.2.3
+
+**Using the Docker image**
+
+There is a Docker image recipe in the [ddd-docker](https://github.com/jjmontesl/ddd-docker) repository.
 
 
 ## Examples
@@ -90,8 +121,13 @@ typing `ddd` followed by the script name:
 
 **Quickly generate 3D from OSM**
 
+This generates a model centered on the given WGS84 coordinates (lat,lon),
+using a traverse mercator projection centered on the same point.
+
     ddd osm-build --name my_osm_model --center=41.224, 1.725 --radius=125
 
+Note that OSM 2D/3D generation requires additional configuration and input
+data. See the [OSM Generation Pipeline](doc/osm.md) for further information.
 
 
 ## Documentation
