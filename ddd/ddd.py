@@ -1,6 +1,18 @@
-# ddd - DDD123
-# Library for simple scene modelling.
-# Jose Juan Montes and Contributors 2020-2021
+# DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes
+# Copyright (C) 2021 Jose Juan Montes
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from _collections_abc import Iterable
 import base64
@@ -2369,6 +2381,7 @@ class DDDObject3(DDDObject):
                 # WARN: Trimehs GLTF export modified to suppot this:
                 #  gltf.py:542:      if mesh.visual.kind in ['vertex', 'face'] or hasattr(mesh.visual, 'vertex_colors'):
                 #  gltf.py:561       remove elif, use if
+                # TODO: UPDATE: new approach see https://github.com/mikedh/trimesh/pull/925 TextureVisuals.vertex_attributes['color']
                 self.mesh.visual.vertex_colors = cvs.vertex_colors
 
         else:

@@ -6,17 +6,21 @@ hierarchy, transforms, properties and metadata are preserved.
 """
 
 
+import json
+
 from trimesh import primitives, transformations
 from trimesh.scene import scene
-from ddd.core.cli import D1D2D3Bootstrap
+import trimesh
+
 from ddd.ddd import ddd
-import json
 
 
 test_metadata = {'test_key_str': 'test_value',
                  'test_key_int': 1,
                  'test_key_float': 0.123456789,
-                 'test_key_bool': True
+                 'test_key_bool': True,
+                 'test_array': [1, 2, 3],
+                 'test_dict': {'a': 1, 'b': 2},
                  }
 
 
@@ -36,13 +40,27 @@ def gltf_trimesh():
     scene1.metadata['extras'] = test_metadata
 
     files = scene1.export(None, "gltf")  #, extras=test_metadata)
-    print(files["model.gltf"])
+    print(files["model.gltf"].decode('utf8'))
     #for k, v in files.items():
     #    print(k, v)
     #"gltf-hierarchy-trimesh.gltf"
     #scene1.show()
 
+    # Save scene with extras
     scene1.export("gltf-hierarchy-trimesh.glb")  #, extras=test_metadata)
+
+    '''
+    # Check metadata survives a roundtrip
+    # export as GLB then re-load
+    r = trimesh.load(
+        trimesh.util.wrap_as_stream(
+            scene1.export(file_type='glb')),
+        file_type='glb')
+    #r.show()
+    files = r.export(None, "gltf")
+    print(files["model.gltf"].decode('utf8'))
+    print(r.graph.transforms.get_edge_data("world", "Sphere1")['extras'])
+    '''
 
 
 # Export using DDD
@@ -63,8 +81,8 @@ def gltf_ddd():
     scene1.show()
 
 
-#gltf_trimesh()
-gltf_ddd()
+gltf_trimesh()
+#gltf_ddd()
 
 
 
