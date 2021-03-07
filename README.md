@@ -49,11 +49,11 @@ transformed into a more widely usable tool. If you are using or contributing
 to the project, note:
 
 - Treat operations as if they modified the object (many operations currently return
-  a copy of the object but this will change for performance and consistency reasons):
-- Accessors and usage of metadata and children will possibly change.
+  a copy of the object but this will change for performance and consistency reasons).
+- Access to metadata (`extra`, `.get`...) and propagation to children may change.
 - Usage will gravitate towards a Node hierarchy where each node has a transform
-  (currently only DDDInstance objects have a transform and everything else is
-  in global space).
+  (currently only DDDInstance objects have a transform and all other geometries are
+  in world space).
 
 
 ## Contributing
@@ -67,7 +67,7 @@ If you need some ideas, here are some areas that need help:
 - Create a simple and flexible tree procedural generator and tree prefabs.
 - Adding other model packs and/or improving the aspect of the current assets pack.
 
-Do not hesitate to get in touch though Issues if you have any question.
+Do not hesitate to get in touch if you have any question.
 
 
 ## Installation
@@ -87,8 +87,7 @@ Activate the virtualenv (run this on ever new shell in order to use `ddd`):
 
 Install DDD inside the virtualenv set up to run from the source:
 
-    python setup.py
-
+    python setup.py develop
 
 **For Osmium package (reading OSM files)**
 
@@ -142,7 +141,7 @@ TODO: Introduce doc here and move sections to where appropriate.
 **Videos**
 
 - [OSM 3D generation pipeline (Lighting talk at OSM SOTM 2020)](https://youtu.be/R_AHn_eLpso)
-- [Godot integration example](https://youtu.be/wQVSpBloGj0)
+- [Godot 2D integration example](https://youtu.be/wQVSpBloGj0)
 
 **Images**
 
@@ -154,5 +153,18 @@ TODO: Introduce doc here and move sections to where appropriate.
 
 ## License
 
-(TODO)
+DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes
+Copyright (C) 2021 Jose Juan Montes
 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

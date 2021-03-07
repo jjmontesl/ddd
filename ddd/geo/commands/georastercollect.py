@@ -2,21 +2,21 @@
 # Library for simple scene modelling.
 # Jose Juan Montes and Contributors 2019-2021
 
-import argparse
+import glob
 import json
 import logging
-
+import math
+import os
+from pathlib import Path
 from shapely.geometry.geo import shape
+
+import argparse
+from geographiclib.geodesic import Geodesic
+import pyproj
+from pyproj.proj import Proj
 
 from ddd.core.command import DDDCommand
 from ddd.geo.georaster import GeoRasterTile
-from pathlib import Path
-from geographiclib.geodesic import Geodesic
-import math
-import glob
-import os
-from pyproj.proj import Proj
-import pyproj
 
 
 # Get instance of logger for this module
@@ -26,9 +26,6 @@ logger = logging.getLogger(__name__)
 class GeoRasterCollectCommand(DDDCommand):
     """
     """
-
-    chunk_size = 250  # 500: 4/km2,  250: 16/km2,  200: 25/km2,  125: 64/km2
-    chunk_size_extra_filter = 250  # salamanca: 250  # vigo: 500
 
     def parse_args(self, args):
 

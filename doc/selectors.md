@@ -7,7 +7,7 @@ the node selection syntax used by tools like [OverPass](https://wiki.openstreetm
 They have been extended to support tree-like node hierarchies.
 
 Selectors are a building block for [DDD Pipelines](pipelines.md), as they can be used
-to select which nodes a pipeline task apply to.
+to select which nodes a pipeline task applies to.
 
 
 ## Refs

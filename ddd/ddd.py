@@ -65,6 +65,7 @@ from ddd.formats.svg import DDDSVG
 from trimesh.convex import convex_hull
 import os
 from ddd.core import settings
+from ddd.formats.geojson import DDDGeoJSONFormat
 
 
 # Get instance of logger for this module
@@ -1789,6 +1790,14 @@ class DDDObject2(DDDObject):
             #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = DDDJSONFormat.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = data.encode("utf8")
+
+        elif path.endswith('.geojson'):
+            logger.info("Exporting 2D as GeoJSON to: %s", path)
+            #rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDGeoJSONFormat.export_geojson(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = data.encode("utf8")
+
         else:
             raise DDDException("Invalid 2D save format (filename=%s)" % path)
 

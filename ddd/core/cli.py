@@ -34,6 +34,7 @@ class D1D2D3Bootstrap():
         "osm-datainfo": ("ddd.osm.commands.areainfo.OSMDataInfoCommand", "Dump information about generated tiles"),
         "osm-query": ("ddd.osm.commands.query", None),
         "geo-raster-collect": ("ddd.geo.commands.georastercollect.GeoRasterCollectCommand", "Collect georaster files and generate config."),
+        "geo-raster-coverage": ("ddd.geo.commands.georastercoverage.GeoRasterCoverageCommand", "Generate a georaster coverage map."),
         "run": ("ddd.core.commands.run", "Runs a user-given script (default)"),  # default
         })
 
