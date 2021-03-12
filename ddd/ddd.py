@@ -1274,7 +1274,7 @@ class DDDObject2(DDDObject):
         """
         """
         other = other.union()
-        if self.geom:
+        if self.geom and not self.geom.empty:
             if self.geom.overlaps(other.geom):
                 return True
         for c in self.children:

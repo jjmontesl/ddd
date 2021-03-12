@@ -171,7 +171,7 @@ class GeoRasterLayer:
     def value(self, point, interpolate=True):
         tile = self.tile_from_point(point)
         if tile is None:
-            raise DDDException("No raster tile found for point: %s" % point)
+            raise DDDException("No raster tile found for point: %s" % (point, ))
         if interpolate:
             return tile.value_interpolated(point)
         else:

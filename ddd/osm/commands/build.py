@@ -25,6 +25,7 @@ from ddd.geo import terrain
 from ddd.osm import osm
 from ddd.pipeline.pipeline import DDDPipeline
 from ddd.osm.commands import downloader
+from ddd.geo.elevation import ElevationModel
 
 
 #from osm import OSMDDDBootstrap
@@ -299,6 +300,7 @@ class OSMBuildCommand(DDDCommand):
                 existed += 1
                 continue
 
+
             # Try to lock
             lockfilename = filename + ".lock"
             try:
@@ -310,8 +312,25 @@ class OSMBuildCommand(DDDCommand):
                     else:
                         new_formatter = logging.Formatter('%(asctime)s [' + shortname + '] %(message)s')
 
+                    # Apply formatter to existing loggers
                     for hdlr in logging.getLogger().handlers:
                         hdlr.setFormatter(new_formatter)
+
+                    # Create a file handler for this process log
+                    # TODO: Support this at pipeline level / ddd command (?)
+                    build_log_file = False
+                    if build_log_file:
+                        fh = logging.FileHandler('/tmp/%s.log' % (shortname, ))
+                        fh.setLevel(level=logging.DEBUG)
+                        fh.setFormatter(new_formatter)
+                        logging.getLogger().addHandler(fh)
+
+                    # Check elevation is available
+                    elevation = ElevationModel.instance()
+                    center_elevation = elevation.value(center_wgs84)
+                    logger.info("Center point elevation: %s", center_elevation)
+
+
 
                     logger.info("Generating: %s", filename)
                     pipeline = DDDPipeline(['pipelines.osm_base.s10_init.py',

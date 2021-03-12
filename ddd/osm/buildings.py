@@ -177,8 +177,9 @@ class BuildingOSMBuilder():
         floors_min = building_2d.extra.get('osm:building:min_level', 0)
         if not floors:
             floors = random.randint(2, 8)
-        floors = int(floors)
-        floors_min = int(floors_min)
+
+        floors = int(float(floors))
+        floors_min = int(float(floors_min))
         base_floors = floors
         base_floors_min = floors_min
 
@@ -212,11 +213,11 @@ class BuildingOSMBuilder():
             building_3d = None
             try:
 
-                floors = int(part.extra.get('osm:building:levels', base_floors))
+                floors = int(float(part.extra.get('osm:building:levels', base_floors)))
                 if floors == 0:
                     logger.warn("Building part with 0 floors (setting to 1): %s", floors)
                     floors = 1
-                floors_min = int(part.extra.get('osm:building:min_level', base_floors_min))
+                floors_min = int(float(part.extra.get('osm:building:min_level', base_floors_min)))
 
                 # Remove the rest of the building
                 if part == building_2d:
