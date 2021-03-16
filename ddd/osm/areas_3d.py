@@ -205,7 +205,7 @@ class Areas3DOSMBuilder():
                 areas_3d = []
                 for a in area_2d.individualize().clean_replace().children:
                     areas_3d.append(self.generate_area_3d(a))
-                return ddd.group(areas_3d, empty=3)
+                return ddd.group3(areas_3d, extra=area_2d.extra)
 
             if area_2d.extra.get('ddd:area:type', None) == 'park':
 
@@ -213,7 +213,8 @@ class Areas3DOSMBuilder():
                 area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), 0.1, method=ddd.EXTRUSION_METHOD_SUBTRACT)
 
                 # Grass
-                if True:
+                # TODO: Add in a separate (optional) pass
+                if False:
                     # For volumetric grass, as described by: https://www.bruteforce-games.com/post/grass-shader-devblog-04
                     grass_layers = []
                     colors = ['#000000', '#222222', '#444444', '#666666', '#888888', '#aaaaaa', '#cccccc', '#eeeeee']
@@ -308,7 +309,9 @@ class Areas3DOSMBuilder():
         base_height = float(area_3d.extra.get('ddd:base_height', self.osm.ways1.layer_height(layer)))
         area_3d = area_3d.translate([0, 0, base_height])
 
+        area_3d.extra = dict(area_2d.extra)
         area_3d.children.extend( [self.generate_area_3d(c) for c in area_2d.children] )
+
 
 
         return area_3d

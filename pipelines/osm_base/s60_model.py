@@ -75,6 +75,7 @@ def osm_model_generate_coastline(osm, root, obj):
     root.find("/Other3").append(coastlines_3d)
 
 
+'''
 @dddtask(path="/Ways/*", select='["ddd:area:type"]')
 def osm_model_generate_ways(osm, root, pipeline, obj):
 
@@ -83,7 +84,7 @@ def osm_model_generate_ways(osm, root, pipeline, obj):
     if not '_ways_areas_new' in pipeline.data:
         pipeline.data['_ways_areas_new'] = ddd.group3()
     pipeline.data['_ways_areas_new'].append(way_3d)
-
+'''
 
 @dddtask()
 def osm_model_generate_ways_old(osm, root, pipeline):
@@ -108,8 +109,9 @@ def osm_model_generate_ways_roadlines(osm, root, pipeline):
     # TODO: Do this here, instead of during 2D stage
     roadlines = pipeline.data["Roadlines3"]
     del(pipeline.data["Roadlines3"])
-    root.append(roadlines)
+    root.append(roadlines.combine())
 
+''
 @dddtask()
 def osm_model_generate_areas(osm, root):
     areas_2d = root.find("/Areas")
@@ -117,6 +119,14 @@ def osm_model_generate_areas(osm, root):
 
     root.remove(areas_2d)
     root.append(areas_3d)
+
+
+@dddtask(path="/Ways/*", select='["ddd:way:stairs"][!"intersection"]')
+def osm_models_areas_stairs_combine(pipeline, osm, root, logger, obj):
+    """
+    """
+    obj = obj.combine()
+    return obj
 
 
 @dddtask()
@@ -219,8 +229,6 @@ def osm_model_elevation_apply_building(logger, obj, osm, pipeline, root):
         raise DDDException("No parent building elevation found for object %s (parent building: %s)" % (obj, building_parent))
     obj = obj.translate([0, 0, -0.20])
     return obj
-
-
 
 
 @dddtask(order="60.50.+", log=True)

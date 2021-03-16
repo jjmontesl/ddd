@@ -21,8 +21,10 @@ class D1D2D3Bootstrap():
 
     _logging_initialized = False
 
+    # Config ideally shall be an object set to ddd if anything? also check ddd.conf, settings, (dir + home + data dir???!)  pipeline conf...
     export_marker = True
     export_mesh = False
+
 
     # TODO: make classes that provide help, leave "run" for user scripts
     commands = OrderedDict({
@@ -101,6 +103,7 @@ class D1D2D3Bootstrap():
         parser.add_argument("--catalog-ignore", action="store_true", default=False, help="do not use catalog (read, write or store)")
 
         # Cache should be part of a more general pipeline build approach
+        parser.add_argument("--cache-ro", action="store_true", default=False, help="disables pipeline cache writing")
         parser.add_argument("--cache-clear", action="store", nargs="?", default=None, const=(1, ), help="clear pipeline cache (from task order 1 or argument if set)")
 
 
@@ -165,6 +168,8 @@ class D1D2D3Bootstrap():
         D1D2D3Bootstrap.cache_clear = args.cache_clear
         if isinstance(D1D2D3Bootstrap.cache_clear, str):
             D1D2D3Bootstrap.cache_clear = tuple(int(v) for v in D1D2D3Bootstrap.cache_clear.split("."))
+
+        D1D2D3Bootstrap.cache_ro = args.cache_ro
 
         D1D2D3Bootstrap.data = {}
         if args.properties:

@@ -21,7 +21,7 @@ def osm_stairs_condition(pipeline):
     return bool(pipeline.data.get('ddd:osm:stairs', True))
 
 
-@dddtask(order="50.30.10.+", path="/Ways/*", select='["ddd:way:stairs"][!"intersection"]')
+@dddtask(order="50.30.10.+", path="/Ways", select='["ddd:way:stairs"][!"intersection"]')
 def osm_stairs_split(pipeline, osm, root, logger, obj):
     """
     TODO: Use an algorithm based on projection from interior vertex corners.

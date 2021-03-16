@@ -148,8 +148,11 @@ class DDDPipeline():
                     logger.debug("Skipping tasks: %s", ".".join([str(s) for s in skip_tasks]))
 
                 if task.cache and result:
-                    logger.info("Caching state to: %s", result)
-                    self.cache_save(result)
+                    if D1D2D3Bootstrap.cache_ro:
+                        logger.info("Skipping caching state (cache_ro is set to True) for: %s", result)
+                    else:
+                        #logger.info("Caching state to: %s", result)
+                        self.cache_save(result)
 
             except Exception as e:
                 logger.error("Error running task %s: %s", task, e)

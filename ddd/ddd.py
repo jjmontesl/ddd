@@ -321,15 +321,15 @@ class D1D2D3():
         return DDDObject3(name=name, mesh=mesh)
 
     @staticmethod
-    def group2(children=None, name=None, empty=None):
-        return D1D2D3.group(children, name, empty=2)
+    def group2(children=None, name=None, empty=None, extra=None):
+        return D1D2D3.group(children, name, empty=2, extra=extra)
 
     @staticmethod
-    def group3(children=None, name=None, empty=None):
-        return D1D2D3.group(children, name, empty=3)
+    def group3(children=None, name=None, empty=None, extra=None):
+        return D1D2D3.group(children, name, empty=3, extra=extra)
 
     @staticmethod
-    def group(children=None, name=None, empty=None):
+    def group(children=None, name=None, empty=None, extra=None):
         """
         """
 
@@ -357,6 +357,9 @@ class D1D2D3():
             result = DDDObject3(children=children, name=name)
         else:
             raise ValueError("Invalid object for ddd.group(): %s" % children[0])
+
+        if extra:
+            result.extra = dict(extra)
 
         if any((c is None for c in children)):
             raise ValueError("Tried to add null to object children list.")
@@ -415,6 +418,7 @@ class DDDMaterial():
         self.texture = texture_path
         self._texture_cached = None  # currently a PIL image, shall be a DDDTexture
         self.texture_normal = texture_normal_path
+        #self._texture_normal_cached = None
 
         self.atlas = None
         if atlas_path:
@@ -1866,11 +1870,12 @@ class DDDInstance(DDDObject):
             return self.ref.bounds()
         return None
 
-    def marker(self):
+    def marker(self, world_space=True):
         ref = D1D2D3.marker(name=self.name, extra=dict(self.extra))
-        ref = ref.scale(self.transform.scale)
-        ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
-        ref = ref.translate(self.transform.position)
+        if world_space:
+            ref = ref.scale(self.transform.scale)
+            ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+            ref = ref.translate(self.transform.position)
         if self.ref:
             ref.extra.update(self.ref.extra)
         ref.extra.update(self.extra)
@@ -1935,7 +1940,7 @@ class DDDInstance(DDDObject):
 
         if instance_marker:
             # Marker
-            ref = self.marker()
+            ref = self.marker(world_space=False)
             scene.add_geometry(geometry=ref.mesh, node_name=scene_node_name + "_marker", geom_name="Marker %s" % scene_node_name,
                                parent_node_name=scene_parent_node_name, transform=node_transform, extras=metadata_serializable)
 

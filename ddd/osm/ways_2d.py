@@ -934,6 +934,8 @@ class Ways2DOSMBuilder():
             remaining.extra['ddd:area:type'] = 'default'
             stairs.append(remaining)
             stairs = stairs.individualize().flatten()
+            stairs.extra = obj.extra
+
             obj.replace(stairs)
             #obj.show()
 
