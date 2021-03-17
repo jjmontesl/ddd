@@ -75,17 +75,21 @@ def osm_model_generate_coastline(osm, root, obj):
     root.find("/Other3").append(coastlines_3d)
 
 
-'''
-@dddtask(path="/Ways/*", select='["ddd:area:type"]')
+@dddtask(path="/Ways/*")  # , select='["ddd:area:type"]')
 def osm_model_generate_ways(osm, root, pipeline, obj):
 
     way_3d = osm.areas3.generate_area_3d(obj)
 
     if not '_ways_areas_new' in pipeline.data:
-        pipeline.data['_ways_areas_new'] = ddd.group3()
+        pipeline.data['_ways_areas_new'] = ddd.group3(name="Ways")
     pipeline.data['_ways_areas_new'].append(way_3d)
-'''
 
+@dddtask()
+def osm_model_generate_ways_init(osm, root, pipeline):
+    root.remove(root.find("/Ways"))
+    root.append(pipeline.data['_ways_areas_new'])
+
+'''
 @dddtask()
 def osm_model_generate_ways_old(osm, root, pipeline):
 
@@ -102,6 +106,7 @@ def osm_model_generate_ways_old(osm, root, pipeline):
 
     root.remove(ways_2d)
     root.append(ways_3d)
+'''
 
 
 @dddtask()
@@ -111,14 +116,30 @@ def osm_model_generate_ways_roadlines(osm, root, pipeline):
     del(pipeline.data["Roadlines3"])
     root.append(roadlines.combine())
 
-''
+@dddtask(path="/Areas/*")  # , select='["ddd:area:type"]')
+def osm_model_generate_areas(osm, root, pipeline, obj):
+
+    area_3d = osm.areas3.generate_area_3d(obj)
+
+    if not '_areas_areas_new' in pipeline.data:
+        pipeline.data['_areas_areas_new'] = ddd.group3(name="Areas")
+    pipeline.data['_areas_areas_new'].append(area_3d)
+
 @dddtask()
-def osm_model_generate_areas(osm, root):
+def osm_model_generate_areas_init(osm, root, pipeline):
+    root.remove(root.find("/Areas"))
+    root.append(pipeline.data['_areas_areas_new'])
+
+
+'''
+@dddtask()
+def osm_model_generate_areas_old(osm, root):
     areas_2d = root.find("/Areas")
     areas_3d = osm.areas3.generate_areas_3d(areas_2d)  # areas_2d.clean()
 
     root.remove(areas_2d)
     root.append(areas_3d)
+'''
 
 
 @dddtask(path="/Ways/*", select='["ddd:way:stairs"][!"intersection"]')

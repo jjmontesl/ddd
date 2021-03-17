@@ -602,6 +602,10 @@ class DDDObject():
     def select(self, selector=None, path=None, func=None, recurse=True, apply_func=None, _rec_path=None):
         """
         """
+
+        if hasattr(self, '_remove_object'): delattr(self, '_remove_object')
+        if hasattr(self, '_add_object'): delattr(self, '_add_object')
+
         if selector and not isinstance(selector, DDDSelector):
             selector = DDDSelector(selector)
 
@@ -652,16 +656,16 @@ class DDDObject():
             to_add = []
             for c in list(o.children):
                 cr = c.select(func=func, selector=selector, path=path, recurse=recurse, apply_func=apply_func, _rec_path=_rec_path)
-                if cr.extra['_remove_object']:
+                if hasattr(cr, '_remove_object') and cr._remove_object:
                     to_remove.append(c)
-                if cr.extra['_add_object']:
-                    if isinstance(cr.extra['_add_object'], list):
-                        to_add.extend(cr.extra['_add_object'])
+                if hasattr(cr, '_add_object') and cr._add_object:
+                    if isinstance(cr._add_object, list):
+                        to_add.extend(cr._add_object)
                     else:
-                        to_add.append(cr.extra['_add_object'])
+                        to_add.append(cr._add_object)
                         #to_add.extend(cr.children)
-                del(cr.extra['_remove_object'])
-                del(cr.extra['_add_object'])
+                delattr(cr, '_remove_object')
+                delattr(cr, '_add_object')
                 result.extend(cr.children)
             o.children = [coc for coc in o.children if coc not in to_remove]
             o.children.extend(to_add)
@@ -672,8 +676,8 @@ class DDDObject():
         #self.children = [c for c in self.children if c not in result]
 
         res = self.grouptyped(result)
-        res.extra['_remove_object'] = remove_object
-        res.extra['_add_object'] = add_object
+        res._remove_object = remove_object
+        res._add_object = add_object
         return res
 
     def filter(self, func):

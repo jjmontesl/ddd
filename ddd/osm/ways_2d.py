@@ -887,7 +887,7 @@ class Ways2DOSMBuilder():
 
         # Interpolate path line and split area with perpendiculars
         #step_depth = obj.get('ddd:steps:depth', 0.375)
-        step_depth = obj.get('ddd:steps:depth', 0.425)
+        step_depth = obj.get('ddd:steps:depth', 0.75)
 
         # Generate lamp posts
         interval = step_depth

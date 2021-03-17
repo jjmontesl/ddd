@@ -79,6 +79,14 @@ class DDDTask(object):
 
     def run(self, pipeline):
 
+        try:
+            #logger.warn("DEBUG: %s", pipeline.root.select(path="/Areas", selector='[osm:id = "way-112075680"]', recurse=True))
+            #logger.warn("DEBUG: %s", pipeline.root.select(path="/Ways", selector='[osm:id = "way-112075680"]', recurse=True))
+            #logger.warn("DEBUG: %s %s", pipeline.root.select(path="/Areas"), pipeline.root.select(path="/Ways"))
+            pass
+        except:
+            pass
+
         #logger.info("Task select: filter=%s select=%s path=%s", self.filter, self.selector, self.path)
 
         if (self.path or self.selector or self.filter): return self.run_each(pipeline)

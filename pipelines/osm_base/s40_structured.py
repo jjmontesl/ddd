@@ -171,9 +171,10 @@ def osm_structured_areas_link_items_nodes(root, osm):
 
     areas = root.find("/Areas")
     ways = root.find("/Ways")
-    areas.children.extend(ways.children)
+    #areas.children.extend(ways.children)  # DANGEROUS! Should have never been here, it adds ways to areas
 
     osm.areas2.link_items_to_areas(areas, items)
+    osm.areas2.link_items_to_areas(ways, items)
 
 
 @dddtask(log=True)

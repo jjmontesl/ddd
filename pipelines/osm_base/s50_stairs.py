@@ -26,8 +26,10 @@ def osm_stairs_split(pipeline, osm, root, logger, obj):
     """
     TODO: Use an algorithm based on projection from interior vertex corners.
     """
+    #osm.ways2.generate_stairs_simple(pipeline, obj)
     obj = osm.ways2.generate_stairs_simple(pipeline, obj)
     return obj
+
 
 
 
