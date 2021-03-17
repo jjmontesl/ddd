@@ -27,14 +27,14 @@ class DefaultMaterials(MaterialsCollection):
 
 
         self.dirt = ddd.material(name="Dirt", color="#b58800")
-        self.forest = ddd.material(name="Park", color='#3a6e17')
-        self.garden = ddd.material(name="Park", color='#2f614b')
-        self.grass = ddd.material(name="Park", color='#2dd355')
+        self.forest = ddd.material(name="Forest", color='#3a6e17')
+        self.garden = ddd.material(name="Garden", color='#2f614b')
+        self.grass = ddd.material(name="Grass", color='#2dd355')
         self.park = ddd.material(name="Park", color='#1db345')
         self.rock = ddd.material(name="Rock", color='#5f5f4d')
         self.sand = ddd.material(name="Sand", color='#fff694')
         self.terrain = ddd.material(name="Ground", color='#e6821e')
-        self.wetland = ddd.material(name="Park", color='#54610c')
+        self.wetland = ddd.material(name="Wetland", color='#54610c')
 
         self.pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
         self.sett = ddd.material(name="Sett", color='#7b719f')

@@ -443,13 +443,13 @@ class DDDMaterial():
                 if self.texture and (self.alpha_cutoff or self.texture_normal):
                     alpha_mode = self.alpha_mode if self.alpha_mode else ('MASK' if self.alpha_cutoff else 'OPAQUE')
                     im_normal = PIL.Image.open(self.texture_normal) if self.texture_normal else None
-                    mat = PBRMaterial(baseColorTexture=im, baseColorFactor=self.color_rgba,
+                    mat = PBRMaterial(name=self.name, baseColorTexture=im, baseColorFactor=self.color_rgba,
                                       normalTexture=im_normal,
                                       alphaMode=alpha_mode, alphaCutoff=self.alpha_cutoff)  # , ambient, specular, glossiness)
                 else:
-                    mat = SimpleMaterial(image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
+                    mat = SimpleMaterial(name=self.name, image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
             else:
-                mat = SimpleMaterial(diffuse=self.color_rgba)
+                mat = SimpleMaterial(name=self.name, diffuse=self.color_rgba)
             #mat = PBRMaterial(doubleSided=True)  # , emissiveFactor= [0.5 for v in self.mesh.vertices])
             self._trimesh_material_cached = mat
         return self._trimesh_material_cached
@@ -1944,9 +1944,14 @@ class DDDInstance(DDDObject):
 
         if instance_marker:
             # Marker
-            ref = self.marker(world_space=False)
-            scene.add_geometry(geometry=ref.mesh, node_name=scene_node_name + "_marker", geom_name="Marker %s" % scene_node_name,
-                               parent_node_name=scene_parent_node_name, transform=node_transform, extras=metadata_serializable)
+
+            instance_marker_cube = True
+            if instance_marker_cube:
+                ref = self.marker(world_space=False)
+                scene.add_geometry(geometry=ref.mesh, node_name=scene_node_name + "_marker", geom_name="Marker %s" % scene_node_name,
+                                   parent_node_name=scene_parent_node_name, transform=node_transform, extras=metadata_serializable)
+            else:
+                scene.graph.update(frame_to=scene_node_name, frame_from=scene_parent_node_name, matrix=node_transform, geometry_flags={'visible': True}, extras=metadata_serializable)
 
         return scene
 
