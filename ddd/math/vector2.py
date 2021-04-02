@@ -8,9 +8,11 @@ import math
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
+
 class Vector2(tuple):
     """
     """
+    # TODO: Use numpy?
 
     @property
     def x(self):

@@ -61,7 +61,7 @@ class DefaultMaterials(MaterialsCollection):
         self.metal_paint_yellow = ddd.material("PaintYellow", color='#ebe015')
         self.metal_paint_blue = ddd.material("PaintBlue", color='#184794')
         self.metal_paint_white = ddd.material("PaintWhite", color='#f8fbff')
-        self.metal_paint_black = ddd.material("PaintYellow", color='#000a17')
+        self.metal_paint_black = ddd.material("PaintBlack", color='#000a17')
 
         # Plastics
         self.plastic_transparent = ddd.material(color='e8e0e4', extra={'ddd:transparent': True})  # name="PlasticTransparent",

@@ -28,7 +28,7 @@ def osm_select_items_ways_barrier_hedge(root, osm, obj):
     obj.name = "Hedge: %s" % obj.name
     #obj.extra['ddd:way:weight'] = 100
     #obj.extra['ddd:way:lanes'] = None
-    obj.extra['ddd:width'] = 0.6
+    obj.extra['ddd:width'] = 0.55
     obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 1.2))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True

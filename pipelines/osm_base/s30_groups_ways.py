@@ -222,7 +222,7 @@ def osm_select_ways_footway(obj, root):
     """Define road data."""
     obj = obj.copy()
     obj.extra['ddd:way:weight'] = 31
-    obj.extra['ddd:way:height'] = 0.2
+    #obj.extra['ddd:way:height'] = 0.2
     obj.extra['ddd:way:width'] = 1.5
     obj.extra['ddd:way:lanes'] = 0
     obj = obj.material(ddd.mats.dirt)
@@ -287,8 +287,8 @@ def osm_select_ways_cycleway(obj, root):
     obj.extra['ddd:way:weight'] = 10
     # obj.extra['ddd:way:height'] = 0.2
     obj.extra['ddd:way:roadlines'] = True
-    obj = obj.material(ddd.mats.pitch_blue)
-    obj.prop_set('ddd:way:lamps', default=True)
+    obj = obj.material(ddd.mats.pitch_red)
+    obj.prop_set('ddd:way:lamps', default=False)
     root.find("/Ways").append(obj)
 
 
@@ -405,7 +405,7 @@ def osm_select_ways_barrier_city_wall(root, osm, obj):
     #obj.extra['ddd:way:weight'] = 91
     #obj.extra['ddd:way:lanes'] = None
     obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 1.00))
-    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 2.0))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 3.0))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
     obj = obj.material(ddd.mats.stone)

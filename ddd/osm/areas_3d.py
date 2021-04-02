@@ -135,6 +135,7 @@ class Areas3DOSMBuilder():
         self.osm.ground_3d.append(terr)
     '''
 
+    '''
     def generate_areas_3d(self, areas_2d):
 
         # TODO: Move to pipeline
@@ -191,9 +192,22 @@ class Areas3DOSMBuilder():
                 raise
 
         return areas_3d
-
+    '''
 
     def generate_area_3d(self, area_2d):
+
+        if area_2d.get('ddd:area:type', None) == 'pitch':
+            return self.generate_area_3d_pitch(area_2d)
+        elif area_2d.get('ddd:area:type', None) == 'water':
+            return self.generate_area_3d_water(area_2d)
+        elif area_2d.get('ddd:area:type', None) == 'sea':
+            return self.generate_area_3d_water(area_2d)
+        elif area_2d.get('ddd:area:type', None) == 'underwater':
+            return self.generate_area_3d_underwater(area_2d)
+        else:
+            return self.generate_area_3d_gen(area_2d)
+
+    def generate_area_3d_gen(self, area_2d):
 
         if area_2d.geom is not None and area_2d.geom.type != "LineString" and area_2d.geom.type:
 
@@ -249,23 +263,39 @@ class Areas3DOSMBuilder():
 
             elif area_2d.extra.get('ddd:area:type', None) == 'sidewalk':
 
+                area_3d = None
+
                 try:
                     height = area_2d.extra.get('ddd:height', 0.2)
                     #area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
                     #area_3d = ddd.uv.map_cubic(area_3d)
 
                     if True:
-                        interior = area_2d.buffer(-0.3)
-                        area_3d = interior.extrude(-0.5 - height).translate([0, 0, height])
+                        try:
+                            interior = area_2d.get('ddd:crop:original').buffer(-0.3).intersection(self.osm.area_crop2)
+                            if not interior.is_empty():
+                                area_3d = interior.extrude(-0.5 - height).translate([0, 0, height])
+                                area_3d = ddd.uv.map_cubic(area_3d)
+                                kerb_3d = area_2d.get('ddd:crop:original').subtract(interior).intersection(self.osm.area_crop2).extrude(-0.5 - height).translate([0, 0, height])
+                                kerb_3d = ddd.uv.map_cubic(kerb_3d).material(ddd.mats.cement)
+                                #if area_3d.mesh:
+                                #    area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
+                                #    kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj).material(ddd.mats.cement)
+                                #area_3d.append(kerb_3d)
+                                #kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj)
+                                area_3d.append(kerb_3d)
+                            else:
+                                logger.info("Cannot create kerb (empty interior) for area: %s", area_2d)
+                                area_3d = None
+                        except Exception as e:
+                            logger.info("Error creating kerb for area %s: %s", area_2d, e)
+                            area_3d = None
+
+                    # If no kerb or kerb could not be generated, just generate the area:
+                    if area_3d is None:
+                        area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
                         area_3d = ddd.uv.map_cubic(area_3d)
-                        kerb_3d = area_2d.subtract(interior).extrude(-0.5 - height).translate([0, 0, height])
-                        kerb_3d = ddd.uv.map_cubic(kerb_3d).material(ddd.mats.cement)
-                        #if area_3d.mesh:
-                        #    area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
-                        #    kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj).material(ddd.mats.cement)
-                        #area_3d.append(kerb_3d)
-                        #kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj)
-                        area_3d.append(kerb_3d)
+
                 except Exception as e:
                     logger.error("Could not generate area: %s (%s)", e, area_2d)
                     area_3d = DDDObject3()
@@ -312,8 +342,6 @@ class Areas3DOSMBuilder():
         area_3d.extra = dict(area_2d.extra)
         area_3d.children.extend( [self.generate_area_3d(c) for c in area_2d.children] )
 
-
-
         return area_3d
 
     def generate_area_3d_pitch(self, area_2d):
@@ -324,13 +352,14 @@ class Areas3DOSMBuilder():
         area_2d_orig = area_2d.extra.get('ddd:crop:original')  #, area_2d)
 
         #logger.debug("Pitch: %s", area_2d)
-        area_3d = self.generate_area_3d(area_2d)
+        area_3d = self.generate_area_3d_gen(area_2d)
 
         # TODO: pass size then adapt to position and orientation, easier to construct and reuse
         # TODO: get area uncropped (create a cropping utility that stores the original area)
 
-        sport = area_2d.extra.get('osm:sport', None)
+        sport = area_2d.extra.get('ddd:sport', None)
 
+        lines = None
         if sport == 'tennis':
             lines = sports.field_lines_area(area_2d_orig, sports.tennis_field_lines, padding=3.0)
         elif sport == 'basketball':
@@ -338,9 +367,11 @@ class Areas3DOSMBuilder():
         elif sport == 'gymnastics':
             #lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=2.0)
             lines = ddd.group3()
-        else:
-            # TODO: No default (empty), it should be assigned via pipeline props earlier
+        elif sport == 'soccer':
             lines = sports.field_lines_area(area_2d_orig, sports.football_field_lines, padding=1.25)
+        else:
+            # No sport assigned
+            lines = ddd.group3()
 
         if lines:
             lines = terrain.terrain_geotiff_elevation_apply(lines, self.osm.ddd_proj).translate([0, 0, 0.15])
@@ -354,7 +385,7 @@ class Areas3DOSMBuilder():
         return area_3d
 
     def generate_area_3d_water(self, area_2d):
-        area_3d = self.generate_area_3d(area_2d)
+        area_3d = self.generate_area_3d_gen(area_2d)
 
         # Move water down, to account for waves
         area_3d = area_3d.translate([0, 0, -0.5])

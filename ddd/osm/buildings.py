@@ -183,7 +183,9 @@ class BuildingOSMBuilder():
         base_floors = floors
         base_floors_min = floors_min
 
+        random.seed(hash(building_2d.name))
         building_material = random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3])
+
         if building_2d.extra.get('osm:building:material', None):
             material_name = building_2d.extra.get('osm:building:material')
             if hasattr(ddd.mats, material_name):
@@ -262,7 +264,8 @@ class BuildingOSMBuilder():
                 floors_height = floors * 3.00
                 floors_min_height = floors_min * 3.00
                 min_height = float(part.extra.get('osm:min_height', floors_min_height))
-                max_height = parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
+                #max_height = parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
+                max_height = parse_meters(part.extra.get('osm:height', floors_height)) - roof_height
                 dif_height = max_height - min_height
 
                 # Generate building procedurally (use library)

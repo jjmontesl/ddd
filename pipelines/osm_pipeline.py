@@ -15,6 +15,8 @@ from ddd.pipeline.decorators import dddtask
 """
 """
 
+# TODO: This file currently not in use (pipeline is initialized from build.py)
+
 pipeline = DDDPipeline(['pipelines.osm_base.s10_init.py',
                         'pipelines.osm_common.s10_locale_config.py',
 

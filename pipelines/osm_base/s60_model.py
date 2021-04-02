@@ -87,7 +87,10 @@ def osm_model_generate_ways(osm, root, pipeline, obj):
 @dddtask()
 def osm_model_generate_ways_init(osm, root, pipeline):
     root.remove(root.find("/Ways"))
-    root.append(pipeline.data['_ways_areas_new'])
+    if '_ways_areas_new' in pipeline.data:
+        root.append(pipeline.data['_ways_areas_new'])
+    else:
+        pipeline.data['_ways_areas_new'] = ddd.group3(name="Ways")
 
 '''
 @dddtask()

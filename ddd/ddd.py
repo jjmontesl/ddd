@@ -97,6 +97,8 @@ class D1D2D3():
     DEG_TO_RAD = (math.pi / 180.0)
     RAD_TO_DEG = (180.0 / math.pi)
 
+    EPSILON = 1e-8
+
     EXTRUSION_METHOD_WRAP = extrusion.EXTRUSION_METHOD_WRAP
     EXTRUSION_METHOD_SUBTRACT = extrusion.EXTRUSION_METHOD_SUBTRACT # For internal/external/vertical extrusions
 
@@ -400,7 +402,8 @@ class D1D2D3():
 
 class DDDMaterial():
 
-    def __init__(self, name=None, color=None, extra=None, texture_path=None, atlas_path=None, alpha_cutoff=None, alpha_mode=None, texture_normal_path=None):
+    def __init__(self, name=None, color=None, extra=None, texture_path=None, atlas_path=None, alpha_cutoff=None, alpha_mode=None, texture_normal_path=None,
+                 metallic_factor=None, roughness_factor=None, index_of_refraction=None, direct_lighting=None, bump_strength=None):
         """
         Color is hex color.
         """
@@ -419,6 +422,12 @@ class DDDMaterial():
         self._texture_cached = None  # currently a PIL image, shall be a DDDTexture
         self.texture_normal = texture_normal_path
         #self._texture_normal_cached = None
+
+        self.metallic_factor = metallic_factor
+        self.roughness_factor = roughness_factor
+        #self.index_of_refraction = index_of_refraction
+        #self.direct_lighting = direct_lighting
+        #self.bump_strength = bump_strength
 
         self.atlas = None
         if atlas_path:
@@ -445,6 +454,7 @@ class DDDMaterial():
                     im_normal = PIL.Image.open(self.texture_normal) if self.texture_normal else None
                     mat = PBRMaterial(name=self.name, baseColorTexture=im, baseColorFactor=self.color_rgba,
                                       normalTexture=im_normal,
+                                      metallicFactor=self.metallic_factor, roughnessFactor=self.roughness_factor,
                                       alphaMode=alpha_mode, alphaCutoff=self.alpha_cutoff)  # , ambient, specular, glossiness)
                 else:
                     mat = SimpleMaterial(name=self.name, image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
@@ -1313,7 +1323,7 @@ class DDDObject2(DDDObject):
 
     def contains(self, other):
         """
-        Note: distinctio between union self or each of the children (currently, each children in self vs other union)
+        Note: distinction between union self or each of the children (currently, each children in self vs other union)
         """
         other = other.union()
         if self.geom and not self.geom.is_empty and other.geom and not other.geom.is_empty:
@@ -1326,6 +1336,18 @@ class DDDObject2(DDDObject):
 
     def length(self):
         return self.geom.length
+
+    def is_empty(self):
+        """
+        Tells whether this object has no geometry, or geometry is empty, and
+        all children are also empty.
+        """
+        if self.geom and not self.geom.is_empty:
+            return False
+        for c in self.children:
+            if not c.is_empty():
+                return False
+        return True
 
     def convex_hull(self):
         result = self.copy().union()
@@ -1518,7 +1540,7 @@ class DDDObject2(DDDObject):
                     mesh.merge_vertices()
                     result = DDDObject3(mesh=mesh)
                 except Exception as e:
-                    raise DDDException("Could not extrude: %s" % self, ddd_obj=self)
+                    raise DDDException("Could not extrude %s: %s" % (self, e), ddd_obj=self)
 
                 if center:
                     result = result.translate([0, 0, -height / 2])
@@ -1722,7 +1744,6 @@ class DDDObject2(DDDObject):
             if l >= d:
                 return (self.geom.interpolate(d).coords[0], idx, p, pn)
         return (self.geom.interpolate(d).coords[0], idx, p, pn)
-        return None
 
     def closest_segment(self, other):
         """
@@ -1740,14 +1761,57 @@ class DDDObject2(DDDObject):
         #ddd.group([other.buffer(5.0),  ddd.point(result[2]).buffer(5.0).material(ddd.mat_highlight), ddd.line([result[2], result[3]]).buffer(2.0), ddd.point(result[0]).buffer(5.0), closest_self.buffer(0.2)]).show()
         return result
 
+    def vertex_index(self, coords):
+        """
+        Returns the closest vertex in this geometry to other geometry.
+        Does not support children in "other" geometry.
+        """
+        if isinstance(coords, DDDObject2) and coords.geom.type == "Point":
+            coords = coords.geom.coords[0]
+        coords = np.array(coords)
+        if self.geom.type != 'LineString':
+            raise Exception("Only LineString is supported for 'closest_vertex' method: %s %s" % (self, coords))
+        if self.geom:
+            for idx, c in enumerate(self.geom.coords):
+                #print (idx, c, other.geom.coords[0])
+                #if (c == other.geom.coords[0]):
+                if np.linalg.norm(np.array(c) - coords) < ddd.EPSILON:
+                    return idx
+
+        return None
+
+    def insert_vertex_at_distance(self, distance):
+        """
+        Inserts a vertex at a given distance on this geometry. Distance is interpolated along the object.
+
+        If the vertex coincides with an existing neighbour vertex, it won't be added.
+
+        Returns the coordinates of the inserted vertex.
+
+        This method mutates the object.
+        """
+
+        coords, segment_idx, segment_coords_a, segment_coords_b = self.interpolate_segment(distance)
+
+        dist1 = np.linalg.norm(np.array(coords) - np.array(segment_coords_a))
+        dist2 = np.linalg.norm(np.array(coords) - np.array(segment_coords_b))
+
+        if dist1 > ddd.EPSILON and dist2 > ddd.EPSILON:
+            self.geom.coords = self.geom.coords[:segment_idx + 1] + [coords] + self.geom.coords[segment_idx + 1:]
+
+        return coords
+
     def perpendicular(self, distance=0.0, length=1.0, double=False):
 
         (coords_p, segment_idx, segment_coords_a, segment_coords_b) = self.interpolate_segment(distance)
 
-        dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
-        dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
-        dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
-        perpendicular_vec = (-dir_vec[1], dir_vec[0])
+        try:
+            dir_vec = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
+            dir_vec_length = math.sqrt(dir_vec[0] ** 2 + dir_vec[1] ** 2)
+            dir_vec = (dir_vec[0] / dir_vec_length, dir_vec[1] / dir_vec_length)
+            perpendicular_vec = (-dir_vec[1], dir_vec[0])
+        except  ZeroDivisionError as e:
+            raise DDDException("Error calculating perpendicular geometry to: %s" % self, ddd_obj=self)
 
         left = (coords_p[0] + perpendicular_vec[0] * length, coords_p[1] + perpendicular_vec[1] * length)
         right = (coords_p[0] - perpendicular_vec[0] * length, coords_p[1] - perpendicular_vec[1] * length)
@@ -2605,6 +2669,14 @@ class DDDObject3(DDDObject):
             trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata)
             data = trimesh.exchange.gltf.export_glb(trimesh_scene, include_normals=D1D2D3Bootstrap.export_normals)
 
+        elif path.endswith('.gltf'):
+            rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            #scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata)
+            files = trimesh.exchange.gltf.export_gltf(trimesh_scene, include_normals=D1D2D3Bootstrap.export_normals)
+            data = files['model.gltf']
+            #trimesh_scene.export(path)  # files = trimesh.exchange.gltf.export_glb(trimesh_scene, include_normals=D1D2D3Bootstrap.export_normals)
+
         #elif path.endswith('.gltf'):
         #    rotated = self.rotate([-math.pi / 2.0, 0, 0])
         #    scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
@@ -2636,6 +2708,7 @@ Node = DDDObject
 Geometry2D = DDDObject2
 Mesh = DDDObject3
 
+from ddd.math.math import DDDMathUtils
 from ddd.ops.collision import DDDCollision
 from ddd.ops.geometry import DDDGeometry
 from ddd.ops.reduction import DDDMeshOps
@@ -2651,6 +2724,8 @@ ddd.mats = MaterialsCollection()
 ddd.mats.highlight = D1D2D3.material(color='#ff00ff')
 ddd.MAT_HIGHLIGHT = ddd.mats.highlight
 ddd.mats.load_from(DefaultMaterials())
+
+ddd.math = DDDMathUtils()
 
 ddd.geomops = DDDGeometry()
 

@@ -177,6 +177,13 @@ class Ways1DOSMBuilder():
         # Soften / subdivide roads if height angle is larger than X (try as alternative to massive subdivision of roads?)
 
     def ways_1d_link_items(self, ways_1d, items_1d):
+        """
+        Links items to ways, and ways to items.
+
+        Note: currenty matching node coordinates as nodes are not referenced in current geojson input.
+        Note: currently sets first found way as 'osm:item:way' key.
+        """
+
         # Assign item nodes
         # TODO: this shall better come from osm node-names/relations directly, but supporting geojson is also nice
         # TODO: Before or after splitting?
@@ -191,8 +198,10 @@ class Ways1DOSMBuilder():
                 logger.debug("Associating item to way: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
                 item.extra['osm:item:way'] = vertex_cache[item.geom.coords[0]][0]
                 item.extra['osm:item:ways'] = vertex_cache[item.geom.coords[0]]
-                #if len(vertex_cache[item.geom.coords[0]]):
-                #    raise NotImplementedError()
+                for w in vertex_cache[item.geom.coords[0]]:
+                    if 'osm:way:items' not in w.extra:
+                        w.extra['osm:way:items'] = []
+                    w.extra['osm:way:items'].append(item)
 
 
     def ways_1d_intersections(self, ways_1d):
@@ -404,11 +413,7 @@ class Ways1DOSMBuilder():
 
     def split_way_1d_vertex(self, ways_1d, way, v):
 
-        coord_idx = None
-        for idx, c in enumerate(way.geom.coords):
-            if v == c:
-                coord_idx = idx
-                break
+        coord_idx = way.vertex_index(v)
 
         if coord_idx is None:
             logger.debug("Coordinates: %s", list(way.geom.coords))

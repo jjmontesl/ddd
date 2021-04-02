@@ -44,6 +44,14 @@ def osm_groups_areas_leisure_park(obj, osm):
     obj = obj.material(ddd.mats.park)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:highway" = "pedestrian"]')
+def osm_groups_areas_highway_pedestrian(obj, osm):
+    """Define area data."""
+    obj.name = "Park: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj = obj.material(ddd.mats.pathwalk)
+    return obj
+
 @dddtask(path="/Areas/*", select='["osm:leisure" = "garden"]')
 def osm_groups_areas_leisure_garden(obj, osm):
     """Define area data."""

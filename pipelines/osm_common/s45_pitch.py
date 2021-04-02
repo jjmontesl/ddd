@@ -12,9 +12,10 @@ from ddd.pack.sketchy import sports
 def osm_augment_pitch(obj, root):
     pass
 
-@dddtask(path="/Areas/*", select='["ddd:area:type" = "pitch"]')
+@dddtask(path="/Areas/*", select='["ddd:area:type" = "pitch"][!"ddd:sport"]')
 def osm_augment_pitch_default_sport(obj, root):
-    pass
+    obj.extra['ddd:sport'] = obj.get('osm:sport', 'soccer')
+
 
 '''
 @dddtask(path="/Areas/*", select='["ddd:area:type" = "pitch"](["ddd:sport" = "soccer"]; !["ddd:sport"])')

@@ -75,6 +75,26 @@ class Ways2DOSMBuilder():
         if roads:
             result = ddd.group(roads, name="Ways (layer: %s)" % layer_idx)  # translate([0, 0, 50])
 
+        '''
+        #ways_2d = defaultdict(list)
+        ways_2d = ddd.group2(name="Ways (layer: %s)" % layer_idx)
+        for w in ways_1d:
+            #f = w.extra['osm:feature']
+            way_2d = self.generate_way_2d(w)
+            if way_2d:
+                #weight = way_2d.extra['ddd:way:weight']
+                #ways_2d[weight] = ways_2d[weight].subtract(way_2d) # Subtract (avoid overlapping roads?)
+                if (way_2d.overlaps(ways_2d)):
+                    way_2d = way_2d.subtract(ways_2d).clean()
+                #ways_2d[weight].append(way_2d)
+                if (way_2d.geom):
+                    ways_2d.append(way_2d)
+
+        #roads = sum(ways_2d.values(), [])
+        if ways_2d.children:
+            result = ways_2d  #ddd.group(roads, name="Ways (layer: %s)" % layer_idx)  # translate([0, 0, 50])
+        '''
+
         return result
 
     def generate_way_2d(self, way_1d):
@@ -148,6 +168,13 @@ class Ways2DOSMBuilder():
 
             intersection_shape = intersection_shape.union()
 
+            if not intersection_shape.geom:
+                logger.error("Intersection shape with no geometry: %s", intersection_shape)
+                continue
+            #if intersection_shape.geom.type == 'Point':
+            #    logger.error("Intersection shape of invalid type (Point): %s", intersection_shape)
+            #    continue
+
             # Calculate continuity (we break continuity by splitting ways, but it's sometimes not  mapped)
             for i in range(len(join_ways.children)):
                 for j in range(i + 1, len(join_ways.children)):  #i + 1
@@ -195,7 +222,14 @@ class Ways2DOSMBuilder():
                         min_d = 0
                         min_o = None
                         min_p = None
-                        for intersection_point in list(intersection_shape.coords_iterator()):
+
+                        try:
+                            coords_list = list(intersection_shape.coords_iterator())
+                        except Exception as e:
+                            logger.error("Intersection shape of invalid type (Point) %s: %s", intersection_shape, e)
+                            continue
+
+                        for intersection_point in coords_list:
                         #for intersection_point in list(g.coords for g in intersection_shape.geom.geoms):
                             closest_seg = way_1d.closest_segment(ddd.point(intersection_point))
                             (coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d) = closest_seg
@@ -213,7 +247,8 @@ class Ways2DOSMBuilder():
                                 min_p = coords_p
 
                         if (min_o != max_o):
-                            raise AssertionError()
+                            logger.error("Invalid intersection cut point distances: %s", intersection_shape)
+                            continue
 
                         way_sub = ddd.shape(ops.substring(max_o.geom, max_d, max_o.geom.length))
                         # TODO: Call 2d road generator if needed (to account for center, lanes, etc)
@@ -282,30 +317,33 @@ class Ways2DOSMBuilder():
 
                 # Cut line at the specified point.
                 if max_o:
-                    perpendicular = max_o.perpendicular(distance=max_d, length=way_1d.extra['ddd:way:width'], double=True)  # + 0.1
-                    join_way_splits = ops.split(join_way.geom, perpendicular.geom)
-                    #logger.info("Split: %s", join_way_splits)
+                    try:
+                        perpendicular = max_o.perpendicular(distance=max_d, length=way_1d.extra['ddd:way:width'], double=True)  # + 0.1
+                        join_way_splits = ops.split(join_way.geom, perpendicular.geom)
+                        #logger.info("Split: %s", join_way_splits)
 
-                    #ddd.group([join_ways, intersection_shape, perpendicular.buffer(1.0).material(ddd.mats.highlight), join_ways]).show()
+                        #ddd.group([join_ways, intersection_shape, perpendicular.buffer(1.0).material(ddd.mats.highlight), join_ways]).show()
 
-                    join_way_split = None
+                        join_way_split = None
 
-                    # TODO: Use ddd's overlap
-                    imargin = 0.05  # 0.05
-                    if len(join_way_splits) == 0 or join_way_splits.empty:
-                        logger.debug("Could not find split side for intersection extension (join_way_splits is empty): %s", join_way)
-                    elif join_way_splits[0].overlaps(intersection_shape.buffer(-imargin).geom):
-                        join_way_split = join_way_splits[0]
-                    elif len(join_way_splits) > 1 and join_way_splits[1].overlaps(intersection_shape.buffer(-imargin).geom):
-                        join_way_split = join_way_splits[1]
-                    elif len(join_way_splits) > 2 and join_way_splits[2].overlaps(intersection_shape.buffer(-imargin).geom):
-                        join_way_split = join_way_splits[1]
-                    else:
-                        logger.debug("Could not find split side for intersection extension: %s", join_way)
-                        #raise AssertionError()
+                        # TODO: Use ddd's overlap
+                        imargin = 0.05  # 0.05
+                        if len(join_way_splits) == 0 or join_way_splits.empty:
+                            logger.debug("Could not find split side for intersection extension (join_way_splits is empty): %s", join_way)
+                        elif join_way_splits[0].overlaps(intersection_shape.buffer(-imargin).geom):
+                            join_way_split = join_way_splits[0]
+                        elif len(join_way_splits) > 1 and join_way_splits[1].overlaps(intersection_shape.buffer(-imargin).geom):
+                            join_way_split = join_way_splits[1]
+                        elif len(join_way_splits) > 2 and join_way_splits[2].overlaps(intersection_shape.buffer(-imargin).geom):
+                            join_way_split = join_way_splits[1]
+                        else:
+                            logger.debug("Could not find split side for intersection extension: %s", join_way)
+                            #raise AssertionError()
 
-                    if join_way_split:
-                        join_splits.append(ddd.shape(join_way_split))
+                        if join_way_split:
+                            join_splits.append(ddd.shape(join_way_split))
+                    except DDDException as e:
+                        logger.error("Could not calculate intersection cut for: %s (%s)", intersection, e)
 
             #intersection_shape = intersection_shape.union(join_splits.union()).clean(eps=0.005)
             intersection_shape = intersection_shape.union(join_splits.union()).individualize()
@@ -720,6 +758,69 @@ class Ways2DOSMBuilder():
 
                 pipeline.data["Roadlines3"].append(line_3d)
 
+    def generate_crosswalk(self, pipeline, way_2d):
+        path = way_2d.extra['way_1d']
+        length = path.geom.length
+
+        if path.geom.type != "LineString":
+            logger.warn("Cannot generate crosswalk for %s: way_1d %s is not a LineString.", way_2d, path)
+            return
+
+        width = way_2d.get('ddd:way:width')
+        bar_interval = 1.5
+        bar_width = 0.6
+        numlines = int(width / bar_interval)
+
+        for lineind in range(numlines + 1):
+
+            line_0_distance = -( (bar_interval * numlines) / 2)
+            line_distance = line_0_distance + bar_interval * lineind
+
+            # Create line
+            pathline = path.copy()
+            line_margin = 0.5
+            pathline = pathline.intersection(way_2d.buffer(-line_margin))  # It's better to reduce the line, this seems to cause multilinestrings
+            if (pathline.geom.type != "LineString"):
+                logger.warn("Cannot generate crosswalk for %s: way_1d %s is not a LineString after reducing.", way_2d, path)
+                return
+
+            if abs(line_distance) > 0.01:
+                pathline.geom = pathline.geom.parallel_offset(line_distance, "left", resolution=2)
+            line = pathline.buffer(bar_width / 2, cap_style=ddd.CAP_FLAT).material(ddd.mats.roadline)
+            line.extra['way_1d'] = pathline
+
+            # FIXME: Move cropping to generic site, use intermediate osm.something for storage
+            # Also, cropping shall interpolate UVs (and propagated heights?)
+            line = line.intersection(self.osm.area_crop2)
+            line = line.intersection(way_2d)
+            line = line.individualize()
+
+            line_continuous = True
+            line_x_offset = 0.076171875 if line_continuous else 0.5
+            if line.geom and not line.geom.is_empty and line.geom.area > 0:
+                uvmapping.map_2d_path(line, pathline, line_x_offset / 0.05, line_d_offset=random.uniform(0, 1))
+                pipeline.root.find("/Roadlines2").append(line)
+            else:
+                continue
+
+            # except Exception as e:
+            #    logger.error("Could not UV map Way 2D from path: %s %s %s: %s", line, line.geom, pathline.geom, e)
+            #    continue
+            line_3d = line.triangulate().translate([0, 0, 0.05])  # Temporary hack until fitting lines properly
+            vertex_func = self.osm.ways1.get_height_apply_func(path)
+            line_3d = line_3d.vertex_func(vertex_func)
+            line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
+            line_3d.extra['ddd:collider'] = False
+            line_3d.extra['ddd:shadows'] = False
+            line_3d.extra['ddd:occluder'] = False
+            # print(line)
+            # print(line.geom)
+            uvmapping.map_3d_from_2d(line_3d, line)
+            # uvmapping.map_2d_path(line_3d, path)
+
+            pipeline.data["Roadlines3"].append(line_3d)
+
+
     def generate_lamps(self, pipeline, way_2d):
 
         path = way_2d.extra['way_1d']
@@ -907,6 +1008,9 @@ class Ways2DOSMBuilder():
 
                 cut_dist = path.extra['ddd:way:width'] * 0.5 + 0.5
                 perp = path.perpendicular(d, length=cut_dist, double=True)
+
+                if (remaining.is_empty()):
+                    break
 
                 splits = ops.split(remaining.geom, perp.geom)
 

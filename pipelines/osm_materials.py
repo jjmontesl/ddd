@@ -31,11 +31,13 @@ def materials_list(root, osm):
             marker = marker.material(mat)
             mats.append(marker)
 
+'''
 @dddtask()
 def materials_show(root):
     mats = root.find("/Materials")
     mats = ddd.align.grid(mats, space=2.0)
     mats.show()
+'''
 
 @dddtask()
 def materials_save(root):
