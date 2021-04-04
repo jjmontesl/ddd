@@ -9,6 +9,14 @@ from ddd.pipeline.decorators import dddtask
 from ddd.pipeline.pipeline import DDDPipeline
 
 """
+This is run as:
+
+    ddd osm_materials.py  --export-textures
+
+The result is then copied to the client app, eg:
+
+    cp catalog_materials.glb ~/git/ddd-viewer2/public/assets/
+
 """
 
 pipeline = DDDPipeline(['pipelines.osm_base.s10_init.py',

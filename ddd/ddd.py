@@ -594,7 +594,12 @@ class DDDObject():
             raise DDDException("Expected 1 object but found %s." % len(self.children))
         return self.children[0]
 
+    #def find_or_none(self, path=None):
+
     def find(self, path=None):
+        """
+        Note: recently changed to return None instead of an exception if no objects are found.
+        """
 
         # Shortcuts for performance
         # TODO: Path filtering shall be improved in select() method
@@ -605,8 +610,11 @@ class DDDObject():
         else:
             result = self.select(path=path, recurse=False)
 
-        if len(result.children) != 1:
-            raise DDDException("Find '%s' expected 1 object but found %s." % (path, len(result.children)), ddd_obj=self)
+        #if len(result.children) > 1:
+        #    raise DDDException("Find '%s' expected 1 object but found %s." % (path, len(result.children)), ddd_obj=self)
+        if len(result.children) == 0:
+            return None
+
         return result.one()
 
     def select(self, selector=None, path=None, func=None, recurse=True, apply_func=None, _rec_path=None):
@@ -761,7 +769,7 @@ class DDDObject():
         if children:
             # Apply to select_all
             for o in self.select().children:
-                o.prop_set(key, value, False, default)
+                o.set(key, value, False, default)
         else:
             if default is self.set.__defaults__[2]:
                 self.extra[key] = value

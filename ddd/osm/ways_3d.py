@@ -28,6 +28,7 @@ class Ways3DOSMBuilder():
     def __init__(self, osmbuilder):
         self.osm = osmbuilder
 
+    """
     def generate_ways_3d(self, ways_2d):
         #for layer_idx in self.osm.layer_indexes:
         ways_2d = ways_2d.individualize().flatten().clean()
@@ -112,11 +113,12 @@ class Ways3DOSMBuilder():
         #if way_2d.extra.get('osm:natural', None) == "coastline": way_3d = way_3d.translate([0, 0, -5 + 0.3])  # FIXME: hacks coastline wall with extra_height
         if way_2d.extra.get('ddd:area:type') == 'water': way_3d = way_3d.translate([0, 0, -0.5])
         return way_3d
+    """
 
     def generate_way_3d_railway(self, way_2d):
         '''
         '''
-        rail_height = 0.30
+        rail_height = 0.20
 
         result = ddd.group3()
 
@@ -134,7 +136,7 @@ class Ways3DOSMBuilder():
             way_3d.extra['ddd:collider'] = True
 
             pathline = way_2d_interior.extra['way_1d'].copy()
-            way_2d_interior = uvmapping.map_2d_path(way_2d_interior, pathline, line_x_offset=0.5, line_x_width=0.5)
+            way_2d_interior = uvmapping.map_2d_path(way_2d_interior, pathline, line_x_offset=0.5, line_x_width=0.5, line_d_scale=0.25)
             railroad_3d = way_2d_interior.triangulate().translate([0, 0, rail_height]).material(ddd.mats.railway)
             railroad_3d.extra['ddd:collider'] = True
             railroad_3d.extra['ddd:shadows'] = False
@@ -145,6 +147,9 @@ class Ways3DOSMBuilder():
                 railroad_3d.extra['uv'] = None
 
             result.append(ddd.group3([way_3d, railroad_3d]))
+
+        # Apply elevation
+        result = self.osm.areas3.generate_area_3d_apply_elevation(way_2d, result)
 
         return result
 

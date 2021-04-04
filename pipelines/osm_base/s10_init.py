@@ -27,7 +27,12 @@ def osm_init(pipeline, root):
 def osm_materials():
 
     # Materials used by this pipeline
-    ddd.mats.railway = ddd.material(name="RoadRailway", color="#47443e")
+    ddd.mats.railway = ddd.material(name="RoadRailway", color="#47443e",
+                                    metallic_factor=1.0, roughness_factor=0.43, index_of_refraction=1.0, direct_lighting=0.76, bump_strength=2.0,
+                                    texture_path=ddd.DATA_DIR + "/osmmaterials/RoadRailway/TexturesCom_Road_Railway_512_albedo.png",
+                                    texture_normal_path=ddd.DATA_DIR + "/osmmaterials/RoadRailway/TexturesCom_Road_Railway_512_normal.png",
+                                    #alpha_cutoff=0.05,
+                                    extra={})
 
     ddd.mats.roadline = ddd.material(name="Roadline", color='#e8e8e8',
                                  texture_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_alb.png",
@@ -67,6 +72,7 @@ def osm_materials():
     '''
 
     ddd.mats.dirt = ddd.material(name="Dirt", color="#b58800", extra={'uv:scale': 1.0},  # 0.25
+                                 metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Ground32/Ground32_col.jpg",
                                  texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground32/Ground32_nrm.jpg",)
 
@@ -81,6 +87,7 @@ def osm_materials():
                                  texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",)
 
     ddd.mats.terrain = ddd.material(name="Ground", color='#e6821e', extra={'uv:scale': 1.0},  # 0.2
+                                    metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Ground23/Ground23_col.jpg",
                                     texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground23/Ground23_nrm.jpg",)
 

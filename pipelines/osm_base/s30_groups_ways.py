@@ -284,7 +284,7 @@ def osm_select_ways_cycleway(obj, root):
     obj = obj.copy()
     obj.extra['ddd:way:lanes'] = 1
     obj.extra['ddd:way:lane_width'] = 1.5
-    obj.extra['ddd:way:weight'] = 10
+    obj.extra['ddd:way:weight'] = 30 # 10
     # obj.extra['ddd:way:height'] = 0.2
     obj.extra['ddd:way:roadlines'] = True
     obj = obj.material(ddd.mats.pitch_red)
@@ -321,14 +321,15 @@ def osm_select_ways_raceway(obj, root):
     # obj = obj.material(ddd.mats.dirt)
     root.find("/Ways").append(obj)
 
-@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "raceway"]')
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:railway" = "rail"]')
 def osm_select_ways_railway(obj, root):
     """Define road data."""
     obj = obj.copy()
     obj.name = "Railway: %s" % obj.name
     obj.extra['ddd:way:lanes'] = 0
     obj.extra['ddd:way:width'] = 3.6
-    obj = obj.material(ddd.mats.dirt)
+    obj.extra['ddd:area:type'] = "railway"
+    obj = obj.material(ddd.mats.railway)
     root.find("/Ways").append(obj)
 
 
@@ -426,51 +427,47 @@ def osm_select_ways_barrier_castle_wall(root, osm, obj):
     root.find("/ItemsWays").append(obj)
 
 
-'''
-def generate_way_1d(feature):
+# TODO: This should possibly not be ItemsWays, or at least elevation is being applied incorrectly
+# to some of them and there's a mix between _height_xxx, ddd:elevation and ddd:area:elevation
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:man_made" = "pier"]')
+def osm_select_ways_manmade_pier(root, osm, obj):
+    """
+    Processes osm:man_made=pier.
 
-    create_as_item = False
+    Currently processed as an area in layer 1.
+    """
+    obj = obj.copy()
+    obj.name = "Manmade Pier: %s" % obj.name
+    #obj.extra['ddd:way:weight'] = 91
+    #obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 1.8))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 0.5))
 
-    elif path.extra.get('osm:man_made', None) == 'pier':
-        width = 1.8
-        material = ddd.mats.wood
+    #obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))  # TODO: Differences between min height and max height
+    #obj.extra['ddd:base_height'] = float(obj.extra.get('osm:base_height', -1.0))  # Floating object,
+    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', -1.0)) # FIXME: Seems min_height is used for ItemsWays, base_height for others (unify, check OSM)
+
+    obj.extra['ddd:subtract_buildings'] = True
+    obj.extra['ddd:area:elevation'] = 'water'  # water
+    #obj.extra['ddd:layer'] = 1  # This should be separate from areas, as an item
+    #obj = obj.buffer(obj.get('ddd:width'), cap_style=ddd.CAP_FLAT)
+    obj = obj.material(ddd.mats.wood)
+    root.find("/ItemsWays").append(obj)
 
 
-    elif path.extra.get('osm:power', None) == 'line':
-        width = 0.1
-        material = ddd.mats.steel
-        layer = "3"
-        create_as_item = True
-
-    elif path.extra.get('osm:kerb', None) == 'kerb':
-        logger.debug("Ignoring kerb")
-        return None
-    else:
-        logger.debug("Unknown way (discarding): %s", path.extra)
-        return None
-
-
-    # Calculated properties
-
-    flanes = path.extra.get('osm:lanes', None)
-    if flanes:
-        lanes = int(float(flanes))
-
-    lanes = int(lanes) if lanes is not None else None
-    if lanes is None or lanes < 1:
-        roadlines = False
-
-    if width is None:
-        try:
-            if lanes == 1: lane_width = lane_width * 1.25
-            width = lanes * lane_width + lane_width_left + lane_width_right
-        except Exception as e:
-            logger.error("Cannot calculate width from lanes: %s", feature['properties'])
-            raise
-
-    return path
-'''
-
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:power" = "line"]')
+def osm_select_ways_power_line(root, osm, obj):
+    """Define item data."""
+    obj = obj.copy()
+    obj.name = "Floating Pier: %s" % obj.name
+    #obj.extra['ddd:way:weight'] = 91
+    #obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:width'] = 0.1
+    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 15.0))
+    obj.extra['ddd:layer'] = 3
+    obj = obj.material(ddd.mats.steel)
+    root.find("/ItemsWays").append(obj)
+    #create_as_item = True
 
 
 

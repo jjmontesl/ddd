@@ -138,7 +138,7 @@ class ItemsOSMBuilder():
         else:
             logger.debug("Unknown item: %s", item_2d.extra)
 
-        # FIXME: This shuld not be done here, but by each element (some are snapped at their center, some min_vertex...)
+        # TODO: Apply height via tags, similar approach to areas
         if item_3d:
 
             # Apply height

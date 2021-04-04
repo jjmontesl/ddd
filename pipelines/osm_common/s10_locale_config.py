@@ -26,7 +26,15 @@ def osm_config_locale_es_salamanca(root, osm, pipeline):
 @dddtask()
 def osm_config_locale_es_vigo(root, osm, pipeline):
     config = ddd.point([-8.723, 42.238], name="Vigo Config")
-    config.extra['osm:tree:type'] = {'default': 1, 'fir': 1, 'palm': 0.25}
+    config.extra['osm:tree:type'] = {'default': 1.9, 'fir': 0.1 }  #, 'fir': 1, 'palm': 0.25}
+    #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
+
+    pipeline.data['ddd:config:items'].append(config)
+
+@dddtask()
+def osm_config_locale_es_huesca(root, osm, pipeline):
+    config = ddd.point([-0.4116850, 42.1367415], name="Huesca Config")
+    config.extra['osm:tree:type'] = {'default': 1, 'fir': 0.1 }  #, 'fir': 1, 'palm': 0.25}
     #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
 
     pipeline.data['ddd:config:items'].append(config)

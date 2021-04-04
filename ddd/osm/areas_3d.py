@@ -204,6 +204,10 @@ class Areas3DOSMBuilder():
             return self.generate_area_3d_water(area_2d)
         elif area_2d.get('ddd:area:type', None) == 'underwater':
             return self.generate_area_3d_underwater(area_2d)
+        elif area_2d.get('ddd:area:type', None) == 'railway':
+            return self.osm.ways3.generate_way_3d_railway(area_2d)
+        elif area_2d.get('ddd:area:type', None) == 'ignore':
+            return None
         else:
             return self.generate_area_3d_gen(area_2d)
 
@@ -321,6 +325,18 @@ class Areas3DOSMBuilder():
         #area_3d = area_3d.subdivide_to_size(20.0)
         #area_3d = ddd.uv.map_cubic(area_3d)
 
+        # Apply elevation
+        area_3d = self.generate_area_3d_apply_elevation(area_2d, area_3d)
+
+        area_3d.extra = dict(area_2d.extra)
+        area_3d.children.extend( [self.generate_area_3d(c) for c in area_2d.children] )
+
+        return area_3d
+
+    def generate_area_3d_apply_elevation(self, area_2d, area_3d):
+
+        apply_layer_height = True
+
         if area_3d.mesh or area_3d.children:
             #height = area_2d.extra.get('ddd:height', 0.2)
             area_elevation = area_2d.extra.get('ddd:area:elevation', 'geotiff')
@@ -330,19 +346,32 @@ class Areas3DOSMBuilder():
                 area_3d = terrain.terrain_geotiff_min_elevation_apply(area_3d, self.osm.ddd_proj)
             elif area_elevation == 'max':
                 area_3d = terrain.terrain_geotiff_max_elevation_apply(area_3d, self.osm.ddd_proj)
+            elif area_elevation == 'path':
+                # logger.debug("3D layer transition: %s", way)
+                # if way.extra['ddd:layer_transition']:
+                if ('way_1d' in area_3d.extra):
+                    path = area_3d.extra['way_1d']
+                    vertex_func = self.osm.ways1.get_height_apply_func(path)
+                    area_3d = area_3d.vertex_func(vertex_func)
+                    apply_layer_height = False
+
+                area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
+
+            elif area_elevation == 'water':
+                apply_layer_height = False
+                pass
             elif area_elevation == 'none':
                 pass
             else:
                 raise AssertionError()
 
-        layer = str(area_3d.extra.get('ddd:layer', area_3d.extra.get('osm:layer', 0)))
-        base_height = float(area_3d.extra.get('ddd:base_height', self.osm.ways1.layer_height(layer)))
-        area_3d = area_3d.translate([0, 0, base_height])
-
-        area_3d.extra = dict(area_2d.extra)
-        area_3d.children.extend( [self.generate_area_3d(c) for c in area_2d.children] )
+        if apply_layer_height:
+            layer = str(area_3d.extra.get('ddd:layer', area_3d.extra.get('osm:layer', 0)))
+            base_height = float(area_3d.extra.get('ddd:base_height', self.osm.ways1.layer_height(layer)))
+            area_3d = area_3d.translate([0, 0, base_height])
 
         return area_3d
+
 
     def generate_area_3d_pitch(self, area_2d):
 
@@ -367,7 +396,7 @@ class Areas3DOSMBuilder():
         elif sport == 'gymnastics':
             #lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=2.0)
             lines = ddd.group3()
-        elif sport == 'soccer':
+        elif sport in ('soccer', 'futsal'):
             lines = sports.field_lines_area(area_2d_orig, sports.football_field_lines, padding=1.25)
         else:
             # No sport assigned

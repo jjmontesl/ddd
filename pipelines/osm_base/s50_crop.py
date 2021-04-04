@@ -30,6 +30,10 @@ def osm_crop_areas(obj, osm, root, logger):
 def osm_crop_ways(obj, osm, root, logger):
     obj.prop_set('ddd:crop', default='area')
 
+@dddtask(path="/Structures2/*")
+def osm_crop_structures(obj, osm, root, logger):
+    obj.prop_set('ddd:crop', default='area')
+
 @dddtask(path="/ItemsAreas/*")
 def osm_crop_items_areas(obj, osm, root, logger):
     obj.prop_set('ddd:crop', default='centroid')
@@ -42,8 +46,9 @@ def osm_crop_items_ways(obj, osm, root, logger):
 def osm_crop_items_nodes(obj, osm, root, logger):
     obj.prop_set('ddd:crop', default='centroid')
 
+
 @dddtask(path="/Buildings/*")
-def osm_crop_buidings(obj, osm, root, logger):
+def osm_crop_buildings(obj, osm, root, logger):
     obj.prop_set('ddd:crop', default='centroid')
 
 

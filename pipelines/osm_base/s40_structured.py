@@ -14,6 +14,7 @@ def osm_structured_init(root, osm):
     pass
 
 
+
 @dddtask(path="/Features/*", select='["geom:type" = "Point"]["osm:highway" = "crossing"]')
 def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
     """
@@ -24,10 +25,13 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
     for way in list(ways.children):
         if way.distance(obj) < 1e-8:  # True(obj):
 
+            if way.get('osm:highway', None) == 'cycleway':
+                continue
+
             # Check which vertex has the item (ensure is not first or last / inform if it is being ignored)
             idx = way.vertex_index(obj)
             if idx <= 0 or idx >= (len(way.geom.coords) - 1):
-                logger.info("Ignoring osm:highway:crossing %s as it is in the end of the way %s.", obj, way)
+                logger.info("Ignoring osm:highway:crossing %s as it is at the end of the way %s.", obj, way)
                 return
 
             #ddd.group([way.buffer(0.5), obj.buffer(1.0)]).show()
@@ -73,7 +77,11 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
             if (split3 and split3.geom.type == 'Point'):
                 ways.remove(split3)
 
-            #ddd.group2([split1.buffer(0.5, cap_style=ddd.CAP_FLAT), split2.buffer(0.5, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT), split3.buffer(0.5, cap_style=ddd.CAP_FLAT), obj.buffer(0.3)]).show()
+            if (split2 and split3):
+                #ddd.group2([split1.buffer(0.5, cap_style=ddd.CAP_FLAT), split2.buffer(0.5, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT), split3.buffer(0.5, cap_style=ddd.CAP_FLAT), obj.buffer(0.3)]).show()
+                pass
+            elif (split2):
+                ddd.group2([split1.buffer(0.5, cap_style=ddd.CAP_FLAT), split2.buffer(0.5, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT), obj.buffer(0.3)]).show()
 
             return
 
@@ -147,6 +155,82 @@ def osm_structured_areas_layer(osm, root, obj):
     obj.prop_set('ddd:layer', layer)
 
 
+@dddtask()
+def osm_structured_surfaces(osm, root, pipeline):
+    """
+    Walk layers and their transitions for ways and areas.
+    Does this after all structured partitioning, so ways and areas are the smallest possible.
+
+    This is done before ground filling, so this information can be used.
+
+    This information is used to build tunnels and bridges, joining the ways that
+    go across them onto a unique surface, as long as they belong to the same layer or its transition layer.
+    """
+
+
+    layer_m1 = root.select(path="/Ways/", selector='["ddd:layer" = "-1"];["ddd:layer" = "-1a"]')
+    layer_1 = root.select(path="/Ways/", selector='["ddd:layer" = "0a"];["ddd:layer" = "1"]')
+    groups = [layer_m1, layer_1]
+
+    structures = ddd.group2(name="Structures2")
+    root.append(structures)
+
+    surfaces = ddd.group2(name="Surfaces")
+    root.append(surfaces)
+
+    for group in groups:
+        # Calculate influence areas, tag them (type of tunnel / bridge, etc)
+        surfaces = group.union().buffer(2.0).individualize()  # .remove_holes()
+        #surfaces.show()
+        surfaces.children.extend(surfaces.children)
+
+        # Currently unused
+
+
+@dddtask()
+def osm_structured_tunnel(osm, root, pipeline):
+    """
+    Create tunnel walls for tunnels.
+    TODO: More tunnel types
+    """
+    #layer_m1 = root.select(path="/Ways/", selector='["ddd:layer" = "-1"];["ddd:layer" = "-1a"]')
+    #layer_1 = root.select(path="/Ways/", selector='["ddd:layer" = "0a"];["ddd:layer" = "1"]')
+    #groups = [layer_m1, layer_1]
+
+    layer_m1 = root.select(path="/Ways/", selector='["ddd:layer" = "-1"]')
+    layer_m1a = root.select(path="/Ways/", selector='["ddd:layer" = "-1a"]')
+
+    ways = layer_m1.children + layer_m1a.children
+
+    union = layer_m1.union()
+    union_with_transitions = ddd.group(ways, empty="2").union()
+    union_sidewalks = union_with_transitions.buffer(0.6, cap_style=2, join_style=2)
+
+    sidewalks_2d = union_sidewalks.subtract(union_with_transitions)  # we include transitions
+    sidewalks_2d.name="Tunnel Sidewalks"
+    sidewalks_2d.set("ddd:layer", "-1")
+    sidewalks_2d = sidewalks_2d.material(ddd.mats.pavement)
+    root.find("/Areas").append(sidewalks_2d)
+
+    walls_2d = sidewalks_2d.buffer(0.5, cap_style=2, join_style=2).subtract(union_sidewalks)
+    walls_2d.name = "Walls"
+    walls_2d.set("ddd:layer", "-1")
+    root.find("/Structures2").append(walls_2d)
+
+    floors_2d = union_sidewalks.copy()
+
+    ceilings_2d = union.buffer(0.6, cap_style=2, join_style=2).subtract(layer_m1a)
+    ceilings_2d.name = "Ceilings"
+    ceilings_2d.set("ddd:layer", "-1")
+    root.find("/Structures2").append(ceilings_2d)
+
+    # FIXME: Move cropping to generic site, use interintermediatemediate osm.something for storage
+    #crop = ddd.shape(self.osm.area_crop)
+    #sidewalks_2d = sidewalks_2d.intersection(crop)
+    #walls_2d = walls_2d.intersection(crop)
+    #floors_2d = floors_2d.intersection(crop)
+    #ceilings_2d = ceilings_2d.intersection(crop)
+
 
 @dddtask()
 def osm_structured_areas_postprocess_water(root, osm):
@@ -213,6 +297,9 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
 
 @dddtask()
 def osm_structured_areas_process(logger, osm, root):
+    """
+    Resolves container / contained relationships betwene areas.
+    """
 
     layers = set([n.extra.get('ddd:layer', '0') for n in root.select(path="*", recurse=True).children])
 

@@ -126,7 +126,7 @@ class DDDUVMapping():
         return result
 
 
-def map_2d_path(obj, path, line_x_offset=0.0, line_x_width=0.1, line_d_offset=0.0):
+def map_2d_path(obj, path, line_x_offset=0.0, line_x_width=0.1, line_d_offset=0.0, line_d_scale=1.0):
     """
     Assigns UV coordinates to a 2D shape for a line along a 2D path.
     This method does not create a copy of objects, affecting the hierarchy.
@@ -140,7 +140,7 @@ def map_2d_path(obj, path, line_x_offset=0.0, line_x_width=0.1, line_d_offset=0.
         if interpolate_result:
             p, segment_idx, segment_coords_a, segment_coords_b = interpolate_result
             pol = LinearRing([segment_coords_a, segment_coords_b, [x, y, z]])
-            return (line_x_offset + (line_x_width * (-1 if pol.is_ccw else 1)), d + line_d_offset)
+            return (line_x_offset + (line_x_width * (-1 if pol.is_ccw else 1)), (d * line_d_scale) + line_d_offset)
         else:
             logger.error("Cannot interpolate segment: %s", path)
             return (line_x_offset, d)

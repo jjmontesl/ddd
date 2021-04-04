@@ -47,7 +47,7 @@ class Ways2DOSMBuilder():
                 ways_2d.children.extend(layerways.children)
 
         self.generate_ways_2d_intersections(ways_2d)
-        #self.generate_ways_2d_intersection_intersections(ways_2d)
+        self.generate_ways_2d_intersection_intersections(ways_2d)
 
         return ways_2d
 
@@ -62,12 +62,25 @@ class Ways2DOSMBuilder():
         ways_1d.sort(key=lambda w: w.extra['ddd:way:weight'])
 
         result = None
+        accum = ddd.group2()
 
         ways_2d = defaultdict(list)
         for w in ways_1d:
             #f = w.extra['osm:feature']
             way_2d = self.generate_way_2d(w)
             if way_2d:
+
+                '''
+                try:
+                    way_2d = way_2d.clean().subtract(accum).clean()
+                    accum = accum.append(way_2d).clean()
+                except Exception as e:
+                    #way_2d.show()
+                    #accum.show()
+                    logger.error("Could not subtract existing ways from created way: %s", way_2d)
+                    pass
+                '''
+
                 weight = way_2d.extra['ddd:way:weight']
                 ways_2d[weight].append(way_2d)
 
@@ -75,6 +88,7 @@ class Ways2DOSMBuilder():
         if roads:
             result = ddd.group(roads, name="Ways (layer: %s)" % layer_idx)  # translate([0, 0, 50])
 
+        # Subtract previous ways, which have lower weight (bigger priority)
         '''
         #ways_2d = defaultdict(list)
         ways_2d = ddd.group2(name="Ways (layer: %s)" % layer_idx)
@@ -107,16 +121,19 @@ class Ways2DOSMBuilder():
         path = way_1d
 
         width = path.extra['ddd:way:width']
-        way_2d = path.buffer(distance=width / 2.0, cap_style=2, join_style=2)
+        way_2d = path.buffer(distance=width / 2.0, cap_style=ddd.CAP_FLAT, join_style=ddd.JOIN_MITRE)
 
         # Avoid gaps and eliminate small polygons
         # path = path.buffer(distance=0.05)
         # FIXME: this should be done by continuating path joins/intersections between roads of same type
+        '''
         if width > 2.0:
             way_2d = way_2d.buffer(distance=1.0, cap_style=2, join_style=2)
             way_2d = way_2d.buffer(distance=-1.0, cap_style=2, join_style=2)
             #way_2d = way_2d.buffer(distance=0.1, cap_style=2, join_style=2)
             # way_2d = way_2d.simplify(0.5)
+        '''
+        way_2d = way_2d.clean(eps=-0.01)
 
         # print(feature['properties'].get("name", None))
         # way_2d.extra['osm:feature'] = feature
@@ -253,12 +270,13 @@ class Ways2DOSMBuilder():
                         way_sub = ddd.shape(ops.substring(max_o.geom, max_d, max_o.geom.length))
                         # TODO: Call 2d road generator if needed (to account for center, lanes, etc)
                         way_sub = way_sub.buffer(shape.get('ddd:way:width') * 0.5, cap_style=ddd.CAP_FLAT)
-                        way_sub = way_sub.buffer(0.05)
+                        #way_sub = way_sub.buffer(0.05)
+                        way_sub = way_sub.clean(eps=-0.05)
 
                         #ddd.group([continued_way_2d,
                         #           way_sub.material(ddd.mats.highlight)]).show()
 
-                        continued_way_2d = continued_way_2d.subtract(way_sub).clean(eps=0.05)
+                        continued_way_2d = continued_way_2d.subtract(way_sub).clean(eps=-0.05)
 
                     #continued_way_2d.show()
                     #ddd.group([join_ways, continued_way_2d.material(ddd.mats.highlight)]).show()
@@ -714,9 +732,13 @@ class Ways2DOSMBuilder():
                 lane_width_left = path.extra['ddd:way:lane_width_left']
                 lane_width_right = path.extra['ddd:way:lane_width_right']
 
+                oneway = path.extra.get('osm:oneway', False)
+                if (oneway in ("no", "false")): oneway = False
+
                 line_continuous = False
                 if lineind in [0, numlines - 1]: line_continuous = True
-                if lanes >= 2 and lineind == int(numlines / 2) and not path.extra.get('osm:oneway', False) and path.extra.get('osm:highway', None) != 'roundabout': line_continuous = True
+                if lanes >= 2 and lineind == int(numlines / 2) and not oneway and path.extra.get('osm:highway', None) != 'roundabout':
+                    line_continuous = True
                 line_x_offset = 0.076171875 if line_continuous else 0.5
 
                 line_0_distance = -(width / 2) + lane_width_right

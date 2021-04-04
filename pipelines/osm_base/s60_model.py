@@ -78,6 +78,7 @@ def osm_model_generate_coastline(osm, root, obj):
 @dddtask(path="/Ways/*")  # , select='["ddd:area:type"]')
 def osm_model_generate_ways(osm, root, pipeline, obj):
 
+    obj.extra['ddd:area:elevation'] = 'path'
     way_3d = osm.areas3.generate_area_3d(obj)
 
     if not '_ways_areas_new' in pipeline.data:
@@ -87,10 +88,9 @@ def osm_model_generate_ways(osm, root, pipeline, obj):
 @dddtask()
 def osm_model_generate_ways_init(osm, root, pipeline):
     root.remove(root.find("/Ways"))
-    if '_ways_areas_new' in pipeline.data:
-        root.append(pipeline.data['_ways_areas_new'])
-    else:
+    if '_ways_areas_new' not in pipeline.data:
         pipeline.data['_ways_areas_new'] = ddd.group3(name="Ways")
+    root.append(pipeline.data['_ways_areas_new'])
 
 '''
 @dddtask()
@@ -111,10 +111,26 @@ def osm_model_generate_ways_old(osm, root, pipeline):
     root.append(ways_3d)
 '''
 
+'''
+# Note: Done as area:elevation=path now
+@dddtask(path="/Ways/", select='["ddd:layer_transition"]')  # ;["ddd:layer"="0a"]')
+def osm_model_generate_ways_height_apply(osm, root, pipeline, obj):
+    # logger.debug("3D layer transition: %s", way)
+    # if way.extra['ddd:layer_transition']:
+    way = obj
+    if ('way_1d' in way.extra):
+        path = way.extra['way_1d']
+        vertex_func = osm.ways1.get_height_apply_func(path)
+        way = way.vertex_func(vertex_func)
+    #else:
+    #    nway = way.translate([0, 0, osm.ways1.layer_height(way.get('ddd:layer', 0))])
+    return way
+'''
 
 @dddtask()
-def osm_model_generate_ways_roadlines(osm, root, pipeline):
-    # TODO: Do this here, instead of during 2D stage
+def osm_model_generate_ways_roadlines_combine(osm, root, pipeline):
+    # TODO: Generate lines in 3D at this stage, instead of during 2D stage
+    # Also separate 2D/3D for lines
     roadlines = pipeline.data["Roadlines3"]
     del(pipeline.data["Roadlines3"])
     root.append(roadlines.combine())
@@ -132,6 +148,43 @@ def osm_model_generate_areas(osm, root, pipeline, obj):
 def osm_model_generate_areas_init(osm, root, pipeline):
     root.remove(root.find("/Areas"))
     root.append(pipeline.data['_areas_areas_new'])
+
+
+@dddtask()
+def osm_model_generate_structures(osm, root, pipeline, logger):
+    """
+
+    TODO: Generate structures as a whole, without dealing with individual types, using metadata.
+    """
+
+    structures = ddd.group3(name="Structures3")
+
+    #sidewalks_3d = objsidewalks_2d.extrude(0.3).translate([0, 0, -5]).material(ddd.mats.sidewalk)
+    walls = root.find("/Structures2/Walls")
+    if walls:
+        walls_3d = walls.extrude(5.5).translate([0, 0, -6]).material(ddd.mats.cement)
+        walls_3d = terrain.terrain_geotiff_elevation_apply(walls_3d, osm.ddd_proj)
+        walls_3d = ddd.uv.map_cubic(walls_3d)
+        structures.append(walls_3d)
+
+    ceilings = root.find("/Structures2/Ceilings")
+    if ceilings:
+        ceilings_3d = ceilings.extrude(0.5).translate([0, 0, -1.0]).material(ddd.mats.cement)
+        ceilings_3d = terrain.terrain_geotiff_elevation_apply(ceilings_3d, osm.ddd_proj)
+        ceilings_3d = ddd.uv.map_cubic(ceilings_3d)
+        structures.append(ceilings_3d)
+
+    #sidewalks_3d = terrain.terrain_geotiff_elevation_apply(sidewalks_3d, self.osm.ddd_proj)
+    #sidewalks_3d = ddd.uv.map_cubic(sidewalks_3d)
+    #floors_3d = floors_2d.extrude(-0.3).translate([0, 0, -5]).material(ddd.mats.sidewalk)
+    #floors_3d = floors_2d.triangulate().translate([0, 0, -5]).material(ddd.mats.sidewalk)
+    #floors_3d = terrain.terrain_geotiff_elevation_apply(floors_3d, osm.ddd_proj)
+
+    #subway = ddd.group([sidewalks_3d, walls_3d, floors_3d, ceilings_3d], empty=3).translate([0, 0, -0.2])
+    #self.osm.other_3d.children.append(subway)
+
+    root.append(structures)
+
 
 
 '''
@@ -191,6 +244,10 @@ def osm_model_generate_items_ways(obj, osm, root):
 
 @dddtask(path="/ItemsWays/*", select='["ddd:height"]')
 def osm_model_generate_items_ways_height(obj, osm, root):
+    """
+    This is currently used to extrude ItemsWays that have a height (eg. piers)
+    """
+
     # TODO: Removing fence here, but what we should do is use exclusively these common generators based on TAGS. Keep refactoring.
 
     if obj.extra.get('osm:barrier', None) in ("fence", "hedge"):
@@ -205,24 +262,7 @@ def osm_model_generate_items_ways_height(obj, osm, root):
         obj = obj.translate([0, 0, min_height])
     obj = ddd.uv.map_cubic(obj)
 
-    obj.extra['ddd:elevation'] = "terrain_geotiff_elevation_apply"
-
-    '''
-    # Move to generic place for all
-    if item_3d:
-        height_mapping = item_3d.extra.get('_height_mapping', 'terrain_geotiff_min_elevation_apply')
-        if height_mapping == 'terrain_geotiff_elevation_apply':
-            item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
-        elif height_mapping == 'terrain_geotiff_incline_elevation_apply':
-            item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
-        elif height_mapping == 'terrain_geotiff_and_path_apply':
-            path = item_3d.extra['way_1d']
-            vertex_func = self.osm.ways.get_height_apply_func(path)
-            item_3d = item_3d.vertex_func(vertex_func)
-            item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
-        else:
-            item_3d = terrain.terrain_geotiff_min_elevation_apply(item_3d, self.osm.ddd_proj)
-    '''
+    obj.extra['ddd:elevation'] = obj.get('ddd:area:elevation', 'geotiff')
 
     root.find("/Items3").append(obj)
 
@@ -234,7 +274,7 @@ def osm_model_elevation_items_buildings(obj, osm, root):
     return obj
 
 
-@dddtask(path="/Items3/*", select='["ddd:elevation" = "terrain_geotiff_elevation_apply"]')
+@dddtask(path="/Items3/*", select='["ddd:elevation" = "geotiff"]')
 def osm_model_elevation_apply_terrain(obj, osm, root):
     obj = terrain.terrain_geotiff_elevation_apply(obj, osm.ddd_proj)
     return obj
@@ -254,6 +294,10 @@ def osm_model_elevation_apply_building(logger, obj, osm, pipeline, root):
     obj = obj.translate([0, 0, -0.20])
     return obj
 
+@dddtask(path="/Items3/*", select='["ddd:elevation" = "min"]')
+def osm_model_elevation_apply_terrain_min(obj, osm, root):
+    obj = terrain.terrain_geotiff_min_elevation_apply(obj, osm.ddd_proj)
+    return obj
 
 @dddtask(order="60.50.+", log=True)
 def osm_model_rest(pipeline, root, osm):
@@ -262,6 +306,7 @@ def osm_model_rest(pipeline, root, osm):
     scene = [root.find("/Areas"),
              #root.find("/Water"),
              root.find("/Ways"),
+             root.find("/Structures3"),
              root.find("/Buildings"),
              root.find("/Items3"),
              root.find("/Other3"),

@@ -17,9 +17,14 @@ def osm_groups_items_areas(osm, root, logger):
 def osm_groups_items_areas_amenity_fountain(obj, root):
     """Define area data."""
     obj = obj.material(ddd.mats.water)
-    obj.name = "Fountain: %s" % obj.name
+    #obj = obj.material(ddd.mats.pavement)
+    obj.name = "AreaFountain: %s" % obj.name
+    #obj.extra['ddd:area:water'] = 'ignore'  # Water is created by the fountain object, but the riverbank still requires
     #obj.extra['ddd:item:type'] = "area"
+    #obj.extra['osm:natural']
+    obj.extra["ddd:elevation"] = "min"
     root.find("/ItemsAreas").append(obj)
+    return False  # Remove the feature so it is not processed as water
 
 @dddtask(path="/Features/*", select='["osm:water" = "pond"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
 def osm_groups_items_areas_water_pond(obj, root):
@@ -50,6 +55,29 @@ def osm_groups_items_areas_leisure_playground(obj, root, osm):
     obj.name = "Playground: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"
     obj.extra['ddd:height'] = 0.2
+    root.find("/Areas").append(obj)
+
+@dddtask(path="/Features/*", select='["osm:leisure" = "playground"]["geom:type" = "Point"]')
+def osm_groups_items_areas_leisure_playground_point(obj, root, osm):
+    """Create an area automatically for playground nodes without a defined area."""
+
+    obj.extra['ddd:elevation:base_ref'] = "container"
+    #print(obj.geom)
+    generated_area = obj.buffer(5.0)
+
+    # Check if area conflicts with other existing playground area
+    other_playgrounds = root.find("/Areas").select('["osm:leisure" = "playground"]')
+    if other_playgrounds.intersects(generated_area):
+        return
+
+    items = osm.items2.generate_item_2d_childrens_playground(generated_area)
+    root.find("/ItemsNodes").children.extend([i for i in items.flatten().children if i.geom])
+
+    obj = obj.material(ddd.mats.pitch_blue)
+    obj.name = "Playground Item: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj.extra['ddd:height'] = 0.0
+
     root.find("/Areas").append(obj)
 
 

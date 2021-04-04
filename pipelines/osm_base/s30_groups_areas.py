@@ -171,6 +171,7 @@ def osm_groups_areas_amenity_parking(obj, osm):
     """Define area data."""
     obj.name = "Parking: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"
+    obj.extra['ddd:height'] = 0.1
     obj = obj.material(ddd.mats.asphalt)
     return obj
 
@@ -194,16 +195,17 @@ def osm_groups_areas_leisure_track(obj, osm):
 def osm_groups_areas_leisure_golf_course(obj, osm):
     """Define area data."""
     obj.name = "Golf Course: %s" % obj.name
-    obj.extra['ddd:area:type'] = "default"
+    #obj.extra['ddd:area:type'] = "default"
+    obj.extra['ddd:area:type'] = "park"  # should be default, or golf (for the irregaularity), but currently default is raising height :?
     obj = obj.material(ddd.mats.park)
     return obj
 
-@dddtask(path="/Areas/*", select='["osm:public_transport" = "platform"]; ["osm:railway" = "platform"]')
+@dddtask(path="/Areas/*", select='["osm:public_transport" = "platform"];["osm:railway" = "platform"]')
 def osm_groups_areas_transport_platform(obj, osm):
     """Define area data."""
     obj.name = "Platform: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"
-    obj.extra['ddd:height'] = 0.35
+    obj.extra['ddd:height'] = 0.65
     obj = obj.material(ddd.mats.pavement)
     return obj
 
@@ -230,13 +232,11 @@ def osm_groups_areas_artwork_sculpture(root, obj):
     root.find("/ItemsNodes").append(item)
 
 
-
-
-
 @dddtask(path="/Areas/*", select='["osm:waterway" ~ "riverbank|stream"];["osm:natural" = "water"];["osm:water" = "river"]')
 def osm_groups_areas_riverbank(obj, root):
     """Define area data."""
-    obj.dump()
+
+    #obj.dump()
     obj.name = "Riverbank: %s" % obj.name
     obj.extra['ddd:area:type'] = "water"
     obj.extra['ddd:height'] = 0.0
@@ -245,6 +245,7 @@ def osm_groups_areas_riverbank(obj, root):
     #root.find("/Areas").children.extend(obj.children)
     #return False
     #return obj
+    #obj.prefixchildren()  # "Riverbank: %s" % obj.name)  # Add name to children
     return obj.children  # return array, so the original object is replaced by children
 
 
@@ -264,13 +265,13 @@ def osm_groups_areas_man_made_bridge(obj, root):
 
 
 """
+
     def generate_area_2d_railway(self, area):
         feature = area.extra['osm:feature']
         area.name = "Railway area: %s" % feature['properties'].get('name', None)
         area = area.material(ddd.mats.dirt)
         area = self.generate_wallfence_2d(area)
         return area
-
 
     def generate_area_2d_unused(self, area, wallfence=True):
         feature = area.extra['osm:feature']
