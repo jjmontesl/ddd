@@ -5,7 +5,6 @@
 import logging
 from ddd.ddd import ddd, DDDInstance
 import math
-import open3d
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -55,6 +54,11 @@ class DDDMeshOps():
 
         Currently implemented using Open3D (requires the dependency installed).
         """
+
+        # TODO: Resolve the issue in docker:  OSError: libGL.so.1: cannot open shared object file: No such file or directory
+        # or alternative try importing on load and store the result.
+        import open3d
+
         if isinstance(obj, DDDInstance):
             logger.warn("Quadrid decimation of DDDInstance objects is not implemented. Ignoring object.")
             return obj

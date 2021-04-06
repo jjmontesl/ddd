@@ -43,6 +43,8 @@ setup(
         "networkx >= 2.2",
         "noise >= 1.2.2",
         "numpy < 1.20.0",
+        "open3d >= 0.11.2",
+        "pandas < 1.2.0",
         "pint >= 0.12",
         "pycsg >= 0.3.3",
         "pyGeoTile >= 1.0.6",
