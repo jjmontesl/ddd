@@ -198,11 +198,16 @@ def osm_model_generate_areas_old(osm, root):
 '''
 
 
-@dddtask(path="/Ways/*", select='["ddd:way:stairs"][!"intersection"]')
+@dddtask(path="/Ways/*", select='["ddd:way:stairs"]')  # [!"intersection"]
 def osm_models_areas_stairs_combine(pipeline, osm, root, logger, obj):
     """
     """
+    # Remove faces pointing down, as they prevent UV mapping from working correclty
+    obj = ddd.meshops.remove_faces_pointing(obj, ddd.VECTOR_DOWN)
+
     obj = obj.combine()
+    obj = ddd.uv.map_cubic(obj)
+
     return obj
 
 
@@ -213,7 +218,6 @@ def osm_model_generate_buildings(osm, root):
 
     root.remove(buildings_2d)
     root.append(buildings_3d)
-
 
 
 @dddtask(path="/ItemsNodes/*", select='[!"ddd:angle"]')

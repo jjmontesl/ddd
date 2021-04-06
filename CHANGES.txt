@@ -1,6 +1,11 @@
+[0.6.3]
+
+  * Initial support for crosswalks.
+  * Added more default materials and terrains, flowers and grass.
+  * Improving intersection resolution with continuity and elevation (still WIP).
+
 [0.6.1]
 
-  * Improving intersection resolution with continuity (still WIP).
   * Added cache clearing command line option.
 
 [0.6.0]

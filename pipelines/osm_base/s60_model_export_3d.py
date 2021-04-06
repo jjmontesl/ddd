@@ -4,6 +4,7 @@
 
 
 from ddd.pipeline.decorators import dddtask
+from ddd.ddd import ddd
 
 
 @dddtask(order="69.90.+")
@@ -22,6 +23,9 @@ def osm_model_export_3d(root, osm, pipeline):
     #root.save("/tmp/osm-model.glb")
 
     root.save(pipeline.data['filenamebase'] + ".glb")
+
+    #root = ddd.meshops.reduce_quadric_decimation(root, target_ratio=0.25)
+    #root.save(pipeline.data['filenamebase'] + "-lod1.glb")
 
     #scene.dump()
 

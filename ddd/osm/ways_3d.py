@@ -118,6 +118,8 @@ class Ways3DOSMBuilder():
     def generate_way_3d_railway(self, way_2d):
         '''
         '''
+        # TODO: Elevation shall be applied for ways in a common way: Way generation if special could be handled by ddd:area:type ?
+
         rail_height = 0.20
 
         result = ddd.group3()

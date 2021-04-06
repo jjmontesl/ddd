@@ -256,14 +256,14 @@ class Areas3DOSMBuilder():
 
                 #area_3d = area_3d.translate([0, 0, 0])
 
+                '''
             elif area_2d.extra.get('ddd:area:type', None) == 'steps':
-
-                area_3d = area_2d.extrude_step(area_2d, area_2d.extra['ddd:steps:height'], base=False)
-                for stepidx in range(1, area_2d.extra['ddd:steps:count'] + 1):
-                    area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), 0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
-                    area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), area_2d.extra['ddd:steps:height'], method=ddd.EXTRUSION_METHOD_SUBTRACT)
-
-                # TODO: Crop in 3D (or as a workaround fake it as centroid cropping)
+                    area_3d = area_2d.extrude_step(area_2d, area_2d.extra['ddd:steps:height'], base=False)
+                    for stepidx in range(1, area_2d.extra['ddd:steps:count'] + 1):
+                        area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), 0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                        area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), area_2d.extra['ddd:steps:height'], method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                    # TODO: Crop in 3D (or as a workaround fake it as centroid cropping)
+                '''
 
             elif area_2d.extra.get('ddd:area:type', None) == 'sidewalk':
 
@@ -278,9 +278,12 @@ class Areas3DOSMBuilder():
                         try:
                             interior = area_2d.get('ddd:crop:original').buffer(-0.3).intersection(self.osm.area_crop2)
                             if not interior.is_empty():
+                                # TODO: Remove bases in a more generic way, without breaking meshes or UV mapping
                                 area_3d = interior.extrude(-0.5 - height).translate([0, 0, height])
+                                if area_3d.get('ddd:layer', '0') == '0': area_3d = ddd.meshops.remove_faces_pointing(area_3d, ddd.VECTOR_DOWN)  # TODO: Remove bases in generic way?
                                 area_3d = ddd.uv.map_cubic(area_3d)
                                 kerb_3d = area_2d.get('ddd:crop:original').subtract(interior).intersection(self.osm.area_crop2).extrude(-0.5 - height).translate([0, 0, height])
+                                if kerb_3d.get('ddd:layer', '0') == '0': kerb_3d = ddd.meshops.remove_faces_pointing(kerb_3d, ddd.VECTOR_DOWN)  # TODO: Remove bases in generic way?
                                 kerb_3d = ddd.uv.map_cubic(kerb_3d).material(ddd.mats.cement)
                                 #if area_3d.mesh:
                                 #    area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
@@ -298,7 +301,11 @@ class Areas3DOSMBuilder():
                     # If no kerb or kerb could not be generated, just generate the area:
                     if area_3d is None:
                         area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
+                        # Remove base
+                        if area_3d.get('ddd:layer', '0') == '0':
+                            area_3d = ddd.meshops.remove_faces_pointing(area_3d, ddd.VECTOR_DOWN)
                         area_3d = ddd.uv.map_cubic(area_3d)
+
 
                 except Exception as e:
                     logger.error("Could not generate area: %s (%s)", e, area_2d)
@@ -309,6 +316,11 @@ class Areas3DOSMBuilder():
                     height = area_2d.extra.get('ddd:height', 0.2)
                     if height:
                         area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
+
+                        # Remove base
+                        if area_3d.get('ddd:layer', '0') == '0':
+                            area_3d = ddd.meshops.remove_faces_pointing(area_3d, ddd.VECTOR_DOWN)
+
                     else:
                         area_3d = area_2d.triangulate()
                     area_3d = ddd.uv.map_cubic(area_3d)

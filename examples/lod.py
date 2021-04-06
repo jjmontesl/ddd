@@ -26,22 +26,29 @@ for h in heights:
 
 items_org = items.copy()
 
+# Original
 items = items_org.copy()
-
 items = ddd.align.grid(items)
 items.append(ddd.helper.all())
 items.show()
 
+# Simplify using convex hull
 items = ddd.meshops.reduce(items_org)
-
 items = ddd.align.grid(items)
 items.append(ddd.helper.all())
 items.show()
 
+# Simplify using bounds
 items = ddd.meshops.reduce_bounds(items_org)
-
 items = ddd.align.grid(items)
 items.append(ddd.helper.all())
 items.show()
+
+# Simplify using quadric decimation
+items = ddd.meshops.reduce_quadric_decimation(items_org, target_ratio=0.25)
+items = ddd.align.grid(items)
+items.append(ddd.helper.all())
+items.show()
+
 
 

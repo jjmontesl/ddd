@@ -115,7 +115,7 @@ def osm_groups_areas_natural_fell(obj, osm):
     obj.name = "Fell: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
     obj.extra['ddd:aug:itemfill:density'] = 0
-    obj = obj.material(ddd.mats.terrain)
+    obj = obj.material(ddd.mats.forest)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:natural" = "wood"]')

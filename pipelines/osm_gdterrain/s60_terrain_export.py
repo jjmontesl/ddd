@@ -17,7 +17,7 @@ from PIL import Image
 
 
 @dddtask(order="69.89.+.+")
-def osm_gdterain_export_heightmap(root, osm, pipeline, logger):
+def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
 
     # Get chunk heightmap from elevation engine
 

@@ -34,11 +34,11 @@ Related projects:
 - Export 2D to SVG and PNG.
 - Export 3D to GLTF, FBX or OBJ.
 - TTF based generation of text geometry.
-- Object catalog ("prefabs") management (object and geometry instancing).
-- Handle materials (colors) and normals.
-- A small procedural models library (trees, urban props...)
+- Object catalog ("prefabs") support (for object and geometry reusing and runtime instancing).
+- Handle materials, normals and UV coordinates.
+- Basic collider primitives support. Texture atlas support.
 - Document generation transformation pipeline support.
-- UV mapping and collider primitives support. Texture atlas support.
+- A simple procedural models library (trees, urban props...)
 - OpenStreetMap data 2D and 3D generation pipelines.
 
 
@@ -153,8 +153,8 @@ TODO: Introduce doc here and move sections to where appropriate.
 
 ## 3rd party assets
 
-Grass billboards from: https://www.reinerstilesets.de/new-textures-billboard-grass/
 Textures from: https://cc0textures.com/
+Grass billboards from: https://www.reinerstilesets.de/new-textures-billboard-grass/
 
 
 ## License

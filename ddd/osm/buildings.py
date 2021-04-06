@@ -278,6 +278,9 @@ class BuildingOSMBuilder():
                     logger.error("Could not generate building (%s): %s", part, e)
                     continue
 
+                if min_height == 0:
+                    building_3d = ddd.meshops.remove_faces_pointing(building_3d, ddd.VECTOR_DOWN)
+
                 if min_height: building_3d = building_3d.translate([0, 0, min_height])
                 building_3d = building_3d.material(material)
 
@@ -305,7 +308,7 @@ class BuildingOSMBuilder():
                 if 'osm:building:part' not in part.extra:
                     if random.uniform(0, 1) < 0.2:
                         base = part.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
-                        base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.roof_tiles]))
+                        base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.stone, ddd.mats.cement]))
                         building_3d.children.append(base)
 
                 # Roof

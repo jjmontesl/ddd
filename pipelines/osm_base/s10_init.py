@@ -130,23 +130,36 @@ def osm_materials():
 
 
 
+    ddd.mats.sand = ddd.material(name="Sand", color='#fff694',
+                                 metallic_factor=0.0, roughness_factor=0.45, bump_strength=2.0, index_of_refraction=1.0, direct_lighting=0.76,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_Color.jpg",
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_Normal.jpg",)
+
+
     '''
     self.rock = ddd.material(name="Rock", color='#5f5f4d')
-    self.sand = ddd.material(name="Sand", color='#fff694')
-
     self.sett = ddd.material(name="Sett", color='#7b719f')
-
 
     # Structural / building materials
     self.bronze = ddd.material(name="Bronze", color='#f0cb11')
     self.steel = ddd.material(name="Steel", color='#78839c')
     self.metal = ddd.material(name="Steel", color='#68738c')
 
-    self.stone = ddd.material(name="Stone", color='#9c9378')
     '''
     ddd.mats.cement = ddd.material(name="Concrete", color='#b8b8a0', extra={'uv:scale': 1.0},  #
                                    texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_col.jpg",
                                    texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_nrm.jpg",)
+    ddd.mats.concrete_white = ddd.material(name="Concrete Whiteish", color='#b8b8b0', extra={'uv:scale': 1.0},  #
+                                           texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_col.jpg",
+                                           texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_nrm.jpg",)
+
+    ddd.mats.stone_white = ddd.material(name="Stone", color='#9c9378',
+                                           texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_col.jpg",
+                                           texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_nrm.jpg",)
+    ddd.mats.stone = ddd.mats.stone_white
+
+
+
     '''
     self.bricks = ddd.material(name="Bricks", color='#d49156')
 

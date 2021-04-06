@@ -6,6 +6,7 @@ from ddd.osm import osm
 from ddd.pipeline.decorators import dddtask
 from ddd.ddd import ddd
 import math
+import sys
 
 
 @dddtask(order="40.10.+", log=True)
@@ -408,5 +409,6 @@ def osm_structured_cache(pipeline, osm, root, logger):
     """
     Caches current state to allow for faster reruns.
     """
+    sys.setrecursionlimit(5000)  # This cache operation was failing due to RecursionError during pickle dump
     return pipeline.data['filenamebase'] + ".s40.cache"
 
