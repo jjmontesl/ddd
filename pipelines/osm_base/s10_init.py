@@ -60,9 +60,14 @@ def osm_materials():
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Asphalt/Asphalt01_col.jpg",
                                     texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Asphalt/Asphalt01_nrm.jpg",)
 
-    ddd.mats.pathwalk = ddd.material(name="WayPedestrian", color='#78281e', extra={'uv:scale': 1.0 },  # 0.25
-                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles26/Tiles26_col.jpg",
-                                     texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Tiles26/Tiles26_nrm.jpg",)
+    #ddd.mats.pathwalk = ddd.material(name="WayPedestrian", color='#78281e', extra={'uv:scale': 1.0 },  # 0.25
+    #                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles26/Tiles26_col.jpg",
+    #                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Tiles26/Tiles26_nrm.jpg",)
+    #ddd.mats.paving_stones_arc =
+    ddd.mats.pathwalk = ddd.material(name="WayPedestrian", color='#898071', texture_color='#ffffff',
+                                     metallic_factor=0.10, roughness_factor=0.90, bump_strength=2.0, #direct_lighting=0.76, index_of_refraction=1.0,
+                                     texture_path=ddd.DATA_DIR + "/osmmaterials/PavingStones048_2K-JPG/PavingStones048_2K_Color.jpg",
+                                     texture_normal_path=ddd.DATA_DIR + "/osmmaterials/PavingStones048_2K-JPG/PavingStones048_2K_Normal.jpg",)
 
     '''
     # Areas
@@ -85,6 +90,19 @@ def osm_materials():
                                  metallic_factor=0.3, roughness_factor=0.85, index_of_refraction=1.36, bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_col.jpg",
                                  texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",)
+    ddd.mats.forest = ddd.material(name="Forest", color='#3a6e17', extra={'uv:scale': 1.0},  # 0.25
+                                 metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0, #index_of_refraction=1.36,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_col.jpg",
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",)
+    ddd.mats.garden = ddd.material(name="Garden", color='#2f614b', extra={'uv:scale': 1.0},  # 0.25
+                                 metallic_factor=0.0, roughness_factor=0.85, index_of_refraction=1.36, bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Base_Color.png",
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Normal.png",)
+    ddd.mats.wetland = ddd.material(name="Wetland", color='#54610c', extra={'uv:scale': 1.0},  # 0.25
+                                 metallic_factor=0.4, roughness_factor=0.45, index_of_refraction=1.36, bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_col.jpg",
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",)
+
 
     ddd.mats.terrain = ddd.material(name="Ground", color='#e6821e', extra={'uv:scale': 1.0},  # 0.2
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
@@ -98,6 +116,7 @@ def osm_materials():
                                      texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles38/Tiles38_col.jpg",
                                      texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Tiles38/Tiles38_nrm.jpg",)
 
+
     ddd.mats.pitch_green = ddd.material(name="Pitch", color='#196118', extra={'uv:scale': 1.0},  # 0.2
                                   texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_col.jpg",
                                   texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_nrm.jpg",)
@@ -109,12 +128,11 @@ def osm_materials():
                                   texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_nrm.jpg",)  # Eg. leisure track
     ddd.mats.pitch = ddd.mats.pitch_green
 
+
+
     '''
-    self.forest = ddd.material(name="Forest", color='#3a6e17')
-    self.garden = ddd.material(name="Garden", color='#2f614b')
     self.rock = ddd.material(name="Rock", color='#5f5f4d')
     self.sand = ddd.material(name="Sand", color='#fff694')
-    self.wetland = ddd.material(name="Wetland", color='#54610c')
 
     self.sett = ddd.material(name="Sett", color='#7b719f')
 
@@ -155,13 +173,41 @@ def osm_materials():
     self.light_orange = ddd.material(color='#ffff00')
     self.light_red = ddd.material(color='#ff0000')
 
-    # Trees
-    self.bark = ddd.material(name="Bark", color='#df9e75')
-    self.treetop = ddd.material(name="Treetop", color='#1da345')
     '''
+    # Vegetation (trees, hedges)
+    ddd.mats.bark = ddd.material(name="Bark", color='#df9e75', extra={'uv:scale': 1.0},  # 0.25
+                                 metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0, # index_of_refraction=1.36,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bark06/Bark06_col.jpg",
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bark06/Bark06_nrm.jpg",)
+    ddd.mats.treetop = ddd.material(name="Treetop", color='#1da345', extra={'uv:scale': 1.0},  # 0.25
+                                 metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0, # index_of_refraction=1.36,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Base_Color.png",
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Normal.png",)
+    ddd.mats.hedge = ddd.material(name="Hedge", color='#1d9335', extra={'uv:scale': 1.0},  # 0.25
+                                 metallic_factor=0.35, roughness_factor=0.85, index_of_refraction=1.36, bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Base_Color.png",
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Normal.png",)
+
+    # Grass and flowers blades
+    ddd.mats.flowers_blue_blade = ddd.material(name="Flowers Blue", color='#51b8da',
+                                               metallic_factor=0.0, roughness_factor=0.90, # index_of_refraction=1.36,
+                                               texture_path=ddd.DATA_DIR + "/osmmaterials/Grass/flowers_blue.png",
+                                               double_sided=True, alpha_mode='BLEND', alpha_cutoff=0.1,
+                                               extra={'ddd:collider': False})
+    ddd.mats.flowers_roses_blade = ddd.material(name="Flowers Roses", color='#e96969',
+                                               metallic_factor=0.0, roughness_factor=0.95, #index_of_refraction=1.36,
+                                               texture_path=ddd.DATA_DIR + "/osmmaterials/Grass/flowers_roses.png",
+                                               double_sided=True, alpha_mode='BLEND', alpha_cutoff=0.1,
+                                               extra={'ddd:collider': False})
+    ddd.mats.grass_blade = ddd.material(name="Grass Blade", color='#2de355',
+                                        metallic_factor=0.0, roughness_factor=0.95, index_of_refraction=1.36,
+                                        texture_path=ddd.DATA_DIR + "/osmmaterials/Grass/grass_billboard.png",
+                                        double_sided=True, alpha_mode='BLEND', alpha_cutoff=0.1,
+                                        extra={'ddd:collider': False})
 
     # Urban props materials
     ddd.mats.fence = ddd.material(name="Fence", color='282024', extra={'ddd:transparent': True},
+                                  texture_color='#ffffff',
                                   texture_path=ddd.DATA_DIR + "/osmmaterials/MetalWalkway002_2K-JPG/MetalWalkway002_2K_ColorAlpha.png",
                                   texture_normal_path=ddd.DATA_DIR + "/osmmaterials/MetalWalkway002_2K-JPG/MetalWalkway002_2K_Normal.jpg",
                                   alpha_cutoff=0.05)

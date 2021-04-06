@@ -171,7 +171,7 @@ def osm_groups_areas_amenity_parking(obj, osm):
     """Define area data."""
     obj.name = "Parking: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"
-    obj.extra['ddd:height'] = 0.1
+    #obj.extra['ddd:height'] = 0.1
     obj = obj.material(ddd.mats.asphalt)
     return obj
 
@@ -262,6 +262,16 @@ def osm_groups_areas_man_made_bridge(obj, root):
     root.find("/Areas").children.extend(obj.children)
     return False
     #return obj
+
+
+# Area attributes
+@dddtask(path="/Areas/*", select='["osm:surface" = "compacted"]')
+def osm_groups_areas_surface_compacted(obj, root):
+    """Applies osm:surface=compacted material."""
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.dirt)
+    return obj
+
 
 
 """

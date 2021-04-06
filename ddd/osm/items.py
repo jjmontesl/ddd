@@ -135,6 +135,13 @@ class ItemsOSMBuilder():
         elif item_2d.extra.get('osm:traffic_sign', None) is not None or any([k.startswith('osm:traffic_sign:') for k in item_2d.extra.keys()]):
             item_3d = self.generate_item_3d_traffic_sign(item_2d)
 
+        elif item_2d.get('ddd:item', None) == 'grass_blade':
+            item_3d = self.generate_item_3d_grass_blade(item_2d)
+        elif item_2d.get('ddd:item', None) == 'flowers':
+            item_3d = self.generate_item_3d_flowers(item_2d)
+
+
+
         else:
             logger.debug("Unknown item: %s", item_2d.extra)
 
@@ -219,6 +226,51 @@ class ItemsOSMBuilder():
         item_3d = item_3d.rotate([0.0, 0.0, random.uniform(0, math.pi * 2)])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Tree: %s' % item_2d.name
+        return item_3d
+
+    def generate_item_3d_grass_blade(self, item_2d):
+
+        coords = item_2d.geom.coords[0]
+        key = "grassblade"
+
+        item_3d = self.osm.catalog.instance(key)
+        if not item_3d:
+            item_3d = plants.grass_blade()
+            item_3d = self.osm.catalog.add(key, item_3d)
+
+        # TODO: Elevation shall come from pipeline
+        item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
+
+        item_3d = item_3d.scale([random.uniform(0.9, 1.1), 0.0, random.uniform(0.9, 1.1)])
+        item_3d = item_3d.rotate([0.0, 0.0, random.uniform(0, math.pi * 2)])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+        #item_3d.name = 'Grass blade: %s' % item_2d.name
+        return item_3d
+
+    def generate_item_3d_flowers(self, item_2d):
+
+        flowers_type = item_2d.get('ddd:flowers:type')
+
+        coords = item_2d.geom.coords[0]
+        key = "flowers-%s" % flowers_type
+
+        item_3d = self.osm.catalog.instance(key)
+        if not item_3d:
+            material = None
+            if flowers_type == 'blue':
+                material = ddd.mats.flowers_blue_blade
+            elif flowers_type == 'roses':
+                material = ddd.mats.flowers_roses_blade
+            item_3d = plants.flowers_blade(material)
+            item_3d = self.osm.catalog.add(key, item_3d)
+
+        # TODO: Elevation shall come from pipeline
+        item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
+
+        item_3d = item_3d.scale([random.uniform(0.9, 1.1), 0.0, random.uniform(0.9, 1.1)])
+        item_3d = item_3d.rotate([0.0, 0.0, random.uniform(0, math.pi * 2)])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+        #item_3d.name = 'Grass blade: %s' % item_2d.name
         return item_3d
 
     def generate_item_3d_fountain(self, item_2d):

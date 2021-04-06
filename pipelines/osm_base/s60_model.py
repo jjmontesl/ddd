@@ -266,6 +266,7 @@ def osm_model_generate_items_ways_height(obj, osm, root):
 
     root.find("/Items3").append(obj)
 
+
 @dddtask(path="/Items3/*", select='["ddd:building:parent"]')
 def osm_model_elevation_items_buildings(obj, osm, root):
     """Apply elevation from building to building related items."""

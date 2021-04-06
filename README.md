@@ -151,6 +151,12 @@ TODO: Introduce doc here and move sections to where appropriate.
 ![ddd-gallery-hercules](doc/gallery/acoruna_hercules_750r_-8.406,43.386.png "Torre de Hercules 2D rendered from OSM data")
 
 
+## 3rd party assets
+
+Grass billboards from: https://www.reinerstilesets.de/new-textures-billboard-grass/
+Textures from: https://cc0textures.com/
+
+
 ## License
 
 DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes

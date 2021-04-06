@@ -402,9 +402,26 @@ class D1D2D3():
 
 class DDDMaterial():
 
-    def __init__(self, name=None, color=None, extra=None, texture_path=None, atlas_path=None, alpha_cutoff=None, alpha_mode=None, texture_normal_path=None,
-                 metallic_factor=None, roughness_factor=None, index_of_refraction=None, direct_lighting=None, bump_strength=None):
+    _texture_cache = {}
+
+    @staticmethod
+    def load_texture_cached(path):
+        image = DDDMaterial._texture_cache.get(path, None)
+        if image is None:
+            image = PIL.Image.open(path)
+            # Resampling
+            if image.size[0] > 512:
+                logger.info("Resampling texture: %s", path)
+                image = image.resize((512, 512), PIL.Image.BICUBIC)
+            DDDMaterial._texture_cache[path] = image
+        return image
+
+    def __init__(self, name=None, color=None, extra=None, texture_color=None, texture_path=None, atlas_path=None, alpha_cutoff=None, alpha_mode=None, texture_normal_path=None,
+                 metallic_factor=None, roughness_factor=None, index_of_refraction=None, direct_lighting=None, bump_strength=None, double_sided=False):
         """
+            - texture_color: optional color to be used if a textured material is being generated (--export-texture), instead of the default color.
+            - alpha_mode: one of OPAQUE, BLEND and MASK (used with alpha_cutoff)
+
         Color is hex color.
         """
         self.name = name
@@ -414,6 +431,11 @@ class DDDMaterial():
         self.color_rgba = None
         if self.color:
             self.color_rgba = trimesh.visual.color.hex_to_rgba(self.color)
+
+        self.texture_color = texture_color
+        self.texture_color_rgba = None
+        if self.texture_color:
+            self.texture_color_rgba = trimesh.visual.color.hex_to_rgba(self.texture_color)
 
         self.alpha_cutoff = alpha_cutoff
         self.alpha_mode = alpha_mode
@@ -428,6 +450,7 @@ class DDDMaterial():
         #self.index_of_refraction = index_of_refraction
         #self.direct_lighting = direct_lighting
         #self.bump_strength = bump_strength
+        self.double_sided = double_sided
 
         self.atlas = None
         if atlas_path:
@@ -448,12 +471,12 @@ class DDDMaterial():
         """
         if self._trimesh_material_cached is None:
             if self.texture and D1D2D3Bootstrap.export_textures:
-                im = PIL.Image.open(self.texture)  #.convert("RGBA")
-                if self.texture and (self.alpha_cutoff or self.texture_normal):
+                im = DDDMaterial.load_texture_cached(self.texture)  #.convert("RGBA")
+                if self.texture and (self.alpha_cutoff or self.alpha_mode or self.texture_normal):
                     alpha_mode = self.alpha_mode if self.alpha_mode else ('MASK' if self.alpha_cutoff else 'OPAQUE')
-                    im_normal = PIL.Image.open(self.texture_normal) if self.texture_normal else None
-                    mat = PBRMaterial(name=self.name, baseColorTexture=im, baseColorFactor=self.color_rgba,
-                                      normalTexture=im_normal,
+                    im_normal = DDDMaterial.load_texture_cached(self.texture_normal) if self.texture_normal else None
+                    mat = PBRMaterial(name=self.name, baseColorTexture=im, baseColorFactor=self.texture_color_rgba if self.texture_color_rgba is not None else self.color_rgba,
+                                      normalTexture=im_normal, doubleSided=self.double_sided,
                                       metallicFactor=self.metallic_factor, roughnessFactor=self.roughness_factor,
                                       alphaMode=alpha_mode, alphaCutoff=self.alpha_cutoff)  # , ambient, specular, glossiness)
                 else:
@@ -1345,6 +1368,9 @@ class DDDObject2(DDDObject):
     def length(self):
         return self.geom.length
 
+    def area(self):
+        return self.geom.area
+
     def is_empty(self):
         """
         Tells whether this object has no geometry, or geometry is empty, and
@@ -1655,15 +1681,20 @@ class DDDObject2(DDDObject):
         result.children = [c.simplify(distance) for c in self.children]
         return result
 
-    def random_points(self, num_points=1, density=None):
+    def random_points(self, num_points=1, density=None, filter_func=None):
+        """
+        If filter_func is specified, points are passed to this function and accepted if it returns True.
+        """
         # TODO: use density or count, accoridng to polygon area :?
         # TODO: support line geometries
         result = []
         minx, miny, maxx, maxy = self.geom.bounds
         while len(result) < num_points:
             pnt = geometry.Point(random.uniform(minx, maxx), random.uniform(miny, maxy))
+            #if self.contains(ddd.point(pnt.coords)):
             if self.geom.contains(pnt):
-                result.append(pnt.coords[0])
+                if filter_func is None or filter_func(pnt.coords[0]):
+                    result.append(pnt.coords[0])
 
         return result
 
@@ -2017,7 +2048,7 @@ class DDDInstance(DDDObject):
         if instance_marker:
             # Marker
 
-            instance_marker_cube = True
+            instance_marker_cube = False
             if instance_marker_cube:
                 ref = self.marker(world_space=False)
                 scene.add_geometry(geometry=ref.mesh, node_name=scene_node_name + "_marker", geom_name="Marker %s" % scene_node_name,

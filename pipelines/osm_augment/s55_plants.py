@@ -7,10 +7,59 @@ from ddd.osm import osm
 from ddd.pipeline.decorators import dddtask
 from ddd.ddd import ddd
 from ddd.util.dddrandom import weighted_choice
+import random
+import noise
+
+
+# Generate grass
+@dddtask(order="55.49", path="/Areas/*", select='["ddd:material" ~ "Park|Grass|Garden|Forest"]')
+def osm_augment_plants_generate_grass_blades(obj, osm, root):
+    """
+    Generates grass blades.
+    """
+    blade_density_m2 = 1.0 / 20.0
+    num_blades = int((obj.area() * blade_density_m2))
+
+    def filter_func_noise(coords):
+        val = noise.pnoise2(coords[0], coords[1], octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
+        return (val > random.uniform(-0.5, 0.5))
+
+    blades = ddd.group2(name='Grass Blades: %s' % obj.name)
+    for p in obj.random_points(num_points=num_blades, filter_func=filter_func_noise):
+        blade = ddd.point(p, name="Grass Blade")
+        #blade.extra['ddd:aug:status'] = 'added'
+        blade.extra['ddd:item'] = 'grass_blade'  # TODO: Change to DDD
+        blades.append(blade)
+
+    root.find("/ItemsNodes").append(blades.children)
+
+
+@dddtask(path="/Areas/*", select='["osm:leisure" ~ "garden"]')
+def osm_augment_plants_generate_flowers(obj, osm, root):
+    blade_density_m2 = 1.0 / 20.0
+    num_blades = int((obj.area() * blade_density_m2))
+
+    def filter_func_noise(coords):
+        val = noise.pnoise2(coords[0], coords[1], octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
+        return (val > random.uniform(-0.5, 0.5))
+
+    blades = ddd.group2(name='Flowers: %s' % obj.name)
+    for p in obj.random_points(num_points=num_blades, filter_func=filter_func_noise):
+        blade = ddd.point(p, name="Flowers")
+        #blade.extra['ddd:aug:status'] = 'added'
+        blade.extra['ddd:item'] = 'flowers'
+        blade.extra['ddd:flowers:type'] = random.choice(('blue', 'roses'))
+        blades.append(blade)
+
+    root.find("/ItemsNodes").append(blades.children)
+
 
 
 @dddtask(order="55.50", condition=True)
 def osm_augment_plants_condition(pipeline):
+    """
+    Run plant augmentation only if so configured (ddd:osm:augment:plants=True).
+    """
     return bool(pipeline.data.get('ddd:osm:augment:plants', False))
 
 
@@ -68,12 +117,16 @@ def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
             if max_trees:
                 num_trees = min(num_trees, max_trees)
 
+            def filter_func_noise(coords):
+                val = noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
+                return (val > random.uniform(-0.5, 0.5))
+
             for p in tree_area.random_points(num_points=num_trees):
                 tree_type = weighted_choice(tree_types)
                 tree = ddd.point(p, name="Tree")
                 tree.extra['ddd:aug:status'] = 'added'
-                tree.extra['osm:natural'] = 'tree'
-                tree.extra['osm:tree:type'] = tree_type
+                tree.extra['osm:natural'] = 'tree'  # TODO: Change to DDD
+                tree.extra['osm:tree:type'] = tree_type  # TODO: Change to DDD
                 trees.append(tree)
 
     return trees

@@ -294,3 +294,36 @@ def stump(height=0.3, r=0.3):
     (Tocon)
     """
     pass
+
+
+def grass_blade():
+    """
+    Creates a grass blade quad (meant to be used through instancing).
+    """
+    blade = ddd.rect()
+    blade = blade.material(ddd.mats.grass_blade)
+    blade = blade.triangulate()
+    blade = ddd.uv.map_cubic(blade)
+
+    blade = blade.translate([-0.5, 0, 0])
+    #blade = blade.scale([0.85, 0.85, 0.85])
+    blade = blade.rotate(ddd.ROT_FLOOR_TO_FRONT)
+
+    return blade
+
+def flowers_blade(material):
+    """
+    Creates a grass blade quad (meant to be used through instancing).
+    """
+    blade = ddd.rect()
+    blade = blade.material(material)
+    blade = blade.triangulate()
+    blade = ddd.uv.map_cubic(blade)
+
+    blade = blade.translate([-0.5, 0, 0])
+    blade = blade.scale([0.85, 1.0, 1.0])
+    blade = blade.rotate(ddd.ROT_FLOOR_TO_FRONT)
+
+    return blade
+
+

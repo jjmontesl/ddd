@@ -32,7 +32,7 @@ def osm_select_items_ways_barrier_hedge(root, osm, obj):
     obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 1.2))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
-    obj = obj.material(ddd.mats.treetop)
+    obj = obj.material(ddd.mats.hedge)
 
     root.find("/ItemsWays").append(obj)
 

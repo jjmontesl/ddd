@@ -322,8 +322,8 @@ class Areas3DOSMBuilder():
             area_3d = DDDObject3()
 
         # Test (doesn't work, subdividing causes bad behavior in large trams):
-        #area_3d = area_3d.subdivide_to_size(20.0)
-        #area_3d = ddd.uv.map_cubic(area_3d)
+        area_3d = area_3d.subdivide_to_size(20.0)
+        area_3d = ddd.uv.map_cubic(area_3d)
 
         # Apply elevation
         area_3d = self.generate_area_3d_apply_elevation(area_2d, area_3d)

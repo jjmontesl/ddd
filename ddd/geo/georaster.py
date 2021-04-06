@@ -177,43 +177,49 @@ class GeoRasterLayer:
         else:
             return tile.value_simple(point)
 
-    '''
     def area(self, bounds):
-        # FIXME: This won't  work if area crosses chunks.
-        # TODO: This method should do stitching if necessary.
+        """
+        Returns a height matrix for the area defined by the given bounds in WGS84 coordinates.
+        """
 
+        # FIXME: Fails if multiple chunks are touched
         minx, miny, maxx, maxy = bounds
 
-        chunk = self.chunk([minx, miny])
+        tile = self.tile_from_point([minx, miny])
 
-        if not chunk or not chunk.geotransform:
-            # Data is not available
-            raise AssertionError("No elevation data available for the given point.")
+        if not tile or not tile.geotransform:
+            raise DDDException("No elevation data available for the given point.")
+
+        if tile.crs != 'epsg:4326':
+            minx, miny = self.crs_transformer.transform(minx, miny)
+            maxx, maxy = self.crs_transformer.transform(maxx, maxy)
 
         # Transform to raster point coordinates
-        raster_min_x = int((minx - chunk.geotransform[0]) / chunk.geotransform[1])
-        raster_min_y = int((miny - chunk.geotransform[3]) / chunk.geotransform[5])
-        raster_max_x = int((maxx - chunk.geotransform[0]) / chunk.geotransform[1])
-        raster_max_y = int((maxy - chunk.geotransform[3]) / chunk.geotransform[5])
+        raster_min_x = int((minx - tile.geotransform[0]) / tile.geotransform[1])
+        raster_min_y = int((miny - tile.geotransform[3]) / tile.geotransform[5])
+        raster_max_x = int((maxx - tile.geotransform[0]) / tile.geotransform[1])
+        raster_max_y = int((maxy - tile.geotransform[3]) / tile.geotransform[5])
 
         # Check if limits are hit
-        if (raster_max_x > chunk.layer.RasterXSize - 1) or raster_max_y < 0:
+        if (raster_max_x > tile.layer.RasterXSize - 1) or raster_max_y < 0:
             logger.error("Raster area [%d, %d, %d, %d] requested exceeds tile bounds [%d, %d] (not implemented).",
-                         raster_min_x, raster_min_y, raster_max_x, raster_max_y, chunk.layer.RasterXSize, chunk.layer.RasterYSize)
+                         raster_min_x, raster_min_y, raster_max_x, raster_max_y, tile.layer.RasterXSize, tile.layer.RasterYSize)
             raise NotImplementedError()
-        if raster_max_x > chunk.layer.RasterXSize - 1:
-            raster_max_x = chunk.layer.RasterXSize - 1
+        if raster_max_x > tile.layer.RasterXSize - 1:
+            raster_max_x = tile.layer.RasterXSize - 1
         if raster_max_y < 0:
             raster_max_y = 0
 
         # Note that readasarray is positive south, whereas bounds are positive up
-        height_matrix = chunk.layer.GetRasterBand(1).ReadAsArray(raster_min_x,
-                                                                 raster_max_y,
-                                                                 raster_max_x - raster_min_x + 1,
-                                                                 raster_min_y - raster_max_y + 1)
+        height_matrix = tile.layer.GetRasterBand(1).ReadAsArray(raster_min_x,
+                                                                raster_max_y,
+                                                                raster_max_x - raster_min_x + 1,
+                                                                raster_min_y - raster_max_y + 1)
 
         return height_matrix
 
+
+    '''
     def profile(self, pointA, pointB, steps):
         # Consider: skimage.draw.line(r0, c0, r1, c1) (also antialiased version available)
         # https://scikit-image.org/docs/dev/api/skimage.draw.html#skimage.draw.line

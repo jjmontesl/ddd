@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 class DDDMeshOps():
 
     def reduce(self, obj):
+        """
+        Reduces an object to its convex hull.
+        """
         result = obj.copy()
         # Currently reducing very simply
         if not result.children:

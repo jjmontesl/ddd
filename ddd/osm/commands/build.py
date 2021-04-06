@@ -237,6 +237,7 @@ class OSMBuildCommand(DDDCommand):
             else:
                 area_ddd = ddd.rect([-self._radius, -self._radius, self._radius, self._radius]).geom
 
+        logger.info("Area meters/coords=%s", area_ddd)
         logger.info("Complete polygon area: %.1f km2 (%d at 500, %d at 250, %d at 200)", area_ddd.area / (1000 * 1000), math.ceil(area_ddd.area / (500 * 500)), math.ceil(area_ddd.area / (250 * 250)), math.ceil(area_ddd.area / (200 * 200)))
 
         # TODO: organise tasks and locks in pipeline, not here
@@ -359,6 +360,8 @@ class OSMBuildCommand(DDDCommand):
 
                                             'pipelines.osm_base.s60_model.py',
                                             'pipelines.osm_base.s60_model_export_3d.py',
+
+                                            'pipelines.osm_gdterrain.s60_terrain_export.py',
 
                                             'pipelines.osm_augment.s50_ways.py',
                                             'pipelines.osm_augment.s55_plants.py',
