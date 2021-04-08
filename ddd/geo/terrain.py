@@ -2,8 +2,6 @@
 # Library for simple scene modelling.
 # Jose Juan Montes and Contributors 2019-2021
 
-import random
-
 import noise
 import pyproj
 
@@ -20,7 +18,7 @@ from ddd.geo.elevation import ElevationModel
 #dem_file = '/home/jjmontes/git/ddd/data/dem/srtm/srtm_40_19.tif'  # Cape Town, from: https://dwtkns.com/srtm/
 
 
-# TODO: Move to terrain utils outside "geo"
+# TODO: Move to non-geoterrain (or pack?) utils outside "geo"
 def terrain_grid(bounds, detail=1.0, height=1.0, scale=0.025):
     '''
     If bounds is a single number, it's used as L1 distance.

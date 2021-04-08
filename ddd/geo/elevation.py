@@ -4,14 +4,7 @@
 
 import logging
 import math
-import numpy
-from osgeo import gdal
-from osgeo.gdalconst import GA_ReadOnly
-from scipy.interpolate.interpolate import interp2d
-from shapely.geometry.linestring import LineString
 
-from geographiclib.geodesic import Geodesic
-import numpy as np
 from ddd.geo.georaster import GeoRasterLayer
 from ddd.core import settings
 
@@ -20,7 +13,7 @@ from ddd.core import settings
 logger = logging.getLogger(__name__)
 
 
-class ElevationModel(object):
+class ElevationModel:
 
     _instance = None
 

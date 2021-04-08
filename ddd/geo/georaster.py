@@ -11,7 +11,6 @@ from osgeo import gdal
 from osgeo.gdalconst import GA_ReadOnly
 import pyproj
 from scipy.interpolate.interpolate import interp2d
-from shapely.geometry.linestring import LineString
 
 from ddd.core import settings
 from ddd.core.exception import DDDException
@@ -63,6 +62,10 @@ class GeoRasterTile:
         return tile
 
     def value(self, point, interpolate=True):
+
+        georaster_offset_wgs84_xy = [0, 0]  # [-0.00004389999, 0.00004389999]  # Arbitrary offset test
+        point = (point[0] + georaster_offset_wgs84_xy[0], point[1] + georaster_offset_wgs84_xy[1])
+
         if interpolate:
             return self.value_interpolated(point)
         else:
@@ -86,7 +89,7 @@ class GeoRasterTile:
 
         return float(height_matrix[0][0])
 
-    def value_interpolated(self, point):
+    def value_interpolated(self, point, k=3):
         """
         """
         # FIXME: Current implementation fails across borders (height matrix). Fallback to point.
@@ -100,35 +103,32 @@ class GeoRasterTile:
             x, y = self.crs_transformer.transform(x, y)
 
         # Transform to raster point coordinates
-        pixel_is_area = True  # in Vigo, True seems more accurate
-        if pixel_is_area:
-            raster_x = int(round((x - self.geotransform[0]) / self.geotransform[1]))
-            raster_y = int(round((y - self.geotransform[3]) / self.geotransform[5]))
-            coords_x = ((raster_x * self.geotransform[1])) + self.geotransform[0]
-            coords_y = ((raster_y * self.geotransform[5])) + self.geotransform[3]
-            # Pixel offset, centerted on 0, from the point to the pixel center
-            offset_x = - (coords_x - x) / self.geotransform[1]
-            offset_y = - (coords_y - y) / self.geotransform[5]
-        else:
-            raster_x = int(round((x - self.geotransform[0]) / self.geotransform[1]))
-            raster_y = int(round((y - self.geotransform[3]) / self.geotransform[5]))
-            coords_x = (((0.5 + raster_x) * self.geotransform[1])) + self.geotransform[0]
-            coords_y = (((0.5 + raster_y) * self.geotransform[5])) + self.geotransform[3]
-            # Pixel offset, centerted on 0, from the point to the pixel center
-            offset_x = - (coords_x - x) / self.geotransform[1]
-            offset_y = - (coords_y - y) / self.geotransform[5]
+        #pixel_is_area = False
+        #if pixel_is_area:
+        raster_x = int((x - self.geotransform[0]) / self.geotransform[1])
+        raster_y = int((y - self.geotransform[3]) / self.geotransform[5])
+        coords_x = ((raster_x * self.geotransform[1])) + self.geotransform[0]
+        coords_y = ((raster_y * self.geotransform[5])) + self.geotransform[3]
+        offset_x = - (coords_x - x) / self.geotransform[1]
+        offset_y = - (coords_y - y) / self.geotransform[5]
 
         try:
-            height_matrix = self.layer.GetRasterBand(1).ReadAsArray(raster_x - 1, raster_y - 1, 3, 3)
+            if k == 1:
+                height_matrix = self.layer.GetRasterBand(1).ReadAsArray(raster_x, raster_y, 2, 2)
+            elif k == 3:
+                height_matrix = self.layer.GetRasterBand(1).ReadAsArray(raster_x - 1, raster_y - 1, 4, 4)
         except Exception as e:
-            # Safeguard
-            #logger.exception("Exception obtaining 3x3 height matrix around point %s", point)
+            # TODO: Better support for borders
             return self.value_simple(point)
 
-        interpolated = interp2d([-1, 0, 1], [-1, 0, 1], height_matrix, 'linear')  # , copy=False
-        value = interpolated(offset_x, offset_y)
+        if k == 1:
+            interpolated = interp2d([0, 1], [0, 1], height_matrix, 'linear')  # , copy=False
+        elif k == 3:
+            interpolated = interp2d([-1, 0, 1, 2], [-1, 0, 1, 2], height_matrix, 'cubic')  # , copy=False
+        else:
+            raise AssertionError()
 
-        #logger.debug("Elevation: point=%.1f,%.1f, offset=%.8f,%.8f, value=%.1f", x, y, offset_x, offset_y, value)
+        value = interpolated(offset_x, offset_y)
 
         return float(value)
 
@@ -172,10 +172,7 @@ class GeoRasterLayer:
         tile = self.tile_from_point(point)
         if tile is None:
             raise DDDException("No raster tile found for point: %s" % (point, ))
-        if interpolate:
-            return tile.value_interpolated(point)
-        else:
-            return tile.value_simple(point)
+        return tile.value(point, interpolate)
 
     def area(self, bounds):
         """

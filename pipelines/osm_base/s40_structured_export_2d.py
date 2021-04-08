@@ -44,7 +44,6 @@ def osm_structured_export_2d_tile(root, osm, pipeline):
         root.select(path="/Ways", recurse=False),  #, select="")  self.ways_2d['-1a'], self.ways_2d['0'], self.ways_2d['0a'], self.ways_2d['1'],
         root.select(path="/Roadlines2", recurse=False),
         root.select(path="/Buildings", recurse=False),
-        #self.areas_2d_objects, self.buildings_2d.material(ddd.material(color='#8a857f')),
         root.select(path="/ItemsAreas", recurse=False),  #self.items_2d,
         root.select(path="/ItemsWays", recurse=False),  #self.items_2d,
         root.select(path="/ItemsNodes", recurse=False).buffer(0.5).material(ddd.mats.red),

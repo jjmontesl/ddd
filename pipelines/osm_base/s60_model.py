@@ -87,6 +87,7 @@ def osm_model_generate_ways(osm, root, pipeline, obj):
 
 @dddtask()
 def osm_model_generate_ways_init(osm, root, pipeline):
+    # TODO: Ways2 should not be removed, some other parts may need it later. Just not exported.
     root.remove(root.find("/Ways"))
     if '_ways_areas_new' not in pipeline.data:
         pipeline.data['_ways_areas_new'] = ddd.group3(name="Ways")

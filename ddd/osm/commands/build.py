@@ -362,6 +362,7 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_base.s60_model_export_3d.py',
 
                                             'pipelines.osm_gdterrain.s60_terrain_export.py',
+                                            'pipelines.osm_gdterrain.s60_splatmap_export.py',
 
                                             'pipelines.osm_augment.s50_ways.py',
                                             'pipelines.osm_augment.s55_plants.py',

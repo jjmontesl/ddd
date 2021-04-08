@@ -9,6 +9,12 @@ from ddd.ddd import ddd
 from ddd.ops import filters
 
 
+# TODO: Move tree generation algorithm to a generic "trees pack", and keep here only parameters and other sketchy related stuff
+
+# See: https://chewitt.me/Papers/CTH-Dissertation-2017.pdf (Procedural generation of tree models for use in computer graphics)
+#      and its Blender plugin: https://github.com/friggog/tree-gen/blob/master/parametric/gen.py
+
+
 #def log(height=3.60, r=0.05):
 #    pass
 # TODO: This is actually the recursive tree builder (not trunk), generalize more, callbacks shall accept level and do their thing, returning followup settings

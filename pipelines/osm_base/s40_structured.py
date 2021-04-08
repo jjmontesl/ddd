@@ -409,6 +409,6 @@ def osm_structured_cache(pipeline, osm, root, logger):
     """
     Caches current state to allow for faster reruns.
     """
-    sys.setrecursionlimit(5000)  # This cache operation was failing due to RecursionError during pickle dump
+    sys.setrecursionlimit(15000)  # This cache operation was failing due to RecursionError during pickle dump
     return pipeline.data['filenamebase'] + ".s40.cache"
 

@@ -1869,8 +1869,13 @@ class DDDObject2(DDDObject):
         return result
 
     def geom_recursive(self):
+        """
+        Returns a list of all Shapely geometries recursively.
+        """
         geoms = []
-        if self.geom: geoms = [self.geom]
+        if self.geom:
+            self.geom._ddd_obj = self  # TODO: This is unsafe, generate a dictionary of id(geom) -> object (see https://shapely.readthedocs.io/en/stable/manual.html#strtree.STRtree.strtree.query)
+            geoms = [self.geom]
         if self.children:
             for c in self.children:
                 cgems = c.geom_recursive()
