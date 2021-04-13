@@ -413,9 +413,10 @@ class DDDMaterial():
         if image is None:
             image = PIL.Image.open(path)
             # Resampling
-            if image.size[0] > 512:
+            resample_size = 256
+            if resample_size and image.size[0] > resample_size:
                 logger.info("Resampling texture: %s", path)
-                image = image.resize((512, 512), PIL.Image.BICUBIC)
+                image = image.resize((resample_size, resample_size), PIL.Image.BICUBIC)
             DDDMaterial._texture_cache[path] = image
         return image
 
@@ -1372,7 +1373,17 @@ class DDDObject2(DDDObject):
         return self.geom.length
 
     def area(self):
-        return self.geom.area
+        """
+        Returns the area of this shape.
+        Children are unioned before computing the area.
+        If the geometry is empty or there is no geometry, 0 is returned.
+        """
+        area_union = self
+        if self.children:
+            area_union = self.union()
+
+        area = area_union.geom.area if self.geom else 0
+        return area
 
     def is_empty(self):
         """

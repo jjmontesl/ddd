@@ -17,7 +17,12 @@ from PIL import Image
 import math
 
 
-@dddtask(order="69.89.+.10.+")
+@dddtask(order="69.89.+.10", condition=True)
+def osm_gdterrain_export_heightmap_condition(pipeline):
+    return bool(pipeline.data.get('ddd:gdterrain:heightmap', False))
+
+
+@dddtask(order="*.10.+")
 def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
 
     # Get chunk heightmap from elevation engine
@@ -31,7 +36,7 @@ def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
     wgs84_max = terrain.transform_ddd_to_geo(osm.ddd_proj, ddd_bounds[2:])
     wgs84_bounds = wgs84_min + wgs84_max
 
-    heightmap_size = 128
+    heightmap_size = 256
 
     logger.info("Generating heightmap for area: ddd_bounds=%s, wgs84_bounds=%s, size=%s", ddd_bounds, wgs84_bounds, heightmap_size)
 
@@ -115,15 +120,18 @@ def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
     # R,G = height
     # B = normals
     # A = holes
+
+    heightmap_offset = height_min
+    heightmap_range = height_max - height_min
+    heightmap_quantization = 65535
+
     encoded_heightmap = np.zeros((heightmap_size, heightmap_size, 4))
     for xi in range(heightmap_size):
         for yi in range(heightmap_size):
             # Encode height
             height = height_matrix[yi, xi]
-            patch_height_offset = 0.0
-            patch_height_range = 512 # 65535.0  # 65535.0
-            normalizedHeight = (height - patch_height_offset) / patch_height_range;
-            quantizedHeight = int(normalizedHeight * 65535);
+            normalizedHeight = (height - heightmap_offset) / heightmap_range;
+            quantizedHeight = int(normalizedHeight * heightmap_quantization);
 
             encoded_heightmap[yi, xi, 0] =  quantizedHeight & 0x00ff
             encoded_heightmap[yi, xi, 1] = (quantizedHeight & 0xff00) >> 8
@@ -142,9 +150,15 @@ def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
 
     # Save heightmap as PNG
     im = Image.fromarray(np.uint8(encoded_heightmap), "RGBA")
-    im.save("/tmp/osm-heightmap.png", "PNG")
-    #im.save(pipeline.data['filenamebase'] + ".heightmap.png", "PNG")
+    #im.save("/tmp/osm-heightmap.png", "PNG")
+    im.save(pipeline.data['filenamebase'] + ".heightmap-" + str(heightmap_size) + ".png", "PNG")
 
+    # Metadata (to be saved later to descriptor)
+    pipeline.data['height:min'] = height_min
+    pipeline.data['height:max'] = height_max
+    pipeline.data['heightmap:offset'] = heightmap_offset
+    pipeline.data['heightmap:range'] = heightmap_range
+    pipeline.data['heightmap:quantization'] = heightmap_quantization
 
 
 def hillshade(height_matrix, azimuth=45, elevation_angle=45):

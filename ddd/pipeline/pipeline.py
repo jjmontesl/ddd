@@ -72,21 +72,25 @@ class DDDPipeline():
         tasks = []
 
         for task in self.tasks:
-            order = task.order
-            if order is None: order = '*.+'
-            if order.startswith('*.'):
-                order = ".".join([str(e) for e in tasks[-1]._order_num[:-1]] + ['+'])
 
-            order_split = order.split(".")
-            for (el_idx, el_str) in enumerate(order_split):
-                if el_str == '+':
-                    previous_order_num = self._find_last_order(tasks, order_split[:el_idx])
-                    el = previous_order_num + 1
-                else:
-                    el = int(el_str)
-                order_split[el_idx] = el
-            task._order_num = order_split
-            tasks.append(task)
+            try:
+                order = task.order
+                if order is None: order = '*.+'
+                if order.startswith('*.'):
+                    order = ".".join([str(e) for e in tasks[-1]._order_num[:-1]] + order.split(".")[1:])
+
+                order_split = order.split(".")
+                for (el_idx, el_str) in enumerate(order_split):
+                    if el_str == '+':
+                        previous_order_num = self._find_last_order(tasks, order_split[:el_idx])
+                        el = previous_order_num + 1
+                    else:
+                        el = int(el_str)
+                    order_split[el_idx] = el
+                task._order_num = order_split
+                tasks.append(task)
+            except ValueError as e:
+                raise DDDException("Cannot parse order of task %s: %s" % (task, order))
 
         tasks.sort(key=lambda t: (t._order_num, ))
         return tasks
@@ -145,7 +149,7 @@ class DDDPipeline():
                 if task.condition and not result:
                     # Skip remaining tasks in order
                     skip_tasks = task._order_num
-                    logger.debug("Skipping tasks: %s", ".".join([str(s) for s in skip_tasks]))
+                    logger.info("Skipping tasks: %s", ".".join([str(s) for s in skip_tasks]))
 
                 if task.cache and result:
                     if D1D2D3Bootstrap.cache_ro:

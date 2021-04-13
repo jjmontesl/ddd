@@ -69,8 +69,10 @@ def osm_augment_trees_annotate(obj, root):
 
     # Select areas only if they do not already contain plants
     trees = root.find("/Features").filter(lambda o: o.extra.get('osm:natural') == 'tree')  # search trees in original features, before crop
-    has_trees = obj.get('ddd:area:original', obj).intersects(trees)
+    has_trees = obj.get('ddd:area:original', obj).intersects(trees.buffer(0.1))   # Points need to be buffered for intersection with areas
     add_trees = not has_trees # and area.geom.area > 100
+
+    #print(add_trees)
     #ddd.group2([trees.buffer(0.1), obj.material(ddd.MAT_HIGHLIGHT), obj.get('ddd:area:original', obj)]).show()
 
     if add_trees:

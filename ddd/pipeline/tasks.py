@@ -20,6 +20,18 @@ logger = logging.getLogger(__name__)
 
 
 class DDDTask(object):
+    """
+    Defines a task for DDD pipelines.
+
+    - order: A string in the form '#.#...'. See below.
+
+    Order is a string that defines the ordering within this pipeline.
+    If not specified, order is taken from the last defined task with its last number
+    incremented (eg if last task is 10.10.1, this task becomes 10.10.2), equivalent to '*.+'.
+    It order starts with '*', the asterisk is replaced by the previous task number except the
+    last number (eg if last task is 10.10.1, with '*.50' this task becomes '10.10.50').
+
+    """
 
     _tasks = []
 

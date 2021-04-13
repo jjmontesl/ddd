@@ -26,6 +26,7 @@ from ddd.osm import osm
 from ddd.pipeline.pipeline import DDDPipeline
 from ddd.osm.commands import downloader
 from ddd.geo.elevation import ElevationModel
+import datetime
 
 
 #from osm import OSMDDDBootstrap
@@ -361,7 +362,10 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_base.s60_model.py',
                                             'pipelines.osm_base.s60_model_export_3d.py',
 
-                                            'pipelines.osm_gdterrain.s60_terrain_export.py',
+                                            'pipelines.osm_base.s70_metadata.py',
+
+
+                                            'pipelines.osm_gdterrain.s60_heightmap_export.py',
                                             'pipelines.osm_gdterrain.s60_splatmap_export.py',
 
                                             'pipelines.osm_augment.s50_ways.py',
@@ -369,12 +373,19 @@ class OSMBuildCommand(DDDCommand):
 
                                             'pipelines.osm_default_2d.s30_icons.py',
 
+
                                             #'pipelines.osm_extras.mapillary.py',
                                             #'pipelines.osm_extras.ortho.py',
 
                                             ], name="OSM Build Pipeline")
                     pipeline.data['osmfiles'] = files
                     pipeline.data['filenamebase'] = filenamebase
+
+                    pipeline.data['ddd:pipeline:start_date'] = datetime.datetime.now()
+
+                    pipeline.data['tile:bounds_wgs84'] = self.area.bounds
+                    pipeline.data['tile:bounds_m'] = area_crop.bounds
+
 
                     # Fusion DDD data with pipeline data, so changes to the later affect the former
                     # TODO: better way to do this without globals and merging data?
