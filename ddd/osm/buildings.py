@@ -512,6 +512,8 @@ class BuildingOSMBuilder():
 
                 # Side sign
                 item = urban.sign_pharmacy_side(size=1.0)
+                item.copy_from(item_1d)
+
                 '''
                 # Plain sign (front view on facade)
                 item = urban.sign_pharmacy(size=1.2)
@@ -530,6 +532,7 @@ class BuildingOSMBuilder():
                 #panel_text = amenity.extra['amenity'] if amenity.extra['amenity'] else None
                 panel_text = item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else (item_1d.extra['osm:amenity'].upper() if item_1d.extra['osm:amenity'] else None)
                 item = urban.panel(width=3.2, height=0.9, text=panel_text)
+                item.copy_from(item_1d)
                 item.extra['ddd:item'] = item_1d
                 item.name = "Panel: %s %s" % (item_1d.extra['osm:amenity'], item_1d.extra.get('osm:name', None))
                 item = self.snap_to_building(item, building_3d)
@@ -546,13 +549,14 @@ class BuildingOSMBuilder():
                 #coords = item_1d.geom.centroid.coords[0]
                 panel_text = (item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else item_1d.extra['osm:shop'])
                 item = urban.panel(width=2.5, height=0.8, text=panel_text)
+                item.copy_from(item_1d)
                 item.extra['ddd:item'] = item_1d
                 item.name = "Panel: %s %s" % (item_1d.extra['osm:shop'], item_1d.extra.get('osm:name', None))
                 item = self.snap_to_building(item, building_3d)
                 if item:
                     item = item.translate([0, 0, 2.8])  # no post
                     color = random.choice(["#c41a7d", "#97c41a", "#f2ee0f", "#0f90f2"])
-                    item = item.material(ddd.material(color=color))
+                    item = item.material(ddd.material(color=color), include_children=False)
                     #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
                     building_3d.children.append(item)
                 else:

@@ -362,7 +362,8 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=N
     panel.name = "Panel"
 
     if text:
-        textobj = ddd.marker(name="Panel Text Marker").translate([0, -depth * 0.5 - 0.02, 0])
+        #textobj = ddd.marker(name="Panel Text Marker").translate([0, -depth * 0.5 - 0.02, 0])
+        textobj = ddd.instance(None, name="Panel Text Marker").translate([0, -depth * 0.5 - 0.02, 0])
         textobj.extra['ddd:text'] = text
         textobj.extra['ddd:text:width'] = width * 0.9
         textobj.extra['ddd:text:height'] = height * 0.9
@@ -371,7 +372,8 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=N
         textobj.extra['ddd:occluder'] = False
         #textobj.extra['ddd:layer'] = "Texts"
     if text_back:
-        textbackobj = ddd.marker(name="Panel Text Marker").rotate([0, 0, math.pi]).translate([0, +depth * 0.5 + 0.02, 0])
+        #textbackobj = ddd.marker(name="Panel Text Marker").rotate([0, 0, math.pi]).translate([0, +depth * 0.5 + 0.02, 0])
+        textbackobj = ddd.instance(None, name="Panel Text Marker").rotate([0, 0, math.pi]).translate([0, +depth * 0.5 + 0.02, 0])
         textbackobj.extra['ddd:text'] = text
         textbackobj.extra['ddd:text:width'] = width * 0.9
         textbackobj.extra['ddd:text:height'] = height * 0.9

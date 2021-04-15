@@ -12,6 +12,7 @@ import datetime
 import time
 
 
+'''
 @dddtask(order="70.01.+", cache=True)
 def osm_structured_cache(pipeline, osm, root, logger):
     """
@@ -19,7 +20,7 @@ def osm_structured_cache(pipeline, osm, root, logger):
     """
     #sys.setrecursionlimit(15000)  # This cache operation was failing due to RecursionError during pickle dump
     return pipeline.data['filenamebase'] + ".s60.cache"
-
+'''
 
 
 @dddtask(order="70.10.+")

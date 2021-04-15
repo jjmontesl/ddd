@@ -21,12 +21,6 @@ meshes and geometry instancing.
 The library is strongly based and relies on the underlying Shapely and Trimesh
 packages which provide most of the geometry operations.
 
-Related projects:
-
-- DDD OSM: a build pipeline that generates 2D/3D tiles from OpenStreetMap data (included in this repo).
-
-- DDD OSM Viewer: HTML5 2D and 3D map viewer.
-
 
 ## Features
 

@@ -74,7 +74,7 @@ class Path(DDDObject2):
         if obj.children:
             raise DDDException("Cannot create parabolla from geometry with children nodes: %s" % obj)
         path = Path.parabolla_from_points(points[0], points[2], points[1])
-        path.copy_from(obj)
+        path.copy_from(obj, copy_material=True, copy_children=True)
         return path
 
     @staticmethod
@@ -95,7 +95,7 @@ class Path(DDDObject2):
         for x in numpy.linspace(self.start[0], self.end[0], numpoints, endpoint=True):
             coords.append((x, self.curve.evaluate_y(x)))
         obj = ddd.line(coords)
-        obj.copy_from(self)
+        obj.copy_from(self, copy_material=True, copy_children=True)
         return obj
 
 

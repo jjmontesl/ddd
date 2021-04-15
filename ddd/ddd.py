@@ -413,7 +413,7 @@ class DDDMaterial():
         if image is None:
             image = PIL.Image.open(path)
             # Resampling
-            resample_size = 256
+            resample_size = 512
             if resample_size and image.size[0] > resample_size:
                 logger.info("Resampling texture: %s", path)
                 image = image.resize((resample_size, resample_size), PIL.Image.BICUBIC)
@@ -421,7 +421,8 @@ class DDDMaterial():
         return image
 
     def __init__(self, name=None, color=None, extra=None, texture_color=None, texture_path=None, atlas_path=None, alpha_cutoff=None, alpha_mode=None, texture_normal_path=None,
-                 metallic_factor=None, roughness_factor=None, index_of_refraction=None, direct_lighting=None, bump_strength=None, double_sided=False):
+                 metallic_factor=None, roughness_factor=None, index_of_refraction=None, direct_lighting=None, bump_strength=None, double_sided=False,
+                 texture_displacement_path=None, texture_roughness_path=None):
         """
             - texture_color: optional color to be used if a textured material is being generated (--export-texture), instead of the default color.
             - alpha_mode: one of OPAQUE, BLEND and MASK (used with alpha_cutoff)
@@ -539,16 +540,24 @@ class DDDObject():
         #print(self.__class__.__name__, self.name, hash((self.__class__.__name__, self.name)))
         #return abs(hash((self.__class__.__name__, self.name)))  #, ((k, self.extra[k]) for k in sorted(self.extra.keys())))))
 
-    def copy_from(self, obj):
+    def copy_from(self, obj, copy_material=False, copy_children=False, copy_metadata_to_children=False):
         """
-        Copies metadata and children from another. Returns self.
+        Copies metadata (without replacing), material and children from another object.
+
+        Modifies this object in place, and returns itself.
         """
         if obj.name:
             self.name = obj.name
 
-        self.children = list(obj.children)
+        # Copy item_2d attributes
+        for k, v in obj.extra.items():
+            self.set(k, default=v, children=copy_metadata_to_children)
         self.extra.update(obj.extra)
-        self.material = obj.material
+
+        if copy_children:
+            self.children = list(obj.children)
+        if copy_material and obj.material:
+            self.material = obj.material
 
         return self
 
@@ -881,11 +890,12 @@ class DDDObject2(DDDObject):
         self.geom = obj.geom
         return self
 
-    def material(self, material):
+    def material(self, material, include_children=True):
         obj = self.copy()
         obj.mat = material
         #mesh.visuals = visuals
-        obj.children = [c.material(material) for c in obj.children]
+        if include_children:
+            obj.children = [c.material(material) for c in obj.children]
         return obj
 
     def end(self):
@@ -2007,6 +2017,8 @@ class DDDInstance(DDDObject):
         ref.extra.update(self.extra)
         return ref
 
+    def material(self, material, include_children=True):
+        logger.warning("Ignoring material set to DDDInstance: %s", self)
 
     def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None):
 
@@ -2234,7 +2246,7 @@ class DDDObject3(DDDObject):
         obj.mesh.invert()
         return obj
 
-    def material(self, material):
+    def material(self, material, include_children=True):
         obj = self.copy()
         obj.mat = material
         if obj.mesh and material is not None:
@@ -2243,7 +2255,9 @@ class DDDObject3(DDDObject):
         #visuals = mesh.visuatrimesh.visual.ColorVisuals(mesh=mesh, face_colors=[material])  # , material=material
         #mesh.visuals = visuals
 
-        obj.children = [c.material(material) for c in obj.children]
+        if include_children:
+            obj.children = [c.material(material) for c in obj.children]
+
         return obj
 
     def elevation_func(self, func):
