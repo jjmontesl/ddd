@@ -256,14 +256,17 @@ class Areas3DOSMBuilder():
 
                 #area_3d = area_3d.translate([0, 0, 0])
 
-                '''
+            elif area_2d.extra.get('ddd:area:type', None) == 'bunker':
+
+                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), -0.2, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), -0.2, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+
             elif area_2d.extra.get('ddd:area:type', None) == 'steps':
                     area_3d = area_2d.extrude_step(area_2d, area_2d.extra['ddd:steps:height'], base=False)
                     for stepidx in range(1, area_2d.extra['ddd:steps:count'] + 1):
                         area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), 0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
                         area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), area_2d.extra['ddd:steps:height'], method=ddd.EXTRUSION_METHOD_SUBTRACT)
                     # TODO: Crop in 3D (or as a workaround fake it as centroid cropping)
-                '''
 
             elif area_2d.extra.get('ddd:area:type', None) == 'sidewalk':
 
@@ -313,7 +316,7 @@ class Areas3DOSMBuilder():
 
             else:
                 try:
-                    height = area_2d.extra.get('ddd:height', 0.2)
+                    height = area_2d.extra.get('ddd:area:height', area_2d.extra.get('ddd:height', 0.2))
                     if height:
                         area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
 

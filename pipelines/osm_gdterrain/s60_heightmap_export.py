@@ -4,6 +4,7 @@
 
 import sys
 
+import png
 import pyproj
 import numpy as np
 
@@ -36,7 +37,7 @@ def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
     wgs84_max = terrain.transform_ddd_to_geo(osm.ddd_proj, ddd_bounds[2:])
     wgs84_bounds = wgs84_min + wgs84_max
 
-    heightmap_size = 256
+    heightmap_size = pipeline.data.get('ddd:gdterrain:heightmap:size', 128)
 
     logger.info("Generating heightmap for area: ddd_bounds=%s, wgs84_bounds=%s, size=%s", ddd_bounds, wgs84_bounds, heightmap_size)
 
@@ -86,6 +87,7 @@ def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
     '''
 
 
+    '''
     # Calculate gradient
     gradient_diff = 0.1
     #gradient_matrix = np.gradient(height_matrix)
@@ -120,11 +122,13 @@ def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
     # R,G = height
     # B = normals
     # A = holes
+    '''
 
     heightmap_offset = height_min
     heightmap_range = height_max - height_min
     heightmap_quantization = 65535
 
+    '''
     encoded_heightmap = np.zeros((heightmap_size, heightmap_size, 4))
     for xi in range(heightmap_size):
         for yi in range(heightmap_size):
@@ -147,11 +151,23 @@ def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
             encoded_heightmap[yi, xi, 2] = quantized_normal_x
             encoded_heightmap[yi, xi, 3] = quantized_normal_y
             #encoded_heightmap[yi, xi, 3] = 255
+    '''
 
     # Save heightmap as PNG
-    im = Image.fromarray(np.uint8(encoded_heightmap), "RGBA")
+
+    filename = pipeline.data['filenamebase'] + ".heightmap-" + str(heightmap_size) + ".png"
+
+    #im = Image.fromarray(np.uint8(encoded_heightmap), "RGBA")
+    #im = Image.fromarray(np.uint16(encoded_heightmap), "I")
     #im.save("/tmp/osm-heightmap.png", "PNG")
-    im.save(pipeline.data['filenamebase'] + ".heightmap-" + str(heightmap_size) + ".png", "PNG")
+    #im.save(filename, "PNG")
+
+    heightmap_uint16 = np.uint16(((height_matrix - heightmap_offset) / heightmap_range) * 65535)
+    with open(filename, 'wb') as f:
+        writer = png.Writer(width=heightmap_size, height=heightmap_size, bitdepth=16, greyscale=True)
+        pngdata = (heightmap_uint16).tolist()
+        writer.write(f, pngdata)
+
 
     # Metadata (to be saved later to descriptor)
     pipeline.data['height:min'] = height_min

@@ -12,7 +12,7 @@ import noise
 
 
 # Generate grass
-@dddtask(order="55.49", path="/Areas/*", select='["ddd:material" ~ "Park|Grass|Garden|Forest"]')
+@dddtask(order="55.49", path="/Areas/*", select='["ddd:material" ~ "Park|Grass|Garden|Forest"]["osm:golf" != "green"]')
 def osm_augment_plants_generate_grass_blades(obj, osm, root):
     """
     Generates grass blades.

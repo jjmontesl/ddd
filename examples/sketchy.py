@@ -1,6 +1,6 @@
 # Jose Juan Montes 2019-2020
 
-from ddd.pack.sketchy import urban, landscape, industrial, interior
+from ddd.pack.sketchy import urban, landscape, industrial, interior, sports
 from ddd.ddd import ddd
 import math
 
@@ -13,10 +13,13 @@ ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #col
 items = ddd.group3()
 
 
+item = sports.golf_flag()
+items.append(item)
+item.show()
+
+
 item = urban.drinking_water()
 items.append(item)
-#item.show()
-
 
 item = urban.bollard()
 items.append(item)

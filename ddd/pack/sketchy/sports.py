@@ -380,3 +380,20 @@ def basketball_field_lines(length=28, width=15, line_width=0.075):
     #item.append(hoop)
 
     return item
+
+
+def golf_flag(pole_height=2.1336, flag_width=20*0.0254, flag_height=14*0.0254):
+    """
+    The USGA recommends a golf flagstick height should be at least 7 feet tall, measured from the bottom of the flagstick in the ground to the top of the stick.
+    The standard 14”x20” golf flags are the official size used at golf courses.
+    """
+    flag = ddd.rect([0, 0, flag_width, flag_height])
+    flag = flag.material(ddd.mats.red)
+    flag = flag.triangulate(twosided=True)
+    flag = flag.rotate(ddd.ROT_FLOOR_TO_FRONT)
+
+    flag = flag.translate([0.025, 0, -0.02 - flag_height])
+
+    item_post = post(height=pole_height, r=0.025, top=flag, mat_post=ddd.mats.metal_paint_yellow)
+
+    return item_post

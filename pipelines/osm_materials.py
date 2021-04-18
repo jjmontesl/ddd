@@ -48,21 +48,18 @@ def materials_list(root, osm):
             marker = marker.material(mat)
             mats.append(marker)
 
-'''
 @dddtask()
 def materials_show(root):
     mats = root.find("/Materials")
     mats = ddd.align.grid(mats, space=2.0)
     mats.show()
-'''
 
-'''
 @dddtask()
 def materials_save(root):
+    material_texsize = 512
     mats = root.find("/Materials")
     mats = ddd.align.grid(mats, space=2.0)  # Not really needed for export
-    mats.save('catalog_materials.glb')
-'''
+    mats.save('catalog_materials-default%d.glb' % material_texsize)
 
 def convert_to_linear(im):
     # From: https://stackoverflow.com/questions/31300865/srgb-aware-image-resize-in-pillow

@@ -225,8 +225,16 @@ def osm_select_ways_footway(obj, root):
     #obj.extra['ddd:way:height'] = 0.2
     obj.extra['ddd:way:width'] = 1.5
     obj.extra['ddd:way:lanes'] = 0
-    obj = obj.material(ddd.mats.dirt)
+    obj = obj.material(ddd.mats.pathwalk)  # TODO: Footways/paths are not always dirt
     root.find("/Ways").append(obj)
+
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "footway"]["osm:footway" = "sidewalk"]')
+def osm_select_ways_footway_sidewalk(obj, root):
+    """Define road data."""
+    # TODO: Sidewalks (and maybe touching paths/etc require treatment to join them with generated sidewalks
+    obj = obj.material(ddd.mats.sidewalk)  # TODO: Footways/paths are not always dirt
+    return obj
+
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "path"]')
 def osm_select_ways_path(obj, root):

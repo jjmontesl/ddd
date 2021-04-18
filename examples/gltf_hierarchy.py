@@ -75,14 +75,15 @@ def gltf_ddd():
     root = ddd.group([sphere1], name="Spheres Root")
 
     scene1 = ddd.group([root], name="Scene")
+    scene1.extra['test'] = test_metadata
 
     scene1.dump()
     scene1.save("gltf-hierarchy-ddd.glb")
     scene1.show()
 
 
-gltf_trimesh()
-#gltf_ddd()
+#gltf_trimesh()
+gltf_ddd()
 
 
 

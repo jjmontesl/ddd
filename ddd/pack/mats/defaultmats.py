@@ -97,8 +97,8 @@ class DefaultMaterials(MaterialsCollection):
 
 
         # Colors
-        self.red = ddd.material(color='#ff0000')
-        self.green = ddd.material(color='#00ff00')
-        self.blue = ddd.material(color='#0000ff')
+        self.red = ddd.material("Color Red", color='#ff0000')
+        self.green = ddd.material("Color Green", color='#00ff00')
+        self.blue = ddd.material("Color Blue", color='#0000ff')
 
 

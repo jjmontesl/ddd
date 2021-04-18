@@ -34,3 +34,15 @@ def osm_generate_buildings(root, obj):
 @dddtask(order="30.40.20.+")
 def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
     pass
+
+
+
+@dddtask(path="/Buildings/*", select='["osm:building" = "shed"][! "osm:building:levels"]')
+def osm_buildings_(pipeline, osm, root, obj):
+    """
+    Set default levels to sheds.
+    """
+    obj.set('ddd:building:levels', 1)
+
+
+

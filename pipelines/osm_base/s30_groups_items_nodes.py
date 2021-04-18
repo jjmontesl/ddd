@@ -7,36 +7,23 @@ from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 
 
-
-'''
-@dddtask(order="30.50.20.+", log=True)
-def osm_groups_areaitems(root, osm):
-
-    # Split and junctions first?
-    # Possibly: metadata can depend on that, and it needs to be done if it will be done anyway
-
-    # Otherwise: do a pre and post step, and do most things in post (everything not needed for splitting)
-
+# Generate items (also see groups_items_nodes)
+@dddtask(order="30.20.10.10.+", path="/Features/*", select='[geom:type="Point"]', log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
+def osm_generate_items_nodes_entry(root, osm, obj):
+    """Entry point for items nodes generation (30.20.*)."""
     pass
 
-@dddtask(path="/Areas/*")
-def osm_groups_areas_default_name(obj, osm):
-    """Set default name."""
-    name = "Area: " + (obj.extra.get('osm:name', obj.extra.get('osm:id')))
-    obj.name = name
-    #obj.extra['ddd:ignore'] = True
-
-@dddtask(path="/Areas/*")
-def osm_groups_areas_default_material(obj, osm):
-    """Assign default material."""
-    obj = obj.material(ddd.mats.terrain)
-    return obj
-
-@dddtask(path="/Areas/*")
-def osm_groups_areas_default_data(obj, osm):
-    """Sets default data."""
-    obj.extra['ddd:area:weight'] = 100  # Lowest
-    obj.extra['ddd:area:height'] = 0  # Lowest
-'''
+@dddtask(path="/Features/*", select='[geom:type="Point"]', log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
+def osm_generate_items_nodes_point(root, osm, obj):
+    """Generate items for point features."""
+    item = obj.copy(name="Item: %s" % obj.name)
+    item = item.material(ddd.mats.red)
+    if item.geom:
+        root.find("/ItemsNodes").append(item)
 
 
+@dddtask(order="30.20.20.+", log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
+def osm_generate_items_process(root, osm, obj):
+    """Generate items for point features."""
+    #root.save("/tmp/osm-31-items.svg")
+    pass

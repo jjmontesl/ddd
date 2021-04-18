@@ -306,7 +306,7 @@ def osm_model_elevation_apply_terrain_min(obj, osm, root):
     return obj
 
 @dddtask(order="60.50.+", log=True)
-def osm_model_rest(pipeline, root, osm):
+def osm_model_rest(pipeline, root, osm, logger):
 
     # Final grouping
     scene = [root.find("/Areas"),
@@ -318,6 +318,16 @@ def osm_model_rest(pipeline, root, osm):
              root.find("/Other3"),
              root.find("/Roadlines3"),
              ]
+
+
     scene = ddd.group(scene, name="Scene")
+
+    metadataobj = ddd.instance(None, name="Metadata")
+    metadataobj.set('tile:bounds_wgs84', pipeline.data['tile:bounds_wgs84'])
+    metadataobj.set('tile:bounds_m', pipeline.data['tile:bounds_m'])
+    scene.append(metadataobj)
+
+    logger.info("Scene properties: %s", (scene.extra))
+
     pipeline.root = scene
 

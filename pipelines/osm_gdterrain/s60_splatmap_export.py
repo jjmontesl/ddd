@@ -17,17 +17,12 @@ from PIL import Image
 import math
 from shapely.strtree import STRtree
 import hashlib
+import noise
 
 
 
-# TODO: Doing this on stage 59 as buildings are deleted (keep 2D and 3D versions in the tree for late usage, also for terrain_export)
-
-@dddtask(order="59.89.+.10", condition=True)
-def osm_gdterrain_export_splatmap_condition(pipeline):
-    return bool(pipeline.data.get('ddd:gdterrain:splatmap', False))
-
-
-@dddtask(order="*.10.+")
+# TODO: This is required by s70 descriptor export, but should not
+@dddtask(order="59.89.+.10")
 def osm_gdterrain_export_splatmap_init(root, pipeline, osm, logger):
     splatmap = ddd.group2(name="Splatmap")
     root.append(splatmap)
@@ -57,22 +52,31 @@ def osm_gdterrain_export_splatmap_init(root, pipeline, osm, logger):
 
     pipeline.data['splatmap:channels_num'] = 16
 
-
-# Layering and ordering
-# Output values are normalized to to sum 1 across all channels
-# If only 4 channels are used, channels are collapsed (0+4, 1+5, 2+6, 3+7)
+    pipeline.data['splatmap:channels:collapse_map'] = [
+        [0, 2, 12],     # Terrain, asphalt, pavement, sand
+        [1, 13],        # Paths, dirt, rock
+        [8, 9, 10, 11], # Grass
+        [3, 4, 5]       # Pedestrian, tiles
+    ]
 
 # 0 - Ground / Terrain
 # 1 - Dirt (some wild pathways, terrain)
 # 2 - Rock
 # 3 - Forest/dense park terrain
-
 # 4 - Sand
 # 5 - UNUSED (?)
 # 6 - Pedestrian area / castle interior / paved tiles
 # 7 - Grass
 
-@dddtask()
+
+# TODO: Doing this on stage 59 as buildings are deleted (keep 2D and 3D versions in the tree for late usage, also for terrain_export)
+@dddtask(order="59.89.+.10", condition=True)
+def osm_gdterrain_export_splatmap_condition(pipeline):
+    return bool(pipeline.data.get('ddd:gdterrain:splatmap', False))
+
+
+
+@dddtask(order="*.10.+")
 def osm_gdterrain_export_splatmap_channels_all(root, pipeline, osm, logger):
     for i in range(pipeline.data['splatmap:channels_num']):
         mat = pipeline.data['splatmap:channels_materials'][i]
@@ -142,7 +146,8 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
     wgs84_max = terrain.transform_ddd_to_geo(osm.ddd_proj, ddd_bounds[2:])
     wgs84_bounds = wgs84_min + wgs84_max
 
-    splatmap_size = 256
+    splatmap_size = pipeline.data.get('ddd:gdterrain:splatmap:size', 128)
+
     logger.info("Generating splatmap for area: ddd_bounds=%s, wgs84_bounds=%s, size=%s", ddd_bounds, wgs84_bounds, splatmap_size)
 
     splatmap = root.find("/Splatmap")
@@ -161,6 +166,11 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
 
         # Spatial index
         rtree = STRtree(splatmap.geom_recursive())
+
+        # Channel union
+        channel_items_union = None
+        if chan_idx == 12:
+            channel_items_union = channel_items.union()
 
         pixel_width_x = (ddd_bounds[2] - ddd_bounds[0]) / splatmap_size
         pixel_width_y = (ddd_bounds[3] - ddd_bounds[1]) / splatmap_size
@@ -185,26 +195,60 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
                 if (yi in (0, splatmap_size - 1)):
                     cover_factor *= 2
 
+
+                # Augmentation tests: sand (12)
+                if chan_idx == 12:
+                    if cover_factor < 0.99:
+                        distance = channel_items_union.distance(ddd.point([x, y]))
+                        distance_reach = 10.0
+                        #extend_ratio *= noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)  # Randomize reach
+                        aug_factor = max(0, 1.0 - distance / distance_reach)
+                        aug_factor *= noise.pnoise2(x * 0.1, y * 0.1, octaves=3, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)  # Randomize reach
+                        aug_factor = max(aug_factor, 0.0) * 0.55
+
+                        cover_factor = max(aug_factor, cover_factor)
+                        splat_matrix[yi, xi, :] -= cover_factor  # Reduce others
+
+
+                # Augmentation tests: park (10)
+                if chan_idx == 10 or chan_idx == 11:
+                    if cover_factor > 0.95:
+                        #extend_ratio *= noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)  # Randomize reach
+                        reduce_factor = noise.pnoise2(x * 0.1, y * 0.1, octaves=3, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0) * 0.5 + 0.5  # Randomize reach
+                        reduce_factor = ddd.math.clamp((reduce_factor - 0.5) * 4.0, 0.0, 1.0)  #  * (0.15 if chan_idx == 10 else 0.3)
+                        cover_factor = cover_factor - reduce_factor
+                        splat_matrix[yi, xi, 0] += reduce_factor  # Increase terrain
+
                 splat_matrix[yi, xi, chan_idx] = cover_factor
 
-    # Clamp to 0..1
-    splat_matrix = np.minimum(np.copy(splat_matrix), 1.0)
 
-    '''
-    # Normalize across 8 channels and set a default for channel 0
-    row_sums = splat_matrix.sum(axis=2)
+    # Clamp to 0..1
+    splat_matrix = np.maximum(splat_matrix, 0.0)
+    splat_matrix = np.minimum(splat_matrix, 1.0)
 
     # Sums that don't add up to at least this coverage will be filled with the default
-    default_min_threshold = 1.0
+    #default_min_threshold = 1.0
+    #add_matrix = np.maximum(default_min_threshold - row_sums, 0)
+    #topped_matrix = np.copy(splat_matrix)
+    #topped_matrix[:,:,0] += add_matrix
+    #row_sums = topped_matrix.sum(axis=2)
 
-    add_matrix = np.maximum(default_min_threshold - row_sums, 0)
+    # Normalize across all channels
+    #row_sums = splat_matrix.sum(axis=2)
+    #splat_matrix = splat_matrix[:,:] / row_sums[:, :, np.newaxis]
 
-    topped_matrix = np.copy(splat_matrix)
-    topped_matrix[:,:,0] += add_matrix
+    # Clamp to 0..1
+    #splat_matrix = np.maximum(np.copy(splat_matrix), 0.0)
+    #splat_matrix = np.minimum(np.copy(splat_matrix), 1.0)
 
-    row_sums = topped_matrix.sum(axis=2)
-    splat_matrix = topped_matrix[:,:] / row_sums[:, :, np.newaxis]
-    '''
+    # Splatmap smoothed pixels correction
+    # TODO: If using 8 channels we may wish to do this before exporting those (but careful as many pixels may appear as 1.0 if area subtraction was incorrect during generation).
+    splat_matrix_corrected = np.copy(splat_matrix)
+    # Channels 1 and 2
+    splat_matrix_corrected[:,:,1] = splat_matrix_corrected[:,:,1] * 4.0
+    splat_matrix_corrected = np.minimum(splat_matrix_corrected, 1.0)
+
+    splat_matrix = splat_matrix_corrected
 
 
     # Save
@@ -218,7 +262,16 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
     #im = Image.fromarray(np.uint8(splat2_4_7_matrix), "RGBA")
     #im.save("/tmp/osm-splatmap-8chan-4_7-" + str(splatmap_size) + ".png", "PNG")
 
-    # Collapse into 1 splatmap
+    # Collapse into N channels
+    collapse_map = pipeline.data.get('splatmap:channels:collapse_map', None)
+    if collapse_map:
+        splat_matrix_collapsed = np.zeros([splatmap_size, splatmap_size, len(collapse_map)])
+        for collapse_idx in range(len(collapse_map)):
+            collapse_source_weight = (1.0 / len(collapse_map[collapse_idx]))
+            for collapse_source in collapse_map[collapse_idx]:
+                splat_matrix_collapsed[:,:,collapse_idx] += (splat_matrix[:,:,collapse_source])
+    splat_matrix_collapsed = np.minimum(splat_matrix_collapsed, 1.0)
+
     #splat_matrix_collapsed = splat_matrix[:,:,0:4] + splat_matrix[:,:,4:8]
     #splat_matrix_collapsed = splat_matrix_collapsed * (0.5 * 255)
 
@@ -226,21 +279,10 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
     #im.save("/tmp/osm-splatmap-1chan-0_3.png", "PNG")
     #im.save(pipeline.data['filenamebase'] + ".splatmap-4chan-0_3-" + str(splatmap_size) + ".png", "PNG")
 
-    # Splatmap smoothed pixels correction
-    # TODO: If using 8 channels we may wish to do this before exporting those (but careful as many pixels may appear as 1.0 if area subtraction was incorrect during generation).
-    '''
-    splat_matrix_corrected = np.copy(splat_matrix_collapsed)
-    # Channels 1 and 2
-    splat_matrix_corrected[:,:,0] = splat_matrix_corrected[:,:,0] * 2.0
-    splat_matrix_corrected[:,:,1] = splat_matrix_corrected[:,:,1] * 255.0 / 50.0
-    splat_matrix_corrected[:,:,2] = splat_matrix_corrected[:,:,2] * 255.0 / 50.0
-    splat_matrix_corrected[:,:,3] = splat_matrix_corrected[:,:,3] * 2.0
-    splat_matrix_corrected = np.minimum(splat_matrix_corrected, 255)
-
-    im = Image.fromarray(np.uint8(splat_matrix_corrected), "RGBA")
+    im = Image.fromarray(np.uint8(splat_matrix_collapsed * 255), "RGBA")
     #im.save("/tmp/osm-splatmap-1chan-0_3-processed.png", "PNG")
     im.save(pipeline.data['filenamebase'] + ".splatmap-4chan-0_3-" + str(splatmap_size) + ".png", "PNG")
-    '''
+
 
     # Collage into 1 splatmap atlas
     splatmap_atlas_rows = 2

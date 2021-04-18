@@ -44,12 +44,20 @@ def osm_groups_areas_leisure_park(obj, osm):
     obj = obj.material(ddd.mats.park)
     return obj
 
-@dddtask(path="/Areas/*", select='["osm:highway" = "pedestrian"]')
+@dddtask(path="/Areas/*", select='["osm:highway" = "pedestrian"]["osm:area = "yes"')
 def osm_groups_areas_highway_pedestrian(obj, osm):
     """Define area data."""
-    obj.name = "Park: %s" % obj.name
+    obj.name = "Pedestrian area: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"
     obj = obj.material(ddd.mats.pathwalk)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:highway" = "footway"]["osm:area" = "yes"]')
+def osm_groups_areas_highway_footway(obj, osm):
+    """Define area data."""
+    obj.name = "Footway area: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj = obj.material(ddd.mats.pathwalk)  # TODO: Footways/paths are not always dirt
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:leisure" = "garden"]')
@@ -155,6 +163,14 @@ def osm_groups_areas_natural_sand(obj, osm):
     obj = obj.material(ddd.mats.sand)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:golf" = "bunker"]')
+def osm_groups_areas_golf_bunker(obj, osm):
+    """Define area data."""
+    # Note that golf:bunker is also usually marked as natural:sand
+    obj.name = "Bunker: %s" % obj.name
+    obj.extra['ddd:area:type'] = "bunker"  # sand / dunes
+    return obj
+
 @dddtask(path="/Areas/*", select='["osm:natural" = "bare_rock"]')
 def osm_groups_areas_natural_bare_rock(obj, osm):
     """Define area data."""
@@ -198,6 +214,15 @@ def osm_groups_areas_leisure_golf_course(obj, osm):
     #obj.extra['ddd:area:type'] = "default"
     obj.extra['ddd:area:type'] = "park"  # should be default, or golf (for the irregaularity), but currently default is raising height :?
     obj = obj.material(ddd.mats.park)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:golf" = "green"]')
+def osm_groups_areas_leisure_golf_green(obj, osm):
+    """Define area data."""
+    obj.name = "Golf Green: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"  # should be default, or golf (for the irregaularity), but currently default is raising height :?
+    # TODO: Disable grass blades generation here using augmentation metadata (grass blades are currently hard coded in s55_plants)
+    obj = obj.material(ddd.mats.grass)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:public_transport" = "platform"];["osm:railway" = "platform"]')
@@ -265,6 +290,8 @@ def osm_groups_areas_man_made_bridge(obj, root):
 
 
 # Area attributes
+# Note that as areas are generated after ways, ways may be affected (ways end up being areas anyway, and might be unified further)
+
 @dddtask(path="/Areas/*", select='["osm:surface" = "compacted"]')
 def osm_groups_areas_surface_compacted(obj, root):
     """Applies osm:surface=compacted material."""
@@ -272,6 +299,12 @@ def osm_groups_areas_surface_compacted(obj, root):
     obj = obj.material(ddd.mats.dirt)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:surface" = "asphalt"]')
+def osm_groups_areas_surface_asphalt(obj, root):
+    """Applies osm:surface=compacted material."""
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.asphalt)
+    return obj
 
 
 """

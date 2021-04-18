@@ -51,6 +51,7 @@ setup(
         "pyglet >= 1.4.0b1",
         "PyOpenGL == 3.1.0",
         "PyOpenGL-accelerate == 3.1.5",
+        "pypng >= 0.0.20",
         "pyproj < 3.0.0",
         #"pyrender >= 0.1.45",  # optional, doesn't install on containers
         "scipy < 1.6.0",

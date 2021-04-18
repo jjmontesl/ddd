@@ -27,6 +27,7 @@ import webbrowser
 from lark import Lark
 
 import PIL
+from PIL import Image
 import cairosvg
 from csg import geom as csggeom
 from csg.core import CSG
@@ -380,6 +381,8 @@ class D1D2D3():
     def json_serialize(obj):
         if hasattr(obj, 'export'):
             data = obj.export()
+        elif isinstance(obj, Image.Image):
+            data = "Image (%s %dx%d)" % (obj.mode, obj.size[0], obj.size[1], )
         else:
             data = repr(obj)
             #data = None
@@ -2594,6 +2597,8 @@ class DDDObject3(DDDObject):
 
         if scene is None:
             scene = Scene(base_frame=scene_node_name)
+            # Add node metadata to scene metadata (first node metadata seems not available at least in blender)
+            scene.metadata['extras'] = metadata_serializable
 
         #if mesh is None: mesh = ddd.marker().mesh
         #print("Adding: %s to %s" % (scene_node_name, scene_parent_node_name))

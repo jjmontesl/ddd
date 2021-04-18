@@ -7,7 +7,7 @@ import math
 import random
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import plants, urban, landscape, industrial
+from ddd.pack.sketchy import plants, urban, landscape, industrial, sports
 from ddd.geo import terrain
 import sys
 from ddd.pack.sketchy.urban import patio_table
@@ -91,6 +91,8 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_sculpture(item_2d)
         elif item_2d.extra.get('osm:tourism', None) == 'artwork' and item_2d.extra.get('osm:artwork_type', None) == 'statue':
             item_3d = self.generate_item_3d_sculpture(item_2d)
+        elif item_2d.extra.get('osm:tourism', None) == 'artwork' and item_2d.extra.get('osm:artwork_type', None) == None:
+            item_3d = self.generate_item_3d_sculpture(item_2d)
         elif item_2d.extra.get('osm:historic', None) == 'monument':  # Large monument
             item_3d = self.generate_item_3d_monument(item_2d)
         elif item_2d.extra.get('osm:historic', None) == 'memorial':
@@ -127,6 +129,10 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_generic(item_2d, urban.childrens_playground_slide, "Playground Slide")
         elif item_2d.extra.get('osm:playground', None) == 'monkey_bar':
             item_3d = self.generate_item_3d_generic(item_2d, urban.childrens_playground_arc, "Playground Monkey Bar Arc")
+
+        elif item_2d.extra.get('osm:golf', None) == 'hole':
+            # TODO: Tilt objects using a generic tilting mechanism (also, this one may be also based on terrain gradient)
+            item_3d = self.generate_item_3d_generic(item_2d, sports.golf_flag, "Golf Flag")
 
         elif item_2d.extra.get('osm:highway', None) == 'street_lamp':
             item_3d = self.generate_item_3d_street_lamp(item_2d)

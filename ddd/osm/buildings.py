@@ -173,8 +173,10 @@ class BuildingOSMBuilder():
         Support buildings recursively earlier.
         """
 
-        floors = building_2d.extra.get('osm:building:levels', None)
-        floors_min = building_2d.extra.get('osm:building:min_level', 0)
+        floors = building_2d.extra.get('ddd:building:levels', building_2d.extra.get('osm:building:levels', None))
+        floors_min = floors = building_2d.extra.get('ddd:building:min_level', building_2d.extra.get('osm:building:min_level', 0))
+
+        # TODO: Do this in the pipeline or fail here if ddd:building:levels not set
         if not floors:
             floors = random.randint(2, 8)
 
@@ -215,11 +217,12 @@ class BuildingOSMBuilder():
             building_3d = None
             try:
 
-                floors = int(float(part.extra.get('osm:building:levels', base_floors)))
+                floors = int(float(part.extra.get('ddd:building:levels', part.extra.get('osm:building:levels', base_floors))))
+                floors_min = int(float(part.extra.get('ddd:building:min_level', part.extra.get('osm:building:min_level', base_floors_min))))
+
                 if floors == 0:
                     logger.warn("Building part with 0 floors (setting to 1): %s", floors)
                     floors = 1
-                floors_min = int(float(part.extra.get('osm:building:min_level', base_floors_min)))
 
                 # Remove the rest of the building
                 if part == building_2d:

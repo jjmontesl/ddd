@@ -3,13 +3,14 @@
 # Jose Juan Montes 2020
 
 
-from ddd.ddd import ddd
+from ddd.ddd import ddd, DDDObject
 from ddd.pipeline.decorators import dddtask
 from ddd.geo import terrain
 from ddd.core.exception import DDDException
 import json
 import datetime
 import time
+from PIL.Image import Image
 
 
 '''
@@ -39,8 +40,11 @@ def osm_model_pre_propagate_base_height_areas(root, pipeline, osm, logger):
         'attribution': "ODbL © OpenStreetMap Contributors + EEA",
         'generator': "DDD123 - https://github.com/jjmontesl/ddd",
 
-        '_pipeline': pipeline.data  # For debugging purposes
+        #'_pipeline':   # For debugging purposes
     }
+
+    data.update(pipeline.data)
+    data['metadata'] = None
 
     # Add metadata
     data.update(pipeline.data.get('metadata', {}))
@@ -49,9 +53,16 @@ def osm_model_pre_propagate_base_height_areas(root, pipeline, osm, logger):
     filepath = pipeline.data['filenamebase'] + ".desc.json"
     logger.info("Writing JSON descriptor to: %s", filepath)
 
+    # Avoid writing DDDObjects or entire Pillow images to descriptor
+    def metadata_serialize_default(data):
+        if (isinstance(data, DDDObject) or isinstance(data, Image)):
+            return data.__class__.__name__
+        else:
+            return str(data)
+
     with open(filepath, "w") as f:
         #json_data = json.dumps(data, default=str)
-        json_data = json.dumps(data, default=str, indent=4, sort_keys=True)
+        json_data = json.dumps(data, default=metadata_serialize_default, indent=4, sort_keys=True)
         f.write(json_data)
 
 
