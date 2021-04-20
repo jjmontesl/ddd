@@ -108,10 +108,17 @@ def osm_generate_areas_coastline_2d(osm, root, logger):
         root.find("/Areas").children.extend(water_2d.children)
 
 
+@dddtask(order="30.65.+")
+def osm_groups_items_ways(osm, root, logger):
+    # In separate file
+    pass
+
+
 @dddtask(order="30.70.+")
 def osm_groups_items_areas(osm, root, logger):
     # In separate file
     pass
+
 
 
 @dddtask(order="30.90")

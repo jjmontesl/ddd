@@ -18,6 +18,7 @@ import math
 from shapely.strtree import STRtree
 import hashlib
 import noise
+import random
 
 
 
@@ -81,7 +82,7 @@ def osm_gdterrain_export_splatmap_channels_all(root, pipeline, osm, logger):
     for i in range(pipeline.data['splatmap:channels_num']):
         mat = pipeline.data['splatmap:channels_materials'][i]
         if mat:
-            objs = root.select('["ddd:material" = "%s"]' % mat.name)
+            objs = root.select('["ddd:material" = "%s"]["ddd:layer" = "0"]' % mat.name)
         else:
             objs = ddd.group2()
         objs.name = 'Channel' + str(i)
@@ -170,7 +171,7 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
         # Channel union
         channel_items_union = None
         if chan_idx == 12:
-            channel_items_union = channel_items.union()
+            channel_items_union = channel_items.select('["osm:natural" = "beach"]').union()
 
         pixel_width_x = (ddd_bounds[2] - ddd_bounds[0]) / splatmap_size
         pixel_width_y = (ddd_bounds[3] - ddd_bounds[1]) / splatmap_size
@@ -197,14 +198,15 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
 
 
                 # Augmentation tests: sand (12)
-                if chan_idx == 12:
+                if chan_idx == 12 and not channel_items_union.is_empty():
                     if cover_factor < 0.99:
                         distance = channel_items_union.distance(ddd.point([x, y]))
-                        distance_reach = 10.0
+                        distance_reach = 8.0
                         #extend_ratio *= noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)  # Randomize reach
                         aug_factor = max(0, 1.0 - distance / distance_reach)
-                        aug_factor *= noise.pnoise2(x * 0.1, y * 0.1, octaves=3, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)  # Randomize reach
-                        aug_factor = max(aug_factor, 0.0) * 0.55
+                        noise_factor = noise.pnoise2(x * 0.03, y * 0.03, octaves=3, persistence=0.2, lacunarity=0.7, repeatx=1024, repeaty=1024, base=0)
+                        noise_factor = ddd.math.clamp((noise_factor - 0.5) * 2.0, 0.0, 1.0)  #  * (0.15 if chan_idx == 10 else 0.3)
+                        aug_factor = max(aug_factor * noise_factor, 0.0) * 0.75
 
                         cover_factor = max(aug_factor, cover_factor)
                         splat_matrix[yi, xi, :] -= cover_factor  # Reduce others
@@ -213,11 +215,11 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
                 # Augmentation tests: park (10)
                 if chan_idx == 10 or chan_idx == 11:
                     if cover_factor > 0.95:
-                        #extend_ratio *= noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)  # Randomize reach
-                        reduce_factor = noise.pnoise2(x * 0.1, y * 0.1, octaves=3, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0) * 0.5 + 0.5  # Randomize reach
-                        reduce_factor = ddd.math.clamp((reduce_factor - 0.5) * 4.0, 0.0, 1.0)  #  * (0.15 if chan_idx == 10 else 0.3)
+                        reduce_factor = noise.pnoise2(x * 0.03, y * 0.03, octaves=3, persistence=2.2, lacunarity=0.7, repeatx=1024, repeaty=1024, base=0)
+                        reduce_factor = ddd.math.clamp((reduce_factor - 0.1) * 4.0, 0.0, 1.0) * 0.75  #  * (0.15 if chan_idx == 10 else 0.3)
                         cover_factor = cover_factor - reduce_factor
-                        splat_matrix[yi, xi, 0] += reduce_factor  # Increase terrain
+                        splat_matrix[yi, xi, 0] += (reduce_factor * random.uniform(0, 1)) # Increase terrain
+                        splat_matrix[yi, xi, 13] += (reduce_factor * random.uniform(0, 1))  # Increase rock
 
                 splat_matrix[yi, xi, chan_idx] = cover_factor
 

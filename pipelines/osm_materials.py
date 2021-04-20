@@ -16,16 +16,11 @@ import PIL
 Collects materials and exports them in different formats:
 
 - As GLB file.
-- As texture atlas (textures are converted to linear color space first).
+- As texture atlas (textures are first converted to linear color space).
 
-This is run as:
+Run as:
 
-    ddd osm_materials.py  --export-textures
-
-The result is then copied to the client app, eg:
-
-    cp catalog_materials.glb ~/git/ddd-viewer2/public/assets/
-
+    ddd osm_materials.py  --export-textures --cache-clear [-p ddd:texture:resize=256]
 """
 
 pipeline = DDDPipeline(['pipelines.osm_base.s10_init.py',
@@ -41,22 +36,29 @@ def materials_list(root, osm):
     mats = ddd.group3(name="Materials")
     root.append(mats)
 
+    # Avoid exporting the same material twice
+    added_names = []
+
     for key in dir(ddd.mats):
         mat = getattr(ddd.mats, key)
         if isinstance(mat, DDDMaterial):
-            marker = ddd.marker(name=mat.name)
-            marker = marker.material(mat)
-            mats.append(marker)
+            if mat.name not in added_names:
+                marker = ddd.marker(name=mat.name)
+                marker = marker.material(mat)
+                mats.append(marker)
+                added_names.append(mat.name)
 
+'''
 @dddtask()
 def materials_show(root):
     mats = root.find("/Materials")
     mats = ddd.align.grid(mats, space=2.0)
     mats.show()
+'''
 
 @dddtask()
-def materials_save(root):
-    material_texsize = 512
+def materials_save(pipeline, root):
+    material_texsize = int(pipeline.data.get('ddd:texture:resize', None))
     mats = root.find("/Materials")
     mats = ddd.align.grid(mats, space=2.0)  # Not really needed for export
     mats.save('catalog_materials-default%d.glb' % material_texsize)
@@ -75,7 +77,7 @@ def convert_to_linear(im):
 @dddtask()
 def materials_pack_atlas(root, logger):
 
-    atlas_texsize = 512
+    atlas_texsize = int(pipeline.data.get('ddd:texture:resize', None))
     atlas_cols = 4
     atlas_rows = 4
 
@@ -125,24 +127,36 @@ def materials_pack_atlas(root, logger):
             texture_albedo[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 0:3] = albedo_array[:,:,0:3]
             albedo_array_padded = np.array(Image.fromarray(albedo_array).resize((atlas_texsize - 2, atlas_texsize - 2), PIL.Image.LANCZOS))  # Resize -2 and pad
             texture_albedo[atposy+1:atposy + atlas_texsize - 1, atposx + 1:atposx + atlas_texsize - 1, 0:3] = albedo_array_padded[:,:,0:3]
-            texture_albedo[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = 255
 
-            normals_image = DDDMaterial.load_texture_cached(mat.texture_normal)
+            # Encode displacement/height in the alpha channel
+            displacement_image = mat.get_texture_displacement()
+            if displacement_image:
+                displacement_array = np.array(displacement_image)
+                texture_albedo[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = displacement_array[:,:]
+            else:
+                texture_albedo[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = 128
+
+            #texture_albedo[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = 255
+
+
+
+            normals_image = mat.get_texture_normal()
             normals_array = np.array(normals_image)
             texture_normals[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 0] = normals_array[:,:,0]
             texture_normals[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 1] = normals_array[:,:,1]
             texture_normals[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 2] = normals_array[:,:,2]
             texture_normals[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = 255
+            # roughness + ?
 
 
-    filename = "/tmp/splatmap-textures-atlas-%d.png" % atlas_texsize
+    filename = "splatmap-textures-atlas-%d.png" % atlas_texsize
     logger.info("Writing texture atlas to: %s", filename)
     im = Image.fromarray(np.uint8(texture_albedo), "RGBA")
     im.save(filename, "PNG")
     #im.save(pipeline.data['filenamebase'] + ".splatmap-4chan-0_3-" + str(splatmap_size) + ".png", "PNG")
 
     im = Image.fromarray(np.uint8(texture_normals), "RGBA")
-    im.save("/tmp/splatmap-textures-atlas-normals-%d.png" % atlas_texsize, "PNG")
+    im.save("splatmap-textures-atlas-normals-%d.png" % atlas_texsize, "PNG")
     #im.save(pipeline.data['filenamebase'] + ".splatmap-4chan-0_3-" + str(splatmap_size) + ".png", "PNG")
 
 

@@ -7,6 +7,35 @@ from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 
 
+@dddtask(order="30.65.10.+")
+def osm_groups_items_ways_entry(osm, root, logger):
+    # In separate file
+    pass
+
+
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:natural" = "tree_row"]')
+def osm_groups_items_ways_natural_tree_row(root, osm, obj):
+    """
+    Generate tree node items for tree row ways.
+    """
+
+    trees = ddd.group2(name="Tree Row: %s" % obj.name)
+    trees.copy_from(obj)
+
+    length = obj.length()
+    density = 1 / 12.0  # tree every 10 m
+    count = int(length * density) + 1
+
+    for i in range(count):
+        tree = ddd.point(name="Tree %d" % (i + 1))
+        tree.copy_from(trees)
+        tree.set('osm:natural', 'tree')
+        trees.append(tree)
+
+    ddd.align.along(trees, obj)
+
+    root.find("/ItemsNodes").children.extend(trees.children)
+
 
 @dddtask(path="/Features/*", select='["osm:barrier" = "fence"]')
 def osm_select_items_ways_barrier_fence(root, osm, obj):
@@ -21,6 +50,7 @@ def osm_select_items_ways_barrier_fence(root, osm, obj):
     obj = obj.material(ddd.mats.fence)
     obj = obj.outline()  #.buffer(0.05)
     root.find("/ItemsWays").append(obj)
+
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:barrier" = "hedge"]')
 def osm_select_items_ways_barrier_hedge(root, osm, obj):

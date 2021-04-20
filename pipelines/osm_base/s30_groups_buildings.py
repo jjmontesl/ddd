@@ -37,12 +37,17 @@ def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
 
 
 
-@dddtask(path="/Buildings/*", select='["osm:building" = "shed"][! "osm:building:levels"]')
+@dddtask(path="/Buildings/*", select='["osm:building" = "shed"]')
 def osm_buildings_(pipeline, osm, root, obj):
     """
-    Set default levels to sheds.
+    Set defaults to sheds.
     """
-    obj.set('ddd:building:levels', 1)
+    obj.set('ddd:building:levels', default=1)
+    obj.set('ddd:building:material', default="wood")
+    obj.set('ddd:roof:material', default="wood")
+    obj.set('ddd:roof:shape', default="flat")
+    obj = obj.material(ddd.mats.wood)
+    return obj
 
 
 

@@ -121,6 +121,9 @@ class GeoRasterTile:
             # TODO: Better support for borders
             return self.value_simple(point)
 
+        # Correct EUDEM11 <10000 values
+        height_matrix = np.maximum(height_matrix, 0)
+
         if k == 1:
             interpolated = interp2d([0, 1], [0, 1], height_matrix, 'linear')  # , copy=False
         elif k == 3:

@@ -93,6 +93,11 @@ def osm_positioning_select_traffic_signals(obj, osm, root, logger):
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     #obj.extra['ddd:positioning:penetrate'] = -0.5
 
+@dddtask(path="/ItemsNodes/*", select='["osm:tourism" = "artwork"]')
+def osm_positioning_select_tourism_artwork(obj, osm, root, logger):
+    obj.extra['ddd:positioning:type'] = 'orient-project'
+    obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
+    #obj.extra['ddd:positioning:penetrate'] = -0.5
 
 @dddtask(path="/ItemsNodes/*", select='["osm:tourism" = "artwork"]["osm:artwork_type" = "sculpture"]')
 def osm_positioning_select_sculpture(obj, osm, root, logger):

@@ -26,7 +26,6 @@ def DDD_INCLUDE(config_file):
         sys.stderr.write("Loading config from: %s\n" % config_file)
         exec(open(config_file).read(), locals(), globals())
 
-
 DDD_INCLUDE('~/.ddd.conf')
 
 DDD_INCLUDE(DDD_DATADIR + '/ddd.conf')

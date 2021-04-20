@@ -7,6 +7,7 @@ import math
 
 from ddd.geo.georaster import GeoRasterLayer
 from ddd.core import settings
+from ddd.core.exception import DDDException
 
 
 # Get instance of logger for this module
@@ -35,8 +36,16 @@ class ElevationModel:
         value = self.dem.value(point)
 
         if not math.isfinite(value):
-            logger.warn("Non finite elevation value found at: %s", point)
+            logger.warn("Non finite elevation value found at %s: %s", point, value)
             value = 0  # - 0.01
+
+        if value < -1000.0 or value > 10000.0:
+            #raise DDDException("Suspicious value for elevation: %s. Aborting." % value)
+            # (Sea values in EUDEM11 are found to be -3.573423841207179e+38)
+            value = 0
+
+        if value is None:
+            value = 0
 
         return value
 

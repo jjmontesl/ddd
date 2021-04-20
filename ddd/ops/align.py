@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 class DDDAlign():
 
     def grid(self, obj, space=5.0, width=None):
+        """
+        Distribute children in a grid.
+        """
 
         if width is None:
             width = int(math.ceil(math.sqrt(len(obj.children))))
@@ -73,6 +76,8 @@ class DDDAlign():
 
     def anchor(self, obj, anchor):
         """
+        TODO: Rename to 'reanchor'
+
         Recenters an object around a given anchor.
         Anchor is a normalized vector relative to the object's bounding box.
         """
@@ -80,4 +85,22 @@ class DDDAlign():
         center = ((xmax - xmin) * anchor[0], (ymax - ymin) * anchor[1])
         result = obj.translate([-center[0], -center[1], 0])
         return result
+
+
+    def along(self, obj, reference, endpoint=True):
+        """
+        Distributes children along a linear geometry reference.
+
+        This method modifies the object chilren in place, returning the same object.
+        """
+        length = reference.length()
+        numitems = len(obj.children)
+        idx = 0
+        for distance in np.linspace(0.0, length, numitems, endpoint=endpoint):
+            (coords_p, segment_idx, segment_coords_a, segment_coords_b) = reference.interpolate_segment(distance)
+            child = obj.children[idx]
+            child.replace(child.translate(coords_p))
+            idx += 1
+
+        return obj
 

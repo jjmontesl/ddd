@@ -72,6 +72,7 @@ class DDDGeometry():
 
         return (major_seg, minor_seg, angle)  #, length_seg, width_seg)
 
+
     def remove_holes_split(self, obj):
         """
         Splits a polygon with holes generating several polygons with no holes.
@@ -106,4 +107,33 @@ class DDDGeometry():
         result = result.flatten()
 
         return result
+
+    def resize(self, obj, size=(1, 1), keep_aspect=True):
+        """
+        Resizes an object to the given size.
+        If `keep_aspect` is True, aspect ratio is maintained and max width or height limited to the given width or height size.
+
+        Modifies the object in place.
+        """
+        resized = obj  # ddd.align.anchor(obj, ddd.ANCHOR_CENTER)
+        xmin, ymin, xmax, ymax = resized.bounds()
+
+        width = xmax - xmin
+        height = ymax - ymin
+        aspect_ratio = width / height
+
+        scale_x = size[0] / width
+        scale_y = size[1] / height
+
+        if keep_aspect:
+            if aspect_ratio >= 1:
+                scale_y = scale_x
+            else:
+                scale_x = scale_y
+
+        resized = resized.scale((scale_x, scale_y))
+
+        obj.replace(resized)
+
+        return obj
 

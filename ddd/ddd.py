@@ -35,7 +35,7 @@ from matplotlib import colors
 from shapely import geometry, affinity, ops
 from shapely.geometry import shape, polygon
 from shapely.geometry.linestring import LineString
-from shapely.geometry.polygon import orient
+from shapely.geometry.polygon import orient, Polygon
 from trimesh import creation, primitives, boolean, transformations, remesh
 import trimesh
 from trimesh.base import Trimesh
@@ -56,7 +56,7 @@ from ddd.ops import extrusion
 
 import numpy as np
 from trimesh.util import concatenate
-from shapely.ops import unary_union
+from shapely.ops import unary_union, polygonize
 from geojson.feature import FeatureCollection
 from lark.visitors import Transformer
 from ddd.core.selectors.selector_ebnf import selector_ebnf
@@ -67,6 +67,7 @@ from trimesh.convex import convex_hull
 import os
 from ddd.core import settings
 from ddd.formats.geojson import DDDGeoJSONFormat
+from shapely.geometry.multipolygon import MultiPolygon
 
 
 # Get instance of logger for this module
@@ -100,6 +101,9 @@ class D1D2D3():
 
     VECTOR_UP = np.array([0.0, 0.0, 1.0])
     VECTOR_DOWN = np.array([0.0, 0.0, -1.0])
+
+    ANCHOR_CENTER = (0.5, 0.5)
+    ANCHOR_BOTTOM_CENTER = (0.5, 0.0)
 
     EPSILON = 1e-8
 
@@ -402,6 +406,9 @@ class D1D2D3():
 
         if (name.endswith(".glb")):
             return load_glb(name)
+        if (name.endswith(".svg")):
+            from ddd.formats.loader.svgloader import DDDSVGLoader
+            return DDDSVGLoader.load_svg(name)
         else:
             raise DDDException("Cannot load file (unknown extension): %s" % (name))
 
@@ -416,22 +423,24 @@ class DDDMaterial():
         if image is None:
             image = PIL.Image.open(path)
             # Resampling
-            resample_size = 512
+            resample_size = int(D1D2D3Bootstrap.data.get('ddd:texture:resize', 512))
             if resample_size and image.size[0] > resample_size:
-                logger.info("Resampling texture: %s", path)
+                logger.info("Resampling texture to %dx%d: %s", resample_size, resample_size, path)
                 image = image.resize((resample_size, resample_size), PIL.Image.BICUBIC)
             DDDMaterial._texture_cache[path] = image
         return image
 
     def __init__(self, name=None, color=None, extra=None, texture_color=None, texture_path=None, atlas_path=None, alpha_cutoff=None, alpha_mode=None, texture_normal_path=None,
                  metallic_factor=None, roughness_factor=None, index_of_refraction=None, direct_lighting=None, bump_strength=None, double_sided=False,
-                 texture_displacement_path=None, texture_roughness_path=None):
+                 texture_displacement_path=None, #displacement_strength=1.0,
+                 texture_roughness_path=None):
         """
             - texture_color: optional color to be used if a textured material is being generated (--export-texture), instead of the default color.
             - alpha_mode: one of OPAQUE, BLEND and MASK (used with alpha_cutoff)
 
         Color is hex color.
         """
+
         self.name = name
         self.extra = extra if extra else {}
 
@@ -449,9 +458,11 @@ class DDDMaterial():
         self.alpha_mode = alpha_mode
 
         self.texture = texture_path
-        self._texture_cached = None  # currently a PIL image, shall be a DDDTexture
-        self.texture_normal = texture_normal_path
+        #self._texture_cached = None  # currently a PIL image, shall be a DDDTexture
+        self.texture_normal_path = texture_normal_path
         #self._texture_normal_cached = None
+        self.texture_displacement_path = texture_displacement_path
+        #self._texture_displacement_cached = None
 
         self.metallic_factor = metallic_factor
         self.roughness_factor = roughness_factor
@@ -459,6 +470,13 @@ class DDDMaterial():
         #self.direct_lighting = direct_lighting
         #self.bump_strength = bump_strength
         self.double_sided = double_sided
+
+        '''
+        if name and ' ' in name:
+            raise DDDException("Spaces in material names are not allowed (TODO: check what he root cause was): %s", self.name)
+        if name is None:
+            logger.warn("Material with no name: %s", self)
+        '''
 
         self.atlas = None
         if atlas_path:
@@ -479,10 +497,10 @@ class DDDMaterial():
         """
         if self._trimesh_material_cached is None:
             if self.texture and D1D2D3Bootstrap.export_textures:
-                im = DDDMaterial.load_texture_cached(self.texture)  #.convert("RGBA")
-                if self.texture and (self.alpha_cutoff or self.alpha_mode or self.texture_normal):
+                im = self.get_texture()
+                if self.texture and (self.alpha_cutoff or self.alpha_mode or self.texture_normal_path):
                     alpha_mode = self.alpha_mode if self.alpha_mode else ('MASK' if self.alpha_cutoff else 'OPAQUE')
-                    im_normal = DDDMaterial.load_texture_cached(self.texture_normal) if self.texture_normal else None
+                    im_normal = self.get_texture_normal()
                     mat = PBRMaterial(name=self.name, baseColorTexture=im, baseColorFactor=self.texture_color_rgba if self.texture_color_rgba is not None else self.color_rgba,
                                       normalTexture=im_normal, doubleSided=self.double_sided,
                                       metallicFactor=self.metallic_factor, roughnessFactor=self.roughness_factor,
@@ -500,11 +518,39 @@ class DDDMaterial():
 
     def get_texture(self):
         """
-        Returns the texture (currently a PIL image)
+        Returns the texture (currently a PIL image).
+        Returns a cached image if available.
         """
-        if not self._texture_cached:
-            self._texture_cached = PIL.Image.open(self.texture)
-        return self._texture_cached
+        if not self.texture:
+            return None
+        #if not self._texture_cached:
+        #    self._texture_cached = PIL.Image.open(self.texture)
+        #return self._texture_cached
+        return DDDMaterial.load_texture_cached(self.texture)
+
+    def get_texture_normal(self):
+        """
+        Returns the normal texture.
+        Returns a cached image if available.
+        """
+        if not self.texture_normal_path:
+            return None
+        #if not self._texture_normal_cached:
+        #    self._texture_normal_cached = PIL.Image.open(self.texture_normal_path)
+        #return self._texture_normal_cached
+        return DDDMaterial.load_texture_cached(self.texture_normal_path)
+
+    def get_texture_displacement(self):
+        """
+        Returns the displacement texture.
+        Returns a cached image if available.
+        """
+        if not self.texture_displacement_path:
+            return None
+        #if not self._texture_displacement_cached:
+        #    self._texture_displacement_cached = PIL.Image.open(self.texture_displacement_path)
+        #return self._texture_displacement_cached
+        return DDDMaterial.load_texture_cached(self.texture_displacement_path)
 
 
 class DDDObject():
@@ -1008,7 +1054,7 @@ class DDDObject2(DDDObject):
         result = self.translate([-center[0], -center[1], 0])
         return result
 
-    def clean(self, eps=None, remove_empty=True, validate=True):
+    def clean(self, eps=None, remove_empty=True, validate=True, fix_invalid=True):
         result = self.copy()
         if result.geom and eps is not None:
             #result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
@@ -1020,11 +1066,39 @@ class DDDObject2(DDDObject):
                 #    result.geom = None
             else:
                 result = result.buffer(0)
+
         if result.geom and result.geom.is_empty:
             result.geom = None
+
         if result.geom and not result.geom.is_valid:  # Removing this check causes a core dump during 3D generation
-            logger.warn("Removed invalid geometry: %s", result)
-            result.geom = None
+
+            if fix_invalid:
+                # Handle self intersection
+                '''
+                item_ext = result.geom.exterior
+                item_mls = item_ext.intersection(item_ext)
+                polygons = polygonize(item_mls)
+                valid_item = MultiPolygon(polygons)
+                result.geom = valid_item #.convex_hull
+                #item = item.individualize()
+                '''
+                polygons = []
+                geoms = [result.geom] if  result.geom.type != "MultiPolygon" else result.geom.geoms
+                for geom in geoms:
+                    item_ext = LineString(geom.exterior.coords[:] + geom.exterior.coords[0:1])
+                    #item_ext = Polygon(list(result.geom.exterior.coords)).interiors # coords)
+                    item_mls = unary_union(item_ext)
+                    geom_polygons = list(polygonize(item_mls))
+                    polygons.extend(geom_polygons)
+                valid_item = MultiPolygon(polygons)
+                result.geom = valid_item  # .convex_hull
+
+                #ddd.group2([result, ddd.shape(LineString(item_ext)).buffer(1).material(ddd.mats.highlight)]).show()
+
+            if not result.geom.is_valid:
+                logger.warn("Removed invalid geometry: %s", result)
+                result.geom = None
+
         if result.geom and (result.geom.type != 'GeometryCollection' and not result.geom.is_simple):
             logger.warn("Removed geometry that crosses itself: %s", result)
             result.geom = None
@@ -2162,6 +2236,18 @@ class DDDObject3(DDDObject):
         obj = DDDObject3(name=name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
         #obj = DDDObject3(name=name, children=[c.copy() for c in self.children], mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
         return obj
+
+    def is_empty(self):
+        """
+        Tells whether this object has no mesh, or mesh is empty, and
+        all children are also empty.
+        """
+        if self.mesh and not self.mesh.is_empty and not len(self.mesh.faces) == 0:
+            return False
+        for c in self.children:
+            if not c.is_empty():
+                return False
+        return True
 
     def replace(self, obj):
         """

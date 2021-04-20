@@ -258,8 +258,8 @@ class Areas3DOSMBuilder():
 
             elif area_2d.extra.get('ddd:area:type', None) == 'bunker':
 
-                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), -0.2, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), -0.2, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), -0.4, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), -0.3, method=ddd.EXTRUSION_METHOD_SUBTRACT)
 
             elif area_2d.extra.get('ddd:area:type', None) == 'steps':
                     area_3d = area_2d.extrude_step(area_2d, area_2d.extra['ddd:steps:height'], base=False)

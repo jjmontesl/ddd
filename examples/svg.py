@@ -5,7 +5,6 @@ from ddd.ddd import ddd
 import math
 import random
 import webbrowser
-from OpenGL.GL.APPLE import row_bytes
 
 
 row = ddd.group2()

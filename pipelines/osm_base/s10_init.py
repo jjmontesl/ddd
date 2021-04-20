@@ -71,24 +71,29 @@ def osm_materials():
     ddd.mats.grass = ddd.material(name="Grass", color='#2dd355', extra={'uv:scale': 1.0},  # 0.25
                                  metallic_factor=0.35, roughness_factor=0.85, index_of_refraction=1.36, bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Base_Color.png",
-                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Normal.png",)
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Normal.png",
+                                 texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Height.png",)
 
     ddd.mats.park = ddd.material(name="Park", color='#1db345', extra={'uv:scale': 1.0},  # 0.25
                                  metallic_factor=0.3, roughness_factor=0.85, bump_strength=2.0, #index_of_refraction=1.36,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_col.jpg",
-                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",)
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",
+                                 texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_disp.jpg",)
     ddd.mats.forest = ddd.material(name="Forest", color='#3a6e17', extra={'uv:scale': 1.0},  # 0.25
                                  metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0, #index_of_refraction=1.36,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_col.jpg",
-                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",)
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",
+                                 texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_disp.jpg",)
     ddd.mats.garden = ddd.material(name="Garden", color='#2f614b', extra={'uv:scale': 1.0},  # 0.25
                                  metallic_factor=0.0, roughness_factor=0.85, index_of_refraction=1.36, bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Base_Color.png",
-                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Normal.png",)
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Normal.png",
+                                 texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Height.png",)
     ddd.mats.wetland = ddd.material(name="Wetland", color='#54610c', extra={'uv:scale': 1.0},  # 0.25
                                  metallic_factor=0.4, roughness_factor=0.45, index_of_refraction=1.36, bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_col.jpg",
-                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",)
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",
+                                 texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_disp.jpg",)
 
     ddd.mats.mud = ddd.material(name="Mud", color='#b49f84', extra={'uv:scale': 1.0},  # 0.2
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
@@ -170,12 +175,14 @@ def osm_materials():
     ddd.mats.sand = ddd.material(name="Sand", color='#fff694',
                                  metallic_factor=0.0, roughness_factor=0.45, bump_strength=2.0, index_of_refraction=1.0, direct_lighting=0.76,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_Color.jpg",
-                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_Normal.jpg",)
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_Normal.jpg",
+                                 texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_Displacement.jpg",)
 
     ddd.mats.rock = ddd.material(name="Rock", color='#5f5f4d',
                                  metallic_factor=0.3, roughness_factor=1.0, bump_strength=3.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_col.jpg",
-                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_nrm.jpg",)
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_nrm.jpg",
+                                 texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_disp.jpg",)
 
 
     '''
@@ -201,10 +208,23 @@ def osm_materials():
 
 
 
-    '''
-    self.bricks = ddd.material(name="Bricks", color='#d49156')
 
-    self.wood = ddd.material(name="Wood", color='#efae85')
+    ddd.mats.bricks = ddd.material(name="Bricks", color='#efae85', texture_color='#ffffff',
+                                 metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bricks07/Bricks07_col.jpg",
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bricks07/Bricks07_col.jpg",
+                                 texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bricks07/Bricks07_col.jpg",
+                                 texture_roughness_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bricks07/Bricks07_col.jpg",)
+
+    ddd.mats.wood = ddd.material(name="Wood", color='#d49156', texture_color='#ffffff',
+                                 metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Wood39/Wood39_col.jpg",
+                                 texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Wood39/Wood39_nrm.jpg",
+                                 texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/[2K]Wood39/Wood39_disp.jpg",
+                                 texture_roughness_path=ddd.DATA_DIR + "/osmmaterials/[2K]Wood39/Wood39_rgh.jpg",)
+
+
+    '''
 
     # Painted materials
     self.metal_paint_red = ddd.material("PaintRed", color='#d01010')
@@ -228,6 +248,7 @@ def osm_materials():
     self.light_red = ddd.material(color='#ff0000')
 
     '''
+
     # Vegetation (trees, hedges)
     ddd.mats.bark = ddd.material(name="Bark", color='#df9e75', extra={'uv:scale': 1.0},  # 0.25
                                  metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0, # index_of_refraction=1.36,

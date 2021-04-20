@@ -188,8 +188,8 @@ class BuildingOSMBuilder():
         random.seed(hash(building_2d.name))
         building_material = random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3])
 
-        if building_2d.extra.get('osm:building:material', None):
-            material_name = building_2d.extra.get('osm:building:material')
+        material_name = building_2d.get('ddd:building:material', building_2d.get('osm:building:material', None))
+        if material_name:
             if hasattr(ddd.mats, material_name):
                 building_material = getattr(ddd.mats, material_name)
 
@@ -231,12 +231,12 @@ class BuildingOSMBuilder():
                     continue
 
                 material = building_material
-                if part.extra.get('osm:building:material', None):
-                    material_name = part.extra.get('osm:building:material')
+                material_name = part.get('ddd:building:material', part.get('osm:building:material', None))
+                if material_name:
                     if hasattr(ddd.mats, material_name):
                         material = getattr(ddd.mats, material_name)
-                if part.extra.get('osm:building:facade:material', None):
-                    material_name = part.extra.get('osm:building:facade:material')
+                material_name = part.get('ddd:building:facade:material', part.get('osm:building:facade:material', None))
+                if material_name:
                     if hasattr(ddd.mats, material_name):
                         material = getattr(ddd.mats, material_name)
 
@@ -255,12 +255,12 @@ class BuildingOSMBuilder():
                     pbuffered = 0
 
                 # Roof: info
-                roof_shape = part.extra.get('osm:roof:shape', roof_shape)
+                roof_shape = part.get('ddd:roof:shape', part.get('osm:roof:shape', roof_shape))
                 roof_height = float(part.extra.get('osm:roof:height', 0))
 
                 roof_material = ddd.mats.roof_tiles
-                if part.extra.get('osm:roof:material', None):
-                    material_name = part.extra.get('osm:roof:material')
+                material_name = part.get('ddd:roof:material', part.get('osm:roof:material', None))
+                if material_name:
                     if hasattr(ddd.mats, material_name):
                         roof_material = getattr(ddd.mats, material_name)
 

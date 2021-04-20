@@ -1034,12 +1034,14 @@ class Ways2DOSMBuilder():
                 if (remaining.is_empty()):
                     break
 
-                splits = ops.split(remaining.geom, perp.geom)
+                splits = None
 
-                splits = [s for s in splits]
-                splits.sort(key=lambda s: s.area)
+                if remaining.geom.type != 'Point' and remaining.geom.type != 'MultiPoint':
+                    splits = ops.split(remaining.geom, perp.geom)
+                    splits = [s for s in splits]
+                    splits.sort(key=lambda s: s.area)
 
-                if len(splits) > 1:
+                if splits and len(splits) > 1:
 
                     step = obj.copy(name="Step %s: %s" % (idx, obj.name))
                     step.children = []

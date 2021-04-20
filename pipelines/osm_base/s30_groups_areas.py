@@ -44,7 +44,7 @@ def osm_groups_areas_leisure_park(obj, osm):
     obj = obj.material(ddd.mats.park)
     return obj
 
-@dddtask(path="/Areas/*", select='["osm:highway" = "pedestrian"]["osm:area = "yes"')
+@dddtask(path="/Areas/*", select='["osm:highway" = "pedestrian"]["osm:area" = "yes"]')
 def osm_groups_areas_highway_pedestrian(obj, osm):
     """Define area data."""
     obj.name = "Pedestrian area: %s" % obj.name
@@ -115,6 +115,20 @@ def osm_groups_areas_landuse_greenfield(obj, osm):
     obj.extra['ddd:aug:itemfill:density'] = 0.001
     obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
     obj = obj.material(ddd.mats.terrain)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:landuse" = "allotments"]')
+def osm_groups_areas_landuse_allotments(obj, osm):
+    """Define area data."""
+    obj.name = "Allotments: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj = obj.material(ddd.mats.terrain)
+
+    obj.extra['ddd:aug:itemfill:density'] = 0.001
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 1}
+
+    # Distribute crops
+    #ddd.align.matrix_grid(obj.bounds(ddd.point())).intersection(obj)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:natural" = "fell"]')

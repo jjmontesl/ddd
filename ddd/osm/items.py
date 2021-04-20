@@ -14,6 +14,7 @@ from ddd.pack.sketchy.urban import patio_table
 from collections import defaultdict
 from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
+from ddd.pack.symbols import iconitems
 
 
 # Get instance of logger for this module
@@ -31,6 +32,14 @@ class ItemsOSMBuilder():
 
         self.tree_decimate = 1
         self.tree_decimate_idx = 0
+
+    def item_names_all(self, item):
+        result = []
+        for k, v in item.extra.items():
+            if k == "osm:name" or k.startswith('osm:name:'):
+                result.append(v)
+        return (result if result else None)
+
 
     def generate_item_3d(self, item_2d):
 
@@ -369,7 +378,16 @@ class ItemsOSMBuilder():
 
         item_name = item_2d.extra['osm:feature']['properties'].get('name', None)
         if item_name:
-            item_3d = urban.sculpture_text(item_name[:1], 1.5)
+            if item_2d.extra.get('osm:artwork_type', None) == 'statue':
+                item_3d = urban.sculpture_text(item_name[:1], 1.5)
+            else:
+                # Try
+                names = " ".join(self.item_names_all(item_2d))
+                item_3d = iconitems.iconitem_auto(names, (2.0, 2.0), 0.4, 0.05)
+                if not item_3d:
+                    item_3d = urban.sculpture_text(item_name[:1], 1.5)
+                else:
+                    item_3d = item_3d.translate([0, 0, 0.2])
         else:
             item_3d = urban.sculpture(1.5)
 
@@ -384,11 +402,21 @@ class ItemsOSMBuilder():
         #oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
         item_name = item_2d.extra['osm:feature']['properties'].get('name', None)
         if item_name:
-            item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0)
+            if item_2d.extra.get('osm:artwork_type', None) == 'statue':
+                item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0)
+            else:
+                # Try
+                names = " ".join(self.item_names_all(item_2d))
+                item_3d = iconitems.iconitem_auto(names, (2.0, 4.0), 0.8, 0.1)
+                if not item_3d:
+                    item_3d = urban.sculpture_text(item_name[:1], 2.0, 5.0)
+                else:
+                    item_3d = item_3d.translate([0, 0, 0.2])
+
         else:
             item_3d = urban.sculpture(2.0, 5.0)
         item_3d = urban.pedestal(item_3d, 2.0)
-        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.rotate([0, 0, item_2d.get('ddd:angle', 0) - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0]).material(ddd.mats.bronze)
         item_3d.name = 'Monument: %s' % item_2d.name
         return item_3d

@@ -11,7 +11,7 @@ import numpy as np
 
 
 def func_noise(coords):
-    val = noise.pnoise2(coords[0] * 0.01, coords[1] * 0.01, octaves=3, persistence=2, lacunarity=5, repeatx=1024, repeaty=1024, base=0)
+    val = noise.pnoise2(coords[0] * 0.03, coords[1] * 0.03, octaves=3, persistence=2.2, lacunarity=0.7, repeatx=1024, repeaty=1024, base=0)
     return val
 
 mapsize = 512
