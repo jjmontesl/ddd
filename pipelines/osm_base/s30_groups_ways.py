@@ -247,8 +247,8 @@ def osm_select_ways_path(obj, root):
     obj = obj.material(ddd.mats.dirt)
 
     # TODO: Do later, after applying elevations, in a select ("add fences to elevated ways")... improve
-    obj.extra['ddd:way:elevated:border'] = 'fence'
-    obj.extra['ddd:way:elevated:material'] = ddd.mats.pathwalk
+    obj.extra['ddd:way:elevated:border'] = 'fence' # this seems a bad idea, do later, after elevation?
+    obj.extra['ddd:way:elevated:material'] = ddd.mats.pathwalk  # this seems a bad idea, do later, after elevation?
     obj.extra['ddd:way:weight'] = 42
 
     root.find("/Ways").append(obj)
@@ -406,7 +406,7 @@ def osm_select_ways_barrier_wall(root, osm, obj):
     obj = obj.material(ddd.mats.bricks)
     root.find("/ItemsWays").append(obj)
 
-@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:barrier" = "city_wall"]')
+@dddtask(path="/Features/*", select='["geom:type"~"LineString|Polygon|MultiPolygon|GeometryCollection"]["osm:barrier" = "city_wall"]')
 def osm_select_ways_barrier_city_wall(root, osm, obj):
     """Define item data."""
     obj = obj.copy()

@@ -45,21 +45,22 @@ def osm_groups_items_areas_leisure_outdoor_seating(obj, root, osm):
 
 @dddtask(path="/Features/*", select='["osm:leisure" = "playground"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
 def osm_groups_items_areas_leisure_playground(obj, root, osm):
-    """Define area data."""
+    """
+    Generates childrens objects for an area.
+    TODO: As we know the area, spread objects over it instead of radially.
+    TODO: Check that an equivalent node is not defined, or individual playground items.
+    """
+    obj = obj.copy()
     obj.extra['ddd:elevation:base_ref'] = "container"
-    #print(obj.geom)
     items = osm.items2.generate_item_2d_childrens_playground(obj)
     root.find("/ItemsNodes").children.extend([i for i in items.flatten().children if i.geom])
 
-    obj = obj.material(ddd.mats.pitch_blue)
-    obj.name = "Playground: %s" % obj.name
-    obj.extra['ddd:area:type'] = "default"
-    obj.extra['ddd:height'] = 0.2
-    root.find("/Areas").append(obj)
-
 @dddtask(path="/Features/*", select='["osm:leisure" = "playground"]["geom:type" = "Point"]')
 def osm_groups_items_areas_leisure_playground_point(obj, root, osm):
-    """Create an area automatically for playground nodes without a defined area."""
+    """
+    Create an area automatically for playground nodes without a defined area.
+    Note that this could also be an area (see groups_areas).
+    """
 
     obj.extra['ddd:elevation:base_ref'] = "container"
     #print(obj.geom)
@@ -73,11 +74,12 @@ def osm_groups_items_areas_leisure_playground_point(obj, root, osm):
     items = osm.items2.generate_item_2d_childrens_playground(generated_area)
     root.find("/ItemsNodes").children.extend([i for i in items.flatten().children if i.geom])
 
+    """
     obj = obj.material(ddd.mats.pitch_blue)
-    obj.name = "Playground Item: %s" % obj.name
+    obj.name = "Playground Point: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"
     obj.extra['ddd:height'] = 0.0
 
     root.find("/Areas").append(obj)
-
+    """
 

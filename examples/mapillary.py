@@ -4,10 +4,11 @@ from ddd.pack.sketchy import urban, landscape, industrial, plants
 from ddd.ddd import ddd
 import math
 from ddd.geo.sources.mapillary import MapillaryClient
+from ddd.core import settings
 
 items = ddd.group3()
 
-mc = MapillaryClient("WFBxUUhWTlFhOGNhanZXUWFFTVNpNzoyMmM5OTUyMWQwOTZhMDYw")
+mc = MapillaryClient(ddd.data['mapillary:client_id'])
 data = mc.images_list([-3.693955, 40.400690], limit=35)
 
 for feature in data['features'][:]:

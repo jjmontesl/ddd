@@ -7,6 +7,7 @@ from ddd.ddd import ddd
 from ddd.core import settings
 import logging
 import sys
+import gzip
 
 # Catalog path
 # TODO: Read from setting
@@ -25,6 +26,8 @@ ICONITEM_TERM_REPLACE = {
     'sirena': 'fish',
     'sireno': 'fish',
     'sol': 'sun',
+    'guitarra': 'guitar',
+    'del': None,
 }
 
 
@@ -102,20 +105,65 @@ def iconitem_catalog_list():
     ICONITEM_CATALOG = icons
     return ICONITEM_CATALOG
 
+
+TRANSLATE_DICTS = {}
+
+def dictionary_load(path):
+    if path in TRANSLATE_DICTS:
+        return  TRANSLATE_DICTS[path]
+
+    f = gzip.open(path,'rb')
+    file_content = f.read().decode()
+
+    dictdata = file_content.split("\n")
+    dictindex = {term: line for line, term in enumerate(dictdata)}
+
+    TRANSLATE_DICTS[path] = (dictdata, dictindex)
+    return TRANSLATE_DICTS[path]
+
+def translate(term, dictionary_path):
+    # dict -d fd-spa-eng cruz
+    result = []
+    term = term.lower()
+    dictdata, dictindex = dictionary_load(dictionary_path)
+
+    for t in (term, term[:-1]):
+        line = dictindex.get(t, None)
+        if line is not None:
+            trans = dictdata[line + 1]
+            if trans.startswith("1. "): trans = trans[3:]
+            trans = trans.split(", ")
+            result.extend(trans)
+
+    return result
+
+
 def iconitem_catalog_search(text):
-    terms = text.split()
+    terms = [t.lower() for t in text.split()]
     catalog = iconitem_catalog_list()
 
+    try_terms_es = []
     for term in terms:
+        if len(term) < 3: continue
+        if term in ICONITEM_TERM_REPLACE and ICONITEM_TERM_REPLACE[term] is None: continue
+        term_translations = translate(term, "/usr/share/dictd/freedict-spa-eng.dict.dz")
+        if term_translations:
+            try_terms_es.extend(term_translations)
+    #try_terms_fr = [translate(term, "fra", "eng") for term in temrs]
+
+    allterms = [t for t in terms + try_terms_es if t is not None]
+    #logger.info("Item text: %s  Terms: %s", text, allterms)
+
+    for term in allterms:
         term = term.lower()
         if term in ICONITEM_TERM_REPLACE:
             term = ICONITEM_TERM_REPLACE[term]
-        if len(term) <= 2:
+        if term is None or len(term) <= 2:
             continue
         for icon, icon_terms in catalog.items():
             for icon_term in icon_terms:
                 if term == icon_term:  # or (len(term) >= 4 and (term in icon_term)) or (len(icon_term) >= 4 and (icon_term in term)):
-                    #logger.debug("Selecting icon '%s' for: '%s'", icon_terms, text)
+                    logger.debug("Selecting icon '%s' for: '%s'", icon_terms, text)
                     return icon
 
     return None

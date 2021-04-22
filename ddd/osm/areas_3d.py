@@ -401,7 +401,8 @@ class Areas3DOSMBuilder():
         # TODO: pass size then adapt to position and orientation, easier to construct and reuse
         # TODO: get area uncropped (create a cropping utility that stores the original area)
 
-        sport = area_2d.extra.get('ddd:sport', None)
+        sport_full = area_2d.extra.get('ddd:sport', None)
+        sport = sport_full.split(";")[0]  # Get first value if multivalued
 
         lines = None
         if sport == 'tennis':

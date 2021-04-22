@@ -123,7 +123,17 @@ def materials_pack_atlas(root, logger):
 
             albedo_image = DDDMaterial.load_texture_cached(mat.texture)
             albedo_array = np.array(albedo_image)
+
+            # Linearize
             albedo_array = convert_to_linear(albedo_array)
+
+            # Colorize
+            texture_color_rgba = np.array(mat.texture_color_rgba if mat.texture_color_rgba is not None else mat.color_rgba)
+            colorize_strength = 0.5
+            white = np.array([255, 255, 255])
+            texture_color_rgba[:3] = texture_color_rgba[:3] + (white - texture_color_rgba[:3]) * (1.0 - colorize_strength)
+            albedo_array[:,:,:3] = ((albedo_array[:,:,:3] / 255) * (texture_color_rgba[:3] / 255)) * 255
+
             texture_albedo[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 0:3] = albedo_array[:,:,0:3]
             albedo_array_padded = np.array(Image.fromarray(albedo_array).resize((atlas_texsize - 2, atlas_texsize - 2), PIL.Image.LANCZOS))  # Resize -2 and pad
             texture_albedo[atposy+1:atposy + atlas_texsize - 1, atposx + 1:atposx + atlas_texsize - 1, 0:3] = albedo_array_padded[:,:,0:3]
@@ -137,8 +147,6 @@ def materials_pack_atlas(root, logger):
                 texture_albedo[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = 128
 
             #texture_albedo[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = 255
-
-
 
             normals_image = mat.get_texture_normal()
             normals_array = np.array(normals_image)

@@ -1895,7 +1895,10 @@ class DDDObject2(DDDObject):
         closest_self, closest_d = self.closest(other)
         #logger.debug("Closest: %s  %s > %s", closest_d, closest_self, other)
 
-        d = closest_self.geom.project(other.geom)
+        try:
+            d = closest_self.geom.project(other.geom)
+        except Exception as e:
+            raise DDDException("Error finding closest segment from %s to %s: %s" % (self, other, e))
 
         result = (*closest_self.interpolate_segment(d), closest_self, d)
         #ddd.group([other.buffer(5.0),  ddd.point(result[2]).buffer(5.0).material(ddd.mat_highlight), ddd.line([result[2], result[3]]).buffer(2.0), ddd.point(result[0]).buffer(5.0), closest_self.buffer(0.2)]).show()

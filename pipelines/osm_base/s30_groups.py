@@ -95,7 +95,7 @@ def osm_groups_areas_process(pipeline, osm, root, logger):
 
 @dddtask(order="30.50.90.+", path="/Areas/*", select='[! "ddd:area:type"]')
 def osm_groups_areas_remove_ignored(root, obj, logger):
-    """Remove ignored areas."""
+    """Remove not selected areas."""
     return False
 
 

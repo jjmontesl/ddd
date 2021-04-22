@@ -132,11 +132,14 @@ class DDDPipeline():
                         self.cache_load(filename)
                         first_task_idx = len(tasks) - task_idx
                         break
-        tasks = tasks[first_task_idx:]
 
+        #tasks = tasks[first_task_idx:]
 
         skip_tasks = None
-        for task in tasks:
+        for task_idx, task in enumerate(tasks):
+
+            if task_idx < first_task_idx and not task.cache_override:
+                continue
 
             if skip_tasks and task._order_num[:len(skip_tasks)] == skip_tasks:
                 logger.info("Skipping: %s", task)

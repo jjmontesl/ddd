@@ -68,7 +68,7 @@ def osm_select_items_ways_barrier_hedge(root, osm, obj):
 
 
 '''
-@dddtask(order="30.50.20.+", log=True)
+###@dddtask(order="30.50.20.+", log=True)
 def osm_groups_areaitems(root, osm):
 
     # Split and junctions first?

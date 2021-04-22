@@ -30,8 +30,6 @@ def osm_groups_areas_default_data(obj, osm):
     """Sets default data."""
     obj.extra['ddd:area:weight'] = 100  # Lowest
     obj.extra['ddd:area:height'] = 0  # Lowest
-    obj.extra['ddd:area:container'] = None
-    obj.extra['ddd:area:contained'] = []
 
 
 @dddtask(path="/Areas/*", select='["osm:leisure" = "park"]')
@@ -213,6 +211,16 @@ def osm_groups_areas_leisure_pitch(obj, osm):
     obj = obj.material(ddd.mats.pitch)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:leisure" = "playground"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
+def osm_groups_items_areas_leisure_playground(obj, root, osm):
+    """Define area data. Children game objects are defined in items_areas."""
+    print(obj)
+    obj.name = "Playground: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj.extra['ddd:height'] = 0.15
+    obj = obj.material(ddd.mats.pitch_blue)
+    return obj
+
 @dddtask(path="/Areas/*", select='["osm:leisure" = "track"]')
 def osm_groups_areas_leisure_track(obj, osm):
     """Define area data."""
@@ -321,7 +329,19 @@ def osm_groups_areas_surface_asphalt(obj, root):
     return obj
 
 
+
+
 """
+
+            elif narea.extra.get('osm:landuse', None) in ('railway', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                area = self.generate_area_2d_railway(narea)
+
+            elif narea.extra.get('osm:amenity', None) in ('school', ):
+                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
+                narea = narea.subtract(union)
+                area = self.generate_area_2d_school(narea)
+
 
     def generate_area_2d_railway(self, area):
         feature = area.extra['osm:feature']
@@ -361,67 +381,6 @@ def osm_groups_areas_surface_asphalt(obj, root):
         area = ddd.group2([area, wall])
 
         return area
-"""
-
-
-"""
-def generate_areas_2d(self):
-
-        logger.info("Sorting 2D areas  (%d).", len(areas))
-        areas.sort(key=lambda a: a.extra['ddd:area:area'])
-
-        for idx in range(len(areas)):
-            area = areas[idx]
-            for larger in areas[idx + 1:]:
-                if larger.contains(area):
-                    #logger.debug("Area %s contains %s.", larger, area)
-                    area.extra['ddd:area:container'] = larger
-                    larger.extra['ddd:area:contained'].append(area)
-                    break
-
-        # Union all roads in the plane to subtract
-        logger.info("Generating 2D areas subtract.")
-        union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a']]).union()  # , self.osm.areas_2d
-        #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a']])
-
-        logger.info("Generating 2D areas (%d)", len(areas))
-        for narea in areas:
-        #for feature in self.osm.features:
-            feature = narea.extra['osm:feature']
-
-            if narea.geom.type == 'Point': continue
-
-            narea.extra['ddd:area:original'] = narea  # Before subtracting any internal area
-
-            '''
-            # Subtract areas contained (use contained relationship)
-            for contained in narea.extra['ddd:area:contained']:
-                narea = narea.subtract(contained)
-            '''
-
-
-
-            elif narea.extra.get('osm:landuse', None) in ('railway', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                area = self.generate_area_2d_railway(narea)
-
-            elif narea.extra.get('osm:amenity', None) in ('school', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_school(narea)
-
-            else:
-                logger.debug("Unknown area: %s", feature)
-
-            #elif feature['properties'].get('amenity', None) in ('fountain', ):
-            #    area = self.generate_area_2d_school(feature)
-
-            if area:
-                logger.debug("Area: %s", area)
-                area = area.subtract(union)
-
-                self.osm.areas_2d.append(area)
-                #self.osm.areas_2d.children.extend(area.individualize().children)
 """
 
 

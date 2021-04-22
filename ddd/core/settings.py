@@ -10,9 +10,11 @@ import sys
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
+
 DDD_EXECUTABLE = sys.executable
 
 DDD_BASEDIR = './'  # Stress we are using the working directory and avoids /
+
 
 DDD_DATADIR = DDD_BASEDIR + 'data/'
 if 'DDD_DATADIR' in os.environ:
@@ -25,6 +27,8 @@ def DDD_INCLUDE(config_file):
     if (os.path.exists(config_file)):
         sys.stderr.write("Loading config from: %s\n" % config_file)
         exec(open(config_file).read(), locals(), globals())
+
+
 
 DDD_INCLUDE('~/.ddd.conf')
 

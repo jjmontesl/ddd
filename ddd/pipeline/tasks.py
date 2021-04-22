@@ -38,7 +38,7 @@ class DDDTask(object):
     def __init__(self, name=None, path=None, select=None, filter=None,
                  order=None, #parent=None, before=None, after=None,
                  log=None, recurse=False,
-                 condition=False, cache=False):
+                 condition=False, cache=False, cache_override=False):
 
         self.name = name
 
@@ -51,6 +51,7 @@ class DDDTask(object):
 
         self.condition = condition
         self.cache = cache
+        self.cache_override = cache_override
 
         self.log = log
 

@@ -153,7 +153,7 @@ def osm_structured_subtract_buildings(pipeline, root, logger, obj):
 @dddtask(path="/Areas/*", select='[!"ddd:layer"]')
 def osm_structured_areas_layer(osm, root, obj):
     layer = obj.extra.get('osm:layer', "0")
-    obj.prop_set('ddd:layer', layer)
+    obj.set('ddd:layer', layer)
 
 
 @dddtask()
@@ -168,6 +168,7 @@ def osm_structured_surfaces(osm, root, pipeline):
     go across them onto a unique surface, as long as they belong to the same layer or its transition layer.
     """
 
+    # UNUSED: WIP. Move to roads subsystem (style + osm code)
 
     layer_m1 = root.select(path="/Ways/", selector='["ddd:layer" = "-1"];["ddd:layer" = "-1a"]')
     layer_1 = root.select(path="/Ways/", selector='["ddd:layer" = "0a"];["ddd:layer" = "1"]')
@@ -296,10 +297,30 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
 
     root.find("/Areas").append(terr)
 
+
+@dddtask(path="/Areas/*", select='["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]', recurse=True)
+def osm_groups_areas_assign_area_m2(root, osm, obj, logger):
+    """
+    Assign area in m2. It was assigned earlier to areas, but will be used by areas_process in the
+    following steps to resolve area containment.
+    This updates and assigns areas to areas that might have been added (although ideally they should
+    have been selected earlier during groups_areas).
+    """
+
+    # Removed as causes stairs to be assigned as areas
+    #obj.extra['ddd:area:area'] = obj.geom.area
+    #obj.set('ddd:area:weight', default=100)  # Lowest
+    #obj.set('ddd:area:height', default=0)
+
+    # Create container and contained metadata
+    obj.extra['ddd:area:container'] = None
+    obj.extra['ddd:area:contained'] = []
+
+
 @dddtask()
 def osm_structured_areas_process(logger, osm, root):
     """
-    Resolves container / contained relationships betwene areas.
+    Resolves container / contained relationships between areas.
     """
 
     layers = set([n.extra.get('ddd:layer', '0') for n in root.select(path="*", recurse=True).children])
@@ -361,7 +382,7 @@ def osm_structured_building_link_items_ways_elevation(root, osm, obj):
 @dddtask()
 def osm_structured_items_2d_generate(root, osm):
     # Generates items defined as areas (area fountains, football fields...)
-    #osm.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)
+    #osm.items2.generate_items_2d()  # Objects related to areas (fountains, playgrounds...)  # check: this no longer applies?
     pass
 
 

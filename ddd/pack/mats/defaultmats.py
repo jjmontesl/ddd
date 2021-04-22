@@ -72,9 +72,9 @@ class DefaultMaterials(MaterialsCollection):
 
         # Lights
         self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')
-        self.light_green = ddd.material(color='#00ff00')
-        self.light_orange = ddd.material(color='#ffff00')
-        self.light_red = ddd.material(color='#ff0000')
+        self.light_green = ddd.material("LightGreen", color='#00ff00')
+        self.light_orange = ddd.material("LightOrange", color='#ffff00')
+        self.light_red = ddd.material("LightRed", color='#ff0000')
 
         # Trees
         self.bark = ddd.material(name="Bark", color='#df9e75')

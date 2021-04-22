@@ -147,6 +147,24 @@ class GeoRasterLayer:
         self._last_tile = None
         self._last_tile_config = None
 
+        # Cache of transformers for different georaster tile CRS
+        self._transformers = {}
+
+    def _get_transformer(self, crs):
+        crs = crs.lower()
+        transformer = self._transformers.get(crs, None)
+        if transformer is None:
+            transformer = pyproj.Transformer.from_proj('epsg:4326', crs, always_xy=True)
+            self._transformers[crs] = transformer
+        return transformer
+
+    def _transform_wgs84_to(self, point, crs):
+        projected_point = point
+        if crs != 'epsg:4326':
+            tile_crs_transformer = self._get_transformer(crs)
+            projected_point = tile_crs_transformer.transform(point[0], point[1])
+        return projected_point
+
     def tile_from_point(self, point):
         """
         Returns the GeoRasterTile for the given point.
@@ -154,17 +172,20 @@ class GeoRasterLayer:
         This method caches the last accessed tile, as it is more likely to be hit next.
         """
 
-        # This is incorect but cheap (the point should be projected to the target CRS and compared with the original bounds)
-        # TODO: Allow for both approaches via setting (?)
-
-        if (self._last_tile and
-            (point[0] >= self._last_tile_config['bounds_wgs84_xy'][0] and point[0] < self._last_tile_config['bounds_wgs84_xy'][2] and
-             point[1] >= self._last_tile_config['bounds_wgs84_xy'][1] and point[1] < self._last_tile_config['bounds_wgs84_xy'][3])):
-            return self._last_tile
+        if self._last_tile:
+            projected_point = self._transform_wgs84_to(point, self._last_tile.crs)
+            if (projected_point[0] >= self._last_tile_config['bounds'][0] and projected_point[0] < self._last_tile_config['bounds'][2] and
+                projected_point[1] >= self._last_tile_config['bounds'][1] and projected_point[1] < self._last_tile_config['bounds'][3]):
+                return self._last_tile
 
         for cc in self.tiles_config:
-            if (point[0] >= cc['bounds_wgs84_xy'][0] and point[0] < cc['bounds_wgs84_xy'][2] and
-                point[1] >= cc['bounds_wgs84_xy'][1] and point[1] < cc['bounds_wgs84_xy'][3]):
+
+            projected_point = self._transform_wgs84_to(point, cc['crs'])
+
+            #if (point[0] >= cc['bounds_wgs84_xy'][0] and point[0] < cc['bounds_wgs84_xy'][2] and
+            #    point[1] >= cc['bounds_wgs84_xy'][1] and point[1] < cc['bounds_wgs84_xy'][3]):
+            if (projected_point[0] >= cc['bounds'][0] and projected_point[0] < cc['bounds'][2] and
+                projected_point[1] >= cc['bounds'][1] and projected_point[1] < cc['bounds'][3]):
                 self._last_tile_config = cc
                 self._last_tile = GeoRasterTile.load(cc['path'], cc['crs'])
                 return self._last_tile

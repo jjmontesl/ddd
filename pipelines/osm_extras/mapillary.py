@@ -24,7 +24,7 @@ def osm_extras_mapillary_get(pipeline, osm, root, logger):
 
     # Add mapillary items
     # TODO: Move to separate task and rule module, separate point generation from image/metadata generation, reuse code, this could be much shorter
-    mc = MapillaryClient(client_id=pipeline.data['mapillary_client_id'])
+    mc = MapillaryClient(client_id=pipeline.data['mapillary:client_id'])
     transformer = pyproj.Transformer.from_proj(osm.osm_proj, osm.ddd_proj)
     transformer2 = pyproj.Transformer.from_proj(osm.ddd_proj, osm.osm_proj)
     query_coords = osm.area_crop2.centroid().geom.coords[0]

@@ -50,8 +50,15 @@ items.append(item)
 item = iconitems.iconitem_auto("Image", (2.0, 2.0), 0.4, 0.05)
 items.append(item)
 
-#item = iconitems.iconitem_auto("Los caballos", (2.0, 2.0), 0.4, 0.05)
-#items.append(item)
+item = iconitems.iconitem_auto("Cruz del Juramento", (2.0, 2.0), 0.4, 0.05)
+items.append(item)
+
+item = iconitems.iconitem_auto("Los caballos", (2.0, 2.0), 0.4, 0.05)
+items.append(item)
+
+item = iconitems.iconitem_auto("Fuente de Híspalis, Puerta de Jerez", (2.0, 2.0), 0.4, 0.05)
+items.append(item)
+
 
 
 items = ddd.align.grid(items)

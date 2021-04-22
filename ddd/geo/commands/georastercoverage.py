@@ -48,18 +48,28 @@ class GeoRasterCoverageCommand(DDDCommand):
 
     def georaster_coverage(self):
 
-        map = ddd.group2(name="DDD GeoRaster Coverage")
+        covermap = ddd.group2(name="DDD GeoRaster Coverage")
 
         tiles_config = settings.DDD_GEO_DEM_TILES
         for tc in tiles_config:
 
-            # Generate polygon in wgs84
-            tile = ddd.rect(tc['bounds_wgs84_xy'])
-            tile.name = "Tile: %s" % tc['path']
-            map.append(tile)
+            crs = tc['crs'].lower()
+            transformer = pyproj.Transformer.from_proj(crs, 'epsg:4326', always_xy=True)
 
-            print(tc)
+            projected_point_x0y0 = transformer.transform(tc['bounds'][0], tc['bounds'][1])
+            projected_point_x0y1 = transformer.transform(tc['bounds'][0], tc['bounds'][3])
+            projected_point_x1y0 = transformer.transform(tc['bounds'][2], tc['bounds'][1])
+            projected_point_x1y1 = transformer.transform(tc['bounds'][2], tc['bounds'][3])
+
+            # Generate polygon in wgs84
+            tile = ddd.polygon([projected_point_x0y0, projected_point_x1y0,projected_point_x1y1, projected_point_x0y1])
+            tile.name = "Tile: %s" % tc['path']
+            covermap.append(tile)
+
+            #print(tc)
 
         #map.show()
-        map.save("/tmp/ddd-georaster-coverage.geojson")
+        filename = "/tmp/ddd-georaster-coverage.geojson"
+        logger.info("Saving map to: %s", filename)
+        covermap.save(filename)
 
