@@ -400,6 +400,11 @@ class BuildingOSMBuilder():
                         roof = base.extrude_step(ddd.line(skillion_line), roof_height).translate([0, 0, max_height]).material(roof_material)
 
                     elif roof_shape == 'hipped':
+
+                        # TODO:
+                        #  https://gis.stackexchange.com/questions/136143/how-to-compute-straight-skeletons-using-python
+                        #  https://scikit-geometry.github.io/scikit-geometry/skeleton.html
+
                         # Attic
                         base = part.buffer(roof_buffer if pbuffered else 0)
                         orientation = "major"
@@ -429,6 +434,10 @@ class BuildingOSMBuilder():
                             stepbuffer = -(1 - stepx)
                             roof = roof.extrude_step(roofbase.buffer(stepbuffer * roof_height), stepheight * roof_height)
                         roof = roof.translate([0, 0, max_height]).material(roof_material)
+
+                    #elif
+                    # Reminder: https://scikit-geometry.github.io/scikit-geometry/skeleton.html
+                    #  https://gis.stackexchange.com/questions/136143/how-to-compute-straight-skeletons-using-python
 
                     elif roof_shape == 'none':
                         pass

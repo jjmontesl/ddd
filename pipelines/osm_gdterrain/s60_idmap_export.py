@@ -19,6 +19,9 @@ from shapely.strtree import STRtree
 import hashlib
 
 
+# This file is currently unused. Refer to splatmap_export.
+
+'''
 
 # TODO: Doing this on stage 59 as buildings are deleted (keep 2D and 3D versions in the tree for late usage, also for terrain_export)
 
@@ -122,3 +125,4 @@ def osm_gdterrain_export_idmap(root, pipeline, osm, logger):
     logger.info("IDMap keys:")
     for k in sorted(splat_keys.keys()):
         logger.info("  %x %s" % (k, splat_keys[k]))
+'''

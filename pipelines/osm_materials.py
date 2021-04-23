@@ -148,14 +148,22 @@ def materials_pack_atlas(root, logger):
 
             #texture_albedo[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = 255
 
+            # Normals
             normals_image = mat.get_texture_normal()
             normals_array = np.array(normals_image)
             texture_normals[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 0] = normals_array[:,:,0]
             texture_normals[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 1] = normals_array[:,:,1]
             texture_normals[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 2] = normals_array[:,:,2]
-            texture_normals[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = 255
-            # roughness + ?
 
+            # Roughnes
+            rough_image = mat.get_texture_roughness()
+            if rough_image:
+                rough_array = np.array(rough_image)
+                texture_normals[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = rough_array[:,:]
+            else:
+                texture_normals[atposy:atposy + atlas_texsize, atposx:atposx + atlas_texsize, 3] = 128
+
+            # roughness + ?
 
     filename = "splatmap-textures-atlas-%d.png" % atlas_texsize
     logger.info("Writing texture atlas to: %s", filename)

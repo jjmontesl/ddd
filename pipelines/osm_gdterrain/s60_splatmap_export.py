@@ -56,9 +56,11 @@ def osm_gdterrain_export_splatmap_init(root, pipeline, osm, logger):
     pipeline.data['splatmap:channels:collapse_map'] = [
         [0, 2, 12],     # Terrain, asphalt, pavement, sand
         [1, 13],        # Paths, dirt, rock
-        [8, 9, 10, 11], # Grass
+        [8, 9, 10, 11], # Grass, garden, pàrk, forest
         [3, 4, 5]       # Pedestrian, tiles
     ]
+
+    pipeline.data['splatmap:ids'] = {}
 
 # 0 - Ground / Terrain
 # 1 - Dirt (some wild pathways, terrain)
@@ -139,8 +141,37 @@ def osm_gdterrain_export_splatmap_channel_7_grass(root, pipeline, osm, logger):
 '''
 
 
+
+
+def osm_gdterrain_splatmap_detail_id(pipeline, obj):
+    """
+    """
+    idmap = pipeline.data['splatmap:ids']
+    ignore_keys = ('osm:user', 'osm:feature', 'osm:feature_2d', 'osm:timestamp', 'osm:name', 'osm:alt_name', 'osm:source', 'osm:version', 'osm:changeset', 'osm:uid', 'osm:id', 'osm:layer', 'osm:original', 'osm:way', 'osm:oneway', 'osm:element',
+                   'osm:cycleway', 'osm:maxspeed')
+    #include_keys = ('osm:highway', 'osm:leisure', 'osm:surface', 'osm:amenity')
+
+    detail_data = {}
+    for k, v in obj.extra.items():
+        if not k.startswith('osm:') or any([k.startswith(v) for v in ignore_keys]): continue
+        #if k not in include_keys: continue
+        detail_data[k] = v
+    if obj.mat:
+        detail_data['ddd:material'] = obj.mat.name
+    detail_data['ddd:area:type'] = obj.get('ddd:area:type', None)
+
+    code = ";".join(sorted(['%s=%s' % (k, v) for k, v in detail_data.items()]))
+    if code not in idmap:
+        idmap[code] = max(list(idmap.values()) + [0]) + 1
+    code_id = idmap[code]
+    return code_id
+
+
 @dddtask()
 def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
+    """
+    Exports
+    """
 
     ddd_bounds = osm.area_crop.bounds
     wgs84_min = terrain.transform_ddd_to_geo(osm.ddd_proj, ddd_bounds[:2])
@@ -148,63 +179,69 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
     wgs84_bounds = wgs84_min + wgs84_max
 
     splatmap_size = pipeline.data.get('ddd:gdterrain:splatmap:size', 128)
+    use_detailmap = pipeline.data.get('ddd:gdterrain:splatmap:detailmap', False)
 
     logger.info("Generating splatmap for area: ddd_bounds=%s, wgs84_bounds=%s, size=%s", ddd_bounds, wgs84_bounds, splatmap_size)
 
+    channel_indexes = range(pipeline.data['splatmap:channels_num'])
     splatmap = root.find("/Splatmap")
 
-    # Sample each channel pixel, calculating the area covered by the surface
+    # Result matrices
     splat_matrix = np.zeros([splatmap_size, splatmap_size, pipeline.data['splatmap:channels_num']])
+    id_matrix = np.zeros([splatmap_size, splatmap_size, pipeline.data['splatmap:channels_num']])
+
+    logger.info("Calculating splatmap coverage for %s channels (%d items)", len(channel_indexes),  len(splatmap.geom_recursive()))
+
+    # Spatial index and cached groups
+    channel_items_all = {chan_idx: splatmap.find("/Channel%s" % chan_idx) for chan_idx in channel_indexes}
+    channel_items_index = {chan_idx: STRtree(channel_items_all[chan_idx].geom_recursive()) for chan_idx in channel_indexes}
+    channel_items_all_union = {chan_idx: chan.union() for chan_idx, chan in channel_items_all.items()}
+    channel_items_sand_spread_union = splatmap.select('["ddd:material" = "Sand"]["osm:natural" = "beach"]').union()
+
+    transformer = pyproj.Transformer.from_proj(osm.ddd_proj, 'epsg:3857', always_xy=True)
 
     # Interpolate over DDD coordinates
-    for chan_idx in range(pipeline.data['splatmap:channels_num']):
+    pixel_width_x = (ddd_bounds[2] - ddd_bounds[0]) / splatmap_size
+    pixel_width_y = (ddd_bounds[3] - ddd_bounds[1]) / splatmap_size
+    pixel_area = pixel_width_x * pixel_width_y
+    points_x = np.linspace(ddd_bounds[0] - pixel_width_x * 0.5, ddd_bounds[2] + pixel_width_x * 0.5, splatmap_size + 1, endpoint=True)
+    for xi, (x, xp) in enumerate(zip(points_x, points_x[1:])):
+        points_y = list(reversed(np.linspace(ddd_bounds[1] - pixel_width_y * 0.5, ddd_bounds[3] + pixel_width_y * 0.5, splatmap_size + 1, endpoint=True)))
+        for yi, (y, yp) in enumerate(zip(points_y, points_y[1:])):
 
-        channel_items = splatmap.find("/Channel%s" % chan_idx)
-        logger.info("Calculating splatmap coverage for channel %s %s (%d items)" % (chan_idx,  pipeline.data['splatmap:channels_materials'][chan_idx], len(channel_items.children)))
+            x_utm, y_utm = transformer.transform(x, y)
+            x_utm, y_utm = (x_utm % 1024, y_utm % 1024)
 
-        if len(channel_items.children) == 0:
-            continue
+            pixel_rect = ddd.rect([x, y, xp, yp])
 
-        # Spatial index
-        rtree = STRtree(splatmap.geom_recursive())
+            # Assign values to matrices
+            for chan_idx in channel_indexes:
 
-        # Channel union
-        channel_items_union = None
-        if chan_idx == 12:
-            channel_items_union = channel_items.select('["osm:natural" = "beach"]').union()
+                channel_items = channel_items_all[chan_idx]
 
-        pixel_width_x = (ddd_bounds[2] - ddd_bounds[0]) / splatmap_size
-        pixel_width_y = (ddd_bounds[3] - ddd_bounds[1]) / splatmap_size
-        pixel_area = pixel_width_x * pixel_width_y
-        points_x = np.linspace(ddd_bounds[0] - pixel_width_x * 0.5, ddd_bounds[2] + pixel_width_x * 0.5, splatmap_size + 1, endpoint=True)
-        for xi, (x, xp) in enumerate(zip(points_x, points_x[1:])):
-            points_y = list(reversed(np.linspace(ddd_bounds[1] - pixel_width_y * 0.5, ddd_bounds[3] + pixel_width_y * 0.5, splatmap_size + 1, endpoint=True)))
-            for yi, (y, yp) in enumerate(zip(points_y, points_y[1:])):
+                cand_geoms = channel_items_index[chan_idx].query(pixel_rect.geom)
+                cand_items = [c._ddd_obj for c in cand_geoms if c.intersects(pixel_rect.geom) and c._ddd_obj in channel_items.children]
 
-                pixel_rect = ddd.rect([x, y, xp, yp])
-                #pixel_area = pixel_rect.area()
+                # Check if intersects and percentage
+                pixel_item = ddd.group2(cand_items).intersection(pixel_rect).union()
 
-                cand_items = rtree.query(pixel_rect.geom)
-                items = [c._ddd_obj for c in cand_items if c.intersects(pixel_rect.geom) and c._ddd_obj in channel_items.children]
+                item_area = pixel_item.area()
 
-                pixel_items = ddd.group2(items).intersection(pixel_rect).union()
-                items_area = pixel_items.area()
-
-                cover_factor = items_area / pixel_area
+                # Calculate cover factor (pixels in the border account for half/quarter the surface due to previous tile clipping (should be avoided)
+                cover_factor = item_area / pixel_area
                 if (xi in (0, splatmap_size - 1)):
                     cover_factor *= 2
                 if (yi in (0, splatmap_size - 1)):
                     cover_factor *= 2
 
-
                 # Augmentation tests: sand (12)
-                if chan_idx == 12 and not channel_items_union.is_empty():
+                if chan_idx == 12 and not channel_items_sand_spread_union.is_empty():
                     if cover_factor < 0.99:
-                        distance = channel_items_union.distance(ddd.point([x, y]))
+                        distance = channel_items_sand_spread_union.distance(ddd.point([x, y]))
                         distance_reach = 8.0
                         #extend_ratio *= noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)  # Randomize reach
                         aug_factor = max(0, 1.0 - distance / distance_reach)
-                        noise_factor = noise.pnoise2(x * 0.03, y * 0.03, octaves=3, persistence=0.2, lacunarity=0.7, repeatx=1024, repeaty=1024, base=0)
+                        noise_factor = noise.pnoise2(x_utm * 0.03, y_utm * 0.03, octaves=3, persistence=0.2, lacunarity=0.7, repeatx=1024, repeaty=1024, base=0)
                         noise_factor = ddd.math.clamp((noise_factor - 0.5) * 2.0, 0.0, 1.0)  #  * (0.15 if chan_idx == 10 else 0.3)
                         aug_factor = max(aug_factor * noise_factor, 0.0) * 0.75
 
@@ -215,13 +252,22 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
                 # Augmentation tests: park (10)
                 if chan_idx == 10 or chan_idx == 11:
                     if cover_factor > 0.95:
-                        reduce_factor = noise.pnoise2(x * 0.03, y * 0.03, octaves=3, persistence=2.2, lacunarity=0.7, repeatx=1024, repeaty=1024, base=0)
+                        reduce_factor = noise.pnoise2(x_utm * 0.03, y_utm * 0.03, octaves=3, persistence=2.2, lacunarity=0.7, repeatx=1024, repeaty=1024, base=0)
                         reduce_factor = ddd.math.clamp((reduce_factor - 0.1) * 4.0, 0.0, 1.0) * 0.75  #  * (0.15 if chan_idx == 10 else 0.3)
                         cover_factor = cover_factor - reduce_factor
                         splat_matrix[yi, xi, 0] += (reduce_factor * random.uniform(0, 1)) # Increase terrain
                         splat_matrix[yi, xi, 13] += (reduce_factor * random.uniform(0, 1))  # Increase rock
 
-                splat_matrix[yi, xi, chan_idx] = cover_factor
+                splat_matrix[yi, xi, chan_idx] += cover_factor
+
+                # Detail map (IDs)
+                if use_detailmap:
+                    for cand_item in cand_items:
+
+                        if not pixel_item.intersects(pixel_rect): continue
+
+                        detail_id = osm_gdterrain_splatmap_detail_id(pipeline, cand_item)
+                        id_matrix[yi, xi, chan_idx] = detail_id
 
 
     # Clamp to 0..1
@@ -264,15 +310,28 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
     #im = Image.fromarray(np.uint8(splat2_4_7_matrix), "RGBA")
     #im.save("/tmp/osm-splatmap-8chan-4_7-" + str(splatmap_size) + ".png", "PNG")
 
+
+    # Detail map
+    #filename = (pipeline.data['filenamebase'] + ".detailmap-" + str(pipeline.data['splatmap:channels_num']) +
+    #            "chan-0_" + str(pipeline.data['splatmap:channels_num'] - 1) + "-" + str(splatmap_size) + ".png")
+    #logger.info("Saving detail map to: %s", filename)
+    #im = Image.fromarray(np.uint8(id_matrix), "RGBA")
+    #im.save(filename, "PNG")
+
+
     # Collapse into N channels
     collapse_map = pipeline.data.get('splatmap:channels:collapse_map', None)
     if collapse_map:
         splat_matrix_collapsed = np.zeros([splatmap_size, splatmap_size, len(collapse_map)])
+        id_matrix_collapsed = np.zeros([splatmap_size, splatmap_size, len(collapse_map)]) if use_detailmap else None
         for collapse_idx in range(len(collapse_map)):
-            collapse_source_weight = (1.0 / len(collapse_map[collapse_idx]))
+            #collapse_source_weight = (1.0 / len(collapse_map[collapse_idx]))
             for collapse_source in collapse_map[collapse_idx]:
                 splat_matrix_collapsed[:,:,collapse_idx] += (splat_matrix[:,:,collapse_source])
+                if use_detailmap:
+                    id_matrix_collapsed[:,:,collapse_idx] = np.maximum(id_matrix_collapsed[:,:,collapse_idx], id_matrix[:,:,collapse_source])
     splat_matrix_collapsed = np.minimum(splat_matrix_collapsed, 1.0)
+
 
     #splat_matrix_collapsed = splat_matrix[:,:,0:4] + splat_matrix[:,:,4:8]
     #splat_matrix_collapsed = splat_matrix_collapsed * (0.5 * 255)
@@ -281,9 +340,19 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
     #im.save("/tmp/osm-splatmap-1chan-0_3.png", "PNG")
     #im.save(pipeline.data['filenamebase'] + ".splatmap-4chan-0_3-" + str(splatmap_size) + ".png", "PNG")
 
-    im = Image.fromarray(np.uint8(splat_matrix_collapsed * 255), "RGBA")
-    #im.save("/tmp/osm-splatmap-1chan-0_3-processed.png", "PNG")
-    im.save(pipeline.data['filenamebase'] + ".splatmap-4chan-0_3-" + str(splatmap_size) + ".png", "PNG")
+    if collapse_map:
+
+        filename = (pipeline.data['filenamebase'] + ".splatmap-" + str(len(collapse_map)) + "chan-0_" + str(len(collapse_map) - 1) + "-" + str(splatmap_size) + ".png")
+        logger.info("Saving splatmap map to: %s", filename)
+        im = Image.fromarray(np.uint8(splat_matrix_collapsed * 255), "RGBA")
+        #im.save("/tmp/osm-splatmap-1chan-0_3-processed.png", "PNG")
+        im.save(filename, "PNG")
+
+        if use_detailmap:
+            filename = (pipeline.data['filenamebase'] + ".detailmap-" + str(len(collapse_map)) + "chan-0_" +  str(len(collapse_map) - 1) + "-" + str(splatmap_size) + ".png")
+            logger.info("Saving detail map to: %s", filename)
+            im = Image.fromarray(np.uint8(id_matrix_collapsed), "RGBA")
+            im.save(filename, "PNG")
 
 
     # Collage into 1 splatmap atlas
@@ -299,11 +368,18 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
             splat_matrix_atlas[rowpos:rowpos+splatmap_size, colpos:colpos+splatmap_size, 0:4] = splat_matrix[:, :, chan_idx:chan_idx+4]
             chan_idx += 4
 
+
+    filename = (pipeline.data['filenamebase'] + ".splatmap-" + str(pipeline.data['splatmap:channels_num']) +
+                "chan-0_" + str(pipeline.data['splatmap:channels_num'] - 1) + "-" + str(splatmap_size) + ".png")
+    logger.info("Saving splatmap atlas to: %s", filename)
     im = Image.fromarray(np.uint8(splat_matrix_atlas * 255), "RGBA")
     #im.save("/tmp/osm-splatmap-1chan-0_3-processed.png", "PNG")
-    im.save(pipeline.data['filenamebase'] + ".splatmap-" + str(pipeline.data['splatmap:channels_num']) +
-            "chan-0_" + str(pipeline.data['splatmap:channels_num'] - 1) + "-" + str(splatmap_size) + ".png", "PNG")
+    im.save(filename, "PNG")
 
     # Metadata (to be saved later to descriptor)
-    pipeline.data['splatmap:channels'] = "TO-DO"
+    pipeline.data['splatmap:channels'] = {k: (v.name if v else None) for k, v in enumerate(pipeline.data['splatmap:channels_materials'])}
+
+        # Correct splatmap
+    pipeline.data['splatmap:ids'] = {v: k for k, v in pipeline.data['splatmap:ids'].items()}
+
 

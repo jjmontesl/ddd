@@ -133,6 +133,7 @@ class TreeToSelector(Transformer):
         def datafilter_attr_regexp_func(obj):
             metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
             if datakey in metadata:
+                if metadata[datakey] is None: return False  # Regexp doesn't match a None value
                 return regexp.match(metadata[datakey])
             return False
         return datafilter_attr_regexp_func

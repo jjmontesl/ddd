@@ -49,6 +49,8 @@ def osm_model_pre_propagate_base_height_areas(root, pipeline, osm, logger):
     # Add metadata
     data.update(pipeline.data.get('metadata', {}))
 
+    data = {k: v for k, v in data.items() if not k[0] == '_' and not isinstance(v, DDDObject)}
+
 
     filepath = pipeline.data['filenamebase'] + ".desc.json"
     logger.info("Writing JSON descriptor to: %s", filepath)

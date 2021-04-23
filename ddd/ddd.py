@@ -417,6 +417,14 @@ class DDDMaterial():
 
     _texture_cache = {}
 
+    # These need to be sorted from longer to shorter
+    TEXTURE_DISCOVER = {
+        'albedo': ['_Base_Color', '_Color', '_ColorAlpha', '_albedo', '_col', '_alb' ],
+        'normal': ['_Normal', '_nrm'],
+        'displacement': ['_Height', '_Displacement', '_Disp', '_disp', '_dis'],
+        'roughness': ['_Roughness', '_rgh']
+    }
+
     @staticmethod
     def load_texture_cached(path):
         image = DDDMaterial._texture_cache.get(path, None)
@@ -463,6 +471,7 @@ class DDDMaterial():
         #self._texture_normal_cached = None
         self.texture_displacement_path = texture_displacement_path
         #self._texture_displacement_cached = None
+        self.texture_roughness_path = texture_roughness_path
 
         self.metallic_factor = metallic_factor
         self.roughness_factor = roughness_factor
@@ -483,6 +492,9 @@ class DDDMaterial():
             self.load_atlas(atlas_path)
 
         self._trimesh_material_cached = None
+
+        if self.texture and '*' in self.texture:
+            self.auto_texture_discover()
 
     def __repr__(self):
         return "DDDMaterial(name=%r, color=%r)" % (self.name, self.color)
@@ -512,6 +524,27 @@ class DDDMaterial():
             #mat = PBRMaterial(doubleSided=True)  # , emissiveFactor= [0.5 for v in self.mesh.vertices])
             self._trimesh_material_cached = mat
         return self._trimesh_material_cached
+
+    def _auto_texture_discover_try(self, basepath, patterns):
+        # Try also patterns without '_', in case path is defined as "texture_*"
+        for p in list(patterns):
+            if p.startswith("_"):
+                patterns.append(p[1:])
+        for pattern in patterns:
+            trypath = basepath.replace('*', pattern)
+            if os.path.exists(trypath):
+                return trypath
+        return None
+
+    def auto_texture_discover(self):
+        """
+        Tries to automatically discover textures trying common name patterns.
+        """
+        basepath = self.texture
+        self.texture = self._auto_texture_discover_try(basepath, self.TEXTURE_DISCOVER['albedo'])
+        self.texture_normal_path = self._auto_texture_discover_try(basepath, self.TEXTURE_DISCOVER['normal'])
+        self.texture_displacement_path = self._auto_texture_discover_try(basepath, self.TEXTURE_DISCOVER['displacement'])
+        self.texture_roughness_path = self._auto_texture_discover_try(basepath, self.TEXTURE_DISCOVER['roughness'])
 
     def load_atlas(self, filepath):
         self.atlas = TextureAtlas.load_atlas(filepath)
@@ -552,6 +585,17 @@ class DDDMaterial():
         #return self._texture_displacement_cached
         return DDDMaterial.load_texture_cached(self.texture_displacement_path)
 
+    def get_texture_roughness(self):
+        """
+        Returns the roughness texture.
+        Returns a cached image if available.
+        """
+        if not self.texture_roughness_path:
+            return None
+        #if not self._texture_displacement_cached:
+        #    self._texture_displacement_cached = PIL.Image.open(self.texture_displacement_path)
+        #return self._texture_displacement_cached
+        return DDDMaterial.load_texture_cached(self.texture_roughness_path)
 
 class DDDObject():
 
@@ -1972,6 +2016,8 @@ class DDDObject2(DDDObject):
     def geom_recursive(self):
         """
         Returns a list of all Shapely geometries recursively.
+
+        Note: Currently this method also adds Shapely geometries an attribute `_ddd_obj` pointing to the DDD object that references it. This will be changed.
         """
         geoms = []
         if self.geom:

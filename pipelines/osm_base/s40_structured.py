@@ -110,13 +110,23 @@ def osm_structured_buildings(osm, root):
     #osm.buildings.generate_buildings_2d(root.find("/Buildings"))
 
 
-@dddtask(path="/ItemsWays/*", select='["ddd:width"]')
-def osm_structured_process_items_ways(osm, root, obj):
-    """Generates items from Items Ways (lines)."""
+@dddtask(path="/ItemsWays/*", select='["geom:type"~"Polygon|MultiPolygon"]["ddd:width"]')
+def osm_structured_process_items_ways_polygons(osm, root, obj):
+    """Generates lineitems (eg walls) from Items Ways (polygons). Must be done before generating polygons to avoid these being buffered again."""
     width = float(obj.extra.get('ddd:width', 0))
     if width > 0:
-        obj = obj.buffer(width, cap_style=ddd.CAP_FLAT)
+        obj = obj.buffer(width * 0.5, cap_style=ddd.CAP_FLAT)
+        obj = obj.subtract(obj.buffer(-width * 0.5))    # TODO: add a buffer_lines or argument to support buffering polygons as lines (careful with interiors)
     return obj
+
+@dddtask(path="/ItemsWays/*", select='["geom:type"~"LineString|GeometryCollection"]["ddd:width"]')
+def osm_structured_process_items_ways_lines(osm, root, obj):
+    """Generates lineitems from Items Ways (lines)."""
+    width = float(obj.extra.get('ddd:width', 0))
+    if width > 0:
+        obj = obj.buffer(width * 0.5, cap_style=ddd.CAP_FLAT)
+    return obj
+
 
 
 @dddtask()

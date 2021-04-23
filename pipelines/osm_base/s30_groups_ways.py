@@ -413,7 +413,7 @@ def osm_select_ways_barrier_city_wall(root, osm, obj):
     obj.name = "City Wall: %s" % obj.name
     #obj.extra['ddd:way:weight'] = 91
     #obj.extra['ddd:way:lanes'] = None
-    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 1.00))
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 2.50))
     obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 3.0))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
