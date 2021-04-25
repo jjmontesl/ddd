@@ -100,7 +100,8 @@ def iconitem_catalog_list():
             if extension.lower() not in extensions:
                 continue
 
-            icons[path] = name[:-len(extension)].split("-")
+            plainname = name[:-len(extension)]
+            icons[path] = [plainname] + plainname.split("-")
 
     ICONITEM_CATALOG = icons
     return ICONITEM_CATALOG

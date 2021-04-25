@@ -317,9 +317,9 @@ def osm_groups_areas_assign_area_m2(root, osm, obj, logger):
     have been selected earlier during groups_areas).
     """
 
-    # Removed as causes stairs to be assigned as areas
-    #obj.extra['ddd:area:area'] = obj.geom.area
-    #obj.set('ddd:area:weight', default=100)  # Lowest
+
+    #obj.extra['ddd:area:area'] = obj.geom.area  # Removed as causes many troubles: stairs to be assigned as areas, repeated surfaces, but everything here should be buildable!
+    #obj.set('ddd:area:weight', default=100)  # FIXME: weight should be positive (otherwise should call it priority)
     #obj.set('ddd:area:height', default=0)
 
     # Create container and contained metadata

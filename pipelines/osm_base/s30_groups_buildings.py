@@ -36,9 +36,17 @@ def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
     pass
 
 
+# Buildings attributes that can be done before structure (ways analysis, etc)
+
+@dddtask(path="/Buildings/*", select='["osm:man_made" = "reservoir_covered"]')
+def osm_generate_buildings_man_made_reservoir_covered(pipeline, osm, root, obj):
+    obj.set('ddd:building:levels', default=1)
+    obj.set('ddd:building:material', default="stone")
+    obj = obj.material(ddd.mats.stone)
+    return obj
 
 @dddtask(path="/Buildings/*", select='["osm:building" = "shed"]')
-def osm_buildings_(pipeline, osm, root, obj):
+def osm_buildings_building_shed(pipeline, osm, root, obj):
     """
     Set defaults to sheds.
     """

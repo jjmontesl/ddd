@@ -78,7 +78,14 @@ def field_lines_area(area, lines_method, padding=0.5, **kwargs):
                        length_seg.geom.coords[1][0] - length_seg.geom.coords[0][0])
     lines = lines.rotate([0, 0, angle]).translate([rectangle.geom.centroid.coords[0][0], rectangle.geom.centroid.coords[0][1], 0])
 
-    return lines
+    field_lines_only = lines.select_remove(func=lambda o: o.mat == ddd.mats.painted_line)
+    field_lines_only = field_lines_only.combine()
+    field_lines_only = ddd.uv.map_cubic(field_lines_only)
+    field_lines_only.name = "Combined field lines: %s" % lines.name
+
+    field = lines.append(field_lines_only)
+
+    return field
 
 def football_field_lines(length=105.0, width=67.5, line_width=0.10):
     """
@@ -97,19 +104,19 @@ def football_field_lines(length=105.0, width=67.5, line_width=0.10):
     width_l = width_seg.geom.length
     length_l = length_seg.geom.length
 
-    exterior = rectangle.outline().buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+    exterior = rectangle.outline().buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
     exterior.name = "Bounds line"
     exterior.extra['ddd:collider'] = False
     exterior.extra['ddd:shadows'] = False
 
     midline_2d = ddd.line([length_seg.geom.centroid, length2_seg.geom.centroid], name="Mid line")
-    midline = midline_2d.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+    midline = midline_2d.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
     midline.extra['ddd:collider'] = False
     midline.extra['ddd:shadows'] = False
 
     midcircle_radius_ratio = 9.15 / 67.5
     midcircle = ddd.disc(center=midline_2d.geom.centroid.coords, r=width_l * midcircle_radius_ratio).outline()
-    midcircle = midcircle.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+    midcircle = midcircle.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
     midcircle.extra['ddd:collider'] = False
     midcircle.extra['ddd:shadows'] = False
 
@@ -130,7 +137,7 @@ def football_field_lines(length=105.0, width=67.5, line_width=0.10):
         smallarea = smallarea.scale([smallarea_length_ratio * length, smallarea_width_ratio * width * 0.5])
         if side == 1: smallarea = smallarea.rotate(math.pi)
         smallarea = smallarea.translate([side * length_l / 2, 0])
-        smallarea = smallarea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+        smallarea = smallarea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
         smallarea.extra['ddd:collider'] = False
         smallarea.extra['ddd:shadows'] = False
         item.append(smallarea)
@@ -139,12 +146,12 @@ def football_field_lines(length=105.0, width=67.5, line_width=0.10):
         largearea = largearea.scale([largearea_length_ratio * length, largearea_width_ratio * width * 0.5])
         if side == 1: largearea = largearea.rotate(math.pi)
         largearea = largearea.translate([side * length_l / 2, 0])
-        largearea = largearea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+        largearea = largearea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
         largearea.extra['ddd:collider'] = False
         largearea.extra['ddd:shadows'] = False
         item.append(largearea)
 
-        # TIODO: shall depend on the football type, assign earlier maybe
+        # TODO: shall depend on the soccer type, assign earlier maybe
         if width > 30: goal = football_goal11()
         elif width > 15: goal = football_goal9()
         elif width > 9: goal = football_goal7()
@@ -204,7 +211,7 @@ def tennis_field_lines(length=23.77, width=10.97, square_length_ratio=6.40 / 23.
     width_l = width_seg.geom.length
     length_l = length_seg.geom.length
 
-    exterior = rectangle.outline().buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+    exterior = rectangle.outline().buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
     exterior.name = "Bounds line"
     exterior.extra['ddd:collider'] = False
     exterior.extra['ddd:shadows'] = False
@@ -218,14 +225,14 @@ def tennis_field_lines(length=23.77, width=10.97, square_length_ratio=6.40 / 23.
     sideline_pos_ratio = 8.23 / 10.97
     for side in (-1, 1):
         sideline = centralline_2d.translate([0, side * width * sideline_pos_ratio * 0.5])
-        sideline = sideline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+        sideline = sideline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
         sideline.extra['ddd:collider'] = False
         sideline.extra['ddd:shadows'] = False
         item.append(sideline)
 
     for side in (-1, 1):
         midline = ddd.line([[side * length * square_length_ratio, -width * sideline_pos_ratio * 0.5], [side * length * square_length_ratio, width * sideline_pos_ratio * 0.5]])
-        midline = midline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+        midline = midline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
         midline.extra['ddd:collider'] = False
         midline.extra['ddd:shadows'] = False
         item.append(midline)
@@ -317,19 +324,19 @@ def basketball_field_lines(length=28, width=15, line_width=0.075):
     width_l = width_seg.geom.length
     length_l = length_seg.geom.length
 
-    exterior = rectangle.outline().buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+    exterior = rectangle.outline().buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
     exterior.name = "Bounds line"
     exterior.extra['ddd:collider'] = False
     exterior.extra['ddd:shadows'] = False
 
     midline_2d = ddd.line([length_seg.geom.centroid, length2_seg.geom.centroid], name="Mid line")
-    midline = midline_2d.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+    midline = midline_2d.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
     midline.extra['ddd:collider'] = False
     midline.extra['ddd:shadows'] = False
 
     midcircle_radius_ratio = (3.60 / 2) / 15
     midcircle = ddd.disc(center=midline_2d.geom.centroid.coords, r=width_l * midcircle_radius_ratio).outline()
-    midcircle = midcircle.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+    midcircle = midcircle.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
     midcircle.extra['ddd:collider'] = False
     midcircle.extra['ddd:shadows'] = False
 
@@ -346,7 +353,7 @@ def basketball_field_lines(length=28, width=15, line_width=0.075):
             #smallarea = smallarea.scale([smallarea_length_ratio * length, smallarea_width_ratio * width * 0.5])
             if side == 1: smallarea = smallarea.rotate(math.pi)
             smallarea = smallarea.translate([side * length_l / 2, 0])
-            smallarea = smallarea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+            smallarea = smallarea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
             smallarea.extra['ddd:collider'] = False
             smallarea.extra['ddd:shadows'] = False
             item.append(smallarea)
@@ -354,7 +361,7 @@ def basketball_field_lines(length=28, width=15, line_width=0.075):
             smallline = ddd.line([[5.80, -(3 - 1.80)], [5.80, 3 - 1.80]])
             if side == 1: smallline = smallline.rotate(math.pi)
             smallline = smallline.translate([side * length_l / 2, 0])
-            smallline = smallline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+            smallline = smallline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
             smallline.extra['ddd:collider'] = False
             smallline.extra['ddd:shadows'] = False
             item.append(smallline)
@@ -363,7 +370,7 @@ def basketball_field_lines(length=28, width=15, line_width=0.075):
             largearea = ddd.line([[0, -6.75], [1.575, -6.75]]).arc_to([1.575, 6.75], center=[1.575, 0], ccw=True).line_to([0, 6.75])
             if side == 1: largearea = largearea.rotate(math.pi)
             largearea = largearea.translate([side * length_l / 2, 0])
-            largearea = largearea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.material(color='#ffffff'))
+            largearea = largearea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
             largearea.extra['ddd:collider'] = False
             largearea.extra['ddd:shadows'] = False
             item.append(largearea)

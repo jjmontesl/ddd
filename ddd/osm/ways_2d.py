@@ -1036,7 +1036,7 @@ class Ways2DOSMBuilder():
 
                 splits = None
 
-                if remaining.geom.type != 'Point' and remaining.geom.type != 'MultiPoint':
+                if remaining.geom.type != 'Point' and remaining.geom.type not in ('MultiPoint', 'GeometryCollection'):
                     splits = ops.split(remaining.geom, perp.geom)
                     splits = [s for s in splits]
                     splits.sort(key=lambda s: s.area)

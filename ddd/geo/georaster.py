@@ -103,8 +103,7 @@ class GeoRasterTile:
             x, y = self.crs_transformer.transform(x, y)
 
         # Transform to raster point coordinates
-        #pixel_is_area = False
-        #if pixel_is_area:
+        #pixel_is_area = False #if pixel_is_area:
         raster_x = int((x - self.geotransform[0]) / self.geotransform[1])
         raster_y = int((y - self.geotransform[3]) / self.geotransform[5])
         coords_x = ((raster_x * self.geotransform[1])) + self.geotransform[0]

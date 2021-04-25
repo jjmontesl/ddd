@@ -279,7 +279,8 @@ def osm_groups_areas_artwork_sculpture(root, obj):
     root.find("/ItemsNodes").append(item)
 
 
-@dddtask(path="/Areas/*", select='["osm:waterway" ~ "riverbank|stream"];["osm:natural" = "water"];["osm:water" = "river"]')
+@dddtask(path="/Areas/*",
+         select='(["osm:waterway" ~ "riverbank|stream"];["osm:natural" = "water"];["osm:water" = "river"])["osm:amenity" != "fountain"]')
 def osm_groups_areas_riverbank(obj, root):
     """Define area data."""
 
@@ -309,26 +310,6 @@ def osm_groups_areas_man_made_bridge(obj, root):
     root.find("/Areas").children.extend(obj.children)
     return False
     #return obj
-
-
-# Area attributes
-# Note that as areas are generated after ways, ways may be affected (ways end up being areas anyway, and might be unified further)
-
-@dddtask(path="/Areas/*", select='["osm:surface" = "compacted"]')
-def osm_groups_areas_surface_compacted(obj, root):
-    """Applies osm:surface=compacted material."""
-    #obj.extra['ddd:height'] = 0.0
-    obj = obj.material(ddd.mats.dirt)
-    return obj
-
-@dddtask(path="/Areas/*", select='["osm:surface" = "asphalt"]')
-def osm_groups_areas_surface_asphalt(obj, root):
-    """Applies osm:surface=compacted material."""
-    #obj.extra['ddd:height'] = 0.0
-    obj = obj.material(ddd.mats.asphalt)
-    return obj
-
-
 
 
 """

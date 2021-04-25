@@ -152,10 +152,10 @@ def osm_materials():
 
 
 
-    ddd.mats.sidewalk = ddd.material(name="Sidewalk", color='#f1f1f1', extra={'uv:scale': 1.0},  # 0.2
+    ddd.mats.sidewalk = ddd.material(name="Sidewalk", color='#f1f1f1', texture_color='#ffffff', extra={'uv:scale': 1.0},  # 0.2
                                      texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles38/Tiles38_*.jpg",)
                                      #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Tiles38/Tiles38_nrm.jpg",)
-    ddd.mats.pavement = ddd.material(name="Pavement", color='#e1e1e1', extra={'uv:scale': 1.0},  # 0.2
+    ddd.mats.pavement = ddd.material(name="Pavement", color='#e1e1e1', texture_color='#ffffff', extra={'uv:scale': 1.0},  # 0.2
                                      texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles38/Tiles38_*.jpg",)
                                      #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Tiles38/Tiles38_nrm.jpg",)
 
@@ -198,9 +198,11 @@ def osm_materials():
     ddd.mats.cement = ddd.material(name="Concrete", color='#b8b8a0', extra={'uv:scale': 1.0},  #
                                    texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_*.jpg",)
                                    #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_nrm.jpg",)
+
     ddd.mats.concrete_white = ddd.material(name="Concrete Whiteish", color='#b8b8b0', extra={'uv:scale': 1.0},  #
                                            texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_*.jpg",)
                                            #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_nrm.jpg",)
+    ddd.mats.concrete = ddd.mats.cement
 
     ddd.mats.stone_white = ddd.material(name="Stone", color='#9c9378',
                                            texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_*.jpg",)
@@ -283,7 +285,7 @@ def osm_materials():
                                   texture_color='#ffffff',
                                   texture_path=ddd.DATA_DIR + "/osmmaterials/MetalWalkway002_2K-JPG/MetalWalkway002_2K_*.png",
                                   #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/MetalWalkway002_2K-JPG/MetalWalkway002_2K_Normal.jpg",
-                                  alpha_cutoff=0.05)
+                                  alpha_cutoff=0.5)
     ddd.mats.railing = ddd.mats.fence
     ddd.mats.metallic_grid = ddd.material(name="MetallicGrid", color='#28281e', extra={'ddd:transparent': True})  # Floors
 

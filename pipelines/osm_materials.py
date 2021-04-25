@@ -43,6 +43,21 @@ def materials_list(root, osm):
         mat = getattr(ddd.mats, key)
         if isinstance(mat, DDDMaterial):
             if mat.name not in added_names:
+
+                '''
+                # This was a test, but these materials need not be converted to linear color space
+                if mat.texture:
+                    albedo_image = DDDMaterial.load_texture_cached(mat.texture)
+                    albedo_array = np.array(albedo_image)
+                    albedo_array_linear = convert_to_linear(albedo_array[:,:,:3])
+                    if albedo_array.shape[2] == 4:
+                        albedo_array_linear_rgba = np.empty((albedo_array.shape[0], albedo_array.shape[1], 4))
+                        albedo_array_linear_rgba[:,:,:3] = albedo_array_linear[:,:,:]
+                        albedo_array_linear_rgba[:,:,3] = albedo_array[:,:,3]
+                    image_linear = Image.fromarray(np.uint8(albedo_array_linear), "RGBA" if albedo_array_linear.shape[2] == 4 else "RGB")
+                    DDDMaterial._texture_cache[mat.texture] = image_linear
+                '''
+
                 marker = ddd.marker(name=mat.name)
                 marker = marker.material(mat)
                 mats.append(marker)

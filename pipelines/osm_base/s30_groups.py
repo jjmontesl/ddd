@@ -5,9 +5,22 @@
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 from ddd.core.exception import DDDException
-import random
-import sys
 
+"""
+The "grouping" stage of the build process **selects** features from the /Features node
+and adds the necessary data to other different subnodes (Areas, Ways, Buildings...).
+
+OSM features are not removed from the /Features node. Rather, new objects / copies of the
+features are added to the graph. These are based off the feature so OSM metadata is
+conserved.
+
+Selection is done in the default pipeline order (irrespective of the original OSM object type,
+but often related to ways / polygons / nodes).
+
+1. Ways
+2. Areas
+3. Items
+"""
 
 @dddtask(order="30.10.+", log=True)
 def osm_groups_create_root_nodes(root, osm, pipeline):
@@ -57,7 +70,6 @@ def osm_groups_ways_process(pipeline, osm, root, logger):
     #osm.ways.generate_ways_1d()
     #root.find("/Ways").replace(osm.ways_1d)
     pass
-
 
 
 # Generate buildings (separate file)
@@ -118,6 +130,36 @@ def osm_groups_items_ways(osm, root, logger):
 def osm_groups_items_areas(osm, root, logger):
     # In separate file
     pass
+
+
+@dddtask(order="30.80.+")
+def osm_groups_common(osm, root, logger):
+    # In separate file
+    pass
+
+# Area and ways attributes
+# TODO: Move 30_80_groups_common  to a separate file
+
+@dddtask(select='["osm:surface" = "compacted"]')  # path="/Areas/*",
+def osm_groups_areas_surface_compacted(obj, root):
+    """Applies osm:surface=compacted material."""
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.dirt)
+    return obj
+
+@dddtask(select='["osm:surface" = "asphalt"]')
+def osm_groups_areas_surface_asphalt(obj, root):
+    """Applies osm:surface=compacted material."""
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.asphalt)
+    return obj
+
+@dddtask(select='["osm:surface" = "concrete"]')
+def osm_groups_areas_surface_concrete(obj, root):
+    """"""
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.concrete)
+    return obj
 
 
 

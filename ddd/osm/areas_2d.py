@@ -23,11 +23,13 @@ class Areas2DOSMBuilder():
 
     def generate_areas_2d_process(self, areas_2d_group, areas_2d, subtract):
 
-        # TODO: Assign area here, it's where it's used
+        # TODO: Assign area before, it's where it's used. Fail here if not set,
+        # Using all children from /Area causes problems, but should not, with repeated surfaces, errors in stairs processing
+        #areas = list(areas_2d.clean().children)
         areas = areas_2d.select('["ddd:area:area"]').children
 
         logger.info("Sorting 2D areas (%d).", len(areas))
-        areas.sort(key=lambda a: a.extra['ddd:area:area'])  # extra['ddd:area:area'])
+        areas.sort(key=lambda a: a.get('ddd:area:area'))  # extra['ddd:area:area'])
         #areas.sort(key=lambda a: a.geom.area)  # extra['ddd:area:area'])
 
         for idx in range(len(areas)):
@@ -216,6 +218,7 @@ class Areas2DOSMBuilder():
         #underwater_area.show()
         underwater_area = underwater_area.material(ddd.mats.terrain)
         underwater_area.extra['ddd:area:type'] = 'underwater'
+        underwater_area.extra['ddd:layer'] = '0'
         underwater_area.extra['svg:ignore'] = True
         #underwater_area.show()
         areas_2d.append(underwater_area)

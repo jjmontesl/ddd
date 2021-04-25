@@ -35,6 +35,9 @@ items.append(item)
 #icon_path = iconitems.iconitem_catalog_search("Menhir")
 #print(icon_path)
 
+item = iconitems.iconitem_auto("Combate entre Hércules e Xerión", (2.0, 2.0), 0.4, 0.05)
+items.append(item)
+
 item = iconitems.iconitem_auto("Bell", (2.0, 2.0), 0.4, 0.05)
 items.append(item)
 
@@ -58,6 +61,7 @@ items.append(item)
 
 item = iconitems.iconitem_auto("Fuente de Híspalis, Puerta de Jerez", (2.0, 2.0), 0.4, 0.05)
 items.append(item)
+
 
 
 

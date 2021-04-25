@@ -372,7 +372,6 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_sculpture(self, item_2d):
-        # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
         #oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
 
@@ -397,7 +396,6 @@ class ItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_monument(self, item_2d):
-        # Todo: Use fountain shape if available, instead of centroid
         coords = item_2d.geom.coords[0]
         #oriented_point = ddd.snap.project(ddd.point(coords), self.osm.ways_2d['0'])
         item_name = item_2d.extra['osm:feature']['properties'].get('name', None)

@@ -44,6 +44,8 @@ class DefaultMaterials(MaterialsCollection):
         self.pitch_blue = ddd.material(name="Pitch Blue", color='#2a69b0')  # Eg. cycleways
         self.pitch_red = ddd.material(name="Pitch Red", color='#b34446')  # Eg. leisure track
 
+        self.painted_line = ddd.material(name="Painted Line", color='#ffffff')  # Eg. leisure track
+
         # Structural / building materials
         self.bronze = ddd.material(name="Bronze", color='#f0cb11')
         self.steel = ddd.material(name="Steel", color='#78839c')

@@ -443,13 +443,14 @@ class DDDMaterial():
                  texture_displacement_path=None, #displacement_strength=1.0,
                  texture_roughness_path=None):
         """
+        A name based on the color will be assigned if not set.
             - texture_color: optional color to be used if a textured material is being generated (--export-texture), instead of the default color.
             - alpha_mode: one of OPAQUE, BLEND and MASK (used with alpha_cutoff)
 
         Color is hex color.
         """
 
-        self.name = name
+        self.name = name if name else "Color_%s" % (color)
         self.extra = extra if extra else {}
 
         self.color = color
@@ -507,6 +508,7 @@ class DDDMaterial():
         Returns a Trimesh material for this DDDMaterial.
         Materials are cached to avoid repeated materials and image loading (which may crash the app).
         """
+        if not hasattr(self, "texture_normal_path"): self.texture_normal_path = None # quick fix for older catalog pickles, can be removed
         if self._trimesh_material_cached is None:
             if self.texture and D1D2D3Bootstrap.export_textures:
                 im = self.get_texture()
@@ -828,7 +830,15 @@ class DDDObject():
         return res
 
     def filter(self, func):
+        """
+        @deprecated Use `select`
+        """
         return self.select(func=func)
+
+    def select_remove(self, selector=None, path=None, func=None):
+        def task_select_apply_remove(o):
+            return False
+        return self.select(selector=selector, path=path, func=func, apply_func=task_select_apply_remove)
 
     '''
     def apply(self, func):
@@ -945,7 +955,7 @@ class DDDObject():
         elif isinstance(obj, DDDObject):
             self.children.append(obj)
         else:
-            raise ValueError("Cannot append object of this type to DDDObject children: %s", obj)
+            raise DDDException("Cannot append object to DDDObject children (wrong type): %s" % obj)
         return self
 
     def remove(self, obj):
