@@ -158,12 +158,16 @@ class Ways2DOSMBuilder():
                         logger.warn("Discarding intersection (way contained multiple times)")
                         continue
 
-            # Get intersection way type by vote
+            # Get intersection "highest ways", which dictate the aspect of the intersection.
+            # Currently the road weight with most connections wins, then the lower weight (weight is really priority)
             votes = defaultdict(list)
             for join in intersection:
                 votes[join.way.extra['ddd:way:weight']].append(join.way)
-            max_voted_ways_weight = list(reversed(sorted(votes.items(), key=lambda w: len(w[1]))))[0][0]
-            highest_ways = votes[max_voted_ways_weight]
+            #max_voted_ways_weight = list(reversed(sorted(votes.items(), key=lambda w: len(w[1]))))[0][0]
+            #highest_ways = votes[max_voted_ways_weight]
+            max_voted_ways_count = max([len(v) for k, v in votes.items()])
+            max_weight_max_voted = sorted([vw for vw, vways in votes.items() if len(vways) == max_voted_ways_count])[0]
+            highest_ways = votes[max_weight_max_voted]
 
 
             # Generate intersection geometry
@@ -459,6 +463,7 @@ class Ways2DOSMBuilder():
 
         ways_2d.replace(ddd.group2(ways, name="Ways"))
 
+    """
     def generate_ways_2d_intersections_1(self, ways_2d):
 
         logger.info("Generating ways intersections (%d ways).", len(ways_2d.children))
@@ -674,6 +679,7 @@ class Ways2DOSMBuilder():
                             logger.error("Could not generate way due to exception in extrude check: %s", way)
 
         ways_2d.replace(ddd.group2(ways, name="Ways"))
+    """
 
     def generate_ways_2d_intersection_intersections(self, ways_2d):
         intersections = ways_2d.select('["intersection"]', recurse=False)
@@ -708,6 +714,7 @@ class Ways2DOSMBuilder():
         #ways_2d.replace(ways_2d.clean())
         #ways_2d.dump()
         #ways_2d.show()
+
 
     def generate_roadlines(self, pipeline, way_2d):
         path = way_2d.extra['way_1d']

@@ -181,7 +181,8 @@ class Ways1DOSMBuilder():
         Links items to ways, and ways to items.
 
         Note: currenty matching node coordinates as nodes are not referenced in current geojson input.
-        Note: currently sets first found way as 'osm:item:way' key.
+
+        FIXME: currently sets first found way as 'osm:item:way' key.
         """
 
         # Assign item nodes

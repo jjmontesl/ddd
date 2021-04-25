@@ -42,7 +42,7 @@ def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
 def osm_generate_buildings_man_made_reservoir_covered(pipeline, osm, root, obj):
     obj.set('ddd:building:levels', default=1)
     obj.set('ddd:building:material', default="stone")
-    obj = obj.material(ddd.mats.stone)
+    obj = obj.material(ddd.mats.tiles_stones)
     return obj
 
 @dddtask(path="/Buildings/*", select='["osm:building" = "shed"]')

@@ -9,6 +9,37 @@ import math
 import sys
 
 
+"""
+The "structured" stage of the build process processes the features selected by the previous
+stage into the different branches (Ways, Areas, Buildings...).
+
+The output of this stage is structured 2D, using the same tree branches, but with added
+information. Ways are given their with and converted to polygons, then resolved in 2D
+for intersections (references to the original objects are kept along the whole process,
+as original LineStrings are still used for other processes).
+
+This part of the OSM generation pipeline is not designed to be altered or extended, as it
+does most of the heavy lifting with 2D geometry operations and data structures. Styling
+and alterations are ideally better done before (during initial selection of features) or
+after.
+
+- Split ways:
+  - by the middle nodes if needed (eg. for highway crossings).
+  - by every join with other ways
+  - items are associated to paths (TODO: document criteria, nodes only -check if we are getting nearby objects too somewhere, hopefuly not-)
+  - (TODO: itemways processing, what is it doing - other ways ie castle_wall are processed elsewhere ?)
+  - ways are generated in 2D from the lines
+- Areas:
+  - areas are generated between ways
+  - areas are generated for every other space not occupied in the generation area
+  - areas are processed to resolve their relationships (containment, etc)
+- Items:
+  - items are linked to areas, ways (in 2D) and buildings
+
+- Roadlines and crowswalks are generated (TODO: this shall maybe be part of s50, along with stairs, and such?).
+"""
+
+
 @dddtask(order="40.10.+", log=True)
 def osm_structured_init(root, osm):
     #osm.ways_1d = root.find("/Ways")

@@ -38,13 +38,15 @@ def osm_materials():
     ddd.mats.roadline = ddd.material(name="Roadline", color='#e8e8e8',
                                  texture_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_alb.png",
                                  texture_normal_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_normal.jpg",
-                                 alpha_cutoff=0.05,
-                                 extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05, 'zoffset': -8.5})
+                                 alpha_cutoff=0.05, metallic_factor=0.36, roughness_factor=0.30, bump_strength=0.25,
+                                 extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05, 'zoffset': -8.5,
+                                        'ddd:texture:resize': -1})
     ddd.mats.roadline_red = ddd.material(name="Roadline Red", color='#f8a8a8',
                                  texture_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_alb.png",
                                  texture_normal_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_normal.jpg",
-                                 alpha_cutoff=0.05,
-                                 extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05, 'zoffset': -8.5})
+                                 alpha_cutoff=0.05, metallic_factor=0.36, roughness_factor=0.30, bump_strength=0.35,
+                                 extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05, 'zoffset': -8.5,
+                                        'ddd:texture:resize': -1})
 
     ddd.mats.roadmarks = ddd.material(name="Roadmarks", color='#e8e8e8',
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/RoadMarks/TexturesCom_Atlas_RoadMarkings2_White_1K_albedo_with_alpha.png",
@@ -54,7 +56,8 @@ def osm_materials():
 
     ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
                                       texture_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.png",
-                                      atlas_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.plist")
+                                      atlas_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.plist",
+                                      extra={'ddd:texture:resize': -1})
 
     ddd.mats.asphalt = ddd.material(name="Asphalt", color='#202020', extra={'uv:scale': 1.0},  # 0.25  color='#202020',
                                     metallic_factor=0.0, roughness_factor=0.43, index_of_refraction=1.0, direct_lighting=0.76, bump_strength=2.0,
@@ -103,11 +106,29 @@ def osm_materials():
                                     #texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground025_2K-JPG/Ground025_2K_Displacement.jpg", )
 
 
+    ddd.mats.sand = ddd.material(name="Sand", color='#fff694',
+                                 metallic_factor=0.0, roughness_factor=0.45, bump_strength=2.0, index_of_refraction=1.0, direct_lighting=0.76,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_*.jpg",)
+                                 #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_Normal.jpg",
+                                 #texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_Displacement.jpg",)
+
+    ddd.mats.rock = ddd.material(name="Rock", color='#5f5f4d',
+                                 metallic_factor=0.3, roughness_factor=1.0, bump_strength=3.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_*.jpg",)
+                                 #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_nrm.jpg",
+                                 #texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_disp.jpg",)
+    ddd.mats.rock_lightbrown = ddd.material(name="Rock Orange", color='#bd8658',
+                                    metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
+                                    texture_path=ddd.DATA_DIR + "/osmmaterials/Rock029_2K-JPG/Rock029_2K_*.jpg",
+                                    extra={'uv:scale': 1.0, 'tags': ['orange', 'light brown', 'red', 'rock', 'stone', 'cliff', 'desert', 'ground']})
+
+
     ddd.mats.terrain_ground = ddd.material(name="Ground Clear", color='#a48f74', extra={'uv:scale': 1.0},  # 0.2
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Ground044_2K-JPG/Ground044_2K_*.jpg",)
                                     #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground044_2K-JPG/Ground044_2K_Normal.jpg",
                                     #texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground044_2K-JPG/Ground044_2K_Displacement.jpg", )
+    ddd.mats.terrain_rock = ddd.mats.rock_lightbrown
     ddd.mats.terrain_pebbles_sparse = ddd.material(name="Ground Pebbles Sparse", color='#e6821e', texture_color='#ffffff', extra={'uv:scale': 1.0},  # 0.2
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Ground039_2K-JPG/Ground039_2K_*.jpg", )
@@ -172,20 +193,6 @@ def osm_materials():
     ddd.mats.pitch = ddd.mats.pitch_green
 
 
-
-    ddd.mats.sand = ddd.material(name="Sand", color='#fff694',
-                                 metallic_factor=0.0, roughness_factor=0.45, bump_strength=2.0, index_of_refraction=1.0, direct_lighting=0.76,
-                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_*.jpg",)
-                                 #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_Normal.jpg",
-                                 #texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground033_2K-JPG/Ground033_2K_Displacement.jpg",)
-
-    ddd.mats.rock = ddd.material(name="Rock", color='#5f5f4d',
-                                 metallic_factor=0.3, roughness_factor=1.0, bump_strength=3.0,
-                                 texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_*.jpg",)
-                                 #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_nrm.jpg",
-                                 #texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_disp.jpg",)
-
-
     '''
     self.sett = ddd.material(name="Sett", color='#7b719f')
 
@@ -195,6 +202,15 @@ def osm_materials():
     self.metal = ddd.material(name="Steel", color='#68738c')
 
     '''
+
+    ddd.mats.stones_white = ddd.material(name="Stones White", color='#9c9378',
+                                           texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_*.jpg",)
+    ddd.mats.stones_black = ddd.material(name="Stones Dark", color='#484846',
+                                        texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
+                                        extra={'uv:scale': 1.0, 'tags': ['stones', 'tiles', 'dark', 'old', 'black', 'procedural', 'pbr']})
+    ddd.mats.stones = ddd.mats.stones_black
+
+
     ddd.mats.cement = ddd.material(name="Concrete", color='#b8b8a0', extra={'uv:scale': 1.0},  #
                                    texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_*.jpg",)
                                    #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_nrm.jpg",)
@@ -204,17 +220,23 @@ def osm_materials():
                                            #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_nrm.jpg",)
     ddd.mats.concrete = ddd.mats.cement
 
-    ddd.mats.stone_white = ddd.material(name="Stone", color='#9c9378',
-                                           texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_*.jpg",)
-                                           #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_nrm.jpg",)
-    ddd.mats.stone = ddd.mats.stone_white
-
-
+    ddd.mats.stone = ddd.mats.stones_black
+    ddd.mats.stone = ddd.material(name="Stone", color='#484846', # Solid stone material, for waycross, beams, or similar (not to be confused with stones, in plural, though may be using the same texture)
+                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
+                                  extra={'uv:scale': 1.0, 'tags': []})
 
 
     ddd.mats.bricks = ddd.material(name="Bricks", color='#efae85', texture_color='#ffffff',
                                  metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bricks07/Bricks07_*.jpg",)
+
+    ddd.mats.tiles_stones = ddd.material(name="Tiles Stones", color='#7b7d69', texture_color='#ffffff',
+                                 metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles084_2K-JPG/Tiles084_2K_*.jpg",)
+    ddd.mats.tiles_stones_veg_sparse = ddd.material(name="Tiles Stones Veg Sparse", color='#7b8d69', texture_color='#ffffff',
+                                 metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles083_2K-JPG/Tiles083_2K_*.jpg",)
+
 
     ddd.mats.wood = ddd.material(name="Wood", color='#d49156', texture_color='#ffffff',
                                  metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,

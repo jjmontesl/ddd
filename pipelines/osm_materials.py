@@ -114,7 +114,7 @@ def materials_pack_atlas(root, logger):
 
         ddd.mats.sand,
         ddd.mats.rock,
-        ddd.mats.terrain, #None,
+        ddd.mats.terrain_rock, #None,
         ddd.mats.terrain, #None
         ]
 
@@ -136,7 +136,7 @@ def materials_pack_atlas(root, logger):
             atposx = atlas_texsize * col
             atposy = atlas_texsize * row
 
-            albedo_image = DDDMaterial.load_texture_cached(mat.texture)
+            albedo_image = DDDMaterial.load_texture_cached(mat.texture, mat)
             albedo_array = np.array(albedo_image)
 
             # Linearize

@@ -426,16 +426,30 @@ class DDDMaterial():
     }
 
     @staticmethod
-    def load_texture_cached(path):
+    def load_texture_cached(path, material=None):
+        """
+        If material is passed, its metadata is used.
+
+        Will automatically resample a texture if ddd:texture:resize` is set in
+        the passed material or in the config (in that order).
+        """
         image = DDDMaterial._texture_cache.get(path, None)
         if image is None:
             image = PIL.Image.open(path)
-            # Resampling
-            resample_size = int(D1D2D3Bootstrap.data.get('ddd:texture:resize', 512))
-            if resample_size and image.size[0] > resample_size:
+
+            # Resampling (get ddd:texture:resize f
+            resample_size = 512
+            resample_size = D1D2D3Bootstrap.data.get('ddd:texture:resize', resample_size)
+            if material:
+                resample_size = material.extra.get('ddd:texture:resize', resample_size)
+            resample_size = int(resample_size)
+
+            if resample_size and resample_size > 0 and image.size[0] > resample_size:
                 logger.info("Resampling texture to %dx%d: %s", resample_size, resample_size, path)
                 image = image.resize((resample_size, resample_size), PIL.Image.BICUBIC)
+
             DDDMaterial._texture_cache[path] = image
+
         return image
 
     def __init__(self, name=None, color=None, extra=None, texture_color=None, texture_path=None, atlas_path=None, alpha_cutoff=None, alpha_mode=None, texture_normal_path=None,
@@ -561,7 +575,7 @@ class DDDMaterial():
         #if not self._texture_cached:
         #    self._texture_cached = PIL.Image.open(self.texture)
         #return self._texture_cached
-        return DDDMaterial.load_texture_cached(self.texture)
+        return DDDMaterial.load_texture_cached(self.texture, self)
 
     def get_texture_normal(self):
         """
@@ -573,7 +587,7 @@ class DDDMaterial():
         #if not self._texture_normal_cached:
         #    self._texture_normal_cached = PIL.Image.open(self.texture_normal_path)
         #return self._texture_normal_cached
-        return DDDMaterial.load_texture_cached(self.texture_normal_path)
+        return DDDMaterial.load_texture_cached(self.texture_normal_path, self)
 
     def get_texture_displacement(self):
         """
@@ -585,7 +599,7 @@ class DDDMaterial():
         #if not self._texture_displacement_cached:
         #    self._texture_displacement_cached = PIL.Image.open(self.texture_displacement_path)
         #return self._texture_displacement_cached
-        return DDDMaterial.load_texture_cached(self.texture_displacement_path)
+        return DDDMaterial.load_texture_cached(self.texture_displacement_path, self)
 
     def get_texture_roughness(self):
         """
@@ -597,7 +611,7 @@ class DDDMaterial():
         #if not self._texture_displacement_cached:
         #    self._texture_displacement_cached = PIL.Image.open(self.texture_displacement_path)
         #return self._texture_displacement_cached
-        return DDDMaterial.load_texture_cached(self.texture_roughness_path)
+        return DDDMaterial.load_texture_cached(self.texture_roughness_path, self)
 
 class DDDObject():
 

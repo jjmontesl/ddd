@@ -266,7 +266,7 @@ def osm_groups_areas_tourism_artwork(obj, osm):
     obj.extra['ddd:steps:height'] = 0.16
     obj.extra['ddd:steps:depth'] = 0.38
     #obj.extra['ddd:height'] = 0.35
-    obj = obj.material(ddd.mats.stone)
+    obj = obj.material(ddd.mats.stones)
     return obj
 
 # Move this to "s30_interpretations" (not raw OSM)

@@ -235,13 +235,24 @@ def osm_select_ways_footway_sidewalk(obj, root):
     obj = obj.material(ddd.mats.sidewalk)  # TODO: Footways/paths are not always dirt
     return obj
 
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "pedestrian"]')
+def osm_select_ways_pedestrian(obj, root):
+    """Define road data."""
+    obj = obj.copy()
+    obj.extra['ddd:way:lanes'] = 0
+    obj.extra['ddd:way:weight'] = 32
+    obj.extra['ddd:way:height'] = 0.2
+    obj.extra['ddd:way:width'] = 6.60
+    obj = obj.material(ddd.mats.pathwalk)
+    obj.prop_set('ddd:way:lamps', default=True)
+    root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "path"]')
 def osm_select_ways_path(obj, root):
     """Define road data."""
     obj = obj.copy()
     obj.extra['ddd:way:lanes'] = 0
-    obj.extra['ddd:way:weight'] = 31
+    obj.extra['ddd:way:weight'] = 33
     #obj.extra['ddd:way:height'] = 0
     obj.extra['ddd:way:width'] = 1.5
     obj = obj.material(ddd.mats.dirt)
@@ -254,12 +265,12 @@ def osm_select_ways_path(obj, root):
     root.find("/Ways").append(obj)
 
 
+
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" ~ "steps|stairs"]')
 def osm_select_ways_stairs(obj, root):
     """Define road data."""
     obj = obj.copy()
     obj.extra['ddd:way:lanes'] = 0
-    obj.extra['ddd:way:weight'] = 31
     obj.extra['ddd:way:height'] = 0.2
     obj.extra['ddd:way:width'] = 1.5
     obj.extra['ddd:way:stairs'] = True
@@ -273,33 +284,6 @@ def osm_select_ways_stairs(obj, root):
     root.find("/Ways").append(obj)
 
 
-@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "pedestrian"]')
-def osm_select_ways_pedestrian(obj, root):
-    """Define road data."""
-    obj = obj.copy()
-    obj.extra['ddd:way:lanes'] = 0
-    obj.extra['ddd:way:weight'] = 32
-    obj.extra['ddd:way:height'] = 0.2
-    obj.extra['ddd:way:width'] = 6.60
-    obj = obj.material(ddd.mats.pathwalk)
-    obj.prop_set('ddd:way:lamps', default=True)
-    root.find("/Ways").append(obj)
-
-
-@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "cycleway"]')
-def osm_select_ways_cycleway(obj, root):
-    """Define road data."""
-    obj = obj.copy()
-    obj.extra['ddd:way:lanes'] = 1
-    obj.extra['ddd:way:lane_width'] = 1.5
-    obj.extra['ddd:way:weight'] = 30 # 10
-    # obj.extra['ddd:way:height'] = 0.2
-    obj.extra['ddd:way:roadlines'] = True
-    obj = obj.material(ddd.mats.pitch_red)
-    obj.prop_set('ddd:way:lamps', default=False)
-    root.find("/Ways").append(obj)
-
-
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "corridor"]')
 def osm_select_ways_corridor(obj, root):
     """Define road data."""
@@ -309,6 +293,20 @@ def osm_select_ways_corridor(obj, root):
     obj.extra['ddd:way:weight'] = 41
     obj.extra['ddd:way:height'] = 0.35
     obj = obj.material(ddd.mats.pathwalk)
+    root.find("/Ways").append(obj)
+
+
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "cycleway"]')
+def osm_select_ways_cycleway(obj, root):
+    """Define road data."""
+    obj = obj.copy()
+    obj.extra['ddd:way:lanes'] = 1
+    obj.extra['ddd:way:lane_width'] = 1.5
+    obj.extra['ddd:way:weight'] = 51 # Cycleways are always interrupted if needed
+    # obj.extra['ddd:way:height'] = 0.2
+    obj.extra['ddd:way:roadlines'] = True
+    obj = obj.material(ddd.mats.pitch_red)
+    obj.prop_set('ddd:way:lamps', default=False)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "unclassified"]')
@@ -328,6 +326,8 @@ def osm_select_ways_raceway(obj, root):
     obj.extra['ddd:way:width'] = 8.0
     # obj = obj.material(ddd.mats.dirt)
     root.find("/Ways").append(obj)
+
+
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:railway" = "rail"]')
 def osm_select_ways_railway(obj, root):
@@ -413,11 +413,11 @@ def osm_select_ways_barrier_city_wall(root, osm, obj):
     obj.name = "City Wall: %s" % obj.name
     #obj.extra['ddd:way:weight'] = 91
     #obj.extra['ddd:way:lanes'] = None
-    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 2.50))
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 3.2))
     obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 3.0))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
-    obj = obj.material(ddd.mats.stone)
+    obj = obj.material(ddd.mats.tiles_stones_veg_sparse)  # Using this material for now as city walls are often old
     root.find("/ItemsWays").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"](["osm:barrier" = "castle_wall"];["osm:historic" = "castle_wall"])')
@@ -428,10 +428,10 @@ def osm_select_ways_barrier_castle_wall(root, osm, obj):
     #obj.extra['ddd:way:weight'] = 91
     #obj.extra['ddd:way:lanes'] = None
     obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 3.00))
-    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 3.5))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 4.2))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
-    obj = obj.material(ddd.mats.stone)
+    obj = obj.material(ddd.mats.tiles_stones)
     root.find("/ItemsWays").append(obj)
 
 
