@@ -114,7 +114,7 @@ def materials_pack_atlas(root, logger):
 
         ddd.mats.sand,
         ddd.mats.rock,
-        ddd.mats.terrain_rock, #None,
+        ddd.mats.terrain_rock,
         ddd.mats.terrain, #None
         ]
 

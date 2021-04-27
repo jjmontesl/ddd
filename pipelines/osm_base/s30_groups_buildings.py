@@ -38,6 +38,21 @@ def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
 
 # Buildings attributes that can be done before structure (ways analysis, etc)
 
+# TODO: FIXME: this will set ddd:*, so osm:* needs to be copied beforehand if it exists
+
+
+@dddtask(path="/Buildings/*", select='["osm:amenity" = "cafe"]')
+def osm_buildings_amenity_cafe(pipeline, osm, root, obj):
+    """
+    Set defaults to cafe buildings.
+    """
+    obj.set('ddd:building:levels', default=1)
+    obj.set('ddd:building:material', default="stone_white")
+    obj.set('ddd:roof:shape', default="hipped")
+    obj = obj.material(ddd.mats.stone_white)
+    return obj
+
+
 @dddtask(path="/Buildings/*", select='["osm:man_made" = "reservoir_covered"]')
 def osm_generate_buildings_man_made_reservoir_covered(pipeline, osm, root, obj):
     obj.set('ddd:building:levels', default=1)
@@ -56,6 +71,5 @@ def osm_buildings_building_shed(pipeline, osm, root, obj):
     obj.set('ddd:roof:shape', default="flat")
     obj = obj.material(ddd.mats.wood)
     return obj
-
 
 

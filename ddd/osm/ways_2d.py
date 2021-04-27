@@ -160,15 +160,23 @@ class Ways2DOSMBuilder():
 
             # Get intersection "highest ways", which dictate the aspect of the intersection.
             # Currently the road weight with most connections wins, then the lower weight (weight is really priority)
+            # Criteria: weight, surface/material, same original street
+            # Although ideally, it would be better to use weight/name for name assignation, and surface/material for material assignation. Heights might be involved too.
+            #ways = intersection.sort_criteria(['ddd:way:weight', 'ddd:material', 'ddd:name'])
             votes = defaultdict(list)
+            votes_surf = defaultdict(list)
             for join in intersection:
                 votes[join.way.extra['ddd:way:weight']].append(join.way)
+                votes_surf[join.way.mat].append(join.way)
             #max_voted_ways_weight = list(reversed(sorted(votes.items(), key=lambda w: len(w[1]))))[0][0]
             #highest_ways = votes[max_voted_ways_weight]
-            max_voted_ways_count = max([len(v) for k, v in votes.items()])
-            max_weight_max_voted = sorted([vw for vw, vways in votes.items() if len(vways) == max_voted_ways_count])[0]
-            highest_ways = votes[max_weight_max_voted]
-
+            #max_voted_ways_count = max([len(v) for k, v in votes.items()])
+            #max_weight_max_voted = sorted([vw for vw, vways in votes.items() if len(vways) == max_voted_ways_count])[0]
+            votes_weight_list = sorted([(k, v) for k, v in votes.items()], key=lambda o: (len(o[1]), -o[0]) )  # Sort by votes, then weight
+            highest_ways = votes_weight_list[-1][1]
+            if len(highest_ways) == len(intersection):
+                votes_surf_list = sorted([(k, v) for k, v in votes_surf.items()], key=lambda o: len(o[1]))  # Sort by votes
+                highest_ways = votes_surf_list[-1][1]
 
             # Generate intersection geometry
             join_ways = ddd.group([self.get_way_2d(j.way, ways_2d) for j in intersection]).flatten().clean()

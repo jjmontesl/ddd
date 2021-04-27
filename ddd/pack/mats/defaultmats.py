@@ -32,6 +32,7 @@ class DefaultMaterials(MaterialsCollection):
         self.grass = ddd.material(name="Grass", color='#2dd355')
         self.park = ddd.material(name="Park", color='#1db345')
         self.rock = ddd.material(name="Rock", color='#5f5f4d')
+        self.rock_lightbrown = ddd.material(name="Rock Orange", color='#bd8658')
         self.sand = ddd.material(name="Sand", color='#fff694')
         self.terrain = ddd.material(name="Ground", color='#e6821e')
         self.wetland = ddd.material(name="Wetland", color='#54610c')

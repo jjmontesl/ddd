@@ -203,6 +203,37 @@ def osm_groups_areas_amenity_parking(obj, osm):
     obj = obj.material(ddd.mats.asphalt)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:amenity" = "school"]')
+def osm_groups_areas_amenity_school(obj, osm):
+    """Define area data."""
+    obj.name = "School: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    #obj.extra['ddd:height'] = 0.1
+    obj = obj.material(ddd.mats.dirt)
+    # TODO (decoration, in separate group of pipeline): Add fence, if there's no fence or wall estimated
+    return obj
+
+
+@dddtask(path="/Areas/*", select='["osm:historic" = "archaeological_site"]')
+def osm_groups_areas_historic_archaeological_site(obj, osm):
+    """Define area data."""
+    obj.name = "Archaeological Site: %s" % obj.name
+    obj.extra['ddd:area:type'] = "bunker"
+    # TODO: Disable grass blades generation here using augmentation metadata (grass blades are currently hard coded in s55_plants)
+    obj = obj.material(ddd.mats.terrain)  # terrain_rock
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:landuse" = "railway"]')
+def osm_groups_areas_landuse_railway(obj, osm):
+    """Define area data."""
+    obj.name = "Railway Area: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj = obj.material(ddd.mats.dirt)
+
+    # TODO: Generate fence or wall?
+
+    return obj
+
 @dddtask(path="/Areas/*", select='["osm:leisure" = "pitch"]')
 def osm_groups_areas_leisure_pitch(obj, osm):
     """Define area data."""
@@ -212,7 +243,7 @@ def osm_groups_areas_leisure_pitch(obj, osm):
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:leisure" = "playground"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
-def osm_groups_items_areas_leisure_playground(obj, root, osm):
+def osm_groups_areas_leisure_playground(obj, root, osm):
     """Define area data. Children game objects are defined in items_areas."""
     print(obj)
     obj.name = "Playground: %s" % obj.name
@@ -310,58 +341,5 @@ def osm_groups_areas_man_made_bridge(obj, root):
     root.find("/Areas").children.extend(obj.children)
     return False
     #return obj
-
-
-"""
-
-            elif narea.extra.get('osm:landuse', None) in ('railway', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                area = self.generate_area_2d_railway(narea)
-
-            elif narea.extra.get('osm:amenity', None) in ('school', ):
-                narea = narea.subtract(ddd.group2(narea.extra['ddd:area:contained']))
-                narea = narea.subtract(union)
-                area = self.generate_area_2d_school(narea)
-
-
-    def generate_area_2d_railway(self, area):
-        feature = area.extra['osm:feature']
-        area.name = "Railway area: %s" % feature['properties'].get('name', None)
-        area = area.material(ddd.mats.dirt)
-        area = self.generate_wallfence_2d(area)
-        return area
-
-    def generate_area_2d_unused(self, area, wallfence=True):
-        feature = area.extra['osm:feature']
-        area.name = "Unused land: %s" % feature['properties'].get('name', None)
-        area.extra['ddd:height'] = 0.0
-        area = area.material(ddd.mats.dirt)
-
-        if wallfence:
-            area = self.generate_wallfence_2d(area)
-        #if ruins:
-        #if construction
-        #if ...
-
-        return area
-
-    def generate_wallfence_2d(self, area, fence_ratio=0.0, wall_thick=0.3, doors=1):
-
-        area_original = area.extra['ddd:area:original']
-        reduced_area = area_original.buffer(-wall_thick).clean(eps=0.01)
-
-        wall = area.subtract(reduced_area).material(ddd.mats.bricks)
-        try:
-            wall = wall.subtract(self.osm.buildings_2d)
-        except Exception as e:
-            logger.error("Could not subtract buildings from wall: %s", e)
-
-        wall.extra['ddd:height'] = 1.8
-
-        #ddd.uv.map_2d_polygon(wall, area.linearize())
-        area = ddd.group2([area, wall])
-
-        return area
-"""
 
 

@@ -48,10 +48,11 @@ class AreaItemsOSMBuilder():
 
         return item
 
+        '''
         for i in item.flatten().children:
             if i.geom: self.osm.items_1d.append(i)
-
         return None
+        '''
 
     def generate_item_2d_childrens_playground(self, feature):
 

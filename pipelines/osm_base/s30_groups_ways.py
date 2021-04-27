@@ -228,7 +228,8 @@ def osm_select_ways_footway(obj, root):
     obj = obj.material(ddd.mats.pathwalk)  # TODO: Footways/paths are not always dirt
     root.find("/Ways").append(obj)
 
-@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "footway"]["osm:footway" = "sidewalk"]')
+# Note this uses "/Ways" as footways have been selected already
+@dddtask(path="/Ways/*", select='["geom:type"="LineString"]["osm:highway" = "footway"]["osm:footway" = "sidewalk"]')
 def osm_select_ways_footway_sidewalk(obj, root):
     """Define road data."""
     # TODO: Sidewalks (and maybe touching paths/etc require treatment to join them with generated sidewalks
@@ -413,7 +414,7 @@ def osm_select_ways_barrier_city_wall(root, osm, obj):
     obj.name = "City Wall: %s" % obj.name
     #obj.extra['ddd:way:weight'] = 91
     #obj.extra['ddd:way:lanes'] = None
-    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 3.2))
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 2.8))
     obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 3.0))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
@@ -427,7 +428,7 @@ def osm_select_ways_barrier_castle_wall(root, osm, obj):
     obj.name = "Castle Wall: %s" % obj.name
     #obj.extra['ddd:way:weight'] = 91
     #obj.extra['ddd:way:lanes'] = None
-    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 3.00))
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 2.7))
     obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 4.2))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True

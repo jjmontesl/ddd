@@ -24,6 +24,10 @@ def osm_model_export_3d(root, osm, pipeline):
 
     root.save(pipeline.data['filenamebase'] + ".glb")
 
+    # PNG
+    #root.save(pipeline.data['filenamebase'] + ".png")
+    #root.show()
+
     #root = ddd.meshops.reduce_quadric_decimation(root, target_ratio=0.25)
     #root.save(pipeline.data['filenamebase'] + "-lod1.glb")
 

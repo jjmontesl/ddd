@@ -193,8 +193,10 @@ class Ways1DOSMBuilder():
             for c in list(way.geom.coords):
                 vertex_cache[tuple(c[:2])].append(way)
 
-        logger.warn("Asociating Items to Ways via nodes.")
+        logger.warn("Asociating Items to Ways via nodes (only Point items).")
         for item in items_1d.children:
+            if item.geom.type in ('Polygon', 'MultiPolygon', 'LineString'):
+                continue
             if tuple(item.geom.coords[0][:2]) in vertex_cache:
                 logger.debug("Associating item to way: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
                 item.extra['osm:item:way'] = vertex_cache[item.geom.coords[0]][0]

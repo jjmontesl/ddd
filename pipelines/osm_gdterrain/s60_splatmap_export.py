@@ -210,7 +210,7 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
         for yi, (y, yp) in enumerate(zip(points_y, points_y[1:])):
 
             x_utm, y_utm = transformer.transform(x, y)
-            x_utm, y_utm = (x_utm % 1024, y_utm % 1024)
+            x_utm, y_utm = (x_utm % 4096, y_utm % 4096)
 
             pixel_rect = ddd.rect([x, y, xp, yp])
 
@@ -241,7 +241,7 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
                         distance_reach = 8.0
                         #extend_ratio *= noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)  # Randomize reach
                         aug_factor = max(0, 1.0 - distance / distance_reach)
-                        noise_factor = noise.pnoise2(x_utm * 0.03, y_utm * 0.03, octaves=3, persistence=0.2, lacunarity=0.7, repeatx=1024, repeaty=1024, base=0)
+                        noise_factor = noise.pnoise2(x_utm * 0.03, y_utm * 0.03, octaves=3, persistence=0.2, lacunarity=0.7, repeatx=4096, repeaty=4096, base=0)
                         noise_factor = ddd.math.clamp((noise_factor - 0.5) * 2.0, 0.0, 1.0)  #  * (0.15 if chan_idx == 10 else 0.3)
                         aug_factor = max(aug_factor * noise_factor, 0.0) * 0.75
 
@@ -252,7 +252,7 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
                 # Augmentation tests: park (10)
                 if chan_idx == 10 or chan_idx == 11:
                     if cover_factor > 0.95:
-                        reduce_factor = noise.pnoise2(x_utm * 0.03, y_utm * 0.03, octaves=3, persistence=2.2, lacunarity=0.7, repeatx=1024, repeaty=1024, base=0)
+                        reduce_factor = noise.pnoise2(x_utm * 0.03, y_utm * 0.03, octaves=3, persistence=2.2, lacunarity=0.7, repeatx=4096, repeaty=4096, base=0)
                         reduce_factor = ddd.math.clamp((reduce_factor - 0.1) * 4.0, 0.0, 1.0) * 0.75  #  * (0.15 if chan_idx == 10 else 0.3)
                         cover_factor = cover_factor - reduce_factor
                         splat_matrix[yi, xi, 0] += (reduce_factor * random.uniform(0, 1)) # Increase terrain

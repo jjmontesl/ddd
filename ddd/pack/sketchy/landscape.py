@@ -72,4 +72,35 @@ def powertower(height=14.0):
     obj = ddd.group([obj_pole, obj_horz1, obj_horz2])
     return obj
 
+def comm_tower(height=25.0, radius=0.5):
+
+    base_height = 1.2
+    pole_radius = 0.10
+    top_height = 0.1
+    antenna_height = 2.0
+
+    obj_base = ddd.regularpolygon(3, radius, "Comm Tower Base").extrude(base_height)
+    obj_base = ddd.uv.map_cubic(obj_base)
+    obj_base = obj_base.material(ddd.mats.metal_paint_red)
+
+    obj_pole = ddd.regularpolygon(4, pole_radius, "Comm Tower Pole").extrude(height - base_height - top_height)
+    obj_pole = ddd.uv.map_cubic(obj_pole)
+    obj_pole = obj_pole.material(ddd.mats.metal_paint_red)
+    obj_pole = ddd.align.matrix_polar(obj_pole.translate([radius - pole_radius * 2, 0, base_height]), 3)
+
+    obj_top = ddd.regularpolygon(3, radius, "Comm Tower Top").extrude(top_height)
+    obj_top = obj_top.material(ddd.mats.metal_paint_red)
+    obj_top = ddd.uv.map_cubic(obj_top)
+    obj_top = obj_top.translate([0, 0, height - top_height])
+
+    obj_antenna = ddd.regularpolygon(3, 0.05, "Comm Antenna Vert").extrude(antenna_height).translate([0, 0, height])
+    obj_antenna = ddd.uv.map_cubic(obj_antenna)
+    obj_antenna = obj_antenna.material(ddd.mats.steel)
+
+    # TODO: Combination of suitable meshes shall be done automatically
+    combined = ddd.group([obj_base, obj_pole, obj_top]).combine()
+    obj = ddd.group([combined, obj_antenna])
+
+    obj.name = "Communications Tower"
+    return obj
 

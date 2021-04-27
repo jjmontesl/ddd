@@ -15,6 +15,7 @@ from collections import defaultdict
 from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
 from ddd.pack.symbols import iconitems
+from ddd.ops import filters
 
 
 # Get instance of logger for this module
@@ -108,10 +109,15 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_monument(item_2d)
         elif item_2d.extra.get('osm:historic', None) == 'wayside_cross':
             item_3d = self.generate_item_3d_wayside_cross(item_2d)
-        elif item_2d.extra.get('osm:man_made', None) == 'lighthouse':
-            item_3d = self.generate_item_3d_lighthouse(item_2d)
+        elif item_2d.extra.get('osm:historic', None) == 'archaeological_site':
+            item_3d = self.generate_item_3d_historic_archaeological_site(item_2d)
+
         elif item_2d.extra.get('osm:man_made', None) == 'crane':
             item_3d = self.generate_item_3d_crane(item_2d)
+        elif item_2d.extra.get('osm:man_made', None) == 'lighthouse':
+            item_3d = self.generate_item_3d_lighthouse(item_2d)
+        elif item_2d.extra.get('osm:man_made', None) == 'tower' and item_2d.extra.get('osm:tower:type', None) == 'communication':
+            item_3d = self.generate_item_3d_man_made_tower_communication(item_2d)
 
         elif item_2d.extra.get('osm:highway', None) == 'bus_stop':
             item_3d = self.generate_item_3d_bus_stop(item_2d)
@@ -163,8 +169,19 @@ class ItemsOSMBuilder():
         # TODO: Apply height via tags, similar approach to areas
         if item_3d:
 
+            # Copy item_2d attributes
+            # TODO: shall this be guaranteed by the generators?
+            for k, v in item_2d.extra.items():
+                item_3d.set(k, default=v, children=True)
+            #data = dict(item_2d.extra)
+            #data.update(item_3d.extra)
+            #item_3d.extra = data
+
+
             # Apply height
-            height_mapping = item_3d.extra.get('_height_mapping', 'terrain_geotiff_min_elevation_apply')
+            # TODO: Rename this property to either ddd:item... or to a common mechanism for areas, items...
+            height_mapping = item_3d.get('ddd:item:elevation', item_3d.get('_height_mapping', 'terrain_geotiff_min_elevation_apply'))
+
             if height_mapping == 'terrain_geotiff_elevation_apply':
                 item_3d = terrain.terrain_geotiff_elevation_apply(item_3d, self.osm.ddd_proj)
             elif height_mapping == 'terrain_geotiff_incline_elevation_apply':
@@ -186,12 +203,7 @@ class ItemsOSMBuilder():
             if base_height:
                 item_3d = item_3d.translate([0, 0, base_height])
 
-            # Copy item_2d attributes
-            for k, v in item_2d.extra.items():
-                item_3d.set(k, default=v, children=True)
-            #data = dict(item_2d.extra)
-            #data.update(item_3d.extra)
-            #item_3d.extra = data
+
 
 
         return item_3d
@@ -427,6 +439,35 @@ class ItemsOSMBuilder():
         item_3d.name = 'Wayside Cross: %s' % item_2d.name
         return item_3d
 
+    def generate_item_3d_historic_archaeological_site(self, item_2d):
+        # TODO: Move the actual site generation, given an area, to sketchy
+
+        coords = item_2d.centroid().geom.coords[0]
+        if item_2d.geom.type in ("Point", "LineString"):
+            points = item_2d.buffer(5.0).random_points(12)
+        else:
+            points = item_2d.random_points(12)
+
+        line1 = ddd.line(points[0:2])
+        line2 = ddd.line(points[2:5])
+        line3 = ddd.line(points[5:])
+        geomobj = ddd.group2([line1, line2, line3]).buffer(0.5).union()
+        #geomobj = filters.noise_random(geomobj, scale=0.075).clean().remove_z()
+        #geomobj.show()
+
+        item_3d = geomobj.extrude(0.8)
+        #item_3d.copy_from(item_2d)
+        item_3d = filters.noise_random(item_3d, scale=0.3)
+        item_3d = item_3d.material(ddd.mats.tiles_stones_veg_sparse)
+        item_3d = ddd.uv.map_cubic(item_3d)
+
+        # Dont translate ir rotate, item is already in world space (built from item_2d).
+        #item_3d = item_3d.rotate([0, 0, item_2d.get('ddd:angle', 0) - math.pi / 2])
+        #item_3d = item_3d.translate([coords[0], coords[1], 0.0])  # mat_bronze
+        item_3d.name = 'Archaeological Site: %s' % item_2d.name
+        return item_3d
+
+
     def generate_item_3d_lighthouse(self, item_2d):
         coords = item_2d.geom.coords[0]
         item_3d = landscape.lighthouse().translate([coords[0], coords[1], 0.0])
@@ -446,6 +487,17 @@ class ItemsOSMBuilder():
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Crane: %s' % item_2d.name
         return item_3d
+
+
+    def generate_item_3d_man_made_tower_communication(self, item_2d):
+        # TODO: Unify powertower, post, and maybe other joins, add catenaries using power:line
+        # and orient poles
+        coords = item_2d.geom.coords[0]
+        item_3d = landscape.comm_tower()
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+        item_3d.name = 'Comm Tower: %s' % item_2d.name
+        return item_3d
+
 
     def generate_item_3d_bus_stop(self, item_2d):
         coords = item_2d.geom.coords[0]

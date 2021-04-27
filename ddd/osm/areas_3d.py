@@ -135,64 +135,6 @@ class Areas3DOSMBuilder():
         self.osm.ground_3d.append(terr)
     '''
 
-    '''
-    def generate_areas_3d(self, areas_2d):
-
-        # TODO: Move to pipeline
-        logger.info("Generating 3D areas (%d)", len(areas_2d.children))
-
-        areas_3d = ddd.group3(name="Areas")
-
-        for area_2d in areas_2d.children:
-
-            #area_2d = area_2d.clean_replace(eps=0.0)
-            #if (not area_2d or not area_2d.geom): continue
-
-            try:
-                area_2d.validate()
-            except Exception as e:
-                logger.error("Could not generate invalid area %s: %s", area_2d, e)
-                continue
-
-            try:
-                if area_2d.extra.get('ddd:area:type', 'default') == 'default':
-                    area_3d = self.generate_area_3d(area_2d)
-                elif area_2d.extra.get('ddd:area:type', 'default') == 'stairs':
-                    area_3d = self.generate_area_3d(area_2d)
-                elif area_2d.extra['ddd:area:type'] == 'sidewalk':
-                    area_3d = self.generate_area_3d(area_2d)
-                elif area_2d.extra['ddd:area:type'] == 'park':
-                    area_3d = self.generate_area_3d(area_2d)
-                elif area_2d.extra['ddd:area:type'] == 'steps':
-                    area_3d = self.generate_area_3d(area_2d)
-                    # TODO: Raise areas to base_height (area.extra['ddd:area:container'] ?)
-                elif area_2d.extra['ddd:area:type'] == 'pitch':
-                    area_3d = self.generate_area_3d_pitch(area_2d)
-                elif area_2d.extra['ddd:area:type'] == 'water':
-                    area_3d = self.generate_area_3d_water(area_2d)
-                elif area_2d.extra['ddd:area:type'] == 'sea':
-                    area_3d = self.generate_area_3d_water(area_2d)
-                elif area_2d.extra['ddd:area:type'] == 'underwater':
-                    area_3d = self.generate_area_3d_underwater(area_2d)
-                else:
-                    logger.warning("Area type undefined: %s", area_2d.extra.get('ddd:area:type', None))
-                    raise AssertionError("Area type undefined: %s" % (area_2d.extra.get('ddd:area:type', None)))
-
-                if area_3d:
-                    areas_3d.append(area_3d)
-
-            except ValueError as e:
-                logger.error("Could not generate area %s: %s", area_2d, e)
-                raise
-            except IndexError as e:
-                logger.error("Could not generate area %s: %s", area_2d, e)
-                raise
-            except DDDException as e:
-                logger.error("Could not generate area %s: %s", area_2d, e)
-                raise
-
-        return areas_3d
-    '''
 
     def generate_area_3d(self, area_2d):
 
@@ -262,11 +204,12 @@ class Areas3DOSMBuilder():
                 area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), -0.3, method=ddd.EXTRUSION_METHOD_SUBTRACT)
 
             elif area_2d.extra.get('ddd:area:type', None) == 'steps':
-                    area_3d = area_2d.extrude_step(area_2d, area_2d.extra['ddd:steps:height'], base=False)
-                    for stepidx in range(1, area_2d.extra['ddd:steps:count'] + 1):
-                        area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), 0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
-                        area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), area_2d.extra['ddd:steps:height'], method=ddd.EXTRUSION_METHOD_SUBTRACT)
-                    # TODO: Crop in 3D (or as a workaround fake it as centroid cropping)
+                # This is the steps area, not the stairs.
+                area_3d = area_2d.extrude_step(area_2d, area_2d.extra['ddd:steps:height'], base=False)
+                for stepidx in range(1, area_2d.extra['ddd:steps:count'] + 1):
+                    area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), 0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                    area_3d = area_3d.extrude_step(area_2d.buffer(-area_2d.extra['ddd:steps:depth'] * stepidx), area_2d.extra['ddd:steps:height'], method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                # TODO: Crop in 3D (or as a workaround fake it as centroid cropping)
 
             elif area_2d.extra.get('ddd:area:type', None) == 'sidewalk':
 

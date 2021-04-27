@@ -22,4 +22,5 @@ for key in ddd.mats.traffic_signs.atlas.keys():
 items = ddd.align.grid(items)
 items.append(ddd.helper.all())
 items.save("/tmp/test.glb")
-#items.show()  # Hangs PC with software renderer
+#items.show()  # Note that this one hangs PC if using with software renderer
+items.save("/tmp/test.png")

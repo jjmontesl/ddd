@@ -50,6 +50,15 @@ def osm_groups_items_areas_water_pond(obj, root):
     #root.find("/Areas").append(obj)  # ItemsAreas
     # Currently ignoring as will be built by ddd:area:type=water
 
+@dddtask(path="/Areas/*", select='["osm:historic" = "archaeological_site"]')
+def osm_groups_items_areas_historic_archaeological_site(root, osm, obj):
+    """
+    Adds an archaeological site item so items are generated in archaeological site areas.
+    """
+    item = obj.copy()
+    item.set('ddd:item:elevation', 'terrain_geotiff_elevation_apply')
+    root.find("/ItemsNodes").append(item)
+
 
 @dddtask(path="/Features/*", select='["osm:leisure" = "outdoor_seating"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
 def osm_groups_items_areas_leisure_outdoor_seating(obj, root, osm):

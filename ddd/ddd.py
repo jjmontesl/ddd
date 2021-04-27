@@ -68,6 +68,7 @@ import os
 from ddd.core import settings
 from ddd.formats.geojson import DDDGeoJSONFormat
 from shapely.geometry.multipolygon import MultiPolygon
+from ddd.formats.png3drender import DDDPNG3DRenderFormat
 
 
 # Get instance of logger for this module
@@ -2927,6 +2928,11 @@ class DDDObject3(DDDObject):
             #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = DDDJSONFormat.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = data.encode("utf8")
+
+        elif path.endswith('.png'):
+            #rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDPNG3DRenderFormat.export_png_3d_render(self, instance_mesh=instance_mesh, instance_marker=instance_marker)
 
         else:
             logger.error("Cannot save. Invalid 3D filename format: %s", path)
