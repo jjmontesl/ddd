@@ -43,7 +43,6 @@ setup(
         "networkx >= 2.2",
         "noise >= 1.2.2",
         "numpy < 1.20.0",
-        "open3d >= 0.11.2",
         "pandas < 1.2.0",
         "Pillow >= 8.2.0",
         "pint >= 0.12",
@@ -60,8 +59,11 @@ setup(
         "trimesh[all] >= 3.5.0",  # -e git+https://github.com/mikedh/trimesh.git@8c5633028984b4abb1b7911208f7652119a3c96d#egg=trimesh
         "triangle >= 20190115.3",
 
+        "importlib-metadata < 4",  # required by ipyton required by open3D
+        "open3d >= 0.11.2",
+
         'matplotlib < 3.4',
-        'svgpath2mpl >= 0.2.1',
+        'svgpath2mpl >= 1.0.0',
         'svgpathtools >= 1.3.3',
 
         "osmium >= 2.15.4",

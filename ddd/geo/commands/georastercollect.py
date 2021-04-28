@@ -56,7 +56,7 @@ class GeoRasterCollectCommand(DDDCommand):
         configs = []
 
         for root, dirs, files in os.walk(basedir):
-            for name in files:
+            for name in sorted(files):
 
                 path = str(os.path.join(root, name))
                 _, extension = os.path.splitext(path)

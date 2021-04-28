@@ -1,5 +1,14 @@
+[0.6.4]
+
+
+
 [0.6.3]
 
+  * Initial splatmap and heightmap generation and export support.
+  * Added SVG icons in 3D.
+  * Support for non EUDEM v1.1 (non fixed northing transforms), and correct DEM tile calculation from a WGS84 point.
+  * Intersection resolution now correctly uses weight after count for resolving type.
+  * Texture automatic resize options.
   * Initial support for crosswalks.
   * Added more default materials and terrains, flowers and grass.
   * Improving intersection resolution with continuity and elevation (still WIP).

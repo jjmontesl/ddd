@@ -40,13 +40,13 @@ def osm_materials():
                                  texture_normal_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_normal.jpg",
                                  alpha_cutoff=0.05, metallic_factor=0.36, roughness_factor=0.30, bump_strength=0.25,
                                  extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05, 'zoffset': -8.5,
-                                        'ddd:texture:resize': -1})
+                                        'ddd:texture:resize': 1024})
     ddd.mats.roadline_red = ddd.material(name="Roadline Red", color='#f8a8a8',
                                  texture_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_alb.png",
                                  texture_normal_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_normal.jpg",
                                  alpha_cutoff=0.05, metallic_factor=0.36, roughness_factor=0.30, bump_strength=0.35,
                                  extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05, 'zoffset': -8.5,
-                                        'ddd:texture:resize': -1})
+                                        'ddd:texture:resize': 1024})
 
     ddd.mats.roadmarks = ddd.material(name="Roadmarks", color='#e8e8e8',
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/RoadMarks/TexturesCom_Atlas_RoadMarkings2_White_1K_albedo_with_alpha.png",
@@ -57,7 +57,7 @@ def osm_materials():
     ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
                                       texture_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.png",
                                       atlas_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.plist",
-                                      extra={'ddd:texture:resize': -1})
+                                      extra={'ddd:texture:resize': 1024})
 
     ddd.mats.asphalt = ddd.material(name="Asphalt", color='#202020', extra={'uv:scale': 1.0},  # 0.25  color='#202020',
                                     metallic_factor=0.0, roughness_factor=0.43, index_of_refraction=1.0, direct_lighting=0.76, bump_strength=2.0,
