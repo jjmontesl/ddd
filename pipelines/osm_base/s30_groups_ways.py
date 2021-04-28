@@ -415,7 +415,7 @@ def osm_select_ways_barrier_city_wall(root, osm, obj):
     #obj.extra['ddd:way:weight'] = 91
     #obj.extra['ddd:way:lanes'] = None
     obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 2.8))
-    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 3.0))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 3.5))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
     obj = obj.material(ddd.mats.tiles_stones_veg_sparse)  # Using this material for now as city walls are often old
@@ -429,7 +429,7 @@ def osm_select_ways_barrier_castle_wall(root, osm, obj):
     #obj.extra['ddd:way:weight'] = 91
     #obj.extra['ddd:way:lanes'] = None
     obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 2.7))
-    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 4.2))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 5.2))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
     obj = obj.material(ddd.mats.tiles_stones)

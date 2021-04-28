@@ -63,13 +63,11 @@ def materials_list(root, osm):
                 mats.append(marker)
                 added_names.append(mat.name)
 
-'''
 @dddtask()
 def materials_show(root):
     mats = root.find("/Materials")
     mats = ddd.align.grid(mats, space=2.0)
     mats.show()
-'''
 
 @dddtask()
 def materials_save(pipeline, root):
@@ -104,7 +102,7 @@ def materials_pack_atlas(root, logger):
 
         ddd.mats.sidewalk,
         ddd.mats.pathwalk,
-        ddd.mats.terrain, #None,
+        ddd.mats.terrain,
         ddd.mats.terrain, #None,
 
         ddd.mats.grass,
@@ -115,7 +113,7 @@ def materials_pack_atlas(root, logger):
         ddd.mats.sand,
         ddd.mats.rock,
         ddd.mats.terrain_rock,
-        ddd.mats.terrain, #None
+        ddd.mats.terrain_ground,
         ]
 
     #mats = [ddd.mats.pathwalk, ddd.mats.park, ddd.mats.terrain, ddd.mats.dirt] * 4

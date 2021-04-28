@@ -29,7 +29,7 @@ def osm_materials():
 
     # Materials used by this pipeline
     ddd.mats.railway = ddd.material(name="RoadRailway", color="#47443e",
-                                    metallic_factor=1.0, roughness_factor=0.43, index_of_refraction=1.0, direct_lighting=0.76, bump_strength=2.0,
+                                    metallic_factor=0.9, roughness_factor=0.43, index_of_refraction=1.0, direct_lighting=0.76, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/RoadRailway/TexturesCom_Road_Railway_512_*.png",
                                     #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/RoadRailway/TexturesCom_Road_Railway_512_normal.png",
                                     #alpha_cutoff=0.05,
@@ -143,8 +143,7 @@ def osm_materials():
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Ground23/Ground23_*.jpg",)
                                     #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground23/Ground23_nrm.jpg",)
-    ddd.mats.terrain = ddd.mats.terrain_ground
-    ddd.mats.terrain.name = "Ground"  # Name enforced as is currently used by other gools
+    ddd.mats.terrain = ddd.mats.terrain_veg_dead_sparse.copy("Ground")
 
 
     ddd.mats.dirt_compact_grayish = ddd.material(name="Dirt Compact Grayish", color="#b58800", extra={'uv:scale': 1.0},  # 0.25
@@ -220,10 +219,10 @@ def osm_materials():
                                            #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_nrm.jpg",)
     ddd.mats.concrete = ddd.mats.cement
 
-    ddd.mats.stone = ddd.mats.stones_black
-    ddd.mats.stone = ddd.material(name="Stone", color='#484846', # Solid stone material, for waycross, beams, or similar (not to be confused with stones, in plural, though may be using the same texture)
-                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
-                                  extra={'uv:scale': 1.0, 'tags': []})
+    #ddd.mats.stone = ddd.material(name="Stone", color='#484846', # Solid stone material, for waycross, beams, or similar (not to be confused with stones, in plural, though may be using the same texture)
+    #                              texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
+    #                              extra={'uv:scale': 1.0, 'tags': []})
+    ddd.mats.stone = ddd.mats.concrete.copy(name="Stone")
 
 
     ddd.mats.bricks = ddd.material(name="Bricks", color='#efae85', texture_color='#ffffff',

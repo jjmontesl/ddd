@@ -84,7 +84,7 @@ class D1D2D3Bootstrap():
 
         parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug logging")
         parser.add_argument("-h", "--help", action="store_true", default=False, help="show help and exit")
-        parser.add_argument("-v", "--visualize-errors", action="store_true", default=False, help="visualize objects that caused exceptions")
+        parser.add_argument("-v", "--visualize-errors", action="store_true", default=False, help="visualize object that caused exception if available")
         parser.add_argument("-o", "--overwrite", action="store_true", default=False, help="overwrite output files")
 
         parser.add_argument("-r", "--profile", type=str, default=False, help="profile execution writing results to filename")

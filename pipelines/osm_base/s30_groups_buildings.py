@@ -49,7 +49,7 @@ def osm_buildings_amenity_cafe(pipeline, osm, root, obj):
     obj.set('ddd:building:levels', default=1)
     obj.set('ddd:building:material', default="stone_white")
     obj.set('ddd:roof:shape', default="hipped")
-    obj = obj.material(ddd.mats.stone_white)
+    obj = obj.material(ddd.mats.stones_white)
     return obj
 
 

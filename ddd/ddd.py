@@ -421,7 +421,7 @@ class DDDMaterial():
     # These need to be sorted from longer to shorter
     TEXTURE_DISCOVER = {
         'albedo': ['_Base_Color', '_Color', '_ColorAlpha', '_albedo', '_col', '_alb' ],
-        'normal': ['_Normal', '_nrm'],
+        'normal': ['_Normal', '_normal', '_nrm'],
         'displacement': ['_Height', '_Displacement', '_Disp', '_disp', '_dis'],
         'roughness': ['_Roughness', '_rgh']
     }
@@ -504,6 +504,7 @@ class DDDMaterial():
         '''
 
         self.atlas = None
+        self.atlas_path = atlas_path
         if atlas_path:
             self.load_atlas(atlas_path)
 
@@ -518,6 +519,14 @@ class DDDMaterial():
     def __hash__(self):
         return abs(hash((self.name, self.color)))  #, self.extra)))
 
+    def copy(self, name):
+        result = DDDMaterial(name, color=self.color, extra=dict(self.extra), texture_color=self.texture_color, texture_path=self.texture,
+                             atlas_path=self.atlas_path, alpha_cutoff=self.alpha_cutoff, alpha_mode=self.alpha_mode,
+                             texture_normal_path=self.texture_normal_path, metallic_factor=self.metallic_factor, roughness_factor=self.roughness_factor,
+                             index_of_refraction=None, direct_lighting=None, bump_strength=None, double_sided=self.double_sided,
+                             texture_displacement_path=self.texture_displacement_path, texture_roughness_path=self.texture_roughness_path)
+        return result
+
     def _trimesh_material(self):
         """
         Returns a Trimesh material for this DDDMaterial.
@@ -527,15 +536,19 @@ class DDDMaterial():
         if self._trimesh_material_cached is None:
             if self.texture and D1D2D3Bootstrap.export_textures:
                 im = self.get_texture()
-                if self.texture and (self.alpha_cutoff or self.alpha_mode or self.texture_normal_path):
+                if self.texture:  # and (self.alpha_cutoff or self.alpha_mode or self.texture_normal_path):
                     alpha_mode = self.alpha_mode if self.alpha_mode else ('MASK' if self.alpha_cutoff else 'OPAQUE')
-                    im_normal = self.get_texture_normal()
+                    im_normal = self.get_texture_normal() if self.texture_normal_path else None
                     mat = PBRMaterial(name=self.name, baseColorTexture=im, baseColorFactor=self.texture_color_rgba if self.texture_color_rgba is not None else self.color_rgba,
                                       normalTexture=im_normal, doubleSided=self.double_sided,
                                       metallicFactor=self.metallic_factor, roughnessFactor=self.roughness_factor,
                                       alphaMode=alpha_mode, alphaCutoff=self.alpha_cutoff)  # , ambient, specular, glossiness)
                 else:
-                    mat = SimpleMaterial(name=self.name, image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
+                    #mat = SimpleMaterial(name=self.name, image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
+                    alpha_mode = self.alpha_mode if self.alpha_mode else ('MASK' if self.alpha_cutoff else 'OPAQUE')
+                    mat = PBRMaterial(name=self.name, baseColorFactor=self.texture_color_rgba if self.texture_color_rgba is not None else self.color_rgba,
+                                      doubleSided=self.double_sided, metallicFactor=self.metallic_factor, roughnessFactor=self.roughness_factor,
+                                      alphaMode=alpha_mode, alphaCutoff=self.alpha_cutoff)  # , ambient, specular, glossiness)
             else:
                 mat = SimpleMaterial(name=self.name, diffuse=self.color_rgba)
             #mat = PBRMaterial(doubleSided=True)  # , emissiveFactor= [0.5 for v in self.mesh.vertices])

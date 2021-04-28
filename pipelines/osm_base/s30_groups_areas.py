@@ -220,7 +220,7 @@ def osm_groups_areas_historic_archaeological_site(obj, osm):
     obj.name = "Archaeological Site: %s" % obj.name
     obj.extra['ddd:area:type'] = "bunker"
     # TODO: Disable grass blades generation here using augmentation metadata (grass blades are currently hard coded in s55_plants)
-    obj = obj.material(ddd.mats.terrain)  # terrain_rock
+    obj = obj.material(ddd.mats.terrain_ground)  # terrain_rock
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:landuse" = "railway"]')
