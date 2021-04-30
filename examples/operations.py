@@ -9,8 +9,12 @@ from ddd.ddd import ddd
 import math
 import sys
 from ddd.text import fonts
+import logging
 
 items = ddd.group3()
+
+# Get instance of logger for this module
+logger = logging.getLogger(__name__)
 
 
 # Extrusion with optional caps

@@ -1293,9 +1293,9 @@ class DDDObject2(DDDObject):
         #for c in other.children:
         #    result = result.subtract(c)
         if self.geom:
-            union = other.union()
-            if union.geom and not union.geom.is_empty:
-                result.geom = result.geom.difference(union.geom)
+            #union = other.union()
+            if other.geom and not other.geom.is_empty:
+                result.geom = result.geom.difference(other.geom)
 
         result.children = [c.subtract(other) for c in result.children]
 
@@ -2433,7 +2433,9 @@ class DDDObject3(DDDObject):
     def invert(self):
         """Inverts mesh triangles (which inverts triangle face normals)."""
         obj = self.copy()
-        obj.mesh.invert()
+        if self.mesh:
+            obj.mesh.invert()
+        obj.children = [c.invert() for c in self.children]
         return obj
 
     def material(self, material, include_children=True):
