@@ -60,6 +60,19 @@ def osm_generate_buildings_man_made_reservoir_covered(pipeline, osm, root, obj):
     obj = obj.material(ddd.mats.tiles_stones)
     return obj
 
+@dddtask(path="/Buildings/*", select='["osm:building" = "roof"]')
+def osm_buildings_building_roof(pipeline, osm, root, obj):
+    """
+    Set defaults to sheds.
+    """
+    obj.set('ddd:building:levels', default=1)
+    #obj.set('ddd:building:material', default="steel")
+    obj.set('ddd:roof:material', default="wood")
+    obj.set('ddd:roof:shape', default="hipped")
+    #obj = obj.material(ddd.mats.steel)
+    return obj
+
+
 @dddtask(path="/Buildings/*", select='["osm:building" = "shed"]')
 def osm_buildings_building_shed(pipeline, osm, root, obj):
     """
@@ -71,5 +84,6 @@ def osm_buildings_building_shed(pipeline, osm, root, obj):
     obj.set('ddd:roof:shape', default="flat")
     obj = obj.material(ddd.mats.wood)
     return obj
+
 
 

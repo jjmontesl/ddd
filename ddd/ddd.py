@@ -1257,6 +1257,12 @@ class DDDObject2(DDDObject):
         return result
 
     def subtract(self, other):
+        """
+        Subtracts `other` object from this. If `other` has children, alk of them are subtracted.
+        Children of this object are conserved.
+
+        Returns a copy of the object.
+        """
 
         result = self.copy()
 
@@ -1264,6 +1270,7 @@ class DDDObject2(DDDObject):
         #if not result.intersects(other):
         #    return result
 
+        '''
         if self.geom and other.geom:
             try:
                 diffgeom = result.geom.difference(other.geom)
@@ -1278,6 +1285,10 @@ class DDDObject2(DDDObject):
                     except Exception as e:
                         raise DDDException("Cannot subtract geometries: %s - %s: %s" % (self, other, e),
                                            ddd_obj=ddd.group2([self, other.material(ddd.mats.highlight)]))
+        '''
+
+        if other.children:
+            other = other.union()
 
         #for c in other.children:
         #    result = result.subtract(c)
@@ -1638,10 +1649,13 @@ class DDDObject2(DDDObject):
 
         return result
 
+
     def triangulate(self, twosided=False):
         """
         Returns a triangulated mesh (3D) from this 2D shape.
         """
+        if (twosided):
+            logger.warn("Calling 'triagulate' with twosided=True has seen to give wrong normals (black materials) due to vertex merging.")
         if self.geom:
             if self.geom.type == 'MultiPolygon' or self.geom.type == 'MultiLineString' or self.geom.type == 'GeometryCollection':
                 meshes = []
@@ -2596,12 +2610,13 @@ class DDDObject3(DDDObject):
         return result
 
 
-
     def subdivide_to_size(self, max_edge, max_iter=10):
         """
         Subdivide a mesh until every edge is shorter than a specified length.
 
         This method is based on the Trimesh method of the same name.
+
+        TODO: Move this to meshops.
         """
         result = self.copy()
 

@@ -245,7 +245,6 @@ def osm_groups_areas_leisure_pitch(obj, osm):
 @dddtask(path="/Areas/*", select='["osm:leisure" = "playground"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
 def osm_groups_areas_leisure_playground(obj, root, osm):
     """Define area data. Children game objects are defined in items_areas."""
-    print(obj)
     obj.name = "Playground: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"
     obj.extra['ddd:height'] = 0.15

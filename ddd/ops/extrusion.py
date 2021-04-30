@@ -169,27 +169,29 @@ def extrude_between_geoms_subtract(shape_a, shape_b, offset, base_height):
     # Calculate difference and set heights
     diff = big.subtract(small).triangulate()
 
-    shape_a_coords = list(shape_a.geom.exterior.coords)
-    for g in shape_a.geom.interiors: shape_a_coords.extend(list(g.coords))
-    shape_b_coords = list(shape_b.geom.exterior.coords)
-    for g in shape_b.geom.interiors: shape_b_coords.extend(list(g.coords))
-    """
-    shape_b_coords = list(shape_b.geom.exterior.coords) if shape_b.geom.type == "Polygon" else list(shape_b.geom.coords)
-    if shape_b.geom.type == "Polygon":
+    if diff.mesh:
+
+        shape_a_coords = list(shape_a.geom.exterior.coords)
+        for g in shape_a.geom.interiors: shape_a_coords.extend(list(g.coords))
+        shape_b_coords = list(shape_b.geom.exterior.coords)
         for g in shape_b.geom.interiors: shape_b_coords.extend(list(g.coords))
-    """
+        """
+        shape_b_coords = list(shape_b.geom.exterior.coords) if shape_b.geom.type == "Polygon" else list(shape_b.geom.coords)
+        if shape_b.geom.type == "Polygon":
+            for g in shape_b.geom.interiors: shape_b_coords.extend(list(g.coords))
+        """
 
-    def func(x, y , z, i):
-        if (x, y) in shape_a_coords or (x, y, z) in shape_a_coords: z = base_height
-        elif (x, y) in shape_b_coords or (x, y, z) in shape_b_coords: z = base_height + offset
-        else:
-            logger.warn("Could not match coordinate during extrusion-subtract (%s, %s, %s) between %s and %s.", x, y, z, shape_a, shape_b)
-            z = base_height
-        return x, y, z
+        def func(x, y , z, i):
+            if (x, y) in shape_a_coords or (x, y, z) in shape_a_coords: z = base_height
+            elif (x, y) in shape_b_coords or (x, y, z) in shape_b_coords: z = base_height + offset
+            else:
+                logger.warn("Could not match coordinate during extrusion-subtract (%s, %s, %s) between %s and %s.", x, y, z, shape_a, shape_b)
+                z = base_height
+            return x, y, z
 
-    diff = diff.vertex_func(func)
-    if inverted:
-        diff.mesh.invert()
+        diff = diff.vertex_func(func)
+        if inverted:
+            diff.mesh.invert()
 
     return diff.combine().mesh
 

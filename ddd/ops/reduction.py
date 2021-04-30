@@ -5,6 +5,7 @@
 import logging
 from ddd.ddd import ddd, DDDInstance
 import math
+from trimesh.base import Trimesh
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -174,4 +175,24 @@ class DDDMeshOps():
         obj.children = [self.remove_faces_pointing(c, direction, threshold) for c in obj.children]
 
         return obj
+
+
+    def subdivide_to_grid(self, grid_size=2.0, min_distance=0.1):
+        """
+        """
+        result = self.copy()
+
+        result.children = [c.subdivide_to_grid(max_edge, max_iter) for c in result.children]
+
+        if result.mesh:
+            vertices, faces = result.mesh.vertices, result.mesh.faces
+
+            # For each face, calculate orientation and gridded triangles. Interpolate UVs and normals. Generalize.
+
+            rvertices, rfaces = remesh.subdivide_to_size(vertices, faces, max_edge, max_iter=max_iter)
+
+            result.mesh = Trimesh(rvertices, rfaces)
+
+        return result
+
 

@@ -272,7 +272,7 @@ def reed(height=None, leaves=None):
     for i in range(leaves):
         lh = height + random.uniform(-0.4, 0.4)
         lb = 0.02 * lh
-        item = ddd.polygon([[-lb, 0.0], [lb, 0.0], [0, lh]], name="Reed leaf").triangulate(twosided=True).material(ddd.mats.treetop)
+        item = ddd.polygon([[-lb, 0.0], [lb, 0.0], [0, lh]], name="Reed leaf").triangulate().twosided().material(ddd.mats.treetop)
         item = item.rotate(ddd.ROT_FLOOR_TO_FRONT)
         item = ddd.group([item, item.rotate(ddd.ROT_TOP_CW)], name="Reed leaf")
         item = ddd.uv.map_cubic(item, scale=(0.2, 2.0))

@@ -53,12 +53,16 @@ def osm_gdterrain_export_splatmap_init(root, pipeline, osm, logger):
 
     pipeline.data['splatmap:channels_num'] = 16
 
-    pipeline.data['splatmap:channels:collapse_map'] = [
-        [0, 2, 12],     # Terrain, asphalt, pavement, sand
-        [1, 13],        # Paths, dirt, rock
-        [8, 9, 10, 11], # Grass, garden, pàrk, forest
-        [3, 4, 5]       # Pedestrian, tiles
-    ]
+
+    pipeline.data['splatmap:channels:collapse_map'] = None
+    #pipeline.data['splatmap:channels:collapse_map'] = [
+    #    [0, 2, 12],     # Terrain, asphalt, pavement, sand
+    #    [1, 13],        # Paths, dirt, rock
+    #    [8, 9, 10, 11], # Grass, garden, pàrk, forest
+    #    [3, 4, 5]       # Pedestrian, tiles
+    #]
+
+
 
     pipeline.data['splatmap:ids'] = {}
 
@@ -320,6 +324,7 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
 
 
     # Collapse into N channels
+    splat_matrix_collapsed = None
     collapse_map = pipeline.data.get('splatmap:channels:collapse_map', None)
     if collapse_map:
         splat_matrix_collapsed = np.zeros([splatmap_size, splatmap_size, len(collapse_map)])
@@ -330,7 +335,8 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
                 splat_matrix_collapsed[:,:,collapse_idx] += (splat_matrix[:,:,collapse_source])
                 if use_detailmap:
                     id_matrix_collapsed[:,:,collapse_idx] = np.maximum(id_matrix_collapsed[:,:,collapse_idx], id_matrix[:,:,collapse_source])
-    splat_matrix_collapsed = np.minimum(splat_matrix_collapsed, 1.0)
+
+        splat_matrix_collapsed = np.minimum(splat_matrix_collapsed, 1.0)
 
 
     #splat_matrix_collapsed = splat_matrix[:,:,0:4] + splat_matrix[:,:,4:8]
