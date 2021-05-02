@@ -226,8 +226,11 @@ class D1D2D3Bootstrap():
             try:
                 script_abspath = os.path.abspath(command)
                 script_dirpath = os.path.dirname(script_abspath)
+                scriptname = os.path.basename(command)
+                logger.info("Appending to sys.path: %s" % script_dirpath)
                 sys.path.append(script_dirpath)
-                importlib.import_module(command)  #, globals={'ddd_bootstrap': self})
+
+                importlib.import_module(scriptname)  #, globals={'ddd_bootstrap': self})
                 result = True
             except ModuleNotFoundError as e:
                 result = False

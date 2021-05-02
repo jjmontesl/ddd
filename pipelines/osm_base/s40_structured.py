@@ -5,6 +5,7 @@
 from ddd.osm import osm
 from ddd.pipeline.decorators import dddtask
 from ddd.ddd import ddd
+from shapely import ops
 import math
 import sys
 
@@ -18,8 +19,8 @@ information. Ways are given their with and converted to polygons, then resolved 
 for intersections (references to the original objects are kept along the whole process,
 as original LineStrings are still used for other processes).
 
-This part of the OSM generation pipeline is not designed to be altered or extended, as it
-does most of the heavy lifting with 2D geometry operations and data structures. Styling
+This stage of the OSM generation pipeline is not designed in principle to be altered or extended,
+as it does most of the heavy lifting of 2D geometry operations and data structures. Styling
 and alterations are ideally better done before (during initial selection of features) or
 after.
 
@@ -51,12 +52,15 @@ def osm_structured_init(root, osm):
 def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
     """
     Splits ways that have crossings in the middle (not in first or end nodes).
+
+    This happens before splitting ways by joins.
     """
     # Find way (walking ways, as items have not yet been assigned to ways)
     ways = root.find('/Ways')
     for way in list(ways.children):
-        if way.distance(obj) < 1e-8:  # True(obj):
+        if way.distance(obj) < ddd.EPSILON:  # True(obj):
 
+            # TODO: shall this be here?
             if way.get('osm:highway', None) == 'cycleway':
                 continue
 
@@ -67,7 +71,7 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
                 return
 
             #ddd.group([way.buffer(0.5), obj.buffer(1.0)]).show()
-            #logger.info('Splitting way %s by osm:highway:crossing %s (vertex index=%s)' % (way, obj, idx))
+            #logger.debug('Splitting way %s by osm:highway:crossing %s (vertex index=%s)' % (way, obj, idx))
 
             # Calculate crossing width
             crossing_width = 2.6 * way.get('ddd:way:lanes', default=1)
@@ -89,17 +93,24 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
 
             if split2:
 
-
                 crossing_distance_in_way = split2.geom.project(obj.geom)
                 crossing_distance_in_way_end = crossing_distance_in_way + crossing_width / 2.0
                 #crossing_point_in_way_end, segment_idx, segment_coords_a, segment_coords_b = split2.interpolate_segment(crossing_distance_in_way_end)
                 crossing_point_in_way_end = split2.insert_vertex_at_distance(crossing_distance_in_way_end)
                 split2, split3 = osm.ways1.split_way_1d_vertex(ways, split2, crossing_point_in_way_end)
+            #else:
+            #    ddd.group2([way.buffer(1.0, cap_style=ddd.CAP_FLAT), ddd.point(crossing_point_in_way_start).buffer(0.5).material(ddd.MAT_HIGHLIGHT)]).show()
+            #    ddd.group2([split1.buffer(1.0, cap_style=ddd.CAP_FLAT), ddd.point(crossing_point_in_way_start).buffer(0.5).material(ddd.MAT_HIGHLIGHT)]).show()
+            #    sys.exit(1)
 
             if split2 and split3:
-                #split2.extra['ddd:material'] = ddd.MAT_HIGHLIGHT
+                split2.geom = ops.snap(split2.geom, split1.geom, 0.01)
+                split2.geom = ops.snap(split2.geom, split3.geom, 0.01)
                 split2.extra['ddd:way:crosswalk'] = True
                 split2.extra['ddd:way:roadlines'] = False
+                split2.name = "Crosswalk: %s" % split2.name
+                #logger.info("Line %s (%s m) split at %s and %s", way, way.length(), crossing_distance_in_way_start, crossing_distance_in_way_end)
+                #ddd.group2([split1.buffer(0.5, cap_style=ddd.CAP_FLAT), split2.buffer(0.5, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT), split3.buffer(0.5, cap_style=ddd.CAP_FLAT)]).show()
 
             # This seems not to help Points appearing in ways_2d build (intersections)
             if (split1 and split1.geom.type == 'Point'):
@@ -113,10 +124,10 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
                 #ddd.group2([split1.buffer(0.5, cap_style=ddd.CAP_FLAT), split2.buffer(0.5, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT), split3.buffer(0.5, cap_style=ddd.CAP_FLAT), obj.buffer(0.3)]).show()
                 pass
             elif (split2):
-                ddd.group2([split1.buffer(0.5, cap_style=ddd.CAP_FLAT), split2.buffer(0.5, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT), obj.buffer(0.3)]).show()
+                #ddd.group2([split1.buffer(0.5, cap_style=ddd.CAP_FLAT), split2.buffer(0.5, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT), obj.buffer(0.3)]).show()
+                pass
 
             return
-
 
 @dddtask()
 def osm_structured_split_ways_by_joins(osm, root):
@@ -126,6 +137,30 @@ def osm_structured_split_ways_by_joins(osm, root):
     """
 
     osm.ways1.split_ways_1d(root.find("/Ways"))  # Move earlier?
+
+@dddtask()
+def osm_structured_ways_1d_intersections(osm, root):
+    """
+    Generate intersection data structure.
+    """
+    osm.ways1.ways_1d_intersections(root.find("/Ways"))
+
+@dddtask()
+def osm_structured_ways_1d_height(osm, root):
+    """
+    """
+
+    ways_1d = root.find("/Ways")
+
+    # Road 1D heights
+    # Propagate height across connections for transitions
+    osm.ways1.ways_1d_heights_initial(ways_1d)
+    osm.ways1.ways_1d_heights_connections(ways_1d)  # and_layers_and_transitions_etc
+    osm.ways1.ways_1d_heights_propagate(ways_1d)
+
+    # Propagate height beyond transition layers if gradient is too large?!
+    # Soften / subdivide roads if height angle is larger than X (try as alternative to massive subdivision of roads?)
+
 
 @dddtask()
 def osm_structured_link_ways_items(osm, root):

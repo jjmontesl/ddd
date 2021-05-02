@@ -288,18 +288,23 @@ def osm_materials():
     ddd.mats.flowers_blue_blade = ddd.material(name="Flowers Blue", color='#51b8da',
                                                metallic_factor=0.0, roughness_factor=0.90, # index_of_refraction=1.36,
                                                texture_path=ddd.DATA_DIR + "/osmmaterials/Grass/flowers_blue.png",
-                                               double_sided=True, alpha_mode='BLEND', #alpha_cutoff=0.1,
+                                               double_sided=True, alpha_mode='MASK', #alpha_cutoff=0.1,
                                                extra={'ddd:collider': False})
     ddd.mats.flowers_roses_blade = ddd.material(name="Flowers Roses", color='#e96969',
                                                metallic_factor=0.0, roughness_factor=0.95, #index_of_refraction=1.36,
                                                texture_path=ddd.DATA_DIR + "/osmmaterials/Grass/flowers_roses.png",
-                                               double_sided=True, alpha_mode='BLEND', #alpha_cutoff=0.1,
+                                               double_sided=True, alpha_mode='MASK', #alpha_cutoff=0.1,
                                                extra={'ddd:collider': False})
     ddd.mats.grass_blade = ddd.material(name="Grass Blade", color='#2de355',
                                         metallic_factor=0.0, roughness_factor=1.00, # index_of_refraction=1.36,
                                         texture_path=ddd.DATA_DIR + "/osmmaterials/Grass/grass_billboard.png",
-                                        double_sided=True, alpha_mode='BLEND', #alpha_cutoff=0.1,
+                                        double_sided=True, alpha_mode='MASK', #alpha_cutoff=0.1,
                                         extra={'ddd:collider': False})
+    ddd.mats.grass_blade_dry = ddd.material(name="Grass Blade Dry", color='#956542',
+                                            metallic_factor=0.0, roughness_factor=1.00, # index_of_refraction=1.36,
+                                            texture_path=ddd.DATA_DIR + "/osmmaterials/Grass/grass_billboard2.png",
+                                            double_sided=True, alpha_mode='MASK', #alpha_cutoff=0.1,
+                                            extra={'ddd:collider': False})
 
     # Urban props materials
     ddd.mats.fence = ddd.material(name="Fence", color='282024', extra={'ddd:transparent': True},

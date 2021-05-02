@@ -713,7 +713,7 @@ class DDDObject():
 
         node_name = self.uniquename() + name_suffix
 
-        ignore_keys = ('uv', 'osm:feature', 'ddd:connections')
+        ignore_keys = ('uv', 'osm:feature')  #, 'ddd:connections')
         metadata = dict(self.extra)
         metadata['ddd:path'] = path_prefix + node_name
         if hasattr(self, "geom"):
@@ -2014,7 +2014,7 @@ class DDDObject2(DDDObject):
             for idx, c in enumerate(self.geom.coords):
                 #print (idx, c, other.geom.coords[0])
                 #if (c == other.geom.coords[0]):
-                if np.linalg.norm(np.array(c) - coords) < ddd.EPSILON:
+                if np.linalg.norm(np.array(c) - coords) < (2 * ddd.EPSILON):
                     return idx
 
         return None

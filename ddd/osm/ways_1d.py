@@ -23,7 +23,14 @@ from ddd.ops import uvmapping
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
+"""
+Each of the connections between ways during first stage (to a way, with own and other's vertex index).
+"""
 WayConnection = namedtuple("WayConnection", "other self_idx other_idx")
+
+"""
+Each of the connections in a Join (to a way, with its incoming vertex index).
+"""
 JoinConnection = namedtuple("JoinConnection", "way way_idx")
 
 
@@ -40,6 +47,7 @@ class Ways1DOSMBuilder():
 
         return lh
 
+    '''
     def follow_way(self, way, depth=1, visited=None):
 
         if depth < 0: return []
@@ -59,13 +67,14 @@ class Ways1DOSMBuilder():
         visited.add(way)
 
         return list(visited)
+    '''
 
 
     def split_ways_1d(self, ways_1d):
         """
         Splits all ways into the minimum pieces that have only an intersection at each end.
 
-        This method modifies the passed in node, manipulating children to avoid ways with multiple intersections.
+        This method modifies the passed in node, manipulating children.
         """
 
         # Splitting
@@ -73,6 +82,7 @@ class Ways1DOSMBuilder():
 
         # Way schema
         for way in ways_1d.children:
+            way.extra['ddd:connections'] = []
             way.extra['ddd:connections'] = []
 
         # Split ways on joins
@@ -161,20 +171,9 @@ class Ways1DOSMBuilder():
                 # way.extra['ddd:layer_transition'] = True
                 way.extra['ddd:layer'] = str(way.extra['ddd:layer_min']) + "a"
 
-        # Propagate height across connections for transitions
-        # self.generate_ways_1d_heights()
 
-        # Generate interesections
-        self.ways_1d_intersections(ways_1d)
+        # At this point all ways 'connections' should have be resolved.
 
-        # Road 1D heights
-        self.ways_1d_heights_initial(ways_1d)
-        self.ways_1d_heights_connections(ways_1d)  # and_layers_and_transitions_etc
-        self.ways_1d_heights_propagate(ways_1d)
-
-        # Propagate height beyond transition layers if gradient is too large?!
-
-        # Soften / subdivide roads if height angle is larger than X (try as alternative to massive subdivision of roads?)
 
     def ways_1d_link_items(self, ways_1d, items_1d):
         """
@@ -209,15 +208,19 @@ class Ways1DOSMBuilder():
 
     def ways_1d_intersections(self, ways_1d):
         """
+        Evaluates all ways and creates a structure for each intersection between 2 or more ways.
+
         Intersections are just data structures, they are not geometries.
+        They are a list of joins (JoinConnection).
         """
 
         logger.info("Generating intersections from %d ways.", len(ways_1d.children))
 
         intersections = []
-        intersections_cache = defaultdict(default=list)
+        intersections_cache = defaultdict(default=list)  # Map WayJoin to to intersections
 
         def get_create_intersection(joins):
+            """Gets or creates an intersection for a given set of joins (way + idx)."""
             if not joins or len(joins) < 2:
                 return None
 
@@ -227,9 +230,11 @@ class Ways1DOSMBuilder():
 
             # if len(joins) == 2:
             #    logger.debug("Intersection of only 2 ways.")
-            intersection = [j for j in joins]
+            intersection = sorted([j for j in joins], key=id)
+
             intersections.append(intersection)
-            for j in joins: intersections_cache[j] = intersection
+            for j in joins:
+                intersections_cache[j] = intersection
 
             return intersection
 
@@ -248,8 +253,9 @@ class Ways1DOSMBuilder():
 
 
         self.osm.intersections = intersections
-        logger.warn("Generated %d intersections (TODO: CHANGE)", len(self.osm.intersections))
-        # SHOULD really add intersection points as points to Features or Meta, in order to walk them later, and can be useful in general, but not keep them apart
+        logger.warn("Generated %d intersections.", len(self.osm.intersections))
+
+        # TODO: Should add intersection as points to Features or Meta, in order to use them later?
 
 
     def ways_1d_heights_initial(self, ways_1d):

@@ -203,9 +203,6 @@ class ItemsOSMBuilder():
             if base_height:
                 item_3d = item_3d.translate([0, 0, base_height])
 
-
-
-
         return item_3d
 
     def generate_item_3d_tree(self, item_2d):
@@ -258,11 +255,16 @@ class ItemsOSMBuilder():
     def generate_item_3d_grass_blade(self, item_2d):
 
         coords = item_2d.geom.coords[0]
-        key = "grassblade"
+
+        grass_type = item_2d.get('ddd:grass:type', random.choice(['default', 'dry']))
+
+        key = "grassblade" if grass_type == 'default' else ("grassblade-" + grass_type)
+        material = ddd.mats.grass_blade if grass_type == 'default' else ddd.mats.grass_blade_dry
 
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
             item_3d = plants.grass_blade()
+            item_3d = item_3d.material(material)
             item_3d = self.osm.catalog.add(key, item_3d)
 
         # TODO: Elevation shall come from pipeline

@@ -452,19 +452,23 @@ class Ways2DOSMBuilder():
             connected_2d = ddd.group([self.get_way_2d(c) for c in connected])
             wayminus = way.subtract(connected_2d).buffer(0.001)
             '''
+
+            # WARN: This buffer(0.001) is critical for the resolution of roads and intersections, but why? (20210502)
             way = way.buffer(0.001)
+            #way = way.clean(eps=0.01)
+
             # Checks
             if True or (way.geom and way.geom.is_valid):
 
                 if way:
                     try:
-                        way.extrude(1.0)
+                        way.extrude(1.0)  # Note: just testing, not actually changing the object
                         ways.append(way)
                     except Exception as e:
                         logger.warn("Could not generate way due to exception in extrude check: %s (trying cleanup)", way )
                         way = way.clean(eps=0.01)
                         try:
-                            way.extrude(1.0)
+                            way.extrude(1.0)  # Note: just testing, not actually changing the object
                             ways.append(way)
                         except Exception as e:
                             logger.error("Could not generate way due to exception in extrude check: %s", way)
