@@ -108,9 +108,11 @@ class DDDUVMapping():
 
 
     def map_2d_linear(self, obj):
+        """
+        Maps UV coordinates on a DDDObject2 geometry (eg. polygons).
+        """
 
         def uv_apply_func(x, y, z, idx):
-            # Find nearest point in path
             return (x, y)
 
         result = obj

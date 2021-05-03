@@ -1020,8 +1020,8 @@ class DDDObject2(DDDObject):
         obj = DDDObject2(name=name if name else self.name, children=[c.copy() for c in self.children], geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
         return obj
 
-    def copy3(self, name=None):
-        obj = DDDObject3(name=name if name else self.name, children=[], mesh=None, extra=dict(self.extra), material=self.mat)
+    def copy3(self, name=None, mesh=None):
+        obj = DDDObject3(name=name if name else self.name, children=[], mesh=mesh, extra=dict(self.extra), material=self.mat)
         return obj
 
     def replace(self, obj):
@@ -1678,7 +1678,8 @@ class DDDObject2(DDDObject):
                     pol = DDDObject2(geom=geom, extra=dict(self.extra), name="Triangulated Multi: %s" % self.name)
                     mesh = pol.triangulate(twosided)
                     meshes.append(mesh)
-                result = ddd.group(children=meshes, name=self.name)
+                result = ddd.copy3()
+                result.children=meshes
             elif not self.geom.is_empty and not self.geom.type == 'LineString' and not self.geom.type == 'Point':
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)
@@ -1705,7 +1706,14 @@ class DDDObject2(DDDObject):
                     mesh = Trimesh([(v[0], v[1], 0.0) for v in vertices], faces)
                     #mesh = creation.extrude_triangulation(vertices=vertices, faces=faces, height=0.2)
                     mesh.merge_vertices()
-                    result = DDDObject3(mesh=mesh, name=self.name)
+                    result = self.copy3(mesh=mesh)
+
+                # Map UV coordinates if they were set on the polygon
+                if self.get('uv', None):
+                    from ddd.ops import uvmapping
+                    print (self.extra['uv'])
+                    result = uvmapping.map_3d_from_2d(result, self)
+                    print (result.extra['uv'])
                 else:
                     result = DDDObject3(name="Could not triangulate (error during triangulation)")
             else:
@@ -1716,8 +1724,7 @@ class DDDObject2(DDDObject):
         result.children.extend([c.triangulate(twosided) for c in self.children])
 
         # Copy extra information from original object
-        result.name = self.name if result.name is None else result.name
-        result.extra = dict(self.extra)
+        #result.name = self.name if result.name is None else result.name
         result.extra['extruded_shape'] = self
 
         if self.mat is not None:
@@ -2145,6 +2152,7 @@ class DDDObject2(DDDObject):
             self.triangulate().show()
         except Exception as e:
             logger.error("Could not show object %s: %s", self, e)
+            raise
 
         # Show in browser
         #logger.info("Showing 2D image via shell.")

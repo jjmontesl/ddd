@@ -114,7 +114,10 @@ class TextureAtlasUtils():
         #decal.extra['ddd:shadows'] = False
         #decal.extra['ddd:collider'] = False
 
-        plane.extra['uv'] = [(1024 - v[1] * 1024.0, v[0] * 1024.0) for v in plane.extra['uv']]  # temp: transposed and scaled
+        # TODO: TEMP: Rope Cow / Godot export
+        # plane.extra['uv'] = [(1024 - v[1] * 1024.0, v[0] * 1024.0) for v in plane.extra['uv']]  # temp: transposed and scaled
+        print(plane.extra['uv'])
+
         plane.extra['ddd:sprite'] = True
         plane.extra['ddd:sprite:bounds'] = sprite.bounds_pixel
 
@@ -145,14 +148,16 @@ class TextureAtlasUtils():
                                   1.0 - (sprite.bounds_norm[1] + (sprite.bounds_norm[3] - sprite.bounds_norm[1]) * (1 - v[1])))
                                   for v in plane.extra['uv']]
 
-        plane = plane.scale(texture_size)
+        #plane = plane.scale(texture_size)
 
         #plane = plane.translate([-0.5, -0.5, 0]).scale([plane, plane, 1]).translate([0, plane / 2, 0])
         #decal = decal.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, -thick / 2 - 0.005, 0])
         #decal.extra['ddd:shadows'] = False
         #decal.extra['ddd:collider'] = False
 
-        plane.extra['uv'] = [(texture_size[1] - v[1] * texture_size[1], v[0] * texture_size[0]) for v in plane.extra['uv']]  # temp: transposed and scaled
+        # TODO: TEMP: Rope Cow / Godot export
+        #plane.extra['uv'] = [(texture_size[1] - v[1] * texture_size[1], v[0] * texture_size[0]) for v in plane.extra['uv']]  # temp: transposed and scaled
+
         plane.extra['ddd:sprite'] = True
         plane.extra['ddd:sprite:bounds'] = sprite.bounds_pixel
 

@@ -51,12 +51,15 @@ def osm_materials():
     ddd.mats.roadmarks = ddd.material(name="Roadmarks", color='#e8e8e8',
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/RoadMarks/TexturesCom_Atlas_RoadMarkings2_White_1K_albedo_with_alpha.png",
                                  texture_normal_path=ddd.DATA_DIR + "/osmmaterials/RoadMarks/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
-                                 alpha_cutoff=0.05,
-                                 extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 1.00, 'zoffset': -8.5})
+                                 atlas_path=ddd.DATA_DIR  + "/osmmaterials/RoadMarks/RoadMarkings2.plist",
+                                 alpha_cutoff=0.05, metallic_factor=0.36, roughness_factor=0.25,
+                                 extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 1.00, 'zoffset': -7.5})
 
     ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
-                                      texture_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.png",
-                                      atlas_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.plist",
+                                      texture_path=ddd.DATA_DIR  + "/osmmaterials/TrafficSigns/traffic_signs_es_0.png",
+                                      texture_normal_path=ddd.DATA_DIR  + "/osmmaterials/TrafficSigns/traffic_signs_es_0_nrm.png",
+                                      atlas_path=ddd.DATA_DIR  + "/osmmaterials/TrafficSigns/traffic_signs_es_0.plist",
+                                      metallic_factor=0.96, roughness_factor=0.15, bump_strength=2.0,
                                       extra={'ddd:texture:resize': 1024})
 
     ddd.mats.asphalt = ddd.material(name="Asphalt", color='#202020', extra={'uv:scale': 1.0},  # 0.25  color='#202020',

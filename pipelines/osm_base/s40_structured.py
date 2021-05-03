@@ -245,6 +245,8 @@ def osm_structured_generate_ways_2d_intersections(osm, root):
     ways_2d = root.find("/Ways")
 
     osm.ways2.generate_ways_2d_intersections(ways_2d)
+
+    # TODO: This shall now be replaced by a generic ways / intersections intersection processing and find common platforms
     osm.ways2.generate_ways_2d_intersection_intersections(ways_2d)
 
     ways_2d.replace(ways_2d.clean())

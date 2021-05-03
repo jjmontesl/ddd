@@ -205,7 +205,7 @@ class Ways2DOSMBuilder():
             intersection_shape = intersection_shape.clean()
 
             if intersection_shape.is_empty():
-                logger.error("Intersection shape with no geometry (skipping): %s (%s)", intersection_shape, intersection)
+                #logger.debug("Intersection shape with no geometry (skipping): %s (%s)", intersection_shape, intersection)
                 continue
 
             # Point intersections should be from 1 to 1 continuous ways (eg. crosswalks), they are not constructed
@@ -519,9 +519,9 @@ class Ways2DOSMBuilder():
                         #ddd.group2([main, minor.material(ddd.mats.highlight), way.intersection(other).material(ddd.mats.red)]).show()
                         #ddd.group2([way.intersection(other).material(ddd.mats.red)]).show()
 
-                        new_other = other.subtract(way).clean().union()
-                        if new_other.geom and new_other.geom.area < 0.01: new_other.geom = None
-                        if new_other.geom and new_other.geom.type == "LineString": new_other.geom.type = None
+                        new_other = other.subtract(way).clean().union().clean()
+                        #if new_other.geom and new_other.geom.area < 0.01: new_other.geom = None
+                        if new_other.geom and new_other.is_empty(): new_other.geom.type = None
 
                         other.replace(new_other)
 
