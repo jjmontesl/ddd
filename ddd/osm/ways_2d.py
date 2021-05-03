@@ -317,7 +317,7 @@ class Ways2DOSMBuilder():
             #ddd.group2([join_ways, intersection_shape.material(ddd.mats.highlight)]).show()
 
             if intersection_shape.is_empty():  # geom is None:
-                logger.warn("Ignoring intersection as intersection shape is empty.")
+                #logger.debug("Ignoring intersection as intersection shape is empty.")
                 continue
 
             try:

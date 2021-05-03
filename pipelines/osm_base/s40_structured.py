@@ -167,6 +167,16 @@ def osm_structured_ways_1d_intersections(osm, root):
     """
     osm.ways1.ways_1d_intersections(root.find("/Ways"))
 
+
+@dddtask(path="/Ways/*")
+def osm_structured_ways_length(osm, root, obj):
+    """
+    Splits all ways into the minimum pieces that have only an intersection at each end.
+    This method modifies the passed in node, manipulating children to avoid ways with multiple intersections.
+    """
+    obj.set('ddd:way:length', obj.length())
+
+
 @dddtask()
 def osm_structured_ways_1d_height(osm, root):
     """

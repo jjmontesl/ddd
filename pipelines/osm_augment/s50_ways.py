@@ -62,7 +62,7 @@ def osm_augment_ways_2d_road_marks_give_way(root, osm, pipeline, obj):
     length = path.geom.length
 
     # Generate road signs
-    if not (True and path.geom.length > 20.0 and path.extra['ddd:layer'] in (0, "0")):
+    if not (True and path.geom.length > 16.0 and path.extra['ddd:layer'] in (0, "0")):
         return
 
     # TODO: Do this with the informed road model
@@ -84,7 +84,13 @@ def osm_augment_ways_2d_road_marks_give_way(root, osm, pipeline, obj):
 
             if end == -1 and path.extra.get('osm:oneway', None): continue
 
-            mark_end_distance = 7.0  # TODO: Depends on the width of the traversed road, or we shall use the trimmed path
+            if not path.extra.get('osm:oneway', None):
+                if ((end == 1 and (laneind + 1) <= numlanes / 2) or (end == -1 and (laneind + 1) <= math.ceil(numlanes / 2))):
+                    # is_lane_end... # TODO: do this with a good way / lane / connectors model
+                    continue
+
+            # TODO: Depends on the width of the traversed road / intersection, if any.. we shall use the trimmed path
+            mark_end_distance = 7.0
 
             if end == 1:
                 p, segment_idx, segment_coords_a, segment_coords_b = path.interpolate_segment(path.geom.length - mark_end_distance)
