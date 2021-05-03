@@ -69,6 +69,7 @@ from ddd.core import settings
 from ddd.formats.geojson import DDDGeoJSONFormat
 from shapely.geometry.multipolygon import MultiPolygon
 from ddd.formats.png3drender import DDDPNG3DRenderFormat
+from ddd.util.common import parse_bool
 
 
 # Get instance of logger for this module
@@ -889,7 +890,7 @@ class DDDObject():
                     method_to_call = getattr(comp, methodname)
                     self.extra[k] = method_to_call(*args, **kwargs)
 
-    def get(self, keys, default=(None, ), extra=None):
+    def get(self, keys, default=(None, ), extra=None, type=None):
         """
         Returns a property from dictionary and settings.
 
@@ -928,6 +929,10 @@ class DDDObject():
             result = result()
             self.extra[key] = result
 
+        if type is not None:
+            if type == "bool":
+                result = parse_bool(result)
+
         return result
 
     def set(self, key, value=None, children=False, default=(None, )):
@@ -947,6 +952,14 @@ class DDDObject():
 
     def prop_set(self, key, *args, **kwargs):
         return self.set(key, *args, **kwargs)
+
+    def counter(self, key, add=1):
+        """
+        Increments current value of a property by a given value. Sets the property if it did not exist.
+        """
+        value = add + int(self.get(key, 0))
+        self.set(key, value)
+        return value
 
     def grouptyped(self, children=None):
         if isinstance(self, DDDObject2):
@@ -1599,6 +1612,8 @@ class DDDObject2(DDDObject):
                 for interior in self.geom.interiors:
                     if len(list(interior.coords)) < 3:
                         raise DDDException("Polygon with invalid number of interior coordinates (<3).", ddd_obj=self)
+                if self.geom.area < ddd.EPSILON:
+                    raise DDDException("Polygon with null area.", ddd_obj=self)
 
         for c in self.children:
             c.validate()
@@ -1862,7 +1877,7 @@ class DDDObject2(DDDObject):
 
     def orient_from(self, other):
         """
-        Orients a line so it starts from the closest point to other
+        Orients a line so it starts from the closest point to `other` object.
         """
         result = self.copy()
         dist_0 = other.distance(ddd.point(self.geom.coords[0]))

@@ -48,12 +48,15 @@ def osm_structured_init(root, osm):
 
 
 
+# TODO: Separate the splitting logic to osm.ways, call from here
 @dddtask(path="/Features/*", select='["geom:type" = "Point"]["osm:highway" = "crossing"]')
 def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
     """
     Splits ways that have crossings in the middle (not in first or end nodes).
 
     This happens before splitting ways by joins.
+
+    TODO: Separate the splitting logic to osm.ways, call from here
     """
     # Find way (walking ways, as items have not yet been assigned to ways)
     ways = root.find('/Ways')
@@ -67,20 +70,28 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
             # Check which vertex has the item (ensure is not first or last / inform if it is being ignored)
             idx = way.vertex_index(obj)
             if idx <= 0 or idx >= (len(way.geom.coords) - 1):
-                logger.info("Ignoring osm:highway:crossing %s as it is at the end of the way %s.", obj, way)
-                return
+                #logger.info("Ignoring osm:highway:crossing %s as it is at the end of the way %s.", obj, way)
+                continue
+                #return
 
             #ddd.group([way.buffer(0.5), obj.buffer(1.0)]).show()
             #logger.debug('Splitting way %s by osm:highway:crossing %s (vertex index=%s)' % (way, obj, idx))
 
             # Calculate crossing width
+            # TODO: For crossings with area or way, this must come from the area/way
             crossing_width = 2.6 * way.get('ddd:way:lanes', default=1)
-            ddd.math.clamp(crossing_width, 4.2, 9.0)  # Unless it's area defined
-
+            ddd.math.clamp(crossing_width, 4.2, 9.0)
 
             # Split way at the two points.
             crossing_distance_in_way = way.geom.project(obj.geom)
             crossing_distance_in_way_start = crossing_distance_in_way - crossing_width / 2.0
+            crossing_distance_in_way_end = crossing_distance_in_way + crossing_width / 2.0
+
+            if (crossing_distance_in_way_start < 0 or crossing_distance_in_way_start > way.geom.length or
+                crossing_distance_in_way_end < 0 or crossing_distance_in_way_end > way.geom.length):
+                logger.error("Cannot create crosswalk area as it would lie outside the way (length=%s, p1=%s, p2=%s): %s", way.geom.length, crossing_distance_in_way_start, crossing_distance_in_way_end, way)
+                continue
+
             #crossing_point_in_way_start, segment_idx, segment_coords_a, segment_coords_b = way.interpolate_segment(crossing_distance_in_way_start)
             crossing_point_in_way_start = way.insert_vertex_at_distance(crossing_distance_in_way_start)
 
@@ -94,9 +105,11 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
             if split2:
 
                 crossing_distance_in_way = split2.geom.project(obj.geom)
-                crossing_distance_in_way_end = crossing_distance_in_way + crossing_width / 2.0
-                #crossing_point_in_way_end, segment_idx, segment_coords_a, segment_coords_b = split2.interpolate_segment(crossing_distance_in_way_end)
-                crossing_point_in_way_end = split2.insert_vertex_at_distance(crossing_distance_in_way_end)
+                crossing_distance_in_way_end2 = crossing_distance_in_way + crossing_width / 2.0
+                if (crossing_distance_in_way_end2 < 0 or crossing_distance_in_way_end2 > split2.geom.length):
+                    logger.warn("Crosswalk area split2 lies outside the way (length=%s, p2=%s): %s", split2.geom.length, crossing_distance_in_way_end2, way)
+                #crossing_point_in_way_end, segment_idx, segment_coords_a, segment_coords_b = split2.interpolate_segment(crossing_distance_in_way_end2)
+                crossing_point_in_way_end = split2.insert_vertex_at_distance(crossing_distance_in_way_end2)
                 split2, split3 = osm.ways1.split_way_1d_vertex(ways, split2, crossing_point_in_way_end)
             #else:
             #    ddd.group2([way.buffer(1.0, cap_style=ddd.CAP_FLAT), ddd.point(crossing_point_in_way_start).buffer(0.5).material(ddd.MAT_HIGHLIGHT)]).show()
@@ -104,13 +117,13 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
             #    sys.exit(1)
 
             if split2 and split3:
-                split2.geom = ops.snap(split2.geom, split1.geom, 0.01)
-                split2.geom = ops.snap(split2.geom, split3.geom, 0.01)
+                split1.geom = ops.snap(split1.geom, way.geom, 0.05)
+                split3.geom = ops.snap(split3.geom, way.geom, 0.05)
+                split2.geom = ops.snap(split2.geom, split1.geom, 0.05)
+                split2.geom = ops.snap(split2.geom, split3.geom, 0.05)
                 split2.extra['ddd:way:crosswalk'] = True
                 split2.extra['ddd:way:roadlines'] = False
                 split2.name = "Crosswalk: %s" % split2.name
-                #logger.info("Line %s (%s m) split at %s and %s", way, way.length(), crossing_distance_in_way_start, crossing_distance_in_way_end)
-                #ddd.group2([split1.buffer(0.5, cap_style=ddd.CAP_FLAT), split2.buffer(0.5, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT), split3.buffer(0.5, cap_style=ddd.CAP_FLAT)]).show()
 
             # This seems not to help Points appearing in ways_2d build (intersections)
             if (split1 and split1.geom.type == 'Point'):
@@ -127,6 +140,12 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
                 #ddd.group2([split1.buffer(0.5, cap_style=ddd.CAP_FLAT), split2.buffer(0.5, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT), obj.buffer(0.3)]).show()
                 pass
 
+            '''
+            if ('Celso Emilio Ferreiro' in way.name):
+                logger.info("Line %s (%s m) split at %s and %s", way, way.length(), crossing_distance_in_way_start, crossing_distance_in_way_end)
+                ddd.group2([split1.buffer(0.5, cap_style=ddd.CAP_FLAT), split2.buffer(0.5, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT), split3.buffer(0.5, cap_style=ddd.CAP_FLAT)]).show()
+            '''
+
             return
 
 @dddtask()
@@ -142,6 +161,9 @@ def osm_structured_split_ways_by_joins(osm, root):
 def osm_structured_ways_1d_intersections(osm, root):
     """
     Generate intersection data structure.
+
+    This is currently stored in elements metadata (intersection, intersection_start...)
+    and in the osm.intersections attribute.
     """
     osm.ways1.ways_1d_intersections(root.find("/Ways"))
 
@@ -165,6 +187,14 @@ def osm_structured_ways_1d_height(osm, root):
 @dddtask()
 def osm_structured_link_ways_items(osm, root):
     osm.ways1.ways_1d_link_items(root.find("/Ways"), root.find("/ItemsNodes"))
+
+
+'''
+@dddtask(path="/Ways/*", select='["osm:name" ~ ".*Celso.*"]')
+def osm_structured_debug(osm, root, obj):
+    obj.dump(data=True)
+    obj.buffer(1.0).show()
+'''
 
 
 @dddtask()
@@ -202,8 +232,22 @@ def osm_structured_generate_ways_2d(osm, root):
     root.remove(ways1)
 
     ways2 = osm.ways2.generate_ways_2d(ways1)
-    ways2 = ways2.clean()
     root.append(ways2)
+
+
+@dddtask()
+def osm_structured_generate_ways_2d_intersections(osm, root):
+    """
+    Generates ways 2D intersections from ways areas and 1d intersection metadata
+    from ways_1d processing, altering the /Ways node in the hierarchy.
+    """
+
+    ways_2d = root.find("/Ways")
+
+    osm.ways2.generate_ways_2d_intersections(ways_2d)
+    osm.ways2.generate_ways_2d_intersection_intersections(ways_2d)
+
+    ways_2d.replace(ways_2d.clean())
 
 
 @dddtask()

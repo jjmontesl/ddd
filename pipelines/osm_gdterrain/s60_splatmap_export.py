@@ -19,6 +19,7 @@ from shapely.strtree import STRtree
 import hashlib
 import noise
 import random
+from ddd.util.common import parse_bool
 
 
 
@@ -53,7 +54,6 @@ def osm_gdterrain_export_splatmap_init(root, pipeline, osm, logger):
 
     pipeline.data['splatmap:channels_num'] = 16
 
-
     pipeline.data['splatmap:channels:collapse_map'] = None
     #pipeline.data['splatmap:channels:collapse_map'] = [
     #    [0, 2, 12],     # Terrain, asphalt, pavement, sand
@@ -61,8 +61,6 @@ def osm_gdterrain_export_splatmap_init(root, pipeline, osm, logger):
     #    [8, 9, 10, 11], # Grass, garden, pàrk, forest
     #    [3, 4, 5]       # Pedestrian, tiles
     #]
-
-
 
     pipeline.data['splatmap:ids'] = {}
 
@@ -79,7 +77,7 @@ def osm_gdterrain_export_splatmap_init(root, pipeline, osm, logger):
 # TODO: Doing this on stage 59 as buildings are deleted (keep 2D and 3D versions in the tree for late usage, also for terrain_export)
 @dddtask(order="59.89.+.10", condition=True)
 def osm_gdterrain_export_splatmap_condition(pipeline):
-    return bool(pipeline.data.get('ddd:gdterrain:splatmap', False))
+    return parse_bool(pipeline.data.get('ddd:gdterrain:splatmap', False))
 
 
 

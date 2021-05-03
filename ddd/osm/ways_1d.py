@@ -83,7 +83,6 @@ class Ways1DOSMBuilder():
         # Way schema
         for way in ways_1d.children:
             way.extra['ddd:connections'] = []
-            way.extra['ddd:connections'] = []
 
         # Split ways on joins
         vertex_cache = defaultdict(list)

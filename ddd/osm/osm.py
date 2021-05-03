@@ -229,6 +229,7 @@ class OSMBuilder():
                 try:
                     #feature_2d = feature_2d.intersection(self.area_filter2)
                     feature_2d = feature_2d.clean(fix_invalid=True)
+                    feature_2d.counter('dddosm:feature:fixed')
                     feature_2d.validate()
                 except Exception as e:
                     logger.warn("Invalid feature (2/2) '%s' %s: %s", name, feature_2d.metadata("", ""), e)
