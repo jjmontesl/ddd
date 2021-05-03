@@ -41,7 +41,7 @@ def osm_materials():
                                  alpha_cutoff=0.05, metallic_factor=0.36, roughness_factor=0.30, bump_strength=0.25,
                                  extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05, 'zoffset': -8.5,
                                         'ddd:texture:resize': 1024})
-    ddd.mats.roadline_red = ddd.material(name="Roadline Red", color='#f8a8a8',
+    ddd.mats.roadline_red = ddd.material(name="Roadline Red", color='#f88888',
                                  texture_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_alb.png",
                                  texture_normal_path=ddd.DATA_DIR + "/materials/road_signs/RoadLines_normal.jpg",
                                  alpha_cutoff=0.05, metallic_factor=0.36, roughness_factor=0.30, bump_strength=0.35,
@@ -53,13 +53,14 @@ def osm_materials():
                                  texture_normal_path=ddd.DATA_DIR + "/osmmaterials/RoadMarks/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
                                  atlas_path=ddd.DATA_DIR  + "/osmmaterials/RoadMarks/RoadMarkings2.plist",
                                  alpha_cutoff=0.05, metallic_factor=0.36, roughness_factor=0.25,
-                                 extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 1.00, 'zoffset': -7.5})
+                                 extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 1.00, 'zoffset': -25.0,
+                                        'ddd:texture:resize': 1024})
 
     ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
                                       texture_path=ddd.DATA_DIR  + "/osmmaterials/TrafficSigns/traffic_signs_es_0.png",
                                       texture_normal_path=ddd.DATA_DIR  + "/osmmaterials/TrafficSigns/traffic_signs_es_0_nrm.png",
                                       atlas_path=ddd.DATA_DIR  + "/osmmaterials/TrafficSigns/traffic_signs_es_0.plist",
-                                      metallic_factor=0.96, roughness_factor=0.15, bump_strength=2.0,
+                                      metallic_factor=0.86, roughness_factor=0.15, bump_strength=0.5,
                                       extra={'ddd:texture:resize': 1024})
 
     ddd.mats.asphalt = ddd.material(name="Asphalt", color='#202020', extra={'uv:scale': 1.0},  # 0.25  color='#202020',

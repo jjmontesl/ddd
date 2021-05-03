@@ -136,6 +136,19 @@ def osm_model_generate_ways_roadlines_combine(osm, root, pipeline):
     del(pipeline.data["Roadlines3"])
     root.append(roadlines.combine())
 
+@dddtask(path="/Items/*", select='[ddd:material="Roadmarks"]')
+def osm_model_generate_ways_road_markings_combine(osm, root, pipeline):
+    """
+    Combine road markings in a single mesh, as they use the same atlas material.
+    (Note that road marks are currently instanced via catalog, so using this requires considering that).
+    """
+    roadmarks = root.find("/Items").select('[ddd:material="Roadmarks"]')
+    roadmarks = roadmarks.combine()
+    # Remove roadmark elements
+    root.find("/Items").select('[ddd:material="Roadmarks"]', apply_func=lambda: False)
+    root.find("/Roadlines3/").append(roadmarks)
+
+
 @dddtask(path="/Areas/*")  # , select='["ddd:area:type"]')
 def osm_model_generate_areas(osm, root, pipeline, obj):
 

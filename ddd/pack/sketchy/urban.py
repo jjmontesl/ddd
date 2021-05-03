@@ -16,6 +16,7 @@ from trimesh import transformations
 import numpy as np
 from ddd.ops.extrusion import extrude_step_multi, extrude_dome
 from ddd.pack.sketchy import interior
+from ddd.materials.atlas import TextureAtlasUtils
 
 
 # Get instance of logger for this module
@@ -137,6 +138,13 @@ def trafficlights():
     post = curvedpost(arm_items=[head])
     post.name = "TrafficLight"
     return post
+
+
+def road_marking(marktype, size=2.0):
+    mark = TextureAtlasUtils().create_sprite_from_atlas(ddd.mats.roadmarks, marktype)
+    mark = mark.triangulate()
+    mark = mark.scale([size, size, 1.0])
+    return mark
 
 
 def traffic_sign(signtype):

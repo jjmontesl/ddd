@@ -116,7 +116,7 @@ class TextureAtlasUtils():
 
         # TODO: TEMP: Rope Cow / Godot export
         # plane.extra['uv'] = [(1024 - v[1] * 1024.0, v[0] * 1024.0) for v in plane.extra['uv']]  # temp: transposed and scaled
-        print(plane.extra['uv'])
+        #print(plane.extra['uv'])
 
         plane.extra['ddd:sprite'] = True
         plane.extra['ddd:sprite:bounds'] = sprite.bounds_pixel

@@ -12,7 +12,6 @@ ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #col
                                   extra={'ddd:texture:resize': 2048})
 
 
-
 # Cube
 fig = ddd.box()
 fig = fig.material(ddd.mats.traffic_signs)
@@ -31,6 +30,6 @@ ddd.mats.roadmarks = ddd.material(name="Roadmarks", color='#e8e8e8',
                              texture_path=ddd.DATA_DIR + "/osmmaterials/RoadMarks/TexturesCom_Atlas_RoadMarkings2_White_1K_albedo_with_alpha.png",
                              atlas_path=ddd.DATA_DIR  + "/osmmaterials/RoadMarks/RoadMarkings2.plist")
 
-fig = TextureAtlasUtils().create_sprite_from_atlas(ddd.mats.roadmarks, "yield.png")
+fig = TextureAtlasUtils().create_sprite_from_atlas(ddd.mats.roadmarks, "give_way")
 fig.show()
 '''

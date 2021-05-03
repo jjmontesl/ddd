@@ -156,6 +156,9 @@ class ItemsOSMBuilder():
         elif item_2d.extra.get('osm:traffic_sign', None) is not None or any([k.startswith('osm:traffic_sign:') for k in item_2d.extra.keys()]):
             item_3d = self.generate_item_3d_traffic_sign(item_2d)
 
+        elif item_2d.extra.get('ddd:road_marking', None):
+            item_3d = self.generate_item_3d_road_marking(item_2d)
+
         elif item_2d.get('ddd:item', None) == 'grass_blade':
             item_3d = self.generate_item_3d_grass_blade(item_2d)
         elif item_2d.get('ddd:item', None) == 'flowers':
@@ -693,5 +696,63 @@ class ItemsOSMBuilder():
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
         item_3d.name = 'Traffic Sign: %s' % item_2d.name
         return item_3d
+
+    def generate_item_3d_road_marking(self, item_2d):
+        """
+        Generate instances or meshes
+        If using meshes, they should be combined (see osm_model_generate_ways_road_markings_combine).
+        """
+
+        asinstance = False
+
+        # Note that give_way is not a node tag for OSM, but it is used here to represent each individual symbol
+        signtype = item_2d.extra['ddd:road_marking'].lower()
+
+        key = "road_marking-%s-1" % (signtype)
+
+        item_3d = None
+        if asinstance:
+            item_3d = self.osm.catalog.instance(key)
+
+        if not item_3d:
+            item_3d = urban.road_marking(signtype)
+            if not item_3d:
+                logger.warn("Could not generate road-marking: %s", item_2d)
+                return None
+            if asinstance:
+                item_3d = self.osm.catalog.add(key, item_3d)
+
+        '''
+        osm_way = self.select_way(item_2d)
+        #osm_way = item_2d.extra.get('osm:item:way', None)
+        #osm_ways = item_2d.extra.get('osm:item:ways', None)
+        if osm_way:
+            offset = 0
+            if len(item_2d.extra.get('osm:item:ways', [])) > 3: offset = -5
+            item_2d = self.osm.osmops.position_along_way(item_2d, osm_way, offset=offset)
+            coords = item_2d.geom.coords[0]
+            #if len(osm_ways) > 1:
+            #    logger.error("Node belongs to more than one way (%s): %s", item_2d, osm_ways)
+        else:
+        '''
+        # Point shall have been projected and have a direction
+        coords = item_2d.geom.coords[0]
+        item_2d.extra['ddd:angle'] = item_2d.extra['ddd:angle'] + math.pi / 2
+        #if angle: item_2d.extra['ddd:angle'] = angle
+
+        item_3d.prop_set('ddd:static', False, children=False)  # TODO: Make static or not via styling
+        item_3d.extra['ddd:layer'] = 'DynamicObjects'  # TODO: Assign layers via styling
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle']])  # - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.05])
+
+        if asinstance:
+            item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
+        else:
+            item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
+
+        item_3d.name = 'Road Mark: %s' % item_2d.name
+        return item_3d
+
+
 
 

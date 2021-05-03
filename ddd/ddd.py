@@ -1707,15 +1707,14 @@ class DDDObject2(DDDObject):
                     #mesh = creation.extrude_triangulation(vertices=vertices, faces=faces, height=0.2)
                     mesh.merge_vertices()
                     result = self.copy3(mesh=mesh)
+                else:
+                    result = DDDObject3(name="Could not triangulate (error during triangulation)")
 
                 # Map UV coordinates if they were set on the polygon
                 if self.get('uv', None):
                     from ddd.ops import uvmapping
-                    print (self.extra['uv'])
                     result = uvmapping.map_3d_from_2d(result, self)
-                    print (result.extra['uv'])
-                else:
-                    result = DDDObject3(name="Could not triangulate (error during triangulation)")
+
             else:
                 result = DDDObject3("Cannot triangulate: unknown geometry type")
         else:
@@ -2555,11 +2554,15 @@ class DDDObject3(DDDObject):
     def union(self, other):
         return self._csg(other, operation='union')
 
-    def combine(self):
+    def combine(self, name=None):
         """
-        Combine geometry for this and all children meshes.
+        Combine geometry for this and all children meshes into a single mesh.
+        This will also combine UVs and normals. Metadata of the new element is created empty.
+
+        TODO: currently, the first material found will be applied to the parent (?)
+
         """
-        result = self.copy()
+        result = self.copy(name=name)
         for c in self.children:
             cc = c.combine()
             if result.mat is None and cc.mat is not None: result = result.material(cc.mat)

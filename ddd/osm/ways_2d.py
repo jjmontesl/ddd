@@ -770,6 +770,7 @@ class Ways2DOSMBuilder():
                 item.extra['ddd:angle'] = angle #+ math.pi/2
                 pipeline.root.find("/ItemsNodes").append(item)
 
+
     def generate_traffic_signs(self, pipeline, way_2d):
 
         path = way_2d.extra['way_1d']
