@@ -161,6 +161,15 @@ def osm_groups_areas_surface_concrete(obj, root):
     obj = obj.material(ddd.mats.concrete)
     return obj
 
+@dddtask(select='["osm:surface" = "grass"]')
+def osm_groups_areas_surface_grass(obj, root):
+    """"""
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.grass)
+    return obj
+
+
+
 
 
 @dddtask(order="30.90")

@@ -1021,6 +1021,9 @@ class DDDObject2(DDDObject):
         return obj
 
     def copy3(self, name=None, mesh=None):
+        """
+        Copies this DDDObject2 into a DDDObject3, maintaining metadata but NOT children or geometry.
+        """
         obj = DDDObject3(name=name if name else self.name, children=[], mesh=mesh, extra=dict(self.extra), material=self.mat)
         return obj
 
@@ -1678,8 +1681,8 @@ class DDDObject2(DDDObject):
                     pol = DDDObject2(geom=geom, extra=dict(self.extra), name="Triangulated Multi: %s" % self.name)
                     mesh = pol.triangulate(twosided)
                     meshes.append(mesh)
-                result = ddd.copy3()
-                result.children=meshes
+                result = self.copy3()
+                result.children = meshes
             elif not self.geom.is_empty and not self.geom.type == 'LineString' and not self.geom.type == 'Point':
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)

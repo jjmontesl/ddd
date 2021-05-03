@@ -53,7 +53,7 @@ def osm_augment_ways_2d_road_marks(root, osm, pipeline, obj):
     """
     pass
 
-@dddtask(path="/Ways/*", select='["ddd:way:roadlines" = true]["osm:highway" != "cycleway"]')  # , select='["ddd:way:road_marks"]')
+@dddtask(path="/Ways/*", select='["ddd:way:roadlines" = true]["osm:highway" != "cycleway"]["osm:junction" != "roundabout"][!"intersection"]')  # , select='["ddd:way:road_marks"]')
 def osm_augment_ways_2d_road_marks_give_way(root, osm, pipeline, obj):
     """
     """
@@ -62,7 +62,7 @@ def osm_augment_ways_2d_road_marks_give_way(root, osm, pipeline, obj):
     length = path.geom.length
 
     # Generate road signs
-    if not (True and path.geom.length > 16.0 and path.extra['ddd:layer'] in (0, "0")):
+    if not (True and path.geom.length > 20.0 and path.extra['ddd:layer'] in (0, "0")):
         return
 
     # TODO: Do this with the informed road model
@@ -85,7 +85,7 @@ def osm_augment_ways_2d_road_marks_give_way(root, osm, pipeline, obj):
             if end == -1 and path.extra.get('osm:oneway', None): continue
 
             if not path.extra.get('osm:oneway', None):
-                if ((end == 1 and (laneind + 1) <= numlanes / 2) or (end == -1 and (laneind + 1) <= math.ceil(numlanes / 2))):
+                if ((end == 1 and (laneind + 1) > math.ceil(numlanes / 2) or (end == -1 and (laneind + 1) <= math.ceil(numlanes / 2)))):
                     # is_lane_end... # TODO: do this with a good way / lane / connectors model
                     continue
 

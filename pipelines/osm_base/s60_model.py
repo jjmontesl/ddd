@@ -318,6 +318,11 @@ def osm_model_elevation_apply_terrain_min(obj, osm, root):
     obj = terrain.terrain_geotiff_min_elevation_apply(obj, osm.ddd_proj)
     return obj
 
+@dddtask(path="/Items3/*", select='["ddd:elevation" = "max"]')
+def osm_model_elevation_apply_terrain_max(obj, osm, root):
+    obj = terrain.terrain_geotiff_max_elevation_apply(obj, osm.ddd_proj)
+    return obj
+
 @dddtask(order="60.50.+", log=True)
 def osm_model_rest(pipeline, root, osm, logger):
 

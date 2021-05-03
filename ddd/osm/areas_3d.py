@@ -257,6 +257,9 @@ class Areas3DOSMBuilder():
                     logger.error("Could not generate area: %s (%s)", e, area_2d)
                     area_3d = DDDObject3()
 
+            elif area_2d.extra.get('ddd:area:type', None) == 'void':
+                area_3d = area_2d.copy3("Void area: %s" % area_2d.name)
+
             else:
                 try:
                     height = area_2d.extra.get('ddd:area:height', area_2d.extra.get('ddd:height', 0.2))
@@ -279,8 +282,9 @@ class Areas3DOSMBuilder():
                 logger.warning("Null area geometry (children?): %s", area_2d)
             area_3d = DDDObject3()
 
-        # Test (doesn't work, subdividing causes bad behavior in large trams):
-        #area_3d = area_3d.subdivide_to_size(20.0)
+        # Subdivide (works badly, subdividing causes bad behavior in large trams):
+        area_3d = area_3d.subdivide_to_size(15.0)
+
         area_3d = ddd.uv.map_cubic(area_3d)
 
         # Apply elevation

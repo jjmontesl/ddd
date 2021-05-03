@@ -52,6 +52,16 @@ def osm_buildings_amenity_cafe(pipeline, osm, root, obj):
     obj = obj.material(ddd.mats.stones_white)
     return obj
 
+@dddtask(path="/Buildings/*", select='["osm:amenity" = "parking_entrance"]')
+def osm_buildings_amenity_parking_entrance(pipeline, osm, root, obj):
+    """
+    Set defaults to parking_entrance.
+    """
+    obj.set('ddd:building:levels', default=1)
+    obj.set('ddd:building:material', default="glass")
+    obj.set('ddd:roof:shape', default="flat")
+    obj = obj.material(ddd.mats.glass)
+    return obj
 
 @dddtask(path="/Buildings/*", select='["osm:man_made" = "reservoir_covered"]')
 def osm_generate_buildings_man_made_reservoir_covered(pipeline, osm, root, obj):
@@ -71,7 +81,6 @@ def osm_buildings_building_roof(pipeline, osm, root, obj):
     obj.set('ddd:roof:shape', default="hipped")
     #obj = obj.material(ddd.mats.steel)
     return obj
-
 
 @dddtask(path="/Buildings/*", select='["osm:building" = "shed"]')
 def osm_buildings_building_shed(pipeline, osm, root, obj):

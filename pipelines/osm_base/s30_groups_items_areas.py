@@ -108,3 +108,32 @@ def osm_groups_items_areas_leisure_playground_point(obj, root, osm):
     root.find("/Areas").append(obj)
     """
 
+@dddtask(path="/Features/*", select='["osm:leisure" = "swimming_pool"]')
+def osm_groups_items_areas_leisure_swimming_pool(obj, root, osm):
+    """
+    """
+
+    pool = obj.copy()
+    #obj = obj.material(ddd.mats.water)
+    #obj = obj.material(ddd.mats.pavement)
+
+    pool.name = "Swimming Pool: %s" % pool.name
+    #obj.extra['ddd:area:water'] = 'ignore'  # Water is created by the fountain object, but the riverbank still requires
+    #obj.extra['ddd:item:type'] = "area"
+    #obj.extra['osm:natural']
+    pool.extra["ddd:elevation"] = "max"
+    root.find("/ItemsAreas").append(pool)  # ItemsAreas
+
+    # Area below pool
+    area = pool.copy()
+    area.set('ddd:area:type', 'void')  # 'void' # will be constructed by the pool areaitem
+    area.set('ddd:area:height', -2.0)  # 'void'
+    #area.set('ddd:area:weight', 200)  # Higher than default priority (100) ?
+    area.set('ddd:area:area', area.geom.area)  # Needed for area to be processed in s40
+    area.set('ddd:layer', '0')
+
+    area = area.material(ddd.mats.water)  # Better, use fountain:base (terrain vs base) leave void and construct fopuntain base base, get materia from surrounding possibly
+    #area.set["ddd:elevation:"] = "min"  # Make min+raise-height
+    root.find("/Areas").append(area)  # ItemsAreas
+
+

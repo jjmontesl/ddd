@@ -83,6 +83,8 @@ class AreaItemsOSMBuilder():
         item_3d = None
         if item_2d.extra.get('osm:amenity', None) == 'fountain':
             item_3d = self.generate_item_3d_fountain(item_2d)
+        if item_2d.extra.get('osm:leisure', None) == 'swimming_pool':
+            item_3d = self.generate_item_3d_swimming_pool(item_2d)
         if item_2d.extra.get('osm:water', None) == 'pond':
             item_3d = self.generate_item_3d_pond(item_2d)
 
@@ -123,4 +125,28 @@ class AreaItemsOSMBuilder():
         item_3d = ddd.group([exterior, water])  # .translate([0, 0, 0.3])
 
         item_3d.name = 'Pond: %s' % item_2d.name
+        return item_3d
+
+    def generate_item_3d_swimming_pool(self, item_2d):
+
+        exterior = item_2d.buffer(1.5).subtract(item_2d).extrude(2.0)
+        exterior = exterior.material(ddd.mats.tiles_stones)
+        exterior = ddd.uv.map_cylindrical(exterior)
+        exterior = ddd.meshops.remove_faces_pointing(exterior, ddd.VECTOR_DOWN)
+        exterior = exterior.translate([0, 0, -1.8])
+
+        vase = item_2d.extrude_step(item_2d, -2.0, base=False)
+        vase = vase.material(ddd.mats.tiles_stones)
+        vase = ddd.uv.map_cubic(vase)
+
+        water = item_2d.triangulate().material(ddd.mats.water)
+        water = ddd.uv.map_cubic(water)
+        water = water.translate([0, 0, -0.35])
+
+        #coords = item_2d.geom.centroid.coords[0]
+        #insidefountain = urban.fountain(r=item_2d.geom).translate([coords[0], coords[1], 0.0])
+
+        item_3d = ddd.group([exterior, water, vase])  # .translate([0, 0, 0.3])
+
+        item_3d.name = 'Swimming Pool: %s' % item_2d.name
         return item_3d
