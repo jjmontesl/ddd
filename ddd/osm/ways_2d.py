@@ -166,21 +166,30 @@ class Ways2DOSMBuilder():
             #ways = intersection.sort_criteria(['ddd:way:weight', 'ddd:material', 'ddd:name'])
             votes = defaultdict(list)
             votes_surf = defaultdict(list)
+            votes_name = defaultdict(list)
             for join in intersection:
                 # TODO: 1 to 1 intersections need to be resolved acconting for connectors and surface changes
                 if (join.way.get('ddd:way:crosswalk', None)): continue
 
                 votes[join.way.extra['ddd:way:weight']].append(join.way)
                 votes_surf[join.way.mat].append(join.way)
+                votes_name[join.way.name].append(join.way)
             #max_voted_ways_weight = list(reversed(sorted(votes.items(), key=lambda w: len(w[1]))))[0][0]
             #highest_ways = votes[max_voted_ways_weight]
             #max_voted_ways_count = max([len(v) for k, v in votes.items()])
             #max_weight_max_voted = sorted([vw for vw, vways in votes.items() if len(vways) == max_voted_ways_count])[0]
-            votes_weight_list = sorted([(k, v) for k, v in votes.items()], key=lambda o: (len(o[1]), -o[0]) )  # Sort by votes, then weight
-            highest_ways = votes_weight_list[-1][1]
-            if len(highest_ways) == len(intersection):
-                votes_surf_list = sorted([(k, v) for k, v in votes_surf.items()], key=lambda o: len(o[1]))  # Sort by votes
-                highest_ways = votes_surf_list[-1][1]
+            if len(votes) > 0:
+                votes_weight_list = sorted([(k, v) for k, v in votes.items()], key=lambda o: (len(o[1]), -o[0]) )  # Sort by votes, then weight
+                highest_ways = votes_weight_list[-1][1]
+                if len(highest_ways) == len(intersection):
+                    votes_surf_list = sorted([(k, v) for k, v in votes_surf.items()], key=lambda o: len(o[1]))  # Sort by surfaces
+                    highest_ways = votes_surf_list[-1][1]
+                    if len(highest_ways) == len(intersection):
+                        votes_name_list = sorted([(k, v) for k, v in votes_name.items()], key=lambda o: len(o[1]))  # Sort by surfaces
+                        highest_ways = votes_name_list[-1][1]
+            else:
+                logger.warn("Intersection with no highest ways: %s", intersection)
+                highest_ways = [j.way for j in intersection]
 
             # Generate intersection geometry
             join_ways = ddd.group([self.get_way_2d(j.way, ways_2d) for j in intersection]).flatten().clean()
@@ -425,8 +434,8 @@ class Ways2DOSMBuilder():
                 #intersection_2d.extra['way_1d_highest'] = highest_ways
                 # Combine highest paths and their elevations
 
-                # Remove connections (or at least we should join them all), store the connections of highest way (currently for troubleshooting)
-                intersection_2d.extra['ddd:intersection:highest:connections'] = list(intersection_2d.extra['ddd:connections'])
+                # Remove connections (or at least we should join them all), store the highest way (currently for troubleshooting)
+                intersection_2d.extra['ddd:intersection:highest'] = highest_ways
                 intersection_2d.extra['ddd:connections'] = []
 
                 if len(intersection) > 3 or len(intersection) == len(highest_ways):  # 2
@@ -497,6 +506,9 @@ class Ways2DOSMBuilder():
 
 
     def generate_ways_2d_intersection_intersections(self, ways_2d):
+        """
+        """
+
         intersections = ways_2d.select('["intersection"]', recurse=False)
         logger.info("Resolving intersection intersections (%d objects)", len(intersections.children))
         #intersections.show()
@@ -515,7 +527,8 @@ class Ways2DOSMBuilder():
                 if way.intersects(other):
                     isec = way.intersection(other).union()
                     if isec.geom and isec.geom.area > 0:  #and not way.touches(other):
-                        logger.info("Intersection intersection: %s > %s", way, other)
+                        #logger.debug("Intersection intersection: %s > %s", way, other)
+
                         #ddd.group2([main, minor.material(ddd.mats.highlight), way.intersection(other).material(ddd.mats.red)]).show()
                         #ddd.group2([way.intersection(other).material(ddd.mats.red)]).show()
 
@@ -526,11 +539,6 @@ class Ways2DOSMBuilder():
                         other.replace(new_other)
 
 
-        #ways_2d.replace(ways_2d.clean())
-        #ways_2d.dump()
-        #ways_2d.show()
-
-
     def generate_roadlines(self, pipeline, way_2d):
         path = way_2d.extra['way_1d']
 
@@ -539,6 +547,12 @@ class Ways2DOSMBuilder():
         if path.geom.type != "LineString":
             logger.warn("Cannot generate roadlines for %s: way_1d %s is not a LineString.", way_2d, path)
             return
+
+        path = path.copy()
+
+        # Subdivide lines
+        if int(pipeline.data.get('ddd:way:roadlines:subdivide', 0)) > 0:
+            ddd.geomops.subdivide_to_size(path, int(pipeline.data.get('ddd:way:roadlines:subdivide')))
 
         length = path.geom.length
 

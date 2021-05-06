@@ -85,7 +85,7 @@ def osm_augment_ways_2d_road_marks_give_way(root, osm, pipeline, obj):
             if end == -1 and path.extra.get('osm:oneway', None): continue
 
             if not path.extra.get('osm:oneway', None):
-                if ((end == 1 and (laneind + 1) > math.ceil(numlanes / 2) or (end == -1 and (laneind + 1) <= math.ceil(numlanes / 2)))):
+                if ((end == 1 and laneind < int(numlanes / 2) or (end == -1 and (laneind + 1) <= math.ceil(numlanes / 2)))):
                     # is_lane_end... # TODO: do this with a good way / lane / connectors model
                     continue
 

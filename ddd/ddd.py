@@ -666,7 +666,7 @@ class DDDObject():
 
     def copy_from(self, obj, copy_material=False, copy_children=False, copy_metadata_to_children=False):
         """
-        Copies metadata (without replacing), material and children from another object.
+        Copies metadata (without replacing), and optionally material and children from another object.
 
         Modifies this object in place, and returns itself.
         """
@@ -1017,6 +1017,9 @@ class DDDObject2(DDDObject):
         return "%s(%s, name=%s, geom=%s (%s verts), children=%d)" % (self.__class__.__name__, id(self), self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
     def copy(self, name=None):
+        """
+        Copies children, geometry and metadata recursively (deep copying the object).
+        """
         obj = DDDObject2(name=name if name else self.name, children=[c.copy() for c in self.children], geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
         return obj
 
@@ -1082,7 +1085,7 @@ class DDDObject2(DDDObject):
 
         numpoints = math.ceil(abs(angle_diff) * (resolution / (math.pi / 2)))
         angles = np.linspace(angle_start, angle_end, numpoints)
-        for a in angles:
+        for a in angles[1:]:
             linecoords.append([center[0] + math.cos(a) * radius_l, center[1] + math.sin(a) * radius_l, coords[2]])
 
         result = self.copy()
@@ -1201,7 +1204,7 @@ class DDDObject2(DDDObject):
             logger.warn("Removed geometry that crosses itself: %s", result)
             result.geom = None
 
-        result.children = [c.clean(eps=eps, remove_empty=remove_empty, validate=validate) for c in self.children]
+        result.children = [c.clean(eps=eps, remove_empty=remove_empty, validate=validate, fix_invalid=fix_invalid) for c in self.children]
 
         if remove_empty:
             result.children = [c for c in result.children if (c.children or c.geom)]
@@ -1210,7 +1213,7 @@ class DDDObject2(DDDObject):
             try:
                 result.validate()
             except DDDException as e:
-                logger.warn("Removed geom that didn't pass validation check (%s): %s", result, e)
+                logger.debug("Removed geom that didn't pass validation check (%s): %s", result, e)
                 result.geom = None
 
         return result

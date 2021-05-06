@@ -45,6 +45,18 @@ fig2 = ddd.line([[-3, 0], [3, 0]])
 fig = fig1.extrude_step(fig2, 1.0)
 items.append(fig)
 
+# Extrusion to line (explicit, method subtract)
+fig1 = ddd.rect([-4, -2, 4, 2])
+fig2 = ddd.line([[-3, 0], [3, 0]])
+fig = fig1.extrude_step(fig2, 1.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)  # TODO: this currently fails but should be fixed
+items.append(fig)
+
+# Extrusion to line with vertical (explicit) for skillion roofs
+fig1 = ddd.rect([-4, -2, 4, 2])
+fig2 = ddd.line([[-4, 2], [4, 2]])
+fig = fig1.extrude_step(fig2, 1.0)  # TODO: this currently fails but should be fixed
+items.append(fig)
+
 # Extrusion to line (axis middle)
 fig1 = ddd.rect([-4, -2, 4, 2]) #.rotate(math.pi * 1.5)
 axis_major, axis_minor, axis_angle = ddd.geomops.oriented_axis(fig1)

@@ -118,6 +118,7 @@ class AreaItemsOSMBuilder():
         exterior = ddd.uv.map_cylindrical(exterior)
 
         water = item_2d.buffer(-0.2).triangulate().material(ddd.mats.water)
+        water = ddd.uv.map_2d_linear(water)
 
         #coords = item_2d.geom.centroid.coords[0]
         #insidefountain = urban.fountain(r=item_2d.geom).translate([coords[0], coords[1], 0.0])
@@ -129,13 +130,14 @@ class AreaItemsOSMBuilder():
 
     def generate_item_3d_swimming_pool(self, item_2d):
 
-        exterior = item_2d.buffer(1.5).subtract(item_2d).extrude(2.0)
+        # TODO: This should be an area, so stuff can be positioned on top and etc.
+        exterior = item_2d.buffer(1.5).subtract(item_2d.buffer(-0.05)).extrude(3.0)
+        exterior = ddd.meshops.remove_faces_pointing(exterior, ddd.VECTOR_DOWN)
         exterior = exterior.material(ddd.mats.tiles_stones)
         exterior = ddd.uv.map_cylindrical(exterior)
-        exterior = ddd.meshops.remove_faces_pointing(exterior, ddd.VECTOR_DOWN)
-        exterior = exterior.translate([0, 0, -1.8])
+        exterior = exterior.translate([0, 0, -2.8])
 
-        vase = item_2d.extrude_step(item_2d, -2.0, base=False)
+        vase = item_2d.extrude_step(item_2d, -2.2, base=False)
         vase = vase.material(ddd.mats.tiles_stones)
         vase = ddd.uv.map_cubic(vase)
 

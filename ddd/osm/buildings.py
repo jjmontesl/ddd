@@ -271,16 +271,24 @@ class BuildingOSMBuilder():
                 max_height = parse_meters(part.extra.get('osm:height', floors_height)) - roof_height
                 dif_height = max_height - min_height
 
+                if dif_height == 0:
+                    logger.warn("Building with 0 height: %s (skipping)", part)
+                    continue
+
+
                 # Generate building procedurally (use library)
                 try:
-                    building_3d = part.extrude(dif_height)
-                except ValueError as e:
-                    logger.error("Could not generate building (%s): %s", part, e)
-                    continue
+                    #building_3d = part.extrude(dif_height)
+                    building_3d = self.generate_building_3d_part_body(part,
+                                                                      material, dif_height, roof_height, floors, floors_min, entire_building_3d)
+                #except ValueError as e:
+                #    logger.error("Could not generate building (%s): %s", part, e)
+                #    continue
                 except DDDException as e:
                     logger.error("Could not generate building (%s): %s", part, e)
                     continue
 
+                '''
                 if min_height == 0:
                     building_3d = ddd.meshops.remove_faces_pointing(building_3d, ddd.VECTOR_DOWN)
 
@@ -313,6 +321,7 @@ class BuildingOSMBuilder():
                         base = part.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
                         base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.stone, ddd.mats.cement]))
                         building_3d.children.append(base)
+                '''
 
                 # Roof
                 try:
@@ -395,9 +404,14 @@ class BuildingOSMBuilder():
                                           (axis_minor.coords[1][0] + (axis_major.coords[0][0] - axis_major.coords[1][0]) * 0.5, axis_minor.coords[1][1] + (axis_major.coords[0][1] - axis_major.coords[1][1]) * 0.5))
 
                         skillion_line = major_seg_plus if orientation == "major" else minor_seg_plus
+
+                        # Create a 1 unit height flat roof and then calculate height along the skillion direction line for the top half vertices
+                        roof = base.extrude(1.0)
+                        #skillion_line = ddd.line(skillion_line)
+                        #roof = base.extrude_step(skillion_line, roof_height).translate([0, 0, max_height]).material(roof_material)
                         default_height = random.uniform(1.0, 2.0)
                         roof_height = roof_height if roof_height else default_height
-                        roof = base.extrude_step(ddd.line(skillion_line), roof_height).translate([0, 0, max_height]).material(roof_material)
+                        roof = roof.translate([0, 0, max_height]).material(roof_material)
 
                     elif roof_shape == 'hipped':
 
@@ -472,6 +486,70 @@ class BuildingOSMBuilder():
         entire_building_3d.extra['ddd:building:feature'] = building_2d
 
         return entire_building_3d
+
+    def generate_building_3d_part_body(self, part,
+                                       material, dif_height, roof_height, floors, floors_min, entire_building_3d):  # temporarily, should be in metadata
+
+        floors_height = floors * 3.00
+        floors_min_height = floors_min * 3.00
+        min_height = float(part.extra.get('osm:min_height', floors_min_height))
+        #max_height = parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
+        max_height = parse_meters(part.extra.get('osm:height', floors_height)) - roof_height
+        dif_height = max_height - min_height
+
+        if dif_height == 0:
+            #logger.warn("Building with 0 height: %s (skipping)", part)
+            raise DDDException("Building with 0 height: %s (skipping)" % part)
+
+        # Generate building procedurally
+
+        floor_type = 'default'
+        if part.get('osm:building', None) == 'roof':
+            floor_type = 'columns'
+
+        if floor_type == 'default':
+            try:
+                building_3d = part.extrude(dif_height)
+            except ValueError as e:
+                raise DDDException("Could not generate building part body (%s): %s" % (part, e))
+        elif floor_type == 'columns':
+            return part.copy3()
+        else:
+            raise DDDException("Cannot generate building body, invalid floor_type=%s: %s" % (floor_type, part))
+
+        if min_height == 0:
+            building_3d = ddd.meshops.remove_faces_pointing(building_3d, ddd.VECTOR_DOWN)
+
+        if min_height: building_3d = building_3d.translate([0, 0, min_height])
+        building_3d = building_3d.material(material)
+
+        # Building solid post processing
+        if part.extra.get('osm:tower:type', None) == 'bell_tower':  # and dif_height > 6:
+            # Cut
+            center_pos = part.centroid().geom.coords[0]
+            (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(part)
+            cut1 = ddd.rect([-axis_major.length(), -axis_minor.length() * 0.20, +axis_major.length(), +axis_minor.length() * 0.20])
+            cut2 = ddd.rect([-axis_major.length() * 0.20, -axis_minor.length(), +axis_major.length() * 0.20, +axis_minor.length()])
+            cuts = ddd.group2([cut1, cut2]).union().rotate(axis_rot).extrude(-6.0).translate([center_pos[0], center_pos[1], max_height - 2])
+            #ddd.group3([building_3d, cuts]).show()
+            building_3d = building_3d.subtract(cuts)
+            #building_3d.show()
+
+            # TODO: Create 1D items
+            (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(part.buffer(-0.80))
+            for coords in (axis_major.geom.coords[0], axis_major.geom.coords[1], axis_minor.geom.coords[0], axis_minor.geom.coords[1]):
+                bell = urban.bell().translate([coords[0], coords[1], max_height - 3.0])
+                entire_building_3d.append(bell)
+
+        # Base
+        if 'osm:building:part' not in part.extra:
+            if random.uniform(0, 1) < 0.2:
+                base = part.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
+                base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.stone, ddd.mats.cement]))
+                building_3d.children.append(base)
+
+        return building_3d
+
 
     def generate_building_3d_elevation(self, building_3d):
         building_3d = terrain.terrain_geotiff_min_elevation_apply(building_3d, self.osm.ddd_proj)

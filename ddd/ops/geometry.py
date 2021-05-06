@@ -3,10 +3,13 @@
 # Jose Juan Montes 2020
 
 import logging
-from ddd.ddd import ddd, DDDObject2
 import math
-from ddd.core.exception import DDDException
 import shapely
+
+from ddd.core.exception import DDDException
+from ddd.ddd import ddd, DDDObject2
+import numpy as np
+
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -136,4 +139,35 @@ class DDDGeometry():
         obj.replace(resized)
 
         return obj
+
+    def subdivide_to_size(self, obj, max_edge):
+        """
+        Subdivide a geometry.
+
+        Modifies the object in place. Subdivides children recursively.
+        """
+
+        if obj.geom.type != 'LineString':
+            raise DDDException("Cannot subdivide geometry of type: %s", obj)
+
+        sqr_max_edge = max_edge ** 2
+        newcoords = [obj.geom.coords[0]]
+
+        for (pa, pb) in zip(obj.geom.coords[:-1], obj.geom.coords[1:]):
+            sqrdist = ((pb[0] - pa[0]) ** 2) + ((pb[1] - pa[1]) ** 2) + ((pb[2] - pa[2]) ** 2)
+            if (sqrdist > sqr_max_edge):
+                numpoints = int(math.sqrt(sqrdist) / max_edge)
+                pointsx = list(np.linspace(pa[0], pb[0], numpoints + 2, endpoint=True))[1:-1]
+                pointsy = list(np.linspace(pa[1], pb[1], numpoints + 2, endpoint=True))[1:-1]
+                pointsz = list(np.linspace(pa[2], pb[2], numpoints + 2, endpoint=True))[1:-1]
+                for i in range(numpoints):
+                    newcoords.append((pointsx[i], pointsy[i], pointsz[i]))
+            newcoords.append(pb)
+
+        obj.geom.coords = newcoords
+
+        obj.children = [self.subdivide_to_size(c, max_edge) for c in obj.children]
+
+        return obj
+
 

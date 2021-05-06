@@ -235,6 +235,10 @@ class OSMBuilder():
                     logger.warn("Invalid feature (2/2) '%s' %s: %s", name, feature_2d.metadata("", ""), e)
                     continue
 
+            if feature_2d.geom is None:
+                logger.warn("Invalid feature (no geom or geom removed): '%s' %s", name, feature_2d.metadata("", ""))
+                continue
+
             # Separate GeometryCollection geometries
             if feature_2d.geom.type == "GeometryCollection":
                 logger.info("Splitting GeometryCollection: %s", feature_2d)

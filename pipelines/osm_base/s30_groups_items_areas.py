@@ -3,9 +3,13 @@
 # Jose Juan Montes 2020
 
 
+import random
+
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
-
+import numpy as np
+import math
+from shapely.geometry import polygon
 
 
 @dddtask(order="30.70.30.+")
@@ -124,7 +128,24 @@ def osm_groups_items_areas_leisure_swimming_pool(obj, root, osm):
     pool.extra["ddd:elevation"] = "max"
     root.find("/ItemsAreas").append(pool)  # ItemsAreas
 
-    # Area below pool
+    # TODO: Use normal alignment of nodes
+    pool_outline = pool.copy()
+    pool_outline.geom = polygon.orient(pool_outline.geom, 1)
+    pool_outline = pool_outline.outline()
+    ladder_pos_d = random.uniform(0, pool_outline.length())
+    ladder_pos, segment_idx, segment_coords_a, segment_coords_b = pool_outline.interpolate_segment(ladder_pos_d)
+    ladder = obj.copy(name="Swimming Pool Ladder")
+    ladder.children = []
+    ladder.geom = ddd.point(ladder_pos).geom
+    angle = math.atan2(segment_coords_b[1] - segment_coords_a[1], segment_coords_b[0] - segment_coords_a[0])
+    ladder.set('ddd:ladder', 'swimming_pool')
+    ladder.set('ddd:angle', angle + math.pi)
+    ladder.set('ddd:height:base', 0.5)
+    #pool.extra["ddd:elevation"] = "max"
+    root.find("/ItemsNodes").append(ladder)
+
+
+    # Define terrain/area below pool as void
     area = pool.copy()
     area.set('ddd:area:type', 'void')  # 'void' # will be constructed by the pool areaitem
     area.set('ddd:area:height', -2.0)  # 'void'

@@ -104,3 +104,46 @@ def comm_tower(height=25.0, radius=0.5):
     obj.name = "Communications Tower"
     return obj
 
+
+def ladder_pool(height=1.75, width=0.6):
+    """
+    """
+    arc_thick = 0.08
+    bar_thick = 0.05
+    arc_radius = 0.35
+    steps_interval = 0.30
+
+    height_above_ground = arc_radius
+
+    circleline = ddd.point([-arc_radius, 0], "Ladder").arc_to([arc_radius, 0], [0, 0], False, resolution=4)
+    circleline = circleline.line_rel([0, -(height - height_above_ground)])
+    circleline = circleline.arc_to([0, -(height - height_above_ground + arc_radius)], [0, -(height - height_above_ground)], False)
+    #circleline = circleline.simplify(0.01)
+    #regularpolygon(sides * 2, name="Childrens Playground Arc Side Arc").rotate(-math.pi / 2).outline().scale([length / 2, height])
+    #arcline = circleline.intersection(ddd.rect([-length, 0.1, length, height * 2]))
+    arc = circleline.buffer(arc_thick / 2, cap_style=ddd.CAP_FLAT)  #.intersection(ddd.rect([-length, 0, length, height * 2]))
+    arc = arc.extrude(arc_thick, center=True).material(ddd.mats.steel)
+    arc = arc.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    arc = ddd.uv.map_cubic(arc)
+
+    arc1 = arc.copy().translate([0, -width / 2, 0])
+    arc2 = arc.copy().translate([0, +width / 2, 0])
+    item = ddd.group([arc1, arc2])
+
+    bar = ddd.point(name="Ladder step").buffer(bar_thick / 2).extrude(width - arc_thick, center=True).rotate(ddd.ROT_FLOOR_TO_FRONT)
+    bar = bar.material(ddd.mats.steel)
+    bar = ddd.uv.map_cubic(bar)
+
+    stepsline = ddd.line([[arc_radius, 0], [arc_radius, -(height - height_above_ground)]])
+    numsteps = int(stepsline.length() / steps_interval) + 1
+    step_interval_adjusted = stepsline.length() / numsteps
+    for idx in range(numsteps):
+        (p, segment_idx, segment_coords_a, segment_coords_b) = stepsline.interpolate_segment(idx * step_interval_adjusted)
+        pbar = bar.copy().translate([p[0], 0, p[1]])
+        item.append(pbar)
+
+    item = item.combine()
+    item = item.rotate(ddd.ROT_TOP_CW)
+
+    return item
+

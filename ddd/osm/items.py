@@ -164,7 +164,8 @@ class ItemsOSMBuilder():
         elif item_2d.get('ddd:item', None) == 'flowers':
             item_3d = self.generate_item_3d_flowers(item_2d)
 
-
+        elif item_2d.get('ddd:ladder', None) == 'swimming_pool':
+            item_3d = self.generate_item_3d_generic(item_2d, landscape.ladder_pool, "Swimming Pool Ladder")
 
         else:
             logger.debug("Unknown item: %s", item_2d.extra)

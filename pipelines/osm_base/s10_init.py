@@ -206,6 +206,18 @@ def osm_materials():
 
     '''
 
+    ddd.mats.bricks = ddd.material(name="Bricks", color='#efae85', texture_color='#ffffff',
+                                 metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bricks07/Bricks07_*.jpg",)
+
+    ddd.mats.tiles_stones = ddd.material(name="Tiles Stones", color='#7b7d69', texture_color='#ffffff',
+                                 metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles084_2K-JPG/Tiles084_2K_*.jpg",)
+    ddd.mats.tiles_stones_veg_sparse = ddd.material(name="Tiles Stones Veg Sparse", color='#7b8d69', texture_color='#ffffff',
+                                 metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles083_2K-JPG/Tiles083_2K_*.jpg",)
+
+
     ddd.mats.stones_white = ddd.material(name="Stones White", color='#9c9378',
                                            texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_*.jpg",)
     ddd.mats.stones_black = ddd.material(name="Stones Dark", color='#484846',
@@ -226,19 +238,8 @@ def osm_materials():
     #ddd.mats.stone = ddd.material(name="Stone", color='#484846', # Solid stone material, for waycross, beams, or similar (not to be confused with stones, in plural, though may be using the same texture)
     #                              texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
     #                              extra={'uv:scale': 1.0, 'tags': []})
-    ddd.mats.stone = ddd.mats.concrete.copy(name="Stone")
+    ddd.mats.stone = ddd.mats.tiles_stones.copy(name="Stone")
 
-
-    ddd.mats.bricks = ddd.material(name="Bricks", color='#efae85', texture_color='#ffffff',
-                                 metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
-                                 texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bricks07/Bricks07_*.jpg",)
-
-    ddd.mats.tiles_stones = ddd.material(name="Tiles Stones", color='#7b7d69', texture_color='#ffffff',
-                                 metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
-                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles084_2K-JPG/Tiles084_2K_*.jpg",)
-    ddd.mats.tiles_stones_veg_sparse = ddd.material(name="Tiles Stones Veg Sparse", color='#7b8d69', texture_color='#ffffff',
-                                 metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
-                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles083_2K-JPG/Tiles083_2K_*.jpg",)
 
 
     ddd.mats.wood = ddd.material(name="Wood", color='#d49156', texture_color='#ffffff',
