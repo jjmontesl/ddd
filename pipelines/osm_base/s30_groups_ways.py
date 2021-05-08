@@ -378,6 +378,18 @@ def osm_select_ways_waterway_stream(obj, root):
     obj = obj.material(ddd.mats.sea)
     root.find("/Ways").append(obj)
 
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:waterway" = "ditch"]')
+def osm_select_ways_waterway_ditch(obj, root):
+    """Define item data."""
+    obj = obj.copy()
+    obj.name = "Ditch: %s" % obj.name
+    obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:way:width'] = 0.5
+    obj.extra['ddd:area:type'] = "water"
+    # obj.extra['ddd:baseheight'] = -0.5
+    obj = obj.material(ddd.mats.sea)
+    root.find("/Ways").append(obj)
+
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:barrier" = "retaining_wall"]')
 def osm_select_ways_barrier_retaining_wall(root, osm, obj):
@@ -462,22 +474,6 @@ def osm_select_ways_manmade_pier(root, osm, obj):
     #obj = obj.buffer(obj.get('ddd:width'), cap_style=ddd.CAP_FLAT)
     obj = obj.material(ddd.mats.wood)
     root.find("/ItemsWays").append(obj)
-
-
-@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:power" = "line"]')
-def osm_select_ways_power_line(root, osm, obj):
-    """Define item data."""
-    obj = obj.copy()
-    obj.name = "Floating Pier: %s" % obj.name
-    #obj.extra['ddd:way:weight'] = 91
-    #obj.extra['ddd:way:lanes'] = None
-    obj.extra['ddd:width'] = 0.1
-    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 15.0))
-    obj.extra['ddd:layer'] = 3
-    obj = obj.material(ddd.mats.steel)
-    root.find("/ItemsWays").append(obj)
-    #create_as_item = True
-
 
 
 @dddtask(order="30.30.40.+", path="/Ways/*")

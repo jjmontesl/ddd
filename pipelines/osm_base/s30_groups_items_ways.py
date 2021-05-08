@@ -67,6 +67,28 @@ def osm_select_items_ways_barrier_hedge(root, osm, obj):
     root.find("/ItemsWays").append(obj)
 
 
+
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:power" ~ "line|minor_line"]')
+def osm_select_items_ways_power_line(root, osm, obj):
+    """Define item data."""
+    obj = obj.copy()
+    obj.name = "Power line: %s" % obj.name
+    obj.extra['ddd:width'] = 0.1
+    obj.extra['ddd:height'] = 0.1
+    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 11.0))
+    obj.extra['ddd:layer'] = 2
+    #obj.extra['ddd:way:weight'] = 100
+    #obj.extra['ddd:way:lanes'] = None
+    #obj.extra['ddd:base_height'] = 10.0
+    obj = obj.material(ddd.mats.cable_metal)
+    # TODO: Resolve tower/posts/building + connectors
+    numcables = int(obj.get('osm:cables', 2))
+    for i in range(numcables):
+        cable = obj.copy()
+        cable.geom = cable.geom.parallel_offset(-(numcables - 1 ) / 2.0 + 1.0 * i, "left")
+        root.find("/ItemsWays").append(cable)
+
+
 '''
 ###@dddtask(order="30.50.20.+", log=True)
 def osm_groups_areaitems(root, osm):

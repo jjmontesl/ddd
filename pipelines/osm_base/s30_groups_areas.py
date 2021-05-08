@@ -78,14 +78,44 @@ def osm_groups_areas_landuse_forest(obj, osm):
     obj = obj.material(ddd.mats.forest)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:landuse" = "industrial"]')
+def osm_groups_areas_landuse_industrial(obj, osm):
+    """Define area data."""
+    obj.name = "Industrial: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    #obj.extra['ddd:aug:itemfill:density'] = 0.006
+    #obj.extra['ddd:aug:itemfill:types'] = {'default': 1, 'reed': 0.5}
+    obj = obj.material(ddd.mats.asphalt)
+    return obj
+
 @dddtask(path="/Areas/*", select='["osm:landuse" = "vineyard"]')
 def osm_groups_areas_landuse_vineyard(obj, osm):
     """Define area data."""
     obj.name = "Vineyard: %s" % obj.name
-    obj.extra['ddd:area:type'] = "default"
+    obj.extra['ddd:area:type'] = "park"
     obj.extra['ddd:aug:itemfill:density'] = 0.001
     obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
-    obj = obj.material(ddd.mats.terrain)
+    obj = obj.material(ddd.mats.terrain_ground)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:landuse" = "farmland"]')
+def osm_groups_areas_landuse_farmland(obj, osm):
+    """Define area data."""
+    obj.name = "Farmland: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:density'] = 0.01
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 1}
+    obj = obj.material(ddd.mats.terrain_ground)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:landuse" = "orchard"]')
+def osm_groups_areas_landuse_orchard(obj, osm):
+    """Define area data."""
+    obj.name = "Orchard: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:density'] = 0.01
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 1}
+    obj = obj.material(ddd.mats.park)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:landuse" = "grass"]')
@@ -173,6 +203,16 @@ def osm_groups_areas_natural_sand(obj, osm):
     obj.name = "Sand: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"  # sand / dunes
     obj = obj.material(ddd.mats.sand)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:natural" = "scrub"]')
+def osm_groups_areas_natural_scrub(obj, osm):
+    """Define area data."""
+    obj.name = "Scrub: %s" % obj.name
+    obj.extra['ddd:area:type'] = "bunker"
+    obj.extra['ddd:aug:itemfill:density'] = 0.008
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 0.5, 'default': 0.5}
+    obj = obj.material(ddd.mats.wetland)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:golf" = "bunker"]')

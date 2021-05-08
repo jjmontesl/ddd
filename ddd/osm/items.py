@@ -526,6 +526,7 @@ class ItemsOSMBuilder():
     def generate_item_3d_powerpole(self, item_2d):
         coords = item_2d.geom.coords[0]
         item_3d = landscape.powertower(14)
+        item_3d = item_3d.material(ddd.mats.wood)
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Power Pole: %s' % item_2d.name
         return item_3d

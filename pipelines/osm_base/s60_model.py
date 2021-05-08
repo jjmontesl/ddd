@@ -259,8 +259,11 @@ def osm_model_generate_items_ways_height(obj, osm, root):
     if obj.extra.get('osm:barrier', None) in ("fence", "hedge"):
         return
 
+    # TODO: Ambiguity with height (is it total or top.... normalize in ddd: attributes)
     max_height = float(obj.extra.get('ddd:height'))
     min_height = float(obj.extra.get('ddd:min_height', 0.0))
+    if min_height > max_height:
+        max_height = min_height + max_height
     dif_height = max_height - min_height
 
     obj = obj.extrude(dif_height)

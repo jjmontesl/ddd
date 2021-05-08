@@ -70,6 +70,9 @@ def powertower(height=14.0):
     obj_horz1 = ddd.rect([-2.5, -0.3, 2.5, 0.3]).extrude(0.6).translate([0, 0, height - 2])
     obj_horz2 = ddd.rect([-3, -0.3, 3, 0.3]).extrude(0.6).translate([0, 0, height - 4])
     obj = ddd.group([obj_pole, obj_horz1, obj_horz2])
+    obj = obj.material(ddd.mats.steel)
+    obj = ddd.uv.map_cubic(obj)
+    obj = obj.combine()
     return obj
 
 def comm_tower(height=25.0, radius=0.5):
