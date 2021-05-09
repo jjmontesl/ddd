@@ -1,5 +1,6 @@
 '''
 '''
+import math
 
 '''
 '''
@@ -15,14 +16,59 @@ import trimesh
 from csg.core import CSG
 from csg import geom as csggeom
 import random
-from ddd import ddd
+from ddd.ddd import ddd
 import noise
+
+
+
+def cart_wheel(r=0.075, thick=0.03):
+    """
+    """
+    sides = 10
+    item = ddd.regularpolygon(sides, r, name="Cart Wheel").rotate(math.pi / sides)
+    item = item.extrude(thick).material(ddd.mats.plastic_black)
+    item = ddd.uv.map_cylindrical(item)
+    item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, thick / 2, 0])
+    return item
+
+
+def cart_wheel_axis(height_to_axis=0.1, wheel_radius=0.075, width=0.06, thick_interior=0.032):
+    """
+    """
+    #wheel_radius = height_to_axis * 0.75
+    #height_to_axis = wheel_radius * 1.25 # 0.10
+
+    item = ddd.point().line_to([0, -height_to_axis]).line_to([width, -height_to_axis - wheel_radius * 0.5]).line_to([width, 0])
+    item = ddd.polygon(item.geom.coords)
+
+    item = item.translate([-width * 0.5, 0]).triangulate().twosided()
+    item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CW)
+
+    side1 = item.copy().translate([-thick_interior, 0, 0])
+    side2 = item.copy().translate([thick_interior, 0, 0])
+
+    item = side1.append(side2)
+    item = item.combine()
+    item = item.material(ddd.mats.steel)
+    item = ddd.uv.map_cubic(item)
+
+    item.set('ddd:connector:axis', [0, 0, -height_to_axis])
+
+    return item
+
+
+def cart_wheel_and_axis():
+    axis = cart_wheel_axis()
+    wheel = cart_wheel().rotate(ddd.ROT_TOP_CW)
+    wheel = wheel.translate(axis.extra['ddd:connector:axis'])
+    axis.append(wheel)
+    return axis
 
 
 def rim(r=0.20):
     pass
 
-def tire(r=0.25, r_rim_ratio=0.8, width=0.25):
+def tyre(r=0.25, r_rim_ratio=0.8, width=0.25):
     pass
 
 def wheel(r=0.25, r_rim_ratio=0.8, width=0.25):

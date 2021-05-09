@@ -20,6 +20,7 @@ import hashlib
 import noise
 import random
 from ddd.util.common import parse_bool
+from scipy.ndimage.filters import gaussian_filter
 
 
 
@@ -48,8 +49,8 @@ def osm_gdterrain_export_splatmap_init(root, pipeline, osm, logger):
 
         ddd.mats.sand,
         ddd.mats.rock,
-        None,
-        None
+        ddd.mats.terrain_rock,
+        ddd.mats.terrain_ground,
         ]
 
     pipeline.data['splatmap:channels_num'] = 16
@@ -292,13 +293,28 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
     #splat_matrix = np.minimum(np.copy(splat_matrix), 1.0)
 
     # Splatmap smoothed pixels correction
-    # TODO: If using 8 channels we may wish to do this before exporting those (but careful as many pixels may appear as 1.0 if area subtraction was incorrect during generation).
+
     splat_matrix_corrected = np.copy(splat_matrix)
     # Channels 1 and 2
-    splat_matrix_corrected[:,:,1] = splat_matrix_corrected[:,:,1] * 4.0
-    splat_matrix_corrected = np.minimum(splat_matrix_corrected, 1.0)
+    #splat_matrix_corrected[:,:,1] = splat_matrix_corrected[:,:,1] * 4.0
+    #splat_matrix_corrected = np.minimum(splat_matrix_corrected, 1.0)
+
+    # TODO: Use attributes for all this (different areas spread differently and get dirty differently)
+    diffuse = (1, 10, 11, 12, 13, 14, 15)
+    preserve = (2, 3, 4, 5)
+    preserve_sum = np.zeros([splatmap_size, splatmap_size])
+    for p in preserve:
+        preserve_sum = np.maximum(preserve_sum, splat_matrix[:,:,p])
+    for i in diffuse:
+        splat_matrix_corrected[:,:,i] = gaussian_filter(splat_matrix_corrected[:,:,i], sigma=4)
+        splat_matrix_corrected[:,:,i] -= preserve_sum
 
     splat_matrix = splat_matrix_corrected
+
+    # Clamp to 0..1
+    splat_matrix = np.maximum(splat_matrix, 0.0)
+    splat_matrix = np.minimum(splat_matrix, 1.0)
+
 
 
     # Save

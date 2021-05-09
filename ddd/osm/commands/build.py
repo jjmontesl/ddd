@@ -107,7 +107,8 @@ class OSMBuildCommand(DDDCommand):
         selectedpbffile = os.path.join(datapath, "%s.pbf" % dataname)
 
         # TODO: Use area bounds!
-        #sides = 15 * 0.01  # Approximate degrees to km
+        sides = 15 * 0.01  # Approximate degrees to km
+        #sides = 5 * 0.001  # Approximate degrees to km
         bounds = [center_wgs84[0] - sides, center_wgs84[1] - sides, center_wgs84[0] + sides, center_wgs84[1] + sides]
 
         # Run osmconvert to select the area of interes
@@ -212,6 +213,7 @@ class OSMBuildCommand(DDDCommand):
         datafile = os.path.join(path, "%s.osm.geojson" % dataname)
         if not os.path.isfile(datafile):
             logger.info("Data file '%s' not found. Trying to produce data." % datafile)
+            #self.get_data(path, dataname, datacenter, self.area)
             self.get_data_osm(path, dataname, datacenter, self.area)
 
         files = [os.path.join(path, f) for f in [dataname + '.osm.geojson'] if os.path.isfile(os.path.join(path, f)) and f.endswith(".geojson")]

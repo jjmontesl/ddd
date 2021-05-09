@@ -191,6 +191,8 @@ class D1D2D3():
         """
         Returns a 2D rectangular polygon for the given bounds [xmin, ymin, xmax, ymax].
 
+        If bounds contains only 2 elements, they are used as x and y size, starting at the origin.
+
         If no bounds are provided, returns a unitary square with corner at 0, 0 along the positive axis.
         """
 
@@ -887,8 +889,12 @@ class DDDObject():
             if k in self.extra:
                 comp = self.extra[k]
                 if isinstance(comp, DDDObject):
-                    method_to_call = getattr(comp, methodname)
-                    self.extra[k] = method_to_call(*args, **kwargs)
+                    try:
+                        method_to_call = getattr(comp, methodname)
+                        self.extra[k] = method_to_call(*args, **kwargs)
+                    except Exception as e:
+                        print(method_to_call.__code__)
+                        raise DDDException("Cannot apply method to components of %s component %s: %s" % (self, comp, e))
 
     def get(self, keys, default=(None, ), extra=None, type=None):
         """
@@ -961,13 +967,17 @@ class DDDObject():
         self.set(key, value)
         return value
 
-    def grouptyped(self, children=None):
+    def grouptyped(self, children=None, name=None):
+        result = None
         if isinstance(self, DDDObject2):
-            return ddd.group(children, empty=2)
+            result = ddd.group(children, empty=2)
         elif isinstance(self, DDDObject3) or isinstance(self, DDDInstance):
-            return ddd.group(children, empty=3)
+            result = ddd.group(children, empty=3)
         else:
-            return ddd.group(children)
+            result = ddd.group(children)
+        if name:
+            result.name = name
+        return result
 
     def flatten(self):
 
@@ -2194,10 +2204,37 @@ class DDDInstance(DDDObject):
         obj.transform.position = [obj.transform.position[0] + v[0], obj.transform.position[1] + v[1], obj.transform.position[2] + v[2]]
         return obj
 
-    def rotate(self, v):
+    def rotate(self, v, origin=None):
+
         obj = self.copy()
         rot = quaternion_from_euler(v[0], v[1], v[2], "sxyz")
         rotation_matrix = transformations.quaternion_matrix(rot)
+
+        '''
+        center_coords = None
+        if origin == 'local':
+            center_coords = None
+        elif origin == 'bounds_center':  # group_centroid, use for children
+            ((xmin, ymin, zmin), (xmax, ymax, zmax)) = self.bounds()
+            center_coords = [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]
+        elif origin:
+            center_coords = origin
+
+        obj = self.copy()
+        if obj.mesh:
+            rot = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
+            if center_coords:
+                translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
+                translate_after = transformations.translation_matrix(np.array(center_coords))
+                #transf = translate_before * rot # * rot * translate_after  # doesn't work, these matrifes are 4x3, not 4x4 HTM
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_before)
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_after)
+            else:
+                #transf = rot
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
+        '''
+
         obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]  # Hack: use matrices
         obj.transform.rotation = transformations.quaternion_multiply(rot, obj.transform.rotation)  # order matters!
         return obj
@@ -2225,6 +2262,25 @@ class DDDInstance(DDDObject):
 
     def material(self, material, include_children=True):
         logger.warning("Ignoring material set to DDDInstance: %s", self)
+        return self
+
+    def combine(self, name=None):
+        """
+        Combine geometry of this instance. This allows instances to be combined.
+
+        TODO: Maybe this method should not exist, and client code should either replace instances before combining (there's curerntly no method for that),
+              or remove them if they are to be managed separately.
+        """
+        return DDDObject3(name=name)
+        if self.ref:
+            meshes = self.ref._recurse_meshes(True, False)
+            obj = ddd.group3(name=name)
+            for m in meshes:
+                mo = DDDObject3(mesh=m)
+                obj.append(mo)
+            return obj.combine(name=name)
+        else:
+            return DDDObject3(name=name)
 
     def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None):
 
@@ -2429,13 +2485,36 @@ class DDDObject3(DDDObject):
         obj.children = [c.translate(v) for c in self.children]
         return obj
 
-    def rotate(self, v):
+    def rotate(self, v, origin='local'):
+        """
+        If origin is 'local' or None, object is rotated around its local origin.
+        If origin is 'centroid', the centroid of the group is used (the same center is used for all children).
+        """
+        center_coords = None
+        if origin == 'local':
+            center_coords = None
+        elif origin == 'bounds_center':  # group_centroid, use for children
+            ((xmin, ymin, zmin), (xmax, ymax, zmax)) = self.bounds()
+            center_coords = [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]
+        elif origin:
+            center_coords = origin
+
         obj = self.copy()
         if obj.mesh:
             rot = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
-            obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
-        obj.apply_components("rotate", v)
-        obj.children = [c.rotate(v) for c in obj.children]
+            if center_coords:
+                translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
+                translate_after = transformations.translation_matrix(np.array(center_coords))
+                #transf = translate_before * rot # * rot * translate_after  # doesn't work, these matrifes are 4x3, not 4x4 HTM
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_before)
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_after)
+            else:
+                #transf = rot
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
+
+        obj.apply_components("rotate", v, origin=center_coords)
+        obj.children = [c.rotate(v, origin=center_coords if origin != 'local' else 'local') for c in obj.children]
         return obj
 
     def rotate_quaternion(self, quaternion):
@@ -2565,19 +2644,25 @@ class DDDObject3(DDDObject):
         Combine geometry for this and all children meshes into a single mesh.
         This will also combine UVs and normals. Metadata of the new element is created empty.
 
-        TODO: currently, the first material found will be applied to the parent (?)
+        Does not modify the obejct, returns a copy of the geometry.
 
+        TODO: currently, the first material found will be applied to the parent (?)
         """
         result = self.copy(name=name)
         for c in self.children:
             cc = c.combine()
             if result.mat is None and cc.mat is not None: result = result.material(cc.mat)
+
+            # Remove visuals, as Trimesh will try to concatenate UV but also textures
+            if result.mesh: result.mesh.visual = ColorVisuals()
+            if cc.mesh: cc.mesh.visual = ColorVisuals()
+
             result.mesh = result.mesh + cc.mesh if result.mesh else cc.mesh
             #result.extra.update(cc.extra)
             #vertices = list(result.mesh.vertices) + list(cc.mesh.vertices)
             #result.mesh = Trimesh(vertices, faces)
+            if 'uv' not in result.extra: result.extra['uv'] = []
             if cc.extra.get('uv', None):
-                if 'uv' not in result.extra: result.extra['uv'] = []
                 #offset = len(result.extra['uv'])
                 result.extra['uv'] = result.extra['uv'] + list(cc.extra['uv'])
 
@@ -2931,7 +3016,7 @@ class DDDObject3(DDDObject):
             raise DDDException("Unknown rendering backend: %s" % D1D2D3Bootstrap.renderer)
 
 
-    def save(self, path, instance_marker=None, instance_mesh=None, include_metadata=True):
+    def save(self, path, instance_marker=None, instance_mesh=None, include_metadata=True, size=None):
         """
         Saves this object to a file.
 
@@ -2994,7 +3079,7 @@ class DDDObject3(DDDObject):
         elif path.endswith('.png'):
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
             #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            data = DDDPNG3DRenderFormat.export_png_3d_render(self, instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDPNG3DRenderFormat.export_png_3d_render(self, instance_mesh=instance_mesh, instance_marker=instance_marker, size=size)
 
         else:
             logger.error("Cannot save. Invalid 3D filename format: %s", path)

@@ -1,6 +1,7 @@
 # Jose Juan Montes 2019-2020
 
-from ddd.pack.sketchy import urban, landscape, industrial, interior, sports
+from ddd.pack.sketchy import urban, landscape, industrial, interior, sports,\
+    vehicles
 from ddd.ddd import ddd
 import math
 
@@ -13,10 +14,18 @@ ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #col
 items = ddd.group3()
 
 
-item = landscape.ladder_pool()
+
+#item = vehicles.cart_wheel_and_axis()
+#items.append(item)
+#item.show()
+
+item = urban.waste_container()
 items.append(item)
 item.show()
 
+
+item = landscape.ladder_pool()
+items.append(item)
 
 item = sports.golf_flag()
 items.append(item)

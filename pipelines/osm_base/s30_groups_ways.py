@@ -170,7 +170,7 @@ def osm_select_ways_service(obj, root):
     obj.extra['ddd:way:weight'] = 21
     obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:traffic_signs'] = True
-    obj.prop_set('ddd:way:lamps', default=True)
+    obj.prop_set('ddd:way:lamps', default=False)
     obj.prop_set('ddd:way:lanes', default=1)
     root.find("/Ways").append(obj)
 
@@ -390,6 +390,20 @@ def osm_select_ways_waterway_ditch(obj, root):
     obj = obj.material(ddd.mats.sea)
     root.find("/Ways").append(obj)
 
+
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:natural" = "cliff"]')
+def osm_select_ways_natural_cliff(root, osm, obj):
+    """Define item data."""
+    obj = obj.copy()
+    obj.name = "Cliff: %s" % obj.name
+    #obj.extra['ddd:way:weight'] = 90
+    #obj.extra['ddd:way:lanes'] = None
+    obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 0.50))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 2.2))
+    #obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
+    #obj.extra['ddd:subtract_buildings'] = False
+    obj = obj.material(ddd.mats.rock)
+    root.find("/ItemsWays").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:barrier" = "retaining_wall"]')
 def osm_select_ways_barrier_retaining_wall(root, osm, obj):

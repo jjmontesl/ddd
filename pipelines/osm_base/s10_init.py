@@ -121,7 +121,7 @@ def osm_materials():
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_*.jpg",)
                                  #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_nrm.jpg",
                                  #texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/[2K]Rock22/Rock22_disp.jpg",)
-    ddd.mats.rock_lightbrown = ddd.material(name="Rock Orange", color='#bd8658',
+    ddd.mats.rock_lightbrown = ddd.material(name="Rock Orange", color='#eb8602', texture_color='#ffffff',
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Rock029_2K-JPG/Rock029_2K_*.jpg",
                                     extra={'uv:scale': 1.0, 'tags': ['orange', 'light brown', 'red', 'rock', 'stone', 'cliff', 'desert', 'ground']})

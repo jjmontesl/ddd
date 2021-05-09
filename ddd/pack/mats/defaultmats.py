@@ -67,8 +67,13 @@ class DefaultMaterials(MaterialsCollection):
         self.metal_paint_black = ddd.material("PaintBlack", color='#000a17')
 
         # Plastics
-        self.plastic_transparent = ddd.material(color='e8e0e4', extra={'ddd:transparent': True})  # name="PlasticTransparent",
-        self.plastic_black = ddd.material(color='#2c2936')
+        self.plastic_transparent = ddd.material("Plastic Transparent", color='e8e0e4', metallic_factor=0.0, roughness_factor=0.7, extra={'ddd:transparent': True})  # name="PlasticTransparent",
+        self.plastic_black = ddd.material("Plastic Black", color='#2c2936', metallic_factor=0.0, roughness_factor=0.7)
+        self.plastic_red = ddd.material("Plastick Red", color='#cc2b2b', metallic_factor=0.0, roughness_factor=0.7)
+        self.plastic_green = ddd.material("Plastic Green", color='#64a80a', metallic_factor=0.0, roughness_factor=0.7)
+        self.plastic_yellow = ddd.material("Plastic Yellow", color='#fffb08', metallic_factor=0.0, roughness_factor=0.7)
+        self.plastic_blue = ddd.material("Plastic Blue", color='#1763bf', metallic_factor=0.0, roughness_factor=0.7)
+        self.plastic_white = ddd.material("Plastic White", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)
 
         # Glass
         self.glass = ddd.material("Glass", color='#baf3f5')  #  , extra={'ddd:transparent': True}

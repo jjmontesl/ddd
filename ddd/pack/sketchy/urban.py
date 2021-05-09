@@ -15,7 +15,7 @@ import random
 from trimesh import transformations
 import numpy as np
 from ddd.ops.extrusion import extrude_step_multi, extrude_dome
-from ddd.pack.sketchy import interior
+from ddd.pack.sketchy import interior, vehicles
 from ddd.materials.atlas import TextureAtlasUtils
 
 
@@ -925,5 +925,58 @@ def childrens_playground_sandbox(r=1.5, sides=5, height=0.4, thick=0.1):
     return item
 
 
+def waste_container(width=1.41, length=0.76, height=1.23):
 
+    base = ddd.rect([width, length]).recenter()
 
+    wheelaxis_height = 0.175
+
+    base_size_factor = 0.85
+    steps = ((base_size_factor, 0.00), (0.92, 0.07), (0.95, 0.95), (1.0, 0.95), (1.0, 1.0), (0.90, 1.0), (base_size_factor - 0.05, 0.15))
+    obj = extrude_step_multi(base, steps, cap=True, base=True, scale_y=height-wheelaxis_height)
+
+    obj.name = "Waste Container"  # (Open)
+    obj = obj.material(ddd.mats.plastic_green)
+    obj = ddd.uv.map_cubic(obj)
+
+    # Wheels
+    wheels_padding = 0.08
+    wheelpos = base.scale([base_size_factor, base_size_factor]).buffer(-wheels_padding)
+    wheel_axis = vehicles.cart_wheel_and_axis().rotate(ddd.ROT_TOP_CW)
+    wheels = ddd.align.clone_on_coords(wheel_axis, wheelpos)
+    for w in wheels.children:
+        nw = w.rotate([0, 0, random.uniform(-1, 1) * math.pi * 0.3], origin="bounds_center")
+        w.replace(nw)
+    obj.append(wheels)
+
+    obj = obj.translate([0, 0, wheelaxis_height])
+
+    return obj
+
+'''
+def waste_container_closed(width=1.41, length=0.76, height=1.23):
+
+    base = ddd.rect([width, length]).recenter()
+
+    steps = ((0.85, 0.00), (0.92, 0.07), (0.95, 0.95), (1.0, 0.95), (1.0, 1.0), (0.90, 1.0), (0.85, 0.15))
+    obj = extrude_step_multi(base, steps, cap=True, base=True, scale_y=height)
+
+    obj.name = "Waste Container Open"
+    obj = obj.material(ddd.mats.plastic_green)
+    obj = ddd.uv.map_cubic(obj)
+    return obj
+
+def waste_container_dome(r=0.8, height=2.0):
+
+    circle = ddd.point([0, 0]).buffer(r, resolution=3, cap_style=ddd.CAP_ROUND)
+    obj = circle.extrude_step(circle, 0.35)
+    obj = obj.extrude_step(circle.scale([0.9, 0.9, 1]), 0.02)
+    obj = obj.extrude_step(circle.scale([0.9, 0.9, 1]), height - 0.4)
+    obj = obj.extrude_step(circle.scale([1.0, 1.0, 1]), 0.05)
+    obj = obj.extrude_step(circle.scale([1.0, 1.0, 1]), 0.10)
+    obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), 0.05)
+    obj = obj.material(ddd.mats.plastic_yellow)
+    obj = ddd.uv.map_cylindrical(obj)
+    obj.name = "Waste Container Recycling"
+    return obj
+'''

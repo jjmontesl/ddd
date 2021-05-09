@@ -57,7 +57,7 @@ class DDDAlign():
         """
         Clones the object and positions it radially.
 
-        TODO: Should be using polar, and copies made by matrix methods.
+        TODO: Should be using polar, and copies made by clone_* methods.
         """
 
         result = ddd.group3(name="Matrix of: %s" % obj.name)
@@ -103,4 +103,25 @@ class DDDAlign():
             idx += 1
 
         return obj
+
+    def clone_on_coords(self, source, target):
+        """
+        Clone source over target.
+
+        Source can be any DDDObject (2D, 3D or instances).
+
+        If target is a geometry, uses its coordinates.
+        """
+
+        result = source.grouptyped(name="Group: %s" % source.name)
+        #result.mesh = None
+        #result.children = []
+
+        # Note: it's called vertex_iterator for 3D objects
+        for c in set(target.coords_iterator()):
+            obj = source.copy()
+            obj = obj.translate(c)
+            result.append(obj)
+
+        return result
 

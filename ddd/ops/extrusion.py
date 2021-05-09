@@ -366,6 +366,8 @@ def extrude_triangulation(vertices, faces, height, cap=True, base=True, transfor
 def extrude_step_multi(obj, steps, cap=True, base=True, scale_y=1.0, shape_callback=None):
     """
     If height is passed, shape is adjusted to it.
+
+    Steps is a list of tuples (size, distance)
     """
 
     base = obj

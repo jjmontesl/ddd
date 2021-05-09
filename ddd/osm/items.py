@@ -74,10 +74,12 @@ class ItemsOSMBuilder():
         #    item_3d = self.generate_item_3d_taxi(item_2d)
         elif item_2d.extra.get('osm:amenity', None) == 'waste_basket':
             item_3d = self.generate_item_3d_waste_basket(item_2d)
-        #elif item_2d.extra.get('osm:amenity', None) == 'waste_disposal':
-        #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
-        #elif item_2d.extra.get('osm:amenity', None) == 'recycling':
-        #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
+
+        elif item_2d.extra.get('osm:amenity', None) == 'waste_disposal':
+            item_3d = self.generate_item_3d_generic_catalog("waste-disposal-1", item_2d, urban.waste_container, "Waste Disposal")
+        elif item_2d.extra.get('osm:amenity', None) == 'recycling':
+            item_3d = self.generate_item_3d_generic_catalog("recycling-paper", item_2d, urban.waste_container, "Recycling")
+
         #elif item_2d.extra.get('osm:amenity', None) == 'bicycle_parking':
         #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
 
@@ -89,12 +91,12 @@ class ItemsOSMBuilder():
         #    item_3d = self.generate_item_3d_coastline(item_2d)
 
         elif item_2d.extra.get('osm:natural', None) == 'tree':
+            # TODO: Do decimations in the pipeline (if at all)
             self.tree_decimate_idx += 1
             if self.tree_decimate <= 1 or self.tree_decimate_idx % self.tree_decimate == 0:
                 #item_3d = random.choice(self.pool['tree']).instance()
                 #coords = item_2d.geom.coords[0]
                 #item_3d = item_3d.translate([coords[0], coords[1], 0.0])
-
                 item_3d = self.generate_item_3d_tree(item_2d)
 
         elif item_2d.extra.get('osm:tourism', None) == 'artwork' and item_2d.extra.get('osm:artwork_type', None) == 'sculpture':
@@ -349,6 +351,22 @@ class ItemsOSMBuilder():
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         #item_3d.prop_set('ddd:static', False, children=True)  # TODO: Make static or not via styling
         item_3d.name = '%s: %s' % (name, item_2d.name)
+        return item_3d
+
+    def generate_item_3d_generic_catalog(self, key, item_2d, gen_func, name):
+
+        item_3d = self.osm.catalog.instance(key)
+        if not item_3d:
+            catalog_item = item_2d.recenter()
+            catalog_item.set('ddd:angle', 0)
+            item_3d = self.generate_item_3d_generic(catalog_item, gen_func, name)
+            item_3d = self.osm.catalog.add(key, item_3d)
+
+        coords = item_2d.geom.coords[0]
+        item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+        item_3d.name = '%s: %s' % (name, item_2d.name)
+        item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
         return item_3d
 
 

@@ -139,6 +139,7 @@ def osm_groups_common(osm, root, logger):
 
 # Area and ways attributes
 # TODO: Move 30_80_groups_common  to a separate file
+# Ensure this applies to areas and ways at an appropriate time (now is applying to everything)
 
 @dddtask(select='["osm:surface" = "compacted"]')  # path="/Areas/*",
 def osm_groups_areas_surface_compacted(obj, root):
@@ -168,6 +169,12 @@ def osm_groups_areas_surface_grass(obj, root):
     obj = obj.material(ddd.mats.grass)
     return obj
 
+@dddtask(select='["osm:surface" = "sand"]')
+def osm_groups_areas_surface_sand(obj, root):
+    """"""
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.sand)
+    return obj
 
 
 

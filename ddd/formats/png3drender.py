@@ -24,11 +24,14 @@ logger = logging.getLogger(__name__)
 class DDDPNG3DRenderFormat():
 
     @staticmethod
-    def export_png_3d_render(obj, instance_mesh=True, instance_marker=False, size=(1280, 720)):
+    def export_png_3d_render(obj, instance_mesh=True, instance_marker=False, size=None):
         """
         Saves a rendered image to PNG.
         """
 
-        image = DDD3DRenderer.render(obj, instance_mesh=True, instance_marker=False, size=(1280, 720))
+        if size is None:
+            size = (1280, 720)
+
+        image = DDD3DRenderer.render(obj, instance_mesh=True, instance_marker=False, size=size)
         return image
 

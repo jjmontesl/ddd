@@ -7,47 +7,93 @@ from shapely.geometry.geo import shape
 import logging
 import argparse
 import json
+import glob
+import os
+import re
+import geojson
+from pygeotile.tile import Tile
+from ddd.ddd import ddd
 
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-# DEPRECATED
 
-class OSMDataInfoCommand(OSMBuildCommand):
-    """
-    TODO: Deprecated. Use pipeline based reporting.
-    """
+"""
+Called from local data dir as:
 
-    chunk_size = 250  # 500: 4/km2,  250: 16/km2,  200: 25/km2,  125: 64/km2
-    chunk_size_extra_filter = 250  # salamanca: 250  # vigo: 500
+    ddd ~/git/ddd/pipelines/osm_tile_info.py
+"""
 
-    def parse_args(self, args):
+source_dir = "output/ddd_http/"
+source_regex = r"output/ddd_http/([0-9]+)/([0-9]+)/([0-9]+)(.*)"
 
-        #program_name = os.path.basename(sys.argv[0])
-        parser = argparse.ArgumentParser()  # description='', usage = ''
+logger.info("Finding output results from: %s (%s)" % (source_dir, source_regex))
 
-        #parser.add_argument("-w", "--worker", default=None, help="worker (i/n)")
-        parser.add_argument("--name", type=str, default=None, help="base name for output")
-        parser.add_argument("--center", type=str, default=None, help="center of target area")
-        parser.add_argument("--area", type=str, default=None, help="target area polygon GeoJSON")
-        #parser.add_argument("--radius", type=float, default=None, help="radius of target area")
-        #parser.add_argument("--area", type=str, help="GeoJSON polygon of target area")
-        #parser.add_argument("--tile", type=float, help="tile size in meters (0 for entire area)")
 
-        args = parser.parse_args(args)
+use_file = "/tmp/tiles.txt"
+if use_file:
+    listing = open(use_file, "r").read().split("\n")
+else:
+    listing = glob.glob(source_dir + "**/*.glb", recursive=True)
 
-        center = args.center.split(",")
-        self.center = (float(center[0]), float(center[1]))
 
-        self.name = args.name
-        self.area = shape(json.loads(args.area))
+features = []
+feature_idx = {}
 
-    def run(self):
+for filename in listing:
 
-        logger.info("DDD123 OSM data information.")
+    #dirname = os.path.dirname(filename)
+    #basename = os.path.basename(filename)
 
-        self.areainfo()
+    if not filename.endswith(".glb"):
+        continue
+
+    #logger.debug(filename)
+    matches = re.match(source_regex, filename)
+
+    if matches:
+
+        x, y, z = int(matches.group(2)), int(matches.group(3)), int(matches.group(1))
+
+        data = {"z": z,
+                "x": x,
+                "y": y,
+                "remainder": matches.group(4)}
+
+        #logger.debug(data)
+        tile = Tile.from_google(x, y, zoom=z)
+        point_min, point_max = tile.bounds
+
+        min_lat, min_lon = point_min.latitude_longitude
+        max_lat, max_lon = point_max.latitude_longitude
+
+        center_lat = (min_lat + max_lat) / 2.0
+        center_lon = (min_lon + max_lon) / 2.0
+
+        center = (center_lon, center_lat)
+        area = ddd.rect([min_lon, min_lat, max_lon, max_lat]).geom
+
+        feature = geojson.Feature(geometry=area,
+                                  properties={"available": True, #exists > 0,
+                                              "name": filename,
+                                              "z": z,
+                                              "x": x,
+                                              "y": y,
+                                              "size": os.stat(filename).st_size if os.path.exists(filename) else None} )
+        if (z, x ,y) not in feature_idx:
+            feature_idx[(z, x, y)] = feature
+            features.append(feature)
+        else:
+            pass
+
+
+feature_collection = geojson.FeatureCollection(features)
+dump = geojson.dumps(feature_collection, sort_keys=True, indent=4)
+print(dump + "\n")
+
+
+'''
 
     def areainfo(self):
 
@@ -109,3 +155,4 @@ class OSMDataInfoCommand(OSMBuildCommand):
         print(dump + "\n")
 
 
+'''

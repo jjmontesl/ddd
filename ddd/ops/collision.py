@@ -22,7 +22,7 @@ class AABox(DDDObject):
     """
     Axis-aligned box.
 
-    TODO: Move to primitives
+    TODO: Move to primitives (check Trimesh primitives)
     """
 
     @staticmethod
@@ -51,12 +51,37 @@ class AABox(DDDObject):
         obj.center = obj.center + v  # Hack: use matrices
         return obj
 
-    def rotate(self, v):
+    def rotate(self, v, origin="local"):
         obj = self.copy()
+
         rot = quaternion_from_euler(v[0], v[1], v[2], "sxyz")
         rotation_matrix = transformations.quaternion_matrix(rot)
-        obj.center = np.dot(rotation_matrix, list(obj.center) + [1])[:3]  # Hack: use matrices
-        obj.size = np.abs(np.dot(rotation_matrix, list(obj.size) + [1])[:3])  # Hack: use matrices
+        #rot = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
+
+        center_coords = None
+        if origin == 'local':
+            center_coords = None
+        elif origin == 'bounds_center':  # group_centroid, use for children
+            ((xmin, ymin, zmin), (xmax, ymax, zmax)) = self.bounds()
+            center_coords = [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]
+        elif origin:
+            center_coords = origin
+
+        if center_coords:
+            #translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
+            #translate_after = transformations.translation_matrix(np.array(center_coords))
+            #transf = translate_before * rot # * rot * translate_after  # doesn't work, these matrifes are 4x3, not 4x4 HTM
+
+            obj.center = obj.center - np.array(center_coords)
+            obj.center = np.dot(rotation_matrix, list(obj.center) + [1])[:3]  # Hack: use matrices
+            obj.center = obj.center + np.array(center_coords)
+
+            obj.size = np.abs(np.dot(rotation_matrix, list(obj.size) + [1])[:3])  # Hack: use matrices
+        else:
+            #transf = rot
+            obj.center = np.dot(rotation_matrix, list(obj.center) + [1])[:3]  # Hack: use matrices
+            obj.size = np.abs(np.dot(rotation_matrix, list(obj.size) + [1])[:3])  # Hack: use matrices
+
         return obj
 
 

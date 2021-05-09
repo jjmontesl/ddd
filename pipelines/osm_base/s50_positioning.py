@@ -36,7 +36,9 @@ def osm_positioning_init(pipeline, osm, root, logger):
     pipeline.data['positioning_ways_2d_0_and_buildings'] = ddd.group([pipeline.data['positioning_ways_2d_0'], pipeline.data['positioning_buildings_2d']]).clean(eps=0.01)
     pipeline.data['positioning_areas_ways_2d_outline'] = ddd.group([root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False).outline(), root.select(path="/Areas/*", selector='["osm:layer" = "0"]', recurse=False).outline()])
 
+
 # TODO: Tag earlier, during items creation
+
 @dddtask(order="50.50.30.+", log=True)
 def osm_positioning_select(pipeline, osm, root, logger):
     pass
@@ -66,6 +68,21 @@ def osm_positioning_select_waste_basket(obj, osm, root, logger):
     obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     obj.extra['ddd:positioning:penetrate'] = -1.0
     obj.extra['ddd:positioning:validate:ref'] = 'positioning_ways_2d_0_and_buildings'
+
+
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "waste_disposal"]')
+def osm_positioning_select_amenity_waste_disposal(obj, osm, root, logger):
+    obj.extra['ddd:positioning:type'] = 'snap-project'
+    obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
+    #obj.extra['ddd:positioning:penetrate'] = 0.0
+    #obj.extra['ddd:positioning:validate:ref'] = 'positioning_ways_2d_0_and_buildings'
+
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "recycling"]')
+def osm_positioning_select_amenity_recycling(obj, osm, root, logger):
+    obj.extra['ddd:positioning:type'] = 'snap-project'
+    obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
+    #obj.extra['ddd:positioning:penetrate'] = 0.0
+    #obj.extra['ddd:positioning:validate:ref'] = 'positioning_ways_2d_0_and_buildings'
 
 
 @dddtask(path="/ItemsNodes/*", select='["osm:barrier" = "bollard"]')

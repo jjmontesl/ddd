@@ -112,7 +112,7 @@ def osm_groups_items_areas_leisure_playground_point(obj, root, osm):
     root.find("/Areas").append(obj)
     """
 
-@dddtask(path="/Features/*", select='["osm:leisure" = "swimming_pool"]')
+@dddtask(path="/Features/*", select='["osm:leisure" = "swimming_pool"]["geom:type" ~ "Polygon|MultiPolygon"]')
 def osm_groups_items_areas_leisure_swimming_pool(obj, root, osm):
     """
     """

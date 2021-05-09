@@ -51,7 +51,7 @@ class DDD3DRenderer():
             # apply the new transform
             scene.graph[scene.camera.name] = camera_new
 
-            png = scene.save_image(resolution=size, visible=True)
+            png = scene.save_image(resolution=size, visible=True)  # Seems we get a black image with visible=False ?
 
             return png
 

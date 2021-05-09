@@ -74,7 +74,6 @@ class TextureAtlas():
             rotated = frame['rotated']
             sprite = TextureAtlasSprite(key, bounds_pixel, bounds_norm, rotated)
             atlas.sprites[key.lower()] = sprite
-            logger.debug("")
 
         logger.info("Loaded texture atlas %s with %d sprites.", filepath, len(atlas.sprites))
         return atlas
