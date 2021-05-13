@@ -176,7 +176,26 @@ def osm_groups_areas_surface_sand(obj, root):
     obj = obj.material(ddd.mats.sand)
     return obj
 
+@dddtask(select='["osm:surface" = "wood"]')
+def osm_groups_areas_surface_wood(obj, root):
+    """"""
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.wood)
+    return obj
 
+@dddtask(select='["osm:surface" = "tartan"]')
+def osm_groups_areas_surface_tartan(obj, root):
+    """"""
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.pitch)
+    return obj
+
+@dddtask(select='["osm:surface" = "tartan"]["osm:leisure" = "track"]')
+def osm_groups_areas_surface_tartan_track(obj, root):
+    """"""
+    #obj.extra['ddd:height'] = 0.0
+    obj = obj.material(ddd.mats.pitch_red)
+    return obj
 
 
 @dddtask(order="30.90")

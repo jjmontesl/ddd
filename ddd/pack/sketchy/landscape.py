@@ -7,6 +7,7 @@ import random
 
 from ddd.ddd import ddd
 from ddd.pack.sketchy.urban import post, lamp_ball
+from ddd.ops import filters
 
 
 def cloud():
@@ -21,21 +22,28 @@ def clouds():
     raise NotImplementedError()
 
 
-def rock():
-    raise NotImplementedError()
+def rock(bounds=(1, 1, 1)):
+    """
+    Final size will be bounds * 2.
+    """
+    obj = ddd.sphere(subdivisions=1)
 
-def rocks():
-    raise NotImplementedError()
+    raise_factor = random.uniform(-0.15, 0.35)
+    obj = obj.translate([0, 0, raise_factor])
+    obj = obj.subtract(ddd.box([-2, -2, 0, 2, 2, -2]))
+    obj = obj.scale(bounds)
 
+    noise_scale = min(bounds) * 0.25
+    obj = filters.noise_random(obj, scale=noise_scale)
 
-def river():
-    raise NotImplementedError()
+    obj = obj.translate([0, 0, -0.2])
+    obj = obj.material(ddd.mats.rock)
+    #obj.mesh = obj.mesh.smoothed(angle=0)
+    obj = ddd.uv.map_cubic(obj)
+    return obj
 
 
 def well(terrain, subtract=True):
-    raise NotImplementedError()
-
-def cave(terrain):
     raise NotImplementedError()
 
 

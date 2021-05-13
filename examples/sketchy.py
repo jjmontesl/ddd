@@ -15,13 +15,15 @@ items = ddd.group3()
 
 
 
-#item = vehicles.cart_wheel_and_axis()
-#items.append(item)
-#item.show()
+item = urban.waste_container_dome()
+items.append(item)
+item.show()
+
+item = urban.waste_container_with_lid_closed()
+items.append(item)
 
 item = urban.waste_container()
 items.append(item)
-item.show()
 
 
 item = landscape.ladder_pool()

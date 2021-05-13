@@ -86,10 +86,12 @@ def osm_gdterrain_export_splatmap_condition(pipeline):
 def osm_gdterrain_export_splatmap_channels_all(root, pipeline, osm, logger):
     for i in range(pipeline.data['splatmap:channels_num']):
         mat = pipeline.data['splatmap:channels_materials'][i]
+        objs = ddd.group2()
         if mat:
-            objs = root.select('["ddd:material" = "%s"]["ddd:layer" = "0"]' % mat.name)
-        else:
-            objs = ddd.group2()
+            sel = root.find("/Areas").select('["ddd:material" = "%s"]["ddd:layer" = "0"]' % mat.name)
+            objs.append(sel.children)
+            sel = root.find("/Ways").select('["ddd:material" = "%s"]["ddd:layer" = "0"]' % mat.name)
+            objs.append(sel.children)
         objs.name = 'Channel' + str(i)
         root.find("/Splatmap").append(objs)
 
@@ -300,13 +302,13 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
     #splat_matrix_corrected = np.minimum(splat_matrix_corrected, 1.0)
 
     # TODO: Use attributes for all this (different areas spread differently and get dirty differently)
-    diffuse = (1, 10, 11, 12, 13, 14, 15)
+    diffuse = (1, 12)  #  , 13, 14, 15)
     preserve = (2, 3, 4, 5)
     preserve_sum = np.zeros([splatmap_size, splatmap_size])
     for p in preserve:
         preserve_sum = np.maximum(preserve_sum, splat_matrix[:,:,p])
     for i in diffuse:
-        splat_matrix_corrected[:,:,i] = gaussian_filter(splat_matrix_corrected[:,:,i], sigma=4)
+        splat_matrix_corrected[:,:,i] = gaussian_filter(splat_matrix_corrected[:,:,i], sigma=2)
         splat_matrix_corrected[:,:,i] -= preserve_sum
 
     splat_matrix = splat_matrix_corrected

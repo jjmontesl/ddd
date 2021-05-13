@@ -38,7 +38,7 @@ def osm_groups_areas_leisure_park(obj, osm):
     obj.name = "Park: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
     obj.extra['ddd:aug:itemfill:density'] = 0.0025
-    obj.extra['ddd:aug:itemfill:types'] = {'default': 1, 'palm': 0.001}
+    obj.extra['ddd:aug:itemfill:types'] = {'default': 1, 'bush': 0.1, 'palm': 0.001}
     obj = obj.material(ddd.mats.park)
     return obj
 
@@ -94,7 +94,7 @@ def osm_groups_areas_landuse_vineyard(obj, osm):
     obj.name = "Vineyard: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
     obj.extra['ddd:aug:itemfill:density'] = 0.001
-    obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
+    obj.extra['ddd:aug:itemfill:types'] = {'default': 1}  # Should be small trees
     obj = obj.material(ddd.mats.terrain_ground)
     return obj
 
@@ -114,7 +114,7 @@ def osm_groups_areas_landuse_orchard(obj, osm):
     obj.name = "Orchard: %s" % obj.name
     obj.extra['ddd:area:type'] = "bunker"
     obj.extra['ddd:aug:itemfill:density'] = 0.01
-    obj.extra['ddd:aug:itemfill:types'] = {'default': 1}
+    obj.extra['ddd:aug:itemfill:types'] = {'bush': 1}
     obj = obj.material(ddd.mats.park)
     return obj
 
@@ -196,7 +196,7 @@ def osm_groups_areas_natural_wood(obj, osm):
     obj.name = "Wood: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
     obj.extra['ddd:aug:itemfill:density'] = 0.006
-    obj.extra['ddd:aug:itemfill:types'] = {'default': 1, 'reed': 0.25}
+    obj.extra['ddd:aug:itemfill:types'] = {'default': 1, 'bush': 0.2, 'reed': 0.05}
     obj = obj.material(ddd.mats.forest)
     return obj
 
@@ -206,7 +206,7 @@ def osm_groups_areas_natural_wetland(obj, osm):
     obj.name = "Wetland: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
     obj.extra['ddd:aug:itemfill:density'] = 0.008
-    obj.extra['ddd:aug:itemfill:types'] = {'reed': 1, 'default': 0.01}
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 0.8, 'bush': 0.2, 'default': 0.01}
     obj = obj.material(ddd.mats.wetland)
     return obj
 
@@ -233,7 +233,7 @@ def osm_groups_areas_natural_scrub(obj, osm):
     obj.name = "Scrub: %s" % obj.name
     obj.extra['ddd:area:type'] = "bunker"
     obj.extra['ddd:aug:itemfill:density'] = 0.008
-    obj.extra['ddd:aug:itemfill:types'] = {'reed': 0.5, 'default': 0.1}  # bushes, depending on biome
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 0.2, 'bush': 0.7, 'default': 0.1}  # bushes, depending on biome
     obj = obj.material(ddd.mats.forest)  # wetland
     return obj
 

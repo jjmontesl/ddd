@@ -6,7 +6,7 @@ import math
 import random
 
 from ddd.ddd import ddd
-from ddd.ops import filters
+from ddd.ops import filters, reduction
 
 
 # TODO: Move tree generation algorithm to a generic "trees pack", and keep here only parameters and other sketchy related stuff
@@ -256,6 +256,41 @@ def tree_fir(height=20, r=0.2):
     #obj.show()
     return obj
 
+
+def tree_bush(height=1.0, r=0.30):
+
+    #height = height * (1 + fork_height_ratio)
+
+    def trunk_callback(height):
+        return ddd.group3()
+        #section = ddd.regularpolygon(sides=5, r=r).extrude(height)
+        #section = ddd.uv.map_cylindrical(section)
+        #section = section.material(ddd.mats.bark)
+        #return section
+    def leaves_callback(height):
+        tt = treetop(r=0.5 + 0.4 * height, subdivisions=0).material(ddd.mats.treetop)
+        return tt
+
+    obj = recursivetree(height=height, r=r, leaves_callback=leaves_callback, trunk_callback=trunk_callback,
+                        fork_iters=2, fork_height_ratio=0.2)
+
+    '''
+    result = ddd.group3()
+    for o in obj.recurse_objects():
+        result = result.union(o)
+    obj = result
+    obj = ddd.meshops.reduce_quadric_decimation(obj, target_ratio=0.5)
+    '''
+    obj = ddd.meshops.reduce(obj)
+
+
+    obj.name = "Tree Busgh"
+
+    #objtrunk = obj.select(func=lambda o: o.mat == ddd.mats.bark).combine()
+    objleaves = obj.select(func=lambda o: o.mat == ddd.mats.treetop).combine()
+    obj = ddd.group3([objleaves], name="Tree Default")
+
+    return obj
 
 def tree_weeping_willow():
     pass

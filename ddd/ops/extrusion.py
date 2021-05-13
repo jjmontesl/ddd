@@ -363,7 +363,7 @@ def extrude_triangulation(vertices, faces, height, cap=True, base=True, transfor
     return mesh
 
 
-def extrude_step_multi(obj, steps, cap=True, base=True, scale_y=1.0, shape_callback=None):
+def extrude_step_multi(obj, steps, cap=True, base=True, scale_y=1.0, shape_callback=None, scale_x=None):
     """
     If height is passed, shape is adjusted to it.
 
@@ -374,6 +374,9 @@ def extrude_step_multi(obj, steps, cap=True, base=True, scale_y=1.0, shape_callb
     obj = obj.copy()
 
     ref_x = steps[0][0]
+    if scale_x:
+        ref_x = scale_x
+        obj = obj.scale([steps[0][0], steps[0][0]])
     last_y = steps[0][1] * scale_y
     for step in steps[1:]:
         step_scale = step[0] / ref_x
@@ -384,12 +387,12 @@ def extrude_step_multi(obj, steps, cap=True, base=True, scale_y=1.0, shape_callb
 
     return obj
 
-def extrude_dome(obj, height, steps=6):
+def extrude_dome(obj, height, steps=6, base_shape=None):
     """
     If height is passed, shape is adjusted to it.
     """
 
-    base = obj
+    base = obj if base_shape is None else base_shape
     obj = obj.copy()
 
     stepheight = 1.0 / steps

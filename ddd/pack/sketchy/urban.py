@@ -5,7 +5,7 @@
 import math
 
 from ddd.ddd import ddd
-from ddd.ops import filters
+from ddd.ops import filters, extrusion
 import logging
 from ddd.text import fonts
 from ddd.lighting.lights import PointLight
@@ -933,7 +933,7 @@ def waste_container(width=1.41, length=0.76, height=1.23):
 
     base_size_factor = 0.85
     steps = ((base_size_factor, 0.00), (0.92, 0.07), (0.95, 0.95), (1.0, 0.95), (1.0, 1.0), (0.90, 1.0), (base_size_factor - 0.05, 0.15))
-    obj = extrude_step_multi(base, steps, cap=True, base=True, scale_y=height-wheelaxis_height)
+    obj = extrude_step_multi(base, steps, cap=True, base=True, scale_y=height-wheelaxis_height, scale_x=1.0)
 
     obj.name = "Waste Container"  # (Open)
     obj = obj.material(ddd.mats.plastic_green)
@@ -953,30 +953,44 @@ def waste_container(width=1.41, length=0.76, height=1.23):
 
     return obj
 
-'''
-def waste_container_closed(width=1.41, length=0.76, height=1.23):
 
+def waste_container_lid(width=1.41, length=0.76, height=0.15):
     base = ddd.rect([width, length]).recenter()
+    obj = base.extrude_step(base, height * 0.3)
+    obj = obj.extrude_step(base.buffer(-length * 0.2).translate([0, length * 0.1, 0]), height * 0.7)
 
-    steps = ((0.85, 0.00), (0.92, 0.07), (0.95, 0.95), (1.0, 0.95), (1.0, 1.0), (0.90, 1.0), (0.85, 0.15))
-    obj = extrude_step_multi(base, steps, cap=True, base=True, scale_y=height)
-
-    obj.name = "Waste Container Open"
+    obj.name = "Waste Container Lid"  # (Open)
     obj = obj.material(ddd.mats.plastic_green)
     obj = ddd.uv.map_cubic(obj)
+
     return obj
 
-def waste_container_dome(r=0.8, height=2.0):
 
+def waste_container_with_lid_closed(width=1.41, length=0.76, container_height=1.23):
+
+    obj = waste_container()
+    lid = waste_container_lid().translate([0, 0, container_height])
+    obj.append(lid)
+
+    obj.name = "Waste Container Closed"
+    return obj
+
+
+def waste_container_dome(base_side=1.4, r=0.65, height=1.6):
+
+    base_height = 0.05
+
+    base = ddd.rect([base_side, base_side]).recenter()
+    base = base.extrude_step(base, base_height)
+
+    round_dome_height = r
+    round_vertical_height = height - round_dome_height - base_height
     circle = ddd.point([0, 0]).buffer(r, resolution=3, cap_style=ddd.CAP_ROUND)
-    obj = circle.extrude_step(circle, 0.35)
-    obj = obj.extrude_step(circle.scale([0.9, 0.9, 1]), 0.02)
-    obj = obj.extrude_step(circle.scale([0.9, 0.9, 1]), height - 0.4)
-    obj = obj.extrude_step(circle.scale([1.0, 1.0, 1]), 0.05)
-    obj = obj.extrude_step(circle.scale([1.0, 1.0, 1]), 0.10)
-    obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), 0.05)
-    obj = obj.material(ddd.mats.plastic_yellow)
+    obj = base.extrude_step(circle, 0)
+    obj = obj.extrude_step(circle, round_vertical_height)
+    obj = extrusion.extrude_dome(obj, round_dome_height, steps=4, base_shape=circle)
+
+    obj = obj.material(ddd.mats.plastic_green)
     obj = ddd.uv.map_cylindrical(obj)
-    obj.name = "Waste Container Recycling"
+    obj.name = "Waste Container Dome"
     return obj
-'''

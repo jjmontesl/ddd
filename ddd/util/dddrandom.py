@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 class DDDRandom:
 
+    def angle(self, factor=1.0):
+        return random.uniform(0, math.pi * 2 * factor)
+
     def weighted_choice(self, options):
         """
         Return a random choice between a dictionary of weighted entries.

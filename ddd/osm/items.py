@@ -78,17 +78,13 @@ class ItemsOSMBuilder():
         elif item_2d.extra.get('osm:amenity', None) == 'waste_disposal':
             item_3d = self.generate_item_3d_generic_catalog("waste-disposal-1", item_2d, urban.waste_container, "Waste Disposal")
         elif item_2d.extra.get('osm:amenity', None) == 'recycling':
-            item_3d = self.generate_item_3d_generic_catalog("recycling-paper", item_2d, urban.waste_container, "Recycling")
+            item_3d = self.generate_item_3d_generic_catalog("waste-container-dome-1", item_2d, urban.waste_container_dome, "Recycling")
 
         #elif item_2d.extra.get('osm:amenity', None) == 'bicycle_parking':
         #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
 
         elif item_2d.extra.get('osm:emergency', None) == 'fire_hydrant':
             item_3d = self.generate_item_3d_generic(item_2d, urban.fire_hydrant, "Fire Hydrant")
-
-
-        #elif item_2d.extra.get('osm:natural', None) == 'coastline':
-        #    item_3d = self.generate_item_3d_coastline(item_2d)
 
         elif item_2d.extra.get('osm:natural', None) == 'tree':
             # TODO: Do decimations in the pipeline (if at all)
@@ -98,6 +94,17 @@ class ItemsOSMBuilder():
                 #coords = item_2d.geom.coords[0]
                 #item_3d = item_3d.translate([coords[0], coords[1], 0.0])
                 item_3d = self.generate_item_3d_tree(item_2d)
+
+        elif item_2d.extra.get('osm:natural', None) == 'rock' or item_2d.extra.get('ddd:item', None) == 'natural_rock':
+            # TODO: Use a generic metadata-based catalog/instnacing key and arguments (and grouping by arguments for instancing)
+            bounds = [random.uniform(2, 4), random.uniform(1, 3), random.uniform(1, 2)]
+            variant = random.choice(range(4)) + 1
+            item_3d = self.generate_item_3d_generic_catalog("natural-rock-%d" % variant, item_2d, lambda: landscape.rock(bounds), "Rock")
+            item_3d = item_3d.translate([0, 0, -random.uniform(0.0, 1.0)])
+        elif item_2d.extra.get('osm:natural', None) == 'stone':
+            #item_3d = self.generate_item_3d_generic_catalog("natural-stone-1", item_2d, lambda: landscape.rock([4, 4.5, 4.0]), "Stone")
+            item_3d = self.generate_item_3d_generic(item_2d, lambda: landscape.rock([4, 4.5, 4.0]), "Stone")
+            item_3d = item_3d.translate([0, 0, -random.uniform(0.0, 1.0)])
 
         elif item_2d.extra.get('osm:tourism', None) == 'artwork' and item_2d.extra.get('osm:artwork_type', None) == 'sculpture':
             item_3d = self.generate_item_3d_sculpture(item_2d)
@@ -220,6 +227,8 @@ class ItemsOSMBuilder():
         #    return None
 
 
+        numvariants = 5  # 7
+
         '''
         tree_type = item_2d.extra.get('osm:tree:type')
         if tree_type is None:
@@ -230,7 +239,7 @@ class ItemsOSMBuilder():
         if isinstance(tree_type, dict):
             tree_type = weighted_choice(tree_type)
 
-        key = "tree-%s-%d" % (tree_type, random.choice([1, 2, 3, 4, 5, 6, 7]))
+        key = "tree-%s-%d" % (tree_type, random.choice([x + 1 for x in range(numvariants)]))
 
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
@@ -246,6 +255,8 @@ class ItemsOSMBuilder():
                 item_3d = plants.tree_palm(height=plant_height)
             elif tree_type == 'fir':
                 item_3d = plants.tree_fir(height=plant_height)
+            elif tree_type == 'bush':
+                item_3d = plants.tree_bush(height=plant_height)
             elif tree_type == 'reed':
                 item_3d = plants.reed()
             else:
@@ -366,7 +377,7 @@ class ItemsOSMBuilder():
         item_3d = item_3d.rotate([0, 0, item_2d.extra['ddd:angle'] - math.pi / 2])
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = '%s: %s' % (name, item_2d.name)
-        item_3d.extra['_height_mapping'] = 'terrain_geotiff_incline_elevation_apply'
+        item_3d.set('_height_mapping', default='terrain_geotiff_incline_elevation_apply')
         return item_3d
 
 

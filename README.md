@@ -33,6 +33,7 @@ packages which provide most of the geometry operations.
 - Basic collider primitives support. Texture atlas support.
 - Document generation transformation pipeline support.
 - A simple procedural models library (trees, urban props...)
+- Heightmap and splatmap generation (for terrain engines and splatmap based shading).
 - OpenStreetMap data 2D and 3D generation pipelines.
 
 

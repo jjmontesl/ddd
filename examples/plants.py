@@ -9,6 +9,10 @@ items = ddd.group3()
 heights = (3.0, 5.0, 10.0, 15.0)
 
 for h in heights:
+    item = landscape.rock([h * 0.2, h * 0.2, h * 0.1])
+    items.append(item)
+
+for h in heights:
     item = plants.reed(height=h)
     items.append(item)
 
@@ -24,7 +28,11 @@ for h in heights:
     item = plants.tree_fir(height=h)
     items.append(item)
 
-items = ddd.align.grid(items)
+for h in heights:
+    item = plants.tree_bush(height=h * 0.2)
+    items.append(item)
+
+items = ddd.align.grid(items, width=4)
 items.append(ddd.helper.all())
 items.show()
 
