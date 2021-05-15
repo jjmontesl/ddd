@@ -354,14 +354,16 @@ class Areas3DOSMBuilder():
 
         lines = None
         if sport == 'tennis':
-            lines = sports.field_lines_area(area_2d_orig, sports.tennis_field_lines, padding=3.0)
+            lines = sports.field_lines_area(area_2d_orig, sports.tennis_field_lines, padding=2.5)
         elif sport == 'basketball':
-            lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=2.0)
+            lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=1)
         elif sport == 'gymnastics':
             #lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=2.0)
             lines = ddd.group3()
+        elif sport in ('handball'):
+            lines = sports.field_lines_area(area_2d_orig, sports.handball_field_lines, padding=1)
         elif sport in ('soccer', 'futsal'):
-            lines = sports.field_lines_area(area_2d_orig, sports.football_field_lines, padding=1.25)
+            lines = sports.field_lines_area(area_2d_orig, sports.football_field_lines, padding=1)
         else:
             # No sport assigned
             lines = ddd.group3()

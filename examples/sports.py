@@ -15,8 +15,11 @@ items.append(item)
 item.show()
 '''
 
+functions = (sports.handball_field_lines, sports.basketball_field_lines,
+             sports.tennis_field_lines, sports.football_field_lines)
+
 count = 3
-for m in (sports.basketball_field_lines, sports.tennis_field_lines, sports.football_field_lines):
+for m in functions:
     items = ddd.group3()
     for i in range(count):
         area = ddd.polygon([[0, 0], [10, 0], [10, 5], [0, 5]]).scale(1 + i * 3).rotate(i * 2 * math.pi / count)

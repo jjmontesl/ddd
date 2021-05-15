@@ -1,6 +1,19 @@
-# ddd - D1D2D3
-# Library for simple scene modelling.
-# Jose Juan Montes 2020
+# DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes
+# Copyright (C) 2021 Jose Juan Montes
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 import math
 
@@ -190,25 +203,25 @@ def traffic_sign_code(signtype, thick=0.1):
 
         if sign_shape == 'p':
             if sign_mat is None: sign_mat = ddd.mats.metal_paint_red
-            head = traffic_sign_triangle(thick=thick)
+            head = traffic_sign_triangle(thick=thick, caps=False)
         elif sign_shape == 'i':
             if sign_mat is None: sign_mat = ddd.mats.metal_paint_red
-            head = traffic_sign_triangle_inverted(thick=thick)
+            head = traffic_sign_triangle_inverted(thick=thick, caps=False)
         elif sign_shape == 'r':
             if sign_mat is None: sign_mat = ddd.mats.metal_paint_red
-            head = traffic_sign_circle(thick=thick)
+            head = traffic_sign_circle(thick=thick, caps=False)
         elif sign_shape == 's':
             if sign_mat is None: sign_mat = ddd.mats.metal_paint_blue
-            head = traffic_sign_rect(thick=thick)
+            head = traffic_sign_rect(thick=thick, caps=False)
         elif sign_shape == 'e':
             if sign_mat is None: sign_mat = ddd.mats.metal_paint_white
-            head = traffic_sign_rect(thick=thick)
+            head = traffic_sign_rect(thick=thick, caps=False)
         elif sign_shape == 'v':
             if sign_mat is None: sign_mat = ddd.mats.metal_paint_white
-            head = traffic_sign_rect_rotated(thick=thick)
+            head = traffic_sign_rect_rotated(thick=thick, caps=False)
         elif sign_shape == 'o':
             if sign_mat is None: sign_mat = ddd.mats.metal_paint_red
-            head = traffic_sign_octagon(thick=thick)
+            head = traffic_sign_octagon(thick=thick, caps=False)
         else:
             logger.warn("Sign shape unknown: %s", signtype)
             raise NotImplementedError()
@@ -278,45 +291,45 @@ def traffic_sign_code(signtype, thick=0.1):
     return head
 
 
-def traffic_sign_triangle(r=0.6, thick=0.1):
+def traffic_sign_triangle(r=0.6, thick=0.1, caps=True):
     item = ddd.regularpolygon(3, r, name="Sign triangle").material(ddd.mats.metal_paint_red)
-    item = item.rotate(math.pi / 2 + math.pi).rotate(math.pi).extrude(thick)
+    item = item.rotate(math.pi / 2 + math.pi).rotate(math.pi).extrude(thick, cap=caps, base=caps)
     item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, thick / 2, r - r * math.cos(math.pi / 3)])
     item = ddd.uv.map_cubic(item)
     return item
 
-def traffic_sign_triangle_inverted(r=0.6, thick=0.1):
+def traffic_sign_triangle_inverted(r=0.6, thick=0.1, caps=True):
     item = ddd.regularpolygon(3, r, name="Sign triangle inverted").material(ddd.mats.metal_paint_red)
-    item = item.rotate(math.pi / 2 + math.pi).extrude(thick)
+    item = item.rotate(math.pi / 2 + math.pi).extrude(thick, cap=caps, base=caps)
     item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, thick / 2, r])
     item = ddd.uv.map_cubic(item)
     return item
 
-def traffic_sign_octagon(r=0.5, thick=0.1):
+def traffic_sign_octagon(r=0.5, thick=0.1, caps=True):
     item = ddd.regularpolygon(8, r, name="Sign triangle").material(ddd.mats.metal_paint_red)
-    item = item.rotate(math.pi / 8).extrude(thick)
+    item = item.rotate(math.pi / 8).extrude(thick, cap=caps, base=caps)
     item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, thick / 2, r * math.cos(math.pi / 8)])
     item = ddd.uv.map_cubic(item)
     return item
 
-def traffic_sign_rect(width=0.8, height=0.8, thick=0.1):
+def traffic_sign_rect(width=0.8, height=0.8, thick=0.1, caps=True):
     item = ddd.rect([-width/2, -height/2, width/2, height/2], name="Sign rect").material(ddd.mats.metal_paint_blue)
-    item = item.extrude(thick)
+    item = item.extrude(thick, cap=caps, base=caps)
     item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, thick / 2, height / 2])
     item = ddd.uv.map_cubic(item)
     return item
 
-def traffic_sign_rect_rotated(r=0.5, thick=0.1):
+def traffic_sign_rect_rotated(r=0.5, thick=0.1, caps=True):
     item = ddd.regularpolygon(4, r, name="Sign square angled").material(ddd.mats.metal_paint_white)
-    item = item.extrude(thick)
+    item = item.extrude(thick, cap=caps, base=caps)
     item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, thick / 2, r])
     item = ddd.uv.map_cubic(item)
     return item
 
-def traffic_sign_circle(r=0.5, thick=0.1):
+def traffic_sign_circle(r=0.5, thick=0.1, caps=True):
     sides = 16
     item = ddd.regularpolygon(sides, r, name="Sign circle").material(ddd.mats.metal_paint_red)
-    item = item.rotate(math.pi / sides).extrude(thick)
+    item = item.rotate(math.pi / sides).extrude(thick, cap=caps, base=caps)
     item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, thick / 2, r * math.cos(math.pi / sides)])
     item = ddd.uv.map_cubic(item)
     return item

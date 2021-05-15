@@ -1,7 +1,22 @@
-# Jose Juan Montes 2019-2020
+# DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes
+# Copyright (C) 2021 Jose Juan Montes
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from ddd.pack.sketchy import urban, landscape, industrial, interior, sports,\
-    vehicles
+    vehicles, common, buildings
 from ddd.ddd import ddd
 import math
 
@@ -14,10 +29,18 @@ ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #col
 items = ddd.group3()
 
 
+item = buildings.window_with_border()
+items.append(item)
+item.show()
+
+
+
+item = common.bar_u()
+items.append(item)
+
 
 item = urban.waste_container_dome()
 items.append(item)
-item.show()
 
 item = urban.waste_container_with_lid_closed()
 items.append(item)

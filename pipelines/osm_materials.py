@@ -39,7 +39,7 @@ def materials_list(root, osm):
     # Avoid exporting the same material twice
     added_names = []
 
-    for key in dir(ddd.mats):
+    for key in sorted(dir(ddd.mats)):
         mat = getattr(ddd.mats, key)
         if isinstance(mat, DDDMaterial):
             if mat.name not in added_names:

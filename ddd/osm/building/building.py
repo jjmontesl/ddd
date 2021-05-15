@@ -1,25 +1,11 @@
-# DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes
-# Copyright (C) 2021 Jose Juan Montes
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+# ddd - D1D2D3
+# Library for simple scene modelling.
+# Jose Juan Montes 2020
 
 import logging
 import math
 import random
 import sys
-import numpy as np
 
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
@@ -27,7 +13,6 @@ from ddd.pack.sketchy import plants, urban
 from ddd.geo import terrain
 from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
-from ddd.pack.sketchy.buildings import window_with_border
 
 
 # Get instance of logger for this module
@@ -38,27 +23,13 @@ from pint import UnitRegistry
 ureg = UnitRegistry()
 
 
-# TODO: Move to a quantity parsing library (also check quantity3, but it doesn't seem to make conversions)
-def parse_meters(expr):
-    quantity = ureg.parse_expression(str(expr))
-    if not isinstance(quantity, float) and not isinstance(quantity, int):
-        quantity = quantity.to(ureg.meter).magnitude
-    return float(quantity)
+class Building(DDDDataObject):
 
-def parse_material(name, color):
-    material = None
-    if hasattr(ddd.mats, name):
-        material = getattr(ddd.mats, name)
-    else:
-        material = ddd.material(name, color)
-    return material
+    def __init__(self, obj):
+
+        self.obj = obj
 
 
-class BuildingOSMBuilder():
-
-    def __init__(self, osmbuilder):
-
-        self.osm = osmbuilder
 
     def preprocess_buildings_features(self, features_2d):
 
@@ -201,7 +172,7 @@ class BuildingOSMBuilder():
         base_floors_min = floors_min
 
         random.seed(hash(building_2d.name))
-        building_material = random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.building_4])
+        building_material = random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3])
 
         material_name = building_2d.get('ddd:building:material', building_2d.get('osm:building:material', None))
         if material_name:
@@ -474,12 +445,13 @@ class BuildingOSMBuilder():
                     else:
                         logger.warning("Unknown roof shape: %s", roof_shape)
 
-                    if roof:
-                        roof = ddd.uv.map_cubic(roof)
-                        building_3d.children.append(roof)
+                    if roof: building_3d.children.append(roof)
 
                 except Exception as e:
                     logger.warning("Cannot generate roof: %s (geom: %s)" % (e, part.geom))
+
+                # UV Mapping
+                building_3d = ddd.uv.map_cubic(building_3d)
 
                 entire_building_2d.append(part)
                 entire_building_3d.append(building_3d)
@@ -559,51 +531,10 @@ class BuildingOSMBuilder():
         if 'osm:building:part' not in part.extra:
             if random.uniform(0, 1) < 0.2:
                 base = part.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
-                base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.building_4, ddd.mats.stone, ddd.mats.cement]))
+                base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.stone, ddd.mats.cement]))
                 building_3d.children.append(base)
 
-        building_3d = ddd.uv.map_cubic(building_3d)
-
-        # Items processing (per floor)
-        for floor_num in range(floors):
-            self.generate_building_3d_part_body_items_floor(floor_num, part, building_3d)
-
         return building_3d
-
-
-    def generate_building_3d_part_body_items_floor(self, floor_num, part, building_3d):
-        """
-        Windows, doors, etc... currently as a testing approach. Should use pre-created items or a building schema.
-        """
-
-        part_outline = part.outline()
-        vertices = part_outline.vertex_list()
-        segments = zip(vertices[:-1], vertices[1:])
-
-        item_width = 3
-        min_seg_width = 4.0
-
-        for idx, (v0, v1) in enumerate(segments):
-            v0, v1 = (np.array(v0), np.array(v1))
-            dir_vec = v1 - v0
-            dir_angle = math.atan2(dir_vec[1], dir_vec[0])
-            seg_length = np.sqrt(dir_vec.dot(dir_vec))
-
-            num_items = int(seg_length / item_width) if seg_length > min_seg_width else 0
-
-            for d in np.linspace(0.0, seg_length, num_items + 2, endpoint=True)[1:-1]:
-                p = v0 + dir_vec * (d / seg_length)
-                #p, segment_idx, segment_coords_a, segment_coords_b = part_outline.interpolate_segment(d)
-                key = "building-window"
-                obj  = self.osm.catalog.instance(key)
-                if not obj:
-                    obj = window_with_border()
-                    obj = ddd.meshops.remove_faces_pointing(obj, ddd.VECTOR_BACKWARD)
-                    obj = self.osm.catalog.add(key, obj)
-
-                obj = obj.rotate([0, 0, dir_angle + math.pi])
-                obj = obj.translate([p[0], p[1], floor_num * 3.0 + 1.0])
-                building_3d.append(obj)
 
 
     def generate_building_3d_elevation(self, building_3d):

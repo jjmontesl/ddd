@@ -103,6 +103,8 @@ class D1D2D3():
 
     VECTOR_UP = np.array([0.0, 0.0, 1.0])
     VECTOR_DOWN = np.array([0.0, 0.0, -1.0])
+    VECTOR_BACKWARD = np.array([0.0, 1.0, 0.0])
+    VECTOR_FORWARD = np.array([0.0, -1.0, 0.0])  # Towards camera
 
     ANCHOR_CENTER = (0.5, 0.5)
     ANCHOR_BOTTOM_CENTER = (0.5, 0.0)
@@ -426,7 +428,8 @@ class DDDMaterial():
         'albedo': ['_Base_Color', '_Color', '_ColorAlpha', '_albedo', '_col', '_alb' ],
         'normal': ['_Normal', '_normal', '_nrm'],
         'displacement': ['_Height', '_Displacement', '_Disp', '_disp', '_dis'],
-        'roughness': ['_Roughness', '_rgh']
+        'roughness': ['_Roughness', '_rgh'],
+        #: ['_AO', ],
     }
 
     @staticmethod
@@ -1850,6 +1853,9 @@ class DDDObject2(DDDObject):
         return result
 
     def extrude_along(self, path):
+        """
+        Extrudes a shape along a path
+        """
         trimesh_path = path.geom.coords
         mesh = creation.sweep_polygon(self.geom, trimesh_path, triangle_args="p", engine='triangle')
         mesh.fix_normals()
@@ -2302,6 +2308,7 @@ class DDDInstance(DDDObject):
         scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
 
 
+        # TODO: Call transform to_matrix
         node_transform = transformations.concatenate_matrices(
             transformations.translation_matrix(self.transform.position),
             transformations.quaternion_matrix(self.transform.rotation)
@@ -2401,10 +2408,44 @@ class DDDTransform():
         return result
 
     def export(self):
+        """
+        TODO: Rename to 'to_dict()'
+        """
         result = {'position': self.position,
                   'rotation': self.rotation,
                   'scale': self.scale}
         return result
+
+    def to_matrix(self):
+        """
+        Returns a HTM for the translation, rotaiton and scale represented by this Transform.
+        """
+
+        #rot = quaternion_from_euler(-math.pi / 2, 0, 0, "sxyz")
+        rot = quaternion_from_euler(-math.pi / 2, math.pi, 0, "sxyz")
+        rotation_matrix = transformations.quaternion_matrix(rot)
+
+        scale_matrix = np.array(((1.0,   0.0,  0.0,    0.0),
+                                 (0.0,    -1.0,  0.0,    0.0),
+                                 (0.0,    0.0, 1.0,    0.0),
+                                 (0.0,    0.0,  0.0,    1.0)), dtype=np.float64)
+
+        node_transform = transformations.concatenate_matrices(
+            rotation_matrix,  # For babylon
+            scale_matrix,   # For babylon
+            transformations.translation_matrix(self.position),
+            #transformations.scale_matrix(self.scale),
+            transformations.quaternion_matrix(self.rotation),
+        )
+
+
+
+        return node_transform
+
+    '''
+    def to_array(self):
+        return self.to_matrix().flatten()
+    '''
 
 
 class DDDObject3(DDDObject):

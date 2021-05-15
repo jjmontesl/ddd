@@ -1,6 +1,19 @@
-# ddd - D1D2D3
-# Library for simple scene modelling.
-# Jose Juan Montes 2020
+# DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes
+# Copyright (C) 2021 Jose Juan Montes
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 import logging
 import math
@@ -13,28 +26,22 @@ import numpy as np
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-def bar_u(height, b, thick=0.20):
+def bar_u(height=0.8, width=0.4, r=0.15, thick=0.1):
     """
-    A u-shaped figure, like that used for handles, bycicle stands...
+    A U-shaped figure, like that used for handles, bycicle stands...
     """
-    a = np.array(a)
-    b = np.array(b)
+    vertical_height = height - r
 
-    #path = ddd.line([a, b])
-    #path_section = ddd.point(name="Cable").buffer(thick * 0.5, resolution=1, cap_style=ddd.CAP_ROUND)
-    #cable = path_section.extrude_path(path)
+    base = ddd.regularpolygon(6, r=thick * 0.5, name="U-Shape")
 
-    length = np.linalg.norm(b - a)
-    cable = ddd.point(name="Cable").buffer(thick * 0.5, resolution=1, cap_style=ddd.CAP_ROUND).extrude(length + thick).translate([0, 0, -thick * 0.5])
-    cable = ddd.uv.map_cylindrical(cable)
+    path = ddd.point().line_to([0, vertical_height]).arc_to([r, height], [r, vertical_height], True, resolution=1)
+    path = path.line_to([width - r, height]).arc_to([width, vertical_height], [width-r, vertical_height], True, resolution=1)
+    path = path.line_to([width, 0])
 
-    vector_up = [0, 0, 1]
-    vector_dir = (b - a) / length
-    rot_axis = np.cross(vector_up, vector_dir)
-    rot_angle = math.asin(np.linalg.norm(rot_axis))
-    if rot_angle > 0.00001:
-        rotation = transformations.quaternion_about_axis(rot_angle, rot_axis / np.linalg.norm(rot_axis))
-        cable = cable.rotate_quaternion(rotation)
-    cable = cable.translate(a)
+    item = base.extrude_along(path)
+    item = item.rotate(ddd.ROT_FLOOR_TO_FRONT)  #.rotate(ddd.ROT_TOP_CW)
+    item = item.translate([-width*0.5, 0, 0])
+    item = item.material(ddd.mats.steel)
+    item = ddd.uv.map_cubic(item)
+    return item
 
-    return cable

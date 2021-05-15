@@ -54,12 +54,12 @@ def football_field_lines_area(area, line_width=0.10):
     return lines
 '''
 
-def field_lines_area(area, lines_method, padding=0.5, **kwargs):
+def field_lines_area(area, lines_method, padding=0.5, search_erode=0.5, **kwargs):
     """
     Playground fields are seen x: length, y: width
     """
 
-    rectangle = ddd.geomops.inscribed_rectangle(area, padding=padding)
+    rectangle = ddd.geomops.inscribed_rectangle(area, padding=padding, search_erode=search_erode)
     if not rectangle.geom or not rectangle.geom.exterior: return
 
     coords = rectangle.geom.exterior.coords
@@ -185,6 +185,92 @@ def football_goal(width=4.88, height=1.83, thick=0.20):
     line = line.rotate(ddd.ROT_FLOOR_TO_FRONT).material(ddd.mats.steel)
     return line
 
+
+def handball_field_lines(length=40.0, width=20.0, line_width=0.10):
+    """
+    """
+
+    item = ddd.group3(name="Handball field")
+
+    length = min(length, 40)
+    width = min(width, 20)
+    (length, width) = enforce_aspect_ratio(length, width, 40 / 20)
+
+    rectangle = ddd.rect([-length / 2, -width / 2, length / 2, width / 2])
+
+    coords = rectangle.geom.exterior.coords
+    width_seg = ddd.line([coords[0], coords[1]])
+    length_seg = ddd.line([coords[1], coords[2]])
+    width2_seg = ddd.line([coords[2], coords[3]])
+    length2_seg = ddd.line([coords[3], coords[0]])
+    width_l = width_seg.geom.length
+    length_l = length_seg.geom.length
+
+    exterior = rectangle.outline().buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
+    exterior.name = "Bounds line"
+    exterior.extra['ddd:collider'] = False
+    exterior.extra['ddd:shadows'] = False
+
+    midline_2d = ddd.line([length_seg.geom.centroid, length2_seg.geom.centroid], name="Mid line")
+    midline = midline_2d.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
+    midline.extra['ddd:collider'] = False
+    midline.extra['ddd:shadows'] = False
+
+    #midcircle_radius_ratio = 9.15 / 67.5
+    #midcircle = ddd.disc(center=midline_2d.geom.centroid.coords, r=width_l * midcircle_radius_ratio).outline()
+    #midcircle = midcircle.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
+    #midcircle.extra['ddd:collider'] = False
+    #midcircle.extra['ddd:shadows'] = False
+
+    item.append(exterior)
+    item.append(midline)
+    #item.append(midcircle)
+
+    centralline_2d = ddd.line([width_seg.geom.centroid, width2_seg.geom.centroid], name="Central line")
+    goal_width = 3
+
+    smallarea_width_ratio = (goal_width + 5.5 * 2) / 67.5
+    smallarea_length_ratio = 5.5 / 67.5
+    largearea_width_ratio = 40.3 / 67.5
+    largearea_length_ratio = 16.5 / 105.5
+
+    for side in (-1, 1):
+        if width > (1.5 + 6) * 2:
+            smallarea = ddd.point([0, -1.5 - 6]).arc_to([6, -1.5], [0, -1.5], True)
+            smallarea = smallarea.line_to([6, 1.5]).arc_to([0, 1.5 + 6], [0, 1.5], True)
+            if side == 1: smallarea = smallarea.rotate(math.pi)
+            smallarea = smallarea.translate([side * length_l / 2, 0])
+            smallarea = smallarea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
+            smallarea.extra['ddd:collider'] = False
+            smallarea.extra['ddd:shadows'] = False
+            item.append(smallarea)
+
+        if width > (8 * 2):
+            largearea = ddd.point([0, -1.5 - 9]).arc_to([9, -1.5], [0, -1.5], True)
+            largearea = largearea.line_to([9, 1.5]).arc_to([0, 1.5 + 9], [0, 1.5], True)
+            if side == 1: largearea = largearea.rotate(math.pi)
+            largearea = largearea.translate([side * length_l / 2, 0])
+            largearea = largearea.buffer(line_width, cap_style=ddd.CAP_SQUARE)
+            largearea = largearea.intersection(rectangle)
+            largearea = largearea.triangulate().material(ddd.mats.painted_line)  # TODO: use sketchy line material with discontinuous line
+            largearea.extra['ddd:collider'] = False
+            largearea.extra['ddd:shadows'] = False
+            item.append(largearea)
+
+        # TODO: shall depend on the soccer type, assign earlier maybe
+        if width > 10:
+            goal = football_goal(width=3.0, height=2)
+        else:
+            goal = football_goal_small()
+
+        goal = goal.rotate(ddd.ROT_TOP_CCW)
+        if side == 1: goal = goal.rotate(ddd.ROT_TOP_HALFTURN)
+        goal = goal.translate([side * length_l / 2, 0, 0])
+        item.append(goal)
+
+    item = ddd.uv.map_cubic(item)
+
+    return item
 
 def tennis_field_lines(length=23.77, width=10.97, square_length_ratio=6.40 / 23.77, net_height_center=0.914, net_height_post=1.07, line_width=0.10):
     """

@@ -3,6 +3,8 @@
 # Jose Juan Montes 2020
 
 
+import numpy as np
+
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 from ddd.geo import terrain
@@ -315,6 +317,7 @@ def osm_model_elevation_apply_terrain_max(obj, osm, root):
     return obj
 
 
+
 @dddtask()  # path="/Items3/*", select='[ddd:material="Roadmarks"]')
 def osm_model_generate_ways_road_markings_combine(osm, root, pipeline):
     """
@@ -326,6 +329,51 @@ def osm_model_generate_ways_road_markings_combine(osm, root, pipeline):
     # Remove roadmark elements
     root.find("/Items3").select('[ddd:material="Roadmarks"]', apply_func=lambda o: False)
     root.find("/Roadlines3/").append(roadmarks)
+
+
+@dddtask()  # [!"intersection"]
+def osm_models_instances_buffers_buildings(pipeline, osm, root, logger):
+    """
+    """
+    keys = ('building-window',)
+
+    for key in keys:
+        instances = root.select(path="/Buildings/*", selector='["ddd:instance:key" = "%s"]' % key)
+
+        if len(instances.children) > 0:
+            logger.info("Replacing %d building instances (%s) with a buffer.", len(instances.children), key)
+            buffer_matrices = np.zeros([len(instances.children) * 16, ])
+
+            for idx, instance in enumerate(instances.children):
+                buffer_matrices[idx * 16:idx * 16 + 16] = instance.transform.to_matrix().transpose().flatten()
+
+            instance_buffer = instances.children[0].copy()
+            instance_buffer.set('ddd:instance:buffer:matrices', list(buffer_matrices))
+
+            root.select_remove(path="/Buildings/*", selector='["ddd:instance:key" = "%s"]' % key)
+            root.find("/Buildings").append(instance_buffer)
+
+@dddtask()  # [!"intersection"]
+def osm_models_instances_buffers_items(pipeline, osm, root, logger):
+    """
+    """
+    keys = ('grassblade', 'grassblade-dry')
+
+    for key in keys:
+        instances = root.select(path="/Items3/*", selector='["ddd:instance:key" = "%s"]' % key)
+
+        if len(instances.children) > 0:
+            logger.info("Replacing %d items instances (%s) with a buffer.", len(instances.children), key)
+            buffer_matrices = np.zeros([len(instances.children) * 16, ])
+
+            for idx, instance in enumerate(instances.children):
+                buffer_matrices[idx * 16:idx * 16 + 16] = instance.transform.to_matrix().transpose().flatten()
+
+            instance_buffer = instances.children[0].copy()
+            instance_buffer.set('ddd:instance:buffer:matrices', list(buffer_matrices))
+
+            root.select_remove(path="/Items3/*", selector='["ddd:instance:key" = "%s"]' % key)
+            root.find("/Items3").append(instance_buffer)
 
 
 @dddtask(order="60.50.+", log=True)

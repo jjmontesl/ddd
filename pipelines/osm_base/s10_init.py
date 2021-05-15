@@ -1,6 +1,19 @@
-# ddd - DDD123
-# Library for procedural scene modelling.
-# Jose Juan Montes 2020
+# DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes
+# Copyright (C) 2021 Jose Juan Montes
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 import sys
 
@@ -195,17 +208,22 @@ def osm_materials():
                                   #texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_nrm.jpg",)  # Eg. leisure track
     ddd.mats.pitch = ddd.mats.pitch_green
 
-
     '''
     self.sett = ddd.material(name="Sett", color='#7b719f')
-
-    # Structural / building materials
-    self.bronze = ddd.material(name="Bronze", color='#f0cb11')
-    self.steel = ddd.material(name="Steel", color='#78839c')
-    self.metal = ddd.material(name="Steel", color='#68738c')
-
     '''
 
+    # Metals
+    ddd.mats.steel = ddd.material(name="Steel", color='#78839c', texture_color='#ffffff',
+                                  metallic_factor=0.975, roughness_factor=0.1, #bump_strength=2.0,
+                                  texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Metal19/Metal19_*.jpg",)
+    ddd.mats.bronze = ddd.material(name="Bronze", color='#f0cb11',  # texture_color='#ffffff',
+                                  metallic_factor=0.975, roughness_factor=0.1, #bump_strength=2.0,
+                                  texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Metal18/Metal18_*.jpg",
+                                  extra={'uv:scale': 1.0, 'tags': ['metal', 'bronze', 'rusty', 'orange', 'pbr']})
+    ddd.mats.metal = ddd.mats.steel
+
+
+    # Structural / Building materials
     ddd.mats.bricks = ddd.material(name="Bricks", color='#efae85', texture_color='#ffffff',
                                  metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bricks07/Bricks07_*.jpg",)
@@ -250,11 +268,13 @@ def osm_materials():
                                  #texture_roughness_path=ddd.DATA_DIR + "/osmmaterials/[2K]Wood39/Wood39_rgh.jpg",)
 
 
-    '''
-
     # Painted materials
+    ddd.mats.metal_paint_green = ddd.material("PaintGreen", color='#265e13',
+                                              metallic_factor=0.6, roughness_factor=0.3, #bump_strength=2.0,
+                                              texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Paint06/Paint06_*.jpg",)
+
+    '''
     self.metal_paint_red = ddd.material("PaintRed", color='#d01010')
-    self.metal_paint_green = ddd.material("PaintGreen", color='#265e13')
     self.metal_paint_yellow = ddd.material("PaintYellow", color='#ebe015')
     self.metal_paint_blue = ddd.material("PaintBlue", color='#184794')
     self.metal_paint_white = ddd.material("PaintWhite", color='#f8fbff')
@@ -264,8 +284,6 @@ def osm_materials():
     self.plastic_transparent = ddd.material(color='e8e0e4', extra={'ddd:transparent': True})  # name="PlasticTransparent",
     self.plastic_black = ddd.material(color='#2c2936')
 
-    # Glass
-    self.glass = ddd.material("Glass", color='#baf3f5')  #  , extra={'ddd:transparent': True}
 
     # Lights
     self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')
@@ -274,6 +292,10 @@ def osm_materials():
     self.light_red = ddd.material(color='#ff0000')
 
     '''
+
+    # Glass
+    ddd.mats.glass = ddd.material("Glass", color='#baf3f5', # extra={'ddd:transparent': True}
+                              metallic_factor=1.0, roughness_factor=0.0)  #, # index_of_refraction=1.36,)#
 
     # Vegetation (trees, hedges)
     ddd.mats.bark = ddd.material(name="Bark", color='#df9e75', extra={'uv:scale': 1.0},  # 0.25
@@ -326,10 +348,11 @@ def osm_materials():
     self.rope = ddd.material(name="Rope", color='#c7b01c')
 
     # Buildings
-    self.building_1 = ddd.material(color='#f7f0be')
-    self.building_2 = ddd.material(color='#bdb9a0')
-    self.building_3 = ddd.material(color='#c49156')
     '''
+    ddd.mats.building_1 = ddd.mats.stones_white  #ddd.material("Building Stone Tiles White", color='#f7f0be',
+    ddd.mats.building_2 = ddd.mats.tiles_stones  # ddd.material(color='#bdb9a0')
+    ddd.mats.building_3 = ddd.mats.cement   #  ddd.material(color='#c49156')
+    ddd.mats.building_4 = ddd.mats.bricks
 
     ddd.mats.roof_tiles_round = ddd.material("RoofTilesRound", color='f25129', extra={'uv:scale': 1.0},   # 0.25  # color='#f19f70',
                                        metallic_factor=0.0, roughness_factor=0.7, index_of_refraction=1.08, bump_strength=2.0,

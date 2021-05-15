@@ -76,7 +76,10 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_waste_basket(item_2d)
 
         elif item_2d.extra.get('osm:amenity', None) == 'waste_disposal':
-            item_3d = self.generate_item_3d_generic_catalog("waste-disposal-1", item_2d, urban.waste_container, "Waste Disposal")
+            if random.choice([1, 2]) == 1:
+                item_3d = self.generate_item_3d_generic_catalog("waste-disposal-1", item_2d, urban.waste_container, "Waste Disposal")
+            else:
+                item_3d = self.generate_item_3d_generic_catalog("waste-disposal-closed-1", item_2d, urban.waste_container_with_lid_closed, "Waste Disposal (C)")
         elif item_2d.extra.get('osm:amenity', None) == 'recycling':
             item_3d = self.generate_item_3d_generic_catalog("waste-container-dome-1", item_2d, urban.waste_container_dome, "Recycling")
 
