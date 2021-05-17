@@ -138,6 +138,9 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_powertower(item_2d)
         elif item_2d.extra.get('osm:power', None) == 'pole':
             item_3d = self.generate_item_3d_powerpole(item_2d)
+        elif item_2d.extra.get('osm:power', None) == 'catenary_mast':
+            logger.warn("Using temporary object: powerpole (for catenary_mast)")
+            item_3d = self.generate_item_3d_powerpole(item_2d)
 
         elif item_2d.extra.get('osm:barrier', None) == 'fence':
             item_3d = self.generate_item_3d_fence(item_2d)

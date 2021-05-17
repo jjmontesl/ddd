@@ -19,6 +19,8 @@ from shapely.geometry import shape
 from shapely.geometry.geo import shape
 from shapely.geometry.linestring import LineString
 from shapely.ops import transform
+from ddd.util.common import parse_bool
+from ddd.core.cli import D1D2D3Bootstrap
 
 
 # Get instance of logger for this module
@@ -36,11 +38,13 @@ def download_block(bounds, filename):
     #url = url.replace('-', r'%2D')
     #filename = "private/data/osm/" + "%s/%s-%.3f,%.3f.osm" % (name, name, bounds[0], bounds[1])
 
-    if os.path.exists(filename):
+    force_get_data = parse_bool(D1D2D3Bootstrap.data.get('ddd:osm:datasource:force_refresh', False))
+
+    if os.path.exists(filename) and not force_get_data:
         logger.debug("Exists: %s (skipping)", filename)
         return
 
-    logger.debug("Downloading: %s (%s)", filename, url)
+    logger.info("Downloading: %s (%s)", filename, url)
 
     try:
         request = urllib.request.urlopen(url)

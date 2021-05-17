@@ -259,6 +259,11 @@ def osm_materials():
     ddd.mats.stone = ddd.mats.tiles_stones.copy(name="Stone")
 
 
+    ddd.mats.plaster_paint_white = ddd.material(name="Plaster Paint White", color='#d1d2cd', texture_color='#ffffff',
+                                  metallic_factor=0.05, roughness_factor=0.9, #bump_strength=2.0,
+                                  texture_path=ddd.DATA_DIR + "/osmmaterials/PaintedPlaster017_2K-JPG/PaintedPlaster017_2K_*.jpg",
+                                  extra={'uv:scale': 1.0, 'tags': ['plaster', 'paint', 'white', 'pbr', 'building', 'wall', 'tiled']})
+
 
     ddd.mats.wood = ddd.material(name="Wood", color='#d49156', texture_color='#ffffff',
                                  metallic_factor=0.0, roughness_factor=1.0, #bump_strength=2.0,
@@ -294,7 +299,7 @@ def osm_materials():
     '''
 
     # Glass
-    ddd.mats.glass = ddd.material("Glass", color='#baf3f5', # extra={'ddd:transparent': True}
+    ddd.mats.glass = ddd.material("Glass", color='#baf3f5', #color='#b3b7c0', # extra={'ddd:transparent': True}
                               metallic_factor=1.0, roughness_factor=0.0)  #, # index_of_refraction=1.36,)#
 
     # Vegetation (trees, hedges)
@@ -353,6 +358,8 @@ def osm_materials():
     ddd.mats.building_2 = ddd.mats.tiles_stones  # ddd.material(color='#bdb9a0')
     ddd.mats.building_3 = ddd.mats.cement   #  ddd.material(color='#c49156')
     ddd.mats.building_4 = ddd.mats.bricks
+    ddd.mats.building_5 = ddd.mats.plaster_paint_white
+
 
     ddd.mats.roof_tiles_round = ddd.material("RoofTilesRound", color='f25129', extra={'uv:scale': 1.0},   # 0.25  # color='#f19f70',
                                        metallic_factor=0.0, roughness_factor=0.7, index_of_refraction=1.08, bump_strength=2.0,

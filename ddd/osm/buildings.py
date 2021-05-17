@@ -27,7 +27,7 @@ from ddd.pack.sketchy import plants, urban
 from ddd.geo import terrain
 from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
-from ddd.pack.sketchy.buildings import window_with_border
+from ddd.pack.sketchy.buildings import window_with_border, door
 
 
 # Get instance of logger for this module
@@ -62,7 +62,7 @@ class BuildingOSMBuilder():
 
     def preprocess_buildings_features(self, features_2d):
 
-        logger.info("Preprocessing buildings and bulding parts (2D)")
+        logger.info("Preprocessing buildings and bulding parts 2D")
         # TODO: create nested buildings them separately, consider them part of the bigger building for subtraction)
 
         # Assign each building part to a building, or transform it into a building if needed
@@ -124,7 +124,7 @@ class BuildingOSMBuilder():
 
             if feature.extra.get('osm:amenity', None) or feature.extra.get('osm:shop', None):
                 # TODO: Do the opposite, create items we are interested in, avoid this exception
-                if point.extra.get('osm:amenity', None) in ('waste_disposal', 'waste_basket', 'recycling', 'bicycle_parking'):
+                if point.extra.get('osm:amenity', None) in ('waste_disposal', 'waste_basket', 'recycling', 'bicycle_parking', 'parking_space'):
                     continue
 
                 logger.debug("Associating item %s to building %s.", feature, building)
@@ -165,6 +165,42 @@ class BuildingOSMBuilder():
                 closest_distance = distance
         return closest_building, closest_distance
 
+    def preprocess_buildings_3d(self, buildings_2d):
+        """
+        """
+        logger.info("Preprocessing buildings and bulding parts (3D): %d objects", len(buildings_2d.children))
+
+        for building_2d in buildings_2d.children:
+            self.preprocess_building_3d(building_2d)
+
+    def preprocess_building_3d(self, building_2d):
+        """
+        """
+
+        # TODO: account for floor 0 only
+
+        # Find minimum and maximum elevation of building footprint
+        elevation_min, elevation_max = float('inf'), float('-inf')
+        points = building_2d.vertex_list()
+
+        for p in points:
+            pe = terrain.terrain_geotiff_elevation_value(p, self.osm.ddd_proj)
+            if pe < elevation_min: elevation_min = pe
+            if pe > elevation_max: elevation_max = pe
+
+        building_2d.set('ddd:building:elevation:min', elevation_min)
+        building_2d.set('ddd:building:elevation:max', elevation_max)
+        #building_2d.set('ddd:building:floors:0:height', elevation_max - elevation_min)
+        #building_3d = terrain.terrain_geotiff_min_elevation_apply(building_3d, self.osm.ddd_proj)
+
+        # Calculate contact / intersection / with other buildings
+        #  1. do this in 2D preprocess?
+        #  2. do this using area containment / contact system?
+
+        # Calculate for each segment
+        #   contact with segments of other/self buildings
+
+
     def generate_buildings_3d(self, buildings_2d):
         logger.info("Generating 3D buildings (%d)", len(buildings_2d.children))
 
@@ -200,8 +236,13 @@ class BuildingOSMBuilder():
         base_floors = floors
         base_floors_min = floors_min
 
+        elevation_min = building_2d.get('ddd:building:elevation:min')
+        elevation_max = building_2d.get('ddd:building:elevation:max')
+        elevation_diff = elevation_max - elevation_min
+        floor_0_height = 3 + elevation_diff # TODO: temporary for test, but loors and segments need to be resolved in advance
+
         random.seed(hash(building_2d.name))
-        building_material = random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.building_4])
+        building_material = random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.building_4, ddd.mats.building_5])
 
         material_name = building_2d.get('ddd:building:material', building_2d.get('osm:building:material', None))
         if material_name:
@@ -224,6 +265,8 @@ class BuildingOSMBuilder():
 
             # Process subbuildings recursively (non standard, but improves support and compatibility with other renderers)
             if part != building_2d and part.extra.get('osm:building', None) is not None:
+                part.set('ddd:building:elevation:min', default=elevation_min)
+                part.set('ddd:building:elevation:max', default=elevation_max)
                 subbuilding = self.generate_building_3d_generic(part)
                 entire_building_2d.append(part)
                 entire_building_3d.append(subbuilding)
@@ -279,23 +322,26 @@ class BuildingOSMBuilder():
                     if hasattr(ddd.mats, material_name):
                         roof_material = getattr(ddd.mats, material_name)
 
-                floors_height = floors * 3.00
-                floors_min_height = floors_min * 3.00
+                # Calculate part height
+                # FIXME: this code is duplicated inside building_part, but also used by roofs and for initial checks here
+                floors_height = floor_0_height + (floors - 1) * 3.00  # Note that different floor heights
+                floors_min_height = floors_min * 3.00  # TODO: account for variabe floors + interfloors height
                 min_height = float(part.extra.get('osm:min_height', floors_min_height))
                 #max_height = parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
                 max_height = parse_meters(part.extra.get('osm:height', floors_height)) - roof_height
                 dif_height = max_height - min_height
 
-                if dif_height == 0:
-                    logger.warn("Building with 0 height: %s (skipping)", part)
+                if dif_height <= 0:
+                    logger.warn("Building with <= 0 height: %s (skipping)", part)
                     continue
 
 
                 # Generate building procedurally (use library)
                 try:
                     #building_3d = part.extrude(dif_height)
-                    building_3d = self.generate_building_3d_part_body(part,
-                                                                      material, dif_height, roof_height, floors, floors_min, entire_building_3d)
+                    building_3d = self.generate_building_3d_part_body(part, material,
+                                                                      floor_0_height, floors, floors_min,
+                                                                      roof_height, entire_building_3d)
                 #except ValueError as e:
                 #    logger.error("Could not generate building (%s): %s", part, e)
                 #    continue
@@ -501,10 +547,11 @@ class BuildingOSMBuilder():
 
         return entire_building_3d
 
-    def generate_building_3d_part_body(self, part,
-                                       material, dif_height, roof_height, floors, floors_min, entire_building_3d):  # temporarily, should be in metadata
+    def generate_building_3d_part_body(self, part, material,
+                                       floor_0_height, floors, floors_min,
+                                       roof_height, entire_building_3d):  # temporarily, should be in metadata
 
-        floors_height = floors * 3.00
+        floors_height = floor_0_height + (floors - 1) * 3.00
         floors_min_height = floors_min * 3.00
         min_height = float(part.extra.get('osm:min_height', floors_min_height))
         #max_height = parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
@@ -559,29 +606,38 @@ class BuildingOSMBuilder():
         if 'osm:building:part' not in part.extra:
             if random.uniform(0, 1) < 0.2:
                 base = part.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
-                base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.building_4, ddd.mats.stone, ddd.mats.cement]))
+                base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.building_4, ddd.mats.building_5]))
                 building_3d.children.append(base)
 
         building_3d = ddd.uv.map_cubic(building_3d)
 
         # Items processing (per floor)
+        min_height_accum = 0
         for floor_num in range(floors):
-            self.generate_building_3d_part_body_items_floor(floor_num, part, building_3d)
+            floor_height = floor_0_height if floor_num == 0 else 3.0
+            for parti in part.individualize(always=True).children:  # Individualizing to allow for outline afterwards, not needed if floor metada nodes were already created by this time
+                self.generate_building_3d_part_body_items_floor(building_3d, parti, floor_num, min_height_accum, floor_height)
+            min_height_accum = min_height_accum + floor_height
 
         return building_3d
 
 
-    def generate_building_3d_part_body_items_floor(self, floor_num, part, building_3d):
+    def generate_building_3d_part_body_items_floor(self, building_3d, part, floor_num, min_height, height):
         """
-        Windows, doors, etc... currently as a testing approach. Should use pre-created items or a building schema.
+        Windows, doors, etc... currently as a testing approach.
+        Should use pre-created items (nodes, metadata...) or a building schema.
         """
 
         part_outline = part.outline()
-        vertices = part_outline.vertex_list()
+        vertices = part_outline.vertex_list()  # This will fail if part had no geometry (eg. it was empty or children-only)
         segments = zip(vertices[:-1], vertices[1:])
 
         item_width = 3
         min_seg_width = 4.0
+
+        # TODO: Temporary, add doors earlier
+        doors = 0
+        if floor_num == 0: doors = 1
 
         for idx, (v0, v1) in enumerate(segments):
             v0, v1 = (np.array(v0), np.array(v1))
@@ -594,15 +650,29 @@ class BuildingOSMBuilder():
             for d in np.linspace(0.0, seg_length, num_items + 2, endpoint=True)[1:-1]:
                 p = v0 + dir_vec * (d / seg_length)
                 #p, segment_idx, segment_coords_a, segment_coords_b = part_outline.interpolate_segment(d)
-                key = "building-window"
-                obj  = self.osm.catalog.instance(key)
-                if not obj:
-                    obj = window_with_border()
+
+                object_min_height = 0.0
+
+                if doors > 0:
+                    doors -= 1
+                    obj = door()
                     obj = ddd.meshops.remove_faces_pointing(obj, ddd.VECTOR_BACKWARD)
-                    obj = self.osm.catalog.add(key, obj)
+                    obj = ddd.uv.map_cubic(obj)  # FIXME: Meshops "remove_faces_pointing" should fix UVs / normals
+                    point_elevation = terrain.terrain_geotiff_elevation_value(p, self.osm.ddd_proj)
+                    object_min_height = point_elevation - float(part.get('ddd:building:elevation:min', 0))
+
+                else:
+                    key = "building-window"
+                    object_min_height = min_height + height - 3.0 + 1.0
+                    obj  = self.osm.catalog.instance(key)
+                    if not obj:
+                        obj = window_with_border()
+                        obj = ddd.meshops.remove_faces_pointing(obj, ddd.VECTOR_BACKWARD)
+                        obj = ddd.uv.map_cubic(obj) # FIXME: Meshops "remove_faces_pointing" should fix UVs / normals
+                        obj = self.osm.catalog.add(key, obj)
 
                 obj = obj.rotate([0, 0, dir_angle + math.pi])
-                obj = obj.translate([p[0], p[1], floor_num * 3.0 + 1.0])
+                obj = obj.translate([p[0], p[1], object_min_height])
                 building_3d.append(obj)
 
 
@@ -684,6 +754,7 @@ class BuildingOSMBuilder():
                 if item:
                     item = item.translate([0, 0, 3.2])  # no post
                     color = random.choice(["#d41b8d", "#a7d42a", "#e2de9f", "#9f80e2"])
+                    item.children[0] = item.children[0].material(ddd.material(color=color), include_children=False)
                     #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
                     building_3d.children.append(item)
                 else:
@@ -696,12 +767,12 @@ class BuildingOSMBuilder():
                 item = urban.panel(width=2.5, height=0.8, text=panel_text)
                 item.copy_from(item_1d)
                 item.extra['ddd:item'] = item_1d
-                item.name = "Panel: %s %s" % (item_1d.extra['osm:shop'], item_1d.extra.get('osm:name', None))
+                item.name = "Shop Panel: %s %s" % (item_1d.extra['osm:shop'], item_1d.extra.get('osm:name', None))
                 item = self.snap_to_building(item, building_3d)
                 if item:
                     item = item.translate([0, 0, 2.8])  # no post
                     color = random.choice(["#c41a7d", "#97c41a", "#f2ee0f", "#0f90f2"])
-                    item = item.material(ddd.material(color=color), include_children=False)
+                    item.children[0] = item.children[0].material(ddd.material(color=color), include_children=False)
                     #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
                     building_3d.children.append(item)
                 else:

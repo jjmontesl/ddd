@@ -119,3 +119,11 @@ def terrain_geotiff_max_elevation_apply(obj, ddd_proj):
     obj.extra['_terrain_geotiff_max_elevation_apply:elevation'] = max_h
     #mesh.mesh.invert()
     return obj
+
+def terrain_geotiff_elevation_value(v, ddd_proj):
+    elevation = ElevationModel.instance()
+    v_h = elevation.value(transform_ddd_to_geo(ddd_proj, [v[0], v[1]]))
+    return v_h
+
+
+

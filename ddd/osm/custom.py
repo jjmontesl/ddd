@@ -11,7 +11,12 @@ from ddd.geo import terrain
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
+'''
 class CustomsOSMBuilder():
+    """
+    TODO: Move customizations out to the pipeline (this is possibly not even in use).
+    @deprecated
+    """
 
     def __init__(self, osmbuilder):
         self.osm = osmbuilder
@@ -79,4 +84,4 @@ class CustomsOSMBuilder():
 
     def generate_custom_3d_checkpoint(self, custom_2d):
         pass
-
+'''

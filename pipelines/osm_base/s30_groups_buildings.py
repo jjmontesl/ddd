@@ -67,6 +67,11 @@ def osm_buildings_amenity_parking_entrance(pipeline, osm, root, obj):
 @dddtask(path="/Buildings/*", select='["osm:man_made" = "reservoir_covered"]')
 def osm_generate_buildings_man_made_reservoir_covered(pipeline, osm, root, obj):
     obj.set('ddd:building:levels', default=1)
+
+    # Do not adjust floor 0 height so building can stay half-buried
+    # Should also look at "location=*" (surfacem, underground) here and in buildings to arrange floor 0
+    #obj.set('ddd:building:levels:0:elevation-height', default=False)
+
     obj.set('ddd:building:material', default="stone")
     obj = obj.material(ddd.mats.tiles_stones)
     return obj
@@ -78,6 +83,7 @@ def osm_buildings_building_roof_fuel(pipeline, osm, root, obj):
     Set defaults to sheds.
     """
     obj.set('ddd:building:levels', default=3)  # TODO: use height, not levels
+    obj.set('ddd:building:levels:0:height', default=8.5)  # TODO: use height, not levels
     #obj.set('ddd:building:material', default="steel")
     obj.set('ddd:roof:material', default="metal")
     obj.set('ddd:roof:shape', default=random.choice(["skillion", "flat"]))

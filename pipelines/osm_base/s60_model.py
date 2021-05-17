@@ -9,6 +9,20 @@ from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 from ddd.geo import terrain
 from ddd.core.exception import DDDException
+import datetime
+
+
+"""
+The "model" stage of the build process is the first stage to handle 3D data.
+It selects 2D objects from the node tree (/Areas, /Buildings...) and generates the 3D
+geometry from them.
+
+The last steps of this stage apply some optimizations, such as mesh combination or instance grouping,
+before writing the output model to file.
+
+Note: Currently this stage replaces some branches of the node tree, and/or renames others
+(eg items are here put into /Items3).
+"""
 
 
 def set_base_height(obj):
@@ -20,6 +34,7 @@ def set_base_height(obj):
         obj_height = container.get('ddd:height', 0)
         base_height = (base_height if base_height else 0) + (obj_height if obj_height else 0)
     obj.set('ddd:height:base', base_height)
+
 
 @dddtask(order="60.05.+", path="/Areas/*", select='[!"ddd:height:base"]')
 def osm_model_pre_propagate_base_height_areas(root, obj):
@@ -46,6 +61,9 @@ def osm_model_pre_propagate_base_height_items_nodes(root, obj):
 
 @dddtask(order="60.10.+", log=True)
 def osm_model_init(root, osm):
+    """
+    Initializes the 3D output node tree structure.
+    """
 
     root.append(ddd.group3(name="Items3"))
     #root.append(ddd.group3(name="Ways3"))
@@ -213,6 +231,12 @@ def osm_models_areas_stairs_combine(pipeline, osm, root, logger, obj):
     obj = ddd.uv.map_cubic(obj)
 
     return obj
+
+
+@dddtask()
+def osm_model_generate_buildings_preprocess(osm, root):
+    buildings_2d = root.find("/Buildings")
+    osm.buildings.preprocess_buildings_3d(buildings_2d)
 
 
 @dddtask()
@@ -390,12 +414,12 @@ def osm_model_rest(pipeline, root, osm, logger):
              root.find("/Roadlines3"),
              ]
 
-
     scene = ddd.group(scene, name="Scene")
 
     metadataobj = ddd.instance(None, name="Metadata")
     metadataobj.set('tile:bounds_wgs84', pipeline.data['tile:bounds_wgs84'])
     metadataobj.set('tile:bounds_m', pipeline.data['tile:bounds_m'])
+    metadataobj.set('tile:create_time', str(datetime.datetime.now()))
     scene.append(metadataobj)
 
     logger.info("Scene properties: %s", (scene.extra))

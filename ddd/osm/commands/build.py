@@ -27,6 +27,7 @@ from ddd.pipeline.pipeline import DDDPipeline
 from ddd.osm.commands import downloader
 from ddd.geo.elevation import ElevationModel
 import datetime
+from ddd.util.common import parse_bool
 
 
 #from osm import OSMDDDBootstrap
@@ -134,6 +135,7 @@ class OSMBuildCommand(DDDCommand):
         #TODO: Use bounds if area is passed?
 
         selectedosmfile = os.path.join(datapath, "%s.osm" % dataname)
+        force_get_data = parse_bool(D1D2D3Bootstrap.data.get('ddd:osm:datasource:force_refresh', False))
 
         #sides = 15 * 0.01  # Approximate degrees to km
         sides = 5 * 0.001  # Approximate degrees to km
@@ -141,7 +143,7 @@ class OSMBuildCommand(DDDCommand):
         #bounds = area.bounds()
 
         # Retrieve
-        if not os.path.isfile(selectedosmfile):
+        if not os.path.isfile(selectedosmfile) or force_get_data:
             logger.info("Retrieving data to %s (%s)", selectedosmfile, bounds)
             downloader.download_block(bounds, selectedosmfile)
 
@@ -211,15 +213,21 @@ class OSMBuildCommand(DDDCommand):
         datacenter = int(self.center[0] / roundto) * roundto, int(self.center[1] / roundto) * roundto
         dataname = name + "_%.4f_%.4f" % datacenter
         datafile = os.path.join(path, "%s.osm.geojson" % dataname)
-        if not os.path.isfile(datafile):
-            logger.info("Data file '%s' not found. Trying to produce data." % datafile)
+
+        # Get data if needed or forced
+        force_get_data = parse_bool(D1D2D3Bootstrap.data.get('ddd:osm:datasource:force_refresh', False))
+        file_exists = os.path.isfile(datafile)
+
+        if force_get_data or not file_exists:
+            logger.info("Data file '%s' not found or datasource:force_refresh is True. Trying to produce data." % datafile)
             #self.get_data(path, dataname, datacenter, self.area)
             self.get_data_osm(path, dataname, datacenter, self.area)
 
+        # Read data
         files = [os.path.join(path, f) for f in [dataname + '.osm.geojson'] if os.path.isfile(os.path.join(path, f)) and f.endswith(".geojson")]
         logger.info("Reading %d files from %s: %s" % (len(files), path, files))
 
-        osm_proj = pyproj.Proj(init='epsg:4326')  # FIXME: API reocmends using only 'epsg:4326' but seems to give weird coordinates?
+        osm_proj = pyproj.Proj(init='epsg:4326')  # FIXME: API reocmends using only 'epsg:4326' but seems to give weird coordinates? (always_xy=Tre?)
         ddd_proj = pyproj.Proj(proj="tmerc",
                                lon_0=center_wgs84[0], lat_0=center_wgs84[1],
                                k=1,

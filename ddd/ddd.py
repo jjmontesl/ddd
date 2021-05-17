@@ -931,7 +931,7 @@ class DDDObject():
             if default is not self.get.__defaults__[0]:
                 result = default
             else:
-                raise DDDException("Cannot resolve property %r in object '%s'." % (keys, self))
+                raise DDDException("Cannot resolve property %r in object '%s' (own: %s)" % (keys, self, self.extra))
 
         # Resolve lambda
         if callable(result):
@@ -1950,6 +1950,13 @@ class DDDObject2(DDDObject):
         return result
 
     def outline(self):
+        """
+        Returns the outline of the current shape as linear features.
+        Works for Polygon and MultiPolygon shapes (input is individualize() first).
+
+        TODO: How is this method different from linearize() ?  check usages
+        TODO: review Shapely exterior vs boundary
+        """
         result = self.copy().individualize().clean()
         if result.geom and result.geom.type == "Polygon":
             result.geom = LineString(list(result.geom.exterior.coords))

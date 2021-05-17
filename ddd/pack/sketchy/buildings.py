@@ -25,7 +25,7 @@ like windows, doors, showcases, awnings...
 
 def window_interior(width=1.6, height=1.2, depth=0.02):
     """
-    A Window, centered on X and aligned to floor plane.
+    A window, centered on X and aligned to floor plane, lying on the XZ plane.
     """
     obj = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Window")
     #obj = obj.extrude(depth)
@@ -69,17 +69,25 @@ def window_with_border(width=1.6, height=1.2, border_depth=0.05, border_thick=0.
     return obj
 
 
-def door(width=1.0, height=2.2):
+def window_grid():
+    pass
+
+
+def door(width=1.5, height=2.2, depth=0.06):
     """
+    A door, centered on X and aligned to floor plane, lying on the XZ plane.
     """
-    pass
+    obj = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Door")
+    obj = obj.extrude(depth).translate([0, 0, depth])
+    obj = obj.material(ddd.mats.wood)
+    obj = ddd.uv.map_cubic(obj)
+    obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    return obj
 
-def portal(width=1.6, height=2.2, border_depth=0.10):
-    pass
 
+#def portal(width=1.6, height=2.2, border_depth=0.10):
+#    pass
 
-def vertical_grid():
-    pass
 
 #def column():
 #    pass
