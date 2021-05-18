@@ -28,142 +28,19 @@ from ddd.geo import terrain
 from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
 from ddd.pack.sketchy.buildings import window_with_border, door
+from ddd.osm.osmunits import parse_meters
 
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
 
-from pint import UnitRegistry
-ureg = UnitRegistry()
 
-
-# TODO: Move to a quantity parsing library (also check quantity3, but it doesn't seem to make conversions)
-def parse_meters(expr):
-    quantity = ureg.parse_expression(str(expr))
-    if not isinstance(quantity, float) and not isinstance(quantity, int):
-        quantity = quantity.to(ureg.meter).magnitude
-    return float(quantity)
-
-def parse_material(name, color):
-    material = None
-    if hasattr(ddd.mats, name):
-        material = getattr(ddd.mats, name)
-    else:
-        material = ddd.material(name, color)
-    return material
-
-
-class BuildingOSMBuilder():
+class Buildings3DOSMBuilder():
 
     def __init__(self, osmbuilder):
 
         self.osm = osmbuilder
-
-    def preprocess_buildings_features(self, features_2d):
-
-        logger.info("Preprocessing buildings and bulding parts 2D")
-        # TODO: create nested buildings them separately, consider them part of the bigger building for subtraction)
-
-        # Assign each building part to a building, or transform it into a building if needed
-        #features = sorted(features_2d.children, key=lambda f: f.geom.area)
-        features_2d_original = list(features_2d.children)
-        for feature in list(features_2d.children):
-            if feature.geom.type == 'Point': continue
-
-            if feature.extra.get('osm:building:part', None) is None and feature.extra.get('osm:building', None) is None: continue
-
-            # Find building
-            #buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and ddd.polygon(o.geom.exterior.coords).contains(feature))
-            buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and o != feature and o.contains(feature) and o in features_2d_original)
-
-            if len(buildings.children) == 0:
-                if feature.extra.get('osm:building', None) is None:
-                    logger.warn("Building part with no building: %s", feature)
-                    building = ddd.shape(feature.geom, name="Building (added): %s" % feature.name)
-                    building.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')
-                    building.extra['ddd:building:parts'] = [feature]
-                    feature.extra['ddd:building:parent'] = building
-                    features_2d.append(building)
-
-            elif len(buildings.children) > 1:
-                # Sort by area and get the smaller one
-                buildings.children.sort(key=lambda b: b.geom.area, reverse=False)
-                logger.warn("Building part with multiple buildings: %s -> %s", feature, buildings.children)
-
-                feature.extra['ddd:building:parent'] = buildings.children[0]
-                if 'ddd:building:parts' not in buildings.children[0].extra:
-                    buildings.children[0].extra['ddd:building:parts'] = []
-                buildings.children[0].extra['ddd:building:parts'].append(feature)
-
-            else:
-                logger.debug("Associating building part to building: %s -> %s", feature, buildings.children[0])
-                feature.extra['ddd:building:parent'] = buildings.children[0]
-                if 'ddd:building:parts' not in buildings.children[0].extra:
-                    buildings.children[0].extra['ddd:building:parts'] = []
-                buildings.children[0].extra['ddd:building:parts'].append(feature)
-
-
-    def link_items_to_buildings(self, buildings_2d, items_1d):
-
-        logger.info("Linking items to buildings.")
-        # TODO: Link to building parts, inspect facade, etc.
-
-        for feature in items_1d.children:
-            # Find closest building
-            #point = feature.copy(name="Point: %s" % (feature.extra.get('name', None)))
-            point = feature
-            building, distance = self.closest_building(buildings_2d, point)
-            if not building:
-                continue
-
-            if distance > 10:
-                continue
-
-            feature.extra['osm:building'] = building
-
-            if feature.extra.get('osm:amenity', None) or feature.extra.get('osm:shop', None):
-                # TODO: Do the opposite, create items we are interested in, avoid this exception
-                if point.extra.get('osm:amenity', None) in ('waste_disposal', 'waste_basket', 'recycling', 'bicycle_parking', 'parking_space'):
-                    continue
-
-                logger.debug("Associating item %s to building %s.", feature, building)
-                #logger.debug("Point: %s  Building: %s  Distance: %s", point, building, distance)
-                building.extra['ddd:building:items'].append(feature)
-
-    def link_items_ways_to_buildings(self, buildings_all, items):
-        for item in items.children:
-
-            '''
-            for building in buildings.children:
-                if building.contains(item):
-                    logger.info("Associating item %s to building %s.", item, building)
-                    item.extra['ddd:building:parent'] = building
-                    #building.extra['ddd:building:items_ways'].append(item)
-            '''
-
-            buildings = buildings_all.select(func=lambda o: o.extra.get('osm:building', None) and not o.extra.get('ddd:building:parent', None) and o.contains(item))
-
-            if len(buildings.children) > 1:
-                logger.warn("Item with multiple buildings: %s -> %s", item, buildings.children)
-                # Sort by area
-                buildings.children.sort(key=lambda b: b.geom.area, reverse=True)
-
-            if len(buildings.children) > 0:
-                building = buildings.children[0]
-                logger.info("Associating item (way) %s to building %s.", item, building)
-                item.extra['ddd:building:parent'] = building
-                #building.extra['ddd:building:items_ways'].append(item)
-
-    def closest_building(self, buildings_2d, point):
-        closest_building = None
-        closest_distance = math.inf
-        for building in buildings_2d.children:
-            distance = point.distance(building)
-            if distance < closest_distance:
-                closest_building = building
-                closest_distance = distance
-        return closest_building, closest_distance
 
     def preprocess_buildings_3d(self, buildings_2d):
         """

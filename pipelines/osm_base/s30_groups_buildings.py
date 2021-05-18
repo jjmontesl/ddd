@@ -9,6 +9,16 @@ from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 from ddd.util.common import parse_bool
 
+"""
+Buildings are preprocessed and selected in this stage. Then metadata is assigned.
+
+Preprocessing involves:
+
+- Assigning each building part to a building, or transforming it into a building if needed.
+
+
+"""
+
 
 @dddtask(order="30.40", condition=True)
 def osm_generate_buildings_condition(pipeline):
@@ -19,7 +29,7 @@ def osm_generate_buildings_condition(pipeline):
 def osm_generate_buildings_preprocess(pipeline, osm, root, logger):
     """Preprocesses buildings at OSM feature level, associating buildings and building parts."""
     features = root.find("/Features")
-    osm.buildings.preprocess_buildings_features(features)
+    osm.buildings2.preprocess_buildings_features(features)
 
 # TODO: Generate building materials before 3D, in this section. Also, this section is already structuring, should not be here.
 

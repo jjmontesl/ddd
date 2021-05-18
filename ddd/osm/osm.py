@@ -16,8 +16,9 @@ from ddd.ddd import ddd
 from ddd.osm.areaitems import AreaItemsOSMBuilder
 from ddd.osm.areas_2d import Areas2DOSMBuilder
 from ddd.osm.areas_3d import Areas3DOSMBuilder
-from ddd.osm.buildings import BuildingOSMBuilder
-from ddd.osm.custom import CustomsOSMBuilder
+from ddd.osm.buildings.buildings_2d import Buildings2DOSMBuilder
+from ddd.osm.buildings.buildings_3d import Buildings3DOSMBuilder
+#from ddd.osm.custom import CustomsOSMBuilder
 from ddd.osm.items import ItemsOSMBuilder
 from ddd.osm.osmops.osmops import OSMBuilderOps
 from ddd.osm.ways_1d import Ways1DOSMBuilder
@@ -58,8 +59,9 @@ class OSMBuilder():
         self.ways3 = Ways3DOSMBuilder(self)
         self.areas2 = Areas2DOSMBuilder(self)
         self.areas3 = Areas3DOSMBuilder(self)
-        self.buildings = BuildingOSMBuilder(self)
-        self.customs = CustomsOSMBuilder(self)
+        self.buildings2 = Buildings2DOSMBuilder(self)
+        self.buildings3 = Buildings3DOSMBuilder(self)
+        #self.customs = CustomsOSMBuilder(self)
 
         self.osmops = OSMBuilderOps(self)
 

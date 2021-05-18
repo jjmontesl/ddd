@@ -236,13 +236,13 @@ def osm_models_areas_stairs_combine(pipeline, osm, root, logger, obj):
 @dddtask()
 def osm_model_generate_buildings_preprocess(osm, root):
     buildings_2d = root.find("/Buildings")
-    osm.buildings.preprocess_buildings_3d(buildings_2d)
+    osm.buildings3.preprocess_buildings_3d(buildings_2d)
 
 
 @dddtask()
 def osm_model_generate_buildings(osm, root):
     buildings_2d = root.find("/Buildings")
-    buildings_3d = osm.buildings.generate_buildings_3d(buildings_2d)
+    buildings_3d = osm.buildings3.generate_buildings_3d(buildings_2d)
 
     root.remove(buildings_2d)
     root.append(buildings_3d)
