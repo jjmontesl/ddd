@@ -22,6 +22,17 @@ def osm_features_preprocess(pipeline, osm):
     pipeline.root.append(osm.features_2d)
 
 
+
+# Filter to only features if specified
+@dddtask(log=True)
+def osm_features_filter_custom(pipeline, osm, root, logger):
+    selector = pipeline.data.get('ddd:osm:filter', None)
+    if selector:
+        filtered = root.find("/Features").select(selector=selector)
+        logger.info("Filtering to only custom selected features: %s (%d items)", selector, len(filtered.children))
+        root.find("/Features").children = filtered.children
+
+
 @dddtask(path="/Features/*", log=True)  # and o.geom.type in ('Point', 'Polygon', 'MultiPolygon') .. and o.geom.type == 'Polygon' |  ... path="/Features", select=r'["geom:type"="Polygon"]'
 def osm_features_crop_extended_area(pipeline, osm, root, obj):
     """Crops to extended area size to avoid working with huge areas."""

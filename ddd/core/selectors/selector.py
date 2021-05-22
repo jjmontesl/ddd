@@ -59,6 +59,12 @@ class TreeToSelector(Transformer):
     def datafilterexpr(self, t):
         return t[0]
 
+    def notdatafilterexpr(self, t):
+        def notdatafilterexpr_func(obj):
+            return not t[0]
+
+        return notdatafilterexpr_func
+
     def datafilterand(self, t):
         def datafilterand_func(obj):
             for df in t:

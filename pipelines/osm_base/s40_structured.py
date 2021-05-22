@@ -495,7 +495,9 @@ def osm_structured_building_analyze(root, osm):
     """
     # TODO: There is some logic for specific items inside: use tagging for linkable items.
     buildings = root.find("/Buildings")
-    osm.buildings2.process_buildings_analyze(buildings)
+    ways = root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False)
+    osm.buildings2.process_buildings_analyze(buildings, ways)
+    #buildings.show()
 
 
 @dddtask(log=True)

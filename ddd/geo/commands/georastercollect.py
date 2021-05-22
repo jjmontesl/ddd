@@ -65,6 +65,7 @@ class GeoRasterCollectCommand(DDDCommand):
 
                 crs = 'EPSG:4326'
                 if 'eudem11/' in path or 'eu_dem_v11' in path: crs = 'EPSG:3035'
+                if 'ETRS89-HU29' in path: crs = 'EPSG:25829'
 
                 tile = GeoRasterTile.load(str(path), crs)
                 #print("File: %s  Transform: %s" % (str(path), tile.geotransform))

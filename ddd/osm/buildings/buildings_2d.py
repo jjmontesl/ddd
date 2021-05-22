@@ -28,6 +28,8 @@ from ddd.geo import terrain
 from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
 from ddd.pack.sketchy.buildings import window_with_border, door
+from collections import defaultdict
+from ddd.osm.buildings.building import BuildingContact, BuildingSegment
 
 
 # Get instance of logger for this module
@@ -42,6 +44,8 @@ class Buildings2DOSMBuilder():
         self.osm = osmbuilder
 
     def preprocess_buildings_features(self, features_2d):
+        """
+        """
 
         logger.info("Preprocessing buildings and bulding parts 2D")
         # TODO: create nested buildings them separately, consider them part of the bigger building for subtraction)
@@ -85,36 +89,134 @@ class Buildings2DOSMBuilder():
                 buildings.children[0].extra['ddd:building:parts'].append(feature)
 
 
-    def process_buildings_analyze(self, buildings):
+    def process_buildings_analyze(self, buildings, ways_ref):
         """
-        This is part of the "structured" stage. Buildings have already been selected.
-        This phase processes building (parts) and generates floors, segments,
-        facades, building contact information, etc...
+        This is part of the "structured" stage.
+        This phase processes building (parts) and generates floors, segments, facades, building contact information, etc...
+
+        Buildings must already have been selected, parent child relationships resolved, and building parts are all independent.
         """
-        for building in buildings.children:
-            self.process_building_analyze_building(self, building)
+
+        logger.info("Adding building analysis data (%d buildings)", len(buildings.children))
+
+        self._vertex_cache = defaultdict(list)
+        selected_parts = buildings.select(func=lambda o: o.geom, recurse=True)
+        for part in selected_parts.children:
+            if part.is_empty(): continue
+            vertices = part.vertex_list(recurse=False)  # This will fail if part had no geometry (eg. it was empty or children-only)
+            for vidx, v in enumerate(vertices[:-1]):  # ignoring last vertex, repeated
+                self._vertex_cache[v].append((part, vidx))
+
+        for part in selected_parts.children:
+            if part.is_empty(): continue
+            if part.geom.type != 'Polygon':
+                logger.warn("Skipping building with non Polygon geometry (not implemented): %s", part)
+                continue
+            self.process_building_contacts(part)
+            self.process_building_hull_create(part)
+            self.process_building_segments_analyze(part, ways_ref)
+            self.process_building_hull_analyze(part, ways_ref)
 
 
-    def process_building_analyze_building(self, building):
+    def process_building_contacts(self, part):
         """
         Note that elevation is not yet available at this point.
         """
 
         # Find contacted building parts
+        vertices = part.vertex_list(recurse=False)  # This will fail if part had no geometry (eg. it was empty or children-only)
+        contacted = []
+        for vidx, v in enumerate(vertices[:-1]):
+            contacted = contacted + [BuildingContact(pc[0], vidx, pc[1]) for pc in self._vertex_cache[v] if pc[0] != part]
+        part.set('ddd:building:contacts', list(set(contacted)))
 
         # Mark each segment with:
+        #seg_length = np.sqrt(dir_vec.dot(dir_vec))
         # Segment length, corresponding convex_hull_segment, building + segment contacts (no floor, elevation is not yet) + vertex contacts?, floors spanned...
         # Forward_object ref + distance
-        # Segment type (?): interior, detail, facade....
+        segments = []
+        for sidx, (s1, s2) in enumerate(zip(vertices[:-1], vertices[1:])):
+            segment = BuildingSegment(part, sidx, s1, s2)
+            #v0, v1 = (np.array(v0), np.array(v1))
+            #dir_vec = v1 - v0
+            #dir_angle = math.atan2(dir_vec[1], dir_vec[0])
 
+            segments.append(segment)  # Use type!
+        part.set('ddd:building:segments', segments)
+
+
+    def process_building_hull_create(self, part):
+
+        # Convex hull
         # Generate convex hull segment,
-        # Type of convex hull segment: facade_main, facade_secondary, interior
-        # Convex hull forward object: distance + link + type  # not soo significative if taken from center
+        convex = part.convex_hull()
 
-        # Per floor (ddd:building:floor:N) -> Floor profile (facade elements, windows yes/no, etc) (initialize to defaults, use styling)
+        # Align vertex order and winding (also used eg. extrude_between_geoms_wrap)
+        convex = ddd.geomops.vertex_order_align_snap(convex, part)
 
-        # Floor profiles
-        pass
+        vertices = convex.vertex_list(recurse=False)
+        segments = []
+        for sidx, (s1, s2) in enumerate(zip(vertices[:-1], vertices[1:])):
+            segment = BuildingSegment(part, sidx, s1, s2)
+            segments.append(segment)  # Use type!
+
+        part.set('ddd:building:convex', convex)
+        part.set('ddd:building:convex:segments', segments)
+
+        # Link segments in the geometry to the convex hull, using common vertices to define shared segments
+        # This method requires the second to have equal or less segments than the first one
+        # This also requires polygon windings to be equal, and start/end vertices to be aligned (see vertex_order_align_snap() before)
+        segs_part = part.get('ddd:building:segments')
+        segs_convex = segments
+
+        seg_convex_idx = 0
+        try:
+            for seg_part_idx, seg_part in enumerate(segs_part):
+                seg_part.seg_convex_idx = seg_convex_idx
+                if seg_part.p2 == segs_convex[seg_convex_idx].p2:
+                    seg_convex_idx = (seg_convex_idx + 1) % len(segs_convex)
+        except IndexError as e:
+            logger.warn("Could not associate building part and convex hull segments for part %s (convex=%s): %s", part, convex, e)
+
+        ## Per floor (ddd:building:floor:N) -> Floor profile (facade elements, windows yes/no, etc) (initialize to defaults, use styling)
+        ## Floor profiles
+
+
+    def process_building_segments_analyze(self, part, ways_ref):
+        segments = part.get('ddd:building:segments')
+        for s in segments:
+            self.process_building_segment_analyze(s, ways_ref)
+
+    def process_building_hull_analyze(self, part, ways_ref):
+        segments = part.get('ddd:building:convex:segments')
+        for s in segments:
+            self.process_building_segment_analyze(s, ways_ref)
+
+    def process_building_segment_analyze(self, segment, ways_ref):
+        """
+        Analyze a segment of a building, resolving:
+
+        - Forward object/way/area (ways only?): distance + link + type  # not soo significative if a single ray is cast from center, line cast? (?)
+        - Segment type: interior, detail, facade.... # interiors may be missed if using single ray cast from segment center
+        - Type of convex hull segment: facade_main, facade_secondary, interior
+        """
+
+        # Get the closest (forward) way to the segment,
+        seg_center = (np.array(segment.p2) + np.array(segment.p1)) / 2
+        point = ddd.point(seg_center)
+
+        if not ways_ref.is_empty():
+        #try:
+            coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = ways_ref.closest_segment(point)
+            segment.closest_way = closest_obj
+        #except DDDException as e:
+        #    logger.warn("Cannot find closest way to segment.")
+
+
+        # Check if there is a building between building and way
+
+        # Check if any segment (or original non-convex segment) is contacting another building (so this would be a building lateral)
+
 
 
 
@@ -169,7 +271,11 @@ class Buildings2DOSMBuilder():
                 item.extra['ddd:building:parent'] = building
                 #building.extra['ddd:building:items_ways'].append(item)
 
+
     def closest_building(self, buildings_2d, point):
+        """
+        Returns the closest building to a given point.
+        """
         closest_building = None
         closest_distance = math.inf
         for building in buildings_2d.children:

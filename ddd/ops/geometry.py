@@ -5,6 +5,7 @@
 import logging
 import math
 import shapely
+from shapely.geometry.polygon import orient, Polygon, LinearRing
 
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd, DDDObject2
@@ -75,7 +76,6 @@ class DDDGeometry():
 
         return (major_seg, minor_seg, angle)  #, length_seg, width_seg)
 
-
     def remove_holes_split(self, obj):
         """
         Splits a polygon with holes generating several polygons with no holes.
@@ -142,7 +142,9 @@ class DDDGeometry():
 
     def subdivide_to_size(self, obj, max_edge):
         """
-        Subdivide a geometry.
+        Subdivide a 1D geometry so segments have a maximum size.
+
+        Currently works for LineStrings only.
 
         Modifies the object in place. Subdivides children recursively.
         """
@@ -170,4 +172,44 @@ class DDDGeometry():
 
         return obj
 
+    def vertex_order_align_snap(self, obj, ref):  #, offset, base_height):
+        """
+        Reindex an object (linear ring) coordinates so it has the same winding and
+        starts in the same index as the reference.
+        """
 
+        geom_a = ref.geom
+        geom_b = obj.geom
+
+        # Ensure winding
+        if (geom_a.type == "Polygon" and geom_b.type == "Polygon"):
+            if (geom_a.exterior.is_ccw != geom_b.exterior.is_ccw):
+                #logger.debug("Cannot extrude between polygons with different winding. Orienting polygons.")
+                #geom_a = orient(geom_a, -1)
+                geom_b = orient(geom_b, -1 if geom_a.exterior.is_ccw else 1)
+        else:
+            raise NotImplementedError()
+
+        coords_a = geom_a.coords if geom_a.type == 'Point' else geom_a.exterior.coords[:-1]  # Linearrings repeat first/last point
+        coords_b = geom_b.coords if geom_b.type == 'Point' else geom_b.exterior.coords[:-1]  # Linearrings repeat first/last point
+
+        # Find closest to coords_a[0] in b, and shift coords in b to match 0
+        closest_idx = 0
+        closest_dist = float("inf")
+        for idx, v in enumerate(coords_b):
+            dist = ((v[0] - coords_a[0][0]) ** 2) + ((v[1] - coords_a[0][1]) ** 2)
+            if dist < closest_dist:
+                closest_idx = idx
+                closest_dist = dist
+        #if closest_idx != 0: print("Closest Idx: %s" % closest_idx)
+        coords_b = coords_b[closest_idx:] + coords_b[:closest_idx]
+
+        #coords_a = coords_a[:] + [coords_a[0]]
+        coords_b = coords_b[:] + [coords_b[0]]
+
+        if obj.children:
+            raise NotImplementedError()
+
+        geom_b.exterior.coords = LinearRing(coords_b)
+        obj.geom = Polygon(coords_b, obj.geom.interiors)
+        return obj

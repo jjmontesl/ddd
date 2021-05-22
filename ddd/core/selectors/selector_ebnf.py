@@ -54,11 +54,14 @@ pair : string ":" value
 selector: datafilterstatement
 
 ?datafilterstatement: datafilterexpr
+                    | notdatafilterexpr
                     | datafilterand
                     | datafilteror
 
 datafilterexpr: datafilter
               | "(" datafilterstatement ")"
+
+notdatafilterexpr: "!" datafilterexpr
 
 datafilterand: datafilterstatement datafilterstatement
 datafilteror: datafilterstatement ";" datafilterstatement

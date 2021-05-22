@@ -784,6 +784,9 @@ class DDDObject():
 
     def select(self, selector=None, path=None, func=None, recurse=True, apply_func=None, _rec_path=None):
         """
+
+        Note: Recurse is True in this function, but False for selectors in DDDTasks.
+        TODO: Make recurse default to False (this will require extensive testing)
         """
 
         if hasattr(self, '_remove_object'): delattr(self, '_remove_object')
@@ -1344,7 +1347,7 @@ class DDDObject2(DDDObject):
 
         return geoms
 
-    def coords_iterator(self):
+    def coords_iterator(self, recurse=True):
         if self.geom.type == 'MultiPolygon':
             for g in self.geom.geoms:
                 for coord in g.exterior.coords:
@@ -1362,9 +1365,10 @@ class DDDObject2(DDDObject):
         else:
             raise NotImplementedError("Not implemented coords_iterator for geom: %s" % self.geom.type)
 
-        for c in self.children:
-            for coord in c.coords_iterator():
-                yield coord
+        if recurse:
+            for c in self.children:
+                for coord in c.coords_iterator(recurse):
+                    yield coord
 
 
     def _vertex_func_coords(self, func, coords):
@@ -1393,8 +1397,8 @@ class DDDObject2(DDDObject):
         obj.children = [c.vertex_func(func) for c in self.children]
         return obj
 
-    def vertex_list(self, ):
-        return list(self.coords_iterator())
+    def vertex_list(self, recurse=True):
+        return list(self.coords_iterator(recurse=recurse))
 
     def vertex_count(self):
         if not self.geom:
@@ -1942,6 +1946,8 @@ class DDDObject2(DDDObject):
         """
         Converts all 2D shapes to Linear objects (LineStrings or LinearRing).
         It takes exterior polygons when holes are present.
+
+        TODO: How is this method different from outline() ?  check usages + fix/document // linearstring vs linearrings, last vertex, etc
         """
         result = self.copy()
         if self.geom:
@@ -1951,15 +1957,17 @@ class DDDObject2(DDDObject):
 
     def outline(self):
         """
-        Returns the outline of the current shape as linear features.
+        Returns the outline of the current shape **as linear features**.
         Works for Polygon and MultiPolygon shapes (input is individualize() first).
 
-        TODO: How is this method different from linearize() ?  check usages
+        TODO: How is this method different from linearize() ?  check usages + fix/document // linearstring vs linearrings, last vertex, etc
         TODO: review Shapely exterior vs boundary
         """
         result = self.copy().individualize().clean()
         if result.geom and result.geom.type == "Polygon":
             result.geom = LineString(list(result.geom.exterior.coords))
+        #elif result.geom:
+        #    raise DDDException("Cannot take linearized outline from geometry:
         result.children = [c.outline() for c in result.children]
         return result
 
@@ -2042,20 +2050,36 @@ class DDDObject2(DDDObject):
         #logger.debug("Closest: %s  %s > %s", closest_d, closest_self, other)
 
         try:
-            d = closest_self.geom.project(other.geom)
+            # For ring types we care about the segment
+            # FIXME: this does not account for polygon interiors, in case they are needed
+            if closest_self.geom.type == 'Polygon':
+                linearized = closest_self.outline()
+                d = linearized.geom.project(other.geom)
+                result = (*linearized.interpolate_segment(d), closest_self, d)
+            #elif closest_self.geom.type in ('MultiPolygon', 'MultiGeometry'):
+            #    # resulting indexes will be incorrect!
+            #    closest_self, closest_d = closest_self.individualize().closest(other)
+            #    linearized = closest_self.outline()
+            #    d = linearized.geom.project(other.geom)
+            #    result = (*linearized.interpolate_segment(d), closest_self, d)
+            else:
+                d = closest_self.geom.project(other.geom)
+                result = (*closest_self.interpolate_segment(d), closest_self, d)
         except Exception as e:
-            raise DDDException("Error finding closest segment from %s to %s: %s" % (self, other, e))
+            raise DDDException("Error finding closest segment from %s to %s (closest_self=%s): %s" % (self, other, closest_self, e))
 
-        result = (*closest_self.interpolate_segment(d), closest_self, d)
         #ddd.group([other.buffer(5.0),  ddd.point(result[2]).buffer(5.0).material(ddd.mat_highlight), ddd.line([result[2], result[3]]).buffer(2.0), ddd.point(result[0]).buffer(5.0), closest_self.buffer(0.2)]).show()
         return result
 
     def vertex_index(self, coords):
         """
         Returns the closest vertex in this geometry to other geometry.
+        Coords can be a coordinate tuple or a Point-like DDDObject2
         Does not support children in "other" geometry.
         """
         if isinstance(coords, DDDObject2) and coords.geom.type == "Point":
+            if coords.children:
+                raise DDDException("Calculating closest vertex to a geometry with children is not supported.")
             coords = coords.geom.coords[0]
         coords = np.array(coords)
         if self.geom.type != 'LineString':

@@ -195,6 +195,11 @@ def extrude_between_geoms_subtract(shape_a, shape_b, offset, base_height):
 
 
 def extrude_between_geoms_wrap(geom_a, geom_b, offset, base_height):
+    """
+    Note: a large part of this method is replicated in geomops.vertex_order_align_snap().
+    TODO: avoid duplication in geomops.vertex_order_align_snap().
+    """
+
 
     # Ensure winding
     if (geom_a.type == "Polygon" and geom_b.type == "Polygon"):
