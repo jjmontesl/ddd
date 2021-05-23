@@ -2,10 +2,14 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
+import numpy as np
 import logging
 from ddd.ddd import ddd, DDDInstance
 import math
 from trimesh.base import Trimesh
+from trimesh import creation
+from scipy import interpolate
+from shapely.geometry import Polygon, polygon
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -177,24 +181,105 @@ class DDDMeshOps():
         return obj
 
 
-    def subdivide_to_grid(self, grid_size=2.0, min_distance=0.1):
+    def subdivide_to_grid(self, obj, grid_size=2.0):  #, min_distance=0.1):
         """
+        Subdivides a mesh ensuring that every face has vertices in the grid.
+
+        TODO: optionally and by default flip in checkerboard (like grid3 does)
+        TODO: Update UVs / normals.
         TODO: Not working. Not implemented.
         TODO: mention this method in the doc for DDDObject3.subdivide
         """
-        result = self.copy()
+        result = obj.copy()
 
-        result.children = [c.subdivide_to_grid(max_edge, max_iter) for c in result.children]
+        result.children = [self.subdivide_to_grid(c, grid_size) for c in result.children]
 
         if result.mesh:
+            newverts = []
+            newfaces = []
             vertices, faces = result.mesh.vertices, result.mesh.faces
 
-            # For each face, calculate orientation and gridded triangles. Interpolate UVs and normals. Generalize.
+            for face in faces:
 
-            rvertices, rfaces = remesh.subdivide_to_size(vertices, faces, max_edge, max_iter=max_iter)
+                v1 = vertices[face[1]] - vertices[face[0]]
+                v2 = vertices[face[2]] - vertices[face[0]]
+                # TODO: check trimesh.triangles.cross(triangles) as it may improve performance for the whole mesh
+                vn = np.cross(v1, v2)
 
-            result.mesh = Trimesh(rvertices, rfaces)
+                vnorm = np.linalg.norm(vn)
+                if vnorm == 0:
+                    logger.error("Invalid triangle (linear dependent, no normal): %s", obj)
+                else:
+                    vn = vn / vnorm
+
+                # Get footprint
+                triangle = ddd.polygon([vertices[face[0]], vertices[face[1]], vertices[face[2]]]).remove_z()
+                #if not triangle.geom.exterior.is_ccw:
+                #    raise DDDException("")
+                bounds = triangle.bounds()
+
+
+                if (abs(vn[0]) > abs(vn[1]) and abs(vn[0]) > abs(vn[2]) or
+                    abs(vn[1]) > abs(vn[0]) and abs(vn[1]) > abs(vn[2]) or
+                    vn[2] < 0.):
+                    newfaces.append([len(newverts), len(newverts) + 1, len(newverts) + 2])
+                    newverts.extend([vertices[face[0]], vertices[face[1]], vertices[face[2]]])
+                    #print(face)
+                    #print(face - np.min(face) + len(newverts))
+                    #newfaces.append(face - np.min(face) + len(newverts))
+                    continue
+
+                # Function of the plane to interpolate third axis
+                # See: https://math.stackexchange.com/questions/753113/how-to-find-an-equation-of-the-plane-given-its-normal-vector-and-a-point-on-the
+                oan = vn.dot(vertices[face[0]])
+                zfunc = lambda x, y: (oan - vn[0] * x - vn[1] * y) / vn[2]
+                #zfunc = lambda x, y: 0
+
+                # Generate grid squares
+                #bounds = [min(bounds[0], bounds[2]), min(bounds[1], bounds[3]), max(bounds[0], bounds[2]), max(bounds[1], bounds[3])]
+                bounds = [grid_size * (int(bounds[0] / grid_size) - 1), grid_size * (int(bounds[1] / grid_size) - 1),
+                          grid_size * (int(bounds[2] / grid_size) + 1), grid_size * (int(bounds[3] / grid_size) + 1)]
+                grid2 = ddd.grid2(bounds, detail=grid_size, name=None)
+
+                for geom in grid2.geom:
+                    #flip = ((idi % 2) + (idj % 2)) % 2
+                    geom = geom.intersection(triangle.geom)
+                    if geom.type == 'Point' or geom.type == 'LineString' or geom.is_empty: continue
+                    try:
+                        geom = polygon.orient(geom, 1)  # orient polygon
+
+                        gvs, gfs = creation.triangulate_polygon(geom)
+                        gvs = [[v[0], v[1], zfunc(v[0], v[1])] for v in gvs]
+                        #vertices = [[v[0], v[1], 0.0] for v in vertices]
+                        #for v in gvs:
+                        #    v[2] =
+
+                        flip = vn[2] < 0
+                        if flip:
+                            gfs = np.flip(gfs)
+
+                        gfs = gfs + len(newverts)
+
+                        newfaces.extend(gfs)
+                        newverts.extend(gvs)
+                    except Exception as e:
+                        logger.error("Could not triangulate triangle grid cell while subdividing to grid: %s", e)
+
+                '''
+                vnorm = np.linalg.norm(v)
+                if vnorm == 0:
+                    logger.error("Invalid triangle (linear dependent, no normal): %s", obj)
+                else:
+                    v = v / vnorm
+                '''
+
+            # Note: adding an empty mesh will cause export errors and failure to load in Babylon
+            if (len(newfaces) > 0):
+                result.mesh = Trimesh(newverts, newfaces)
+                result.mesh.merge_vertices()
+                #result.mesh.fix_normals()
+            else:
+                result.mesh = None
 
         return result
-
 

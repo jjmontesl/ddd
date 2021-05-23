@@ -1435,7 +1435,7 @@ class DDDObject2(DDDObject):
                     g.coords = [(x, y) for (x, y, _) in g.coords]
             elif result.geom.type == "Polygon":
                 result.geom.exterior.coords = [(x, y) for (x, y, _) in result.geom.exterior.coords]
-                for g in result.geom.interior:
+                for g in result.geom.interiors:
                     g.coords = [(x, y) for (x, y, _) in g.coords]
 
             else:
@@ -1735,6 +1735,7 @@ class DDDObject2(DDDObject):
                         raise
 
                 if vertices is not None:
+                    # FIXME: This seems to cause materials to fail (eg. golf flag material), as opossed ot  .twosided() method
                     if twosided:
                         faces2 = np.fliplr(faces)
                         faces = np.concatenate((faces, faces2))

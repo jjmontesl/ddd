@@ -448,6 +448,8 @@ class Buildings3DOSMBuilder():
         if floor_type == 'default':
             try:
                 building_3d = part.extrude(dif_height)
+                #self.generate_building_3d_part_body_hull(part)
+
             except ValueError as e:
                 raise DDDException("Could not generate building part body (%s): %s" % (part, e))
         elif floor_type == 'columns':
@@ -498,6 +500,9 @@ class Buildings3DOSMBuilder():
 
         return building_3d
 
+
+    def generate_building_3d_part_body_hull(self, part):
+        pass
 
     def generate_building_3d_part_body_items_floor(self, building_3d, part, floor_num, min_height, height):
         """

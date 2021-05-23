@@ -10,6 +10,36 @@ from trimesh.grouping import merge_vertices
 items = ddd.group3()
 
 
+
+# Subdivision to grid
+fig1 = ddd.rect([-4, -2, 4, 2])
+fig2 = ddd.rect([-3, -1, -1, 1])
+figh = fig1.subtract(fig2)
+fig = figh.extrude_step(figh, 1.0, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+fig = fig.extrude_step(figh.buffer(-0.25), 1.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+fig = ddd.meshops.subdivide_to_grid(fig, 0.5)
+fig.show()
+items.append(fig)
+
+
+# Subdivide to grid
+coords = [[10, 10], [5, 9], [3, 12], [1, 5], [-8, 0], [10, 0]]
+ref = ddd.polygon(coords).subtract(ddd.rect([1,1,2,2]))
+obj = ref.triangulate()
+obj = ddd.meshops.subdivide_to_grid(obj, 2.0)
+#obj= obj.subdivide_to_size(2.0)
+#ddd.group3([obj, ref.triangulate().material(ddd.MAT_HIGHLIGHT).translate([0, 0, -1])]).show()
+items.append(obj.scale([0.1, 0.1, 1]).translate([0, 0, 1]))
+
+
+# Subdivide to grid (cube)
+obj = ddd.cube(d=2)
+obj = obj.material(ddd.mats.dirt)
+obj = ddd.uv.map_cubic(obj)
+obj = ddd.meshops.subdivide_to_grid(obj, 0.5)
+#obj.show()
+items.append(obj)
+
 # Subdivide
 fig1 = ddd.rect().extrude(1)
 fig1 = fig1.subdivide_to_size(0.5)
