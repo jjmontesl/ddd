@@ -34,7 +34,7 @@ class BuildingSegment:
 
     __slots__ = ('building', 'seg_idx', 'p1', 'p2',
                  'seg_convex_idx',
-                 'closest_way')
+                 'contact', 'closest_way', 'building_front', 'facade_type')
 
     def __init__(self, building, seg_idx, p1, p2):
         self.building = building
@@ -45,9 +45,13 @@ class BuildingSegment:
         self.seg_convex_idx = None
 
         self.closest_way = None
+        self.building_front = None
+        self.facade_type = None
+        self.contact = None
 
     def __repr__(self):
-        return "%s (convex=%s, closest_way=%s)" % (self.seg_idx, self.seg_convex_idx, self.closest_way)
+        return "%s (convex=%s, contact=%s, closest_way=%s, building_front=%s, facade_type=%s)" % (
+            self.seg_idx, self.seg_convex_idx, self.contact, self.closest_way, self.building_front, self.facade_type)
 
 class Building():  # DDDObject3, DDDDataObject
 

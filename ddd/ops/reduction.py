@@ -180,6 +180,7 @@ class DDDMeshOps():
     def subdivide_to_grid(self, grid_size=2.0, min_distance=0.1):
         """
         TODO: Not working. Not implemented.
+        TODO: mention this method in the doc for DDDObject3.subdivide
         """
         result = self.copy()
 

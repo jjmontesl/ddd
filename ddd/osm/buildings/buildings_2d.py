@@ -30,6 +30,7 @@ from ddd.util.dddrandom import weighted_choice
 from ddd.pack.sketchy.buildings import window_with_border, door
 from collections import defaultdict
 from ddd.osm.buildings.building import BuildingContact, BuildingSegment
+from shapely.strtree import STRtree
 
 
 # Get instance of logger for this module
@@ -99,24 +100,32 @@ class Buildings2DOSMBuilder():
 
         logger.info("Adding building analysis data (%d buildings)", len(buildings.children))
 
+        buildings_ref = buildings
+
+        buildings_ref.index_create()
+        ways_ref.index_create()
+
         self._vertex_cache = defaultdict(list)
         selected_parts = buildings.select(func=lambda o: o.geom, recurse=True)
         for part in selected_parts.children:
             if part.is_empty(): continue
             vertices = part.vertex_list(recurse=False)  # This will fail if part had no geometry (eg. it was empty or children-only)
             for vidx, v in enumerate(vertices[:-1]):  # ignoring last vertex, repeated
+                vidx = vidx % (len(vertices) - 1)
                 self._vertex_cache[v].append((part, vidx))
 
         for part in selected_parts.children:
             if part.is_empty(): continue
             if part.geom.type != 'Polygon':
-                logger.warn("Skipping building with non Polygon geometry (not implemented): %s", part)
+                logger.warn("Skipping analysis of building with non Polygon geometry (not implemented): %s", part)
                 continue
             self.process_building_contacts(part)
             self.process_building_hull_create(part)
-            self.process_building_segments_analyze(part, ways_ref)
-            self.process_building_hull_analyze(part, ways_ref)
+            self.process_building_segments_analyze(part, buildings_ref, ways_ref)
+            self.process_building_hull_analyze(part, buildings_ref, ways_ref)
 
+        buildings_ref.index_clear()
+        ways_ref.index_clear()
 
     def process_building_contacts(self, part):
         """
@@ -127,8 +136,10 @@ class Buildings2DOSMBuilder():
         vertices = part.vertex_list(recurse=False)  # This will fail if part had no geometry (eg. it was empty or children-only)
         contacted = []
         for vidx, v in enumerate(vertices[:-1]):
+            vidx = vidx % (len(vertices) - 1)
             contacted = contacted + [BuildingContact(pc[0], vidx, pc[1]) for pc in self._vertex_cache[v] if pc[0] != part]
-        part.set('ddd:building:contacts', list(set(contacted)))
+        #part.set('ddd:building:contacts', list(set(contacted)))
+        part.set('ddd:building:contacts', {c.self_idx: c for c in list(set(contacted))} )
 
         # Mark each segment with:
         #seg_length = np.sqrt(dir_vec.dot(dir_vec))
@@ -182,40 +193,72 @@ class Buildings2DOSMBuilder():
         ## Floor profiles
 
 
-    def process_building_segments_analyze(self, part, ways_ref):
+    def process_building_segments_analyze(self, part, buildings_ref, ways_ref):
         segments = part.get('ddd:building:segments')
         for s in segments:
-            self.process_building_segment_analyze(s, ways_ref)
+            self.process_building_segment_analyze(part, s, buildings_ref, ways_ref)
 
-    def process_building_hull_analyze(self, part, ways_ref):
-        segments = part.get('ddd:building:convex:segments')
-        for s in segments:
-            self.process_building_segment_analyze(s, ways_ref)
+    def process_building_hull_analyze(self, part, buildings_ref, ways_ref):
+        #segments = part.get('ddd:building:convex:segments')
+        #for s in segments:
+        #    self.process_building_segment_analyze(part, s, buildings_ref, ways_ref)
+        #    # (?) Combine original segments information (eg. other buildings contact)
+        #    # (?) Leave forward / back-propagation to style rules?
+        pass
 
-    def process_building_segment_analyze(self, segment, ways_ref):
+    def process_building_segment_analyze(self, part, segment, buildings_ref, ways_ref):
         """
         Analyze a segment of a building, resolving:
 
-        - Forward object/way/area (ways only?): distance + link + type  # not soo significative if a single ray is cast from center, line cast? (?)
+        - Forward object/way/area (ways only?): distance + link + type  # not so significative if a single ray is cast from center, line cast? (?)
         - Segment type: interior, detail, facade.... # interiors may be missed if using single ray cast from segment center
         - Type of convex hull segment: facade_main, facade_secondary, interior
         """
+
+        # Check if segment touches another segment in this or other building
+        contacts = part.get('ddd:building:contacts')
+
+        seg_vert_idx_a = segment.seg_idx
+        seg_vert_idx_b = (segment.seg_idx + 1) % (len(part.vertex_list()) - 1)
+        contact_a = contacts.get(seg_vert_idx_a, None)
+        contact_b = contacts.get(seg_vert_idx_b, None)
+        if contact_a and contact_b and contact_a.other == contact_b.other:
+            coa = contact_a.other_idx
+            cob = contact_b.other_idx
+            # Check that segment is contiguous on the "other" geometry (note it can also cycle around vertex list)
+            if abs(coa - cob) == 1 or (abs(coa - cob) == len(contact_a.other.vertex_list()) - 2):
+                segment.contact = contact_a.other
+
+        #    if
+        #if BuildingSegment
 
         # Get the closest (forward) way to the segment,
         seg_center = (np.array(segment.p2) + np.array(segment.p1)) / 2
         point = ddd.point(seg_center)
 
         if not ways_ref.is_empty():
-        #try:
-            coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = ways_ref.closest_segment(point)
-            segment.closest_way = closest_obj
-        #except DDDException as e:
-        #    logger.warn("Cannot find closest way to segment.")
+            try:
+                coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = ways_ref.closest_segment(point)
+                segment.closest_way = closest_obj
 
+                # Check if there is another building between building segment and way
+                ray = ddd.line([seg_center, coords_p]).line_substring(1.0, -1.0)
+                segment.building_front = buildings_ref.intersects(ray)
 
-        # Check if there is a building between building and way
+            except DDDException as e:
+                logger.warn("Cannot find closest to building segment %s: %s", segment, e)
+                pass
 
-        # Check if any segment (or original non-convex segment) is contacting another building (so this would be a building lateral)
+        # Facade classification
+        # TODO: Do this in styling, study cases
+        if segment.contact:
+            segment.facade_type = 'contact'
+        elif segment.building_front:
+            # TODO: Check distance too
+            segment.facade_type = 'lateral'  # / vieable/non-viewable
+        else:
+            # TODO: Check way weights for main/secondary facades
+            segment.facade_type = 'main'  # secondary / lateral / back
 
 
 
@@ -275,6 +318,8 @@ class Buildings2DOSMBuilder():
     def closest_building(self, buildings_2d, point):
         """
         Returns the closest building to a given point.
+
+        TODO: this method predates selectors and pipelines. This can possibly be done directly or trough with ddd.closest() now. Check usages.
         """
         closest_building = None
         closest_distance = math.inf

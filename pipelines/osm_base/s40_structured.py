@@ -236,10 +236,11 @@ def osm_structured_process_items_ways_lines(osm, root, obj):
 
 
 @dddtask()
-def osm_structured_generate_ways_2d(osm, root):
+def osm_structured_generate_ways_2d(pipeline, root, osm):
     """Generates ways 2D (areas) from ways 1D (lines), replacing the /Ways node in the hierarchy."""
     ways1 = root.find("/Ways")
     root.remove(ways1)
+    pipeline.data['ways1'] = ways1
 
     ways2 = osm.ways2.generate_ways_2d(ways1)
     root.append(ways2)
@@ -489,13 +490,14 @@ def osm_structured_areas_link_items_nodes(root, osm):
 
 
 @dddtask(log=True)
-def osm_structured_building_analyze(root, osm):
+def osm_structured_building_analyze(pipeline, root, osm):
     """
     Produce building information: segments, floors, contacted buildings...
     """
     # TODO: There is some logic for specific items inside: use tagging for linkable items.
     buildings = root.find("/Buildings")
-    ways = root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False)
+    #ways = root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False)
+    ways = pipeline.data['ways1']
     osm.buildings2.process_buildings_analyze(buildings, ways)
     #buildings.show()
 

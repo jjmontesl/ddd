@@ -70,6 +70,7 @@ from ddd.formats.geojson import DDDGeoJSONFormat
 from shapely.geometry.multipolygon import MultiPolygon
 from ddd.formats.png3drender import DDDPNG3DRenderFormat
 from ddd.util.common import parse_bool
+from shapely.strtree import STRtree
 
 
 # Get instance of logger for this module
@@ -1028,13 +1029,14 @@ class DDDObject2(DDDObject):
     def __init__(self, name=None, children=None, geom=None, extra=None, material=None):
         super().__init__(name, children, extra, material)
         self.geom = geom
+        self._strtree = None
 
     def __repr__(self):
         return "%s(%s, name=%s, geom=%s (%s verts), children=%d)" % (self.__class__.__name__, id(self), self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
     def copy(self, name=None):
         """
-        Copies children, geometry and metadata recursively (deep copying the object).
+        Copies children, geometry (deep copying the object) and metadata (shallow copy) recursively.
         """
         obj = DDDObject2(name=name if name else self.name, children=[c.copy() for c in self.children], geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
         return obj
@@ -1055,6 +1057,12 @@ class DDDObject2(DDDObject):
         super(DDDObject2, self).replace(obj)
         self.geom = obj.geom
         return self
+
+    def index_create(self):
+        self._strtree = STRtree(self.geom_recursive())
+
+    def index_clear(self):
+        self._strtree = None
 
     def material(self, material, include_children=True):
         obj = self.copy()
@@ -1531,6 +1539,11 @@ class DDDObject2(DDDObject):
         if (not other.geom) or other.geom.is_empty:
             return False
 
+        if self._strtree:
+            #logger.info("Using STRTree for 'intersects' operation: %s", self)
+            cand_geoms = self._strtree.query(other.geom)
+            return any((cg.intersects(other.geom) for cg in cand_geoms))
+
         if self.geom:
             if self.geom.intersects(other.geom):
                 return True
@@ -2004,6 +2017,11 @@ class DDDObject2(DDDObject):
         closest_o = None
         closest_d = math.inf
 
+        if self._strtree:
+            #logger.info("Using STRTree for 'closest' operation: %s", self)
+            nearest = self._strtree.nearest(other.geom)
+            return (nearest._ddd_obj, nearest._ddd_obj.geom.distance(other.geom))
+
         if self.geom:
             closest_o = self
             closest_d = self.geom.distance(other.geom)
@@ -2057,7 +2075,7 @@ class DDDObject2(DDDObject):
                 d = linearized.geom.project(other.geom)
                 result = (*linearized.interpolate_segment(d), closest_self, d)
             #elif closest_self.geom.type in ('MultiPolygon', 'MultiGeometry'):
-            #    # resulting indexes will be incorrect!
+            #    # WARNING: resulting indexes will be incorrect, the individualized object does not really exist in the self
             #    closest_self, closest_d = closest_self.individualize().closest(other)
             #    linearized = closest_self.outline()
             #    d = linearized.geom.project(other.geom)
@@ -2136,6 +2154,29 @@ class DDDObject2(DDDObject):
             result = ddd.line([right, left])
 
         #ddd.group2([self.buffer(0.1), result.buffer(0.1).material(ddd.mats.highlight)]).show()
+
+        return result
+
+    def line_substring(self, start_dist, end_dist, normalized=False):
+        """
+        Returns a line between the specified distances.
+        Negative values are taken in the reverse direction.
+        This is based on the Shapely operation of the same name.
+        """
+
+        if self.children:
+            raise DDDException("Cannot calculate line_substring of objects with children.")
+        if not self.geom or self.geom.type != "LineString":
+            raise DDDException("Cannot calculate line_substring of non LineString objects.")
+
+        substr_length = self.geom.length if not normalized else 1.0
+
+        if end_dist < 0: end_dist = substr_length + end_dist
+        if start_dist < 0: start_dist = substr_length + start_dist
+
+        result = self.copy()
+        geom = ops.substring(result.geom, start_dist, end_dist, normalized)
+        result.geom = geom
 
         return result
 

@@ -507,7 +507,8 @@ class Buildings3DOSMBuilder():
 
         part_outline = part.outline()
         vertices = part_outline.vertex_list()  # This will fail if part had no geometry (eg. it was empty or children-only)
-        segments = zip(vertices[:-1], vertices[1:])
+        segments_verts = zip(vertices[:-1], vertices[1:])
+        segments = part.get('ddd:building:segments')
 
         item_width = 3
         min_seg_width = 4.0
@@ -516,7 +517,12 @@ class Buildings3DOSMBuilder():
         doors = 0
         if floor_num == 0: doors = 1
 
-        for idx, (v0, v1) in enumerate(segments):
+        for idx, (v0, v1) in enumerate(segments_verts):
+
+            segment = segments[idx]
+            if segment.facade_type in ('contact'):  # , 'lateral'):
+                continue
+
             v0, v1 = (np.array(v0), np.array(v1))
             dir_vec = v1 - v0
             dir_angle = math.atan2(dir_vec[1], dir_vec[0])
