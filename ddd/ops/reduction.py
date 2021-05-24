@@ -187,7 +187,6 @@ class DDDMeshOps():
 
         TODO: optionally and by default flip in checkerboard (like grid3 does)
         TODO: Update UVs / normals.
-        TODO: Not working. Not implemented.
         TODO: mention this method in the doc for DDDObject3.subdivide
         """
         result = obj.copy()
@@ -201,10 +200,10 @@ class DDDMeshOps():
 
             for face in faces:
 
-                v1 = vertices[face[1]] - vertices[face[0]]
-                v2 = vertices[face[2]] - vertices[face[0]]
+                vn1 = vertices[face[1]] - vertices[face[0]]
+                vn2 = vertices[face[2]] - vertices[face[0]]
                 # TODO: check trimesh.triangles.cross(triangles) as it may improve performance for the whole mesh
-                vn = np.cross(v1, v2)
+                vn = np.cross(vn1, vn2)
 
                 vnorm = np.linalg.norm(vn)
                 if vnorm == 0:
@@ -212,28 +211,46 @@ class DDDMeshOps():
                 else:
                     vn = vn / vnorm
 
-                # Get footprint
-                triangle = ddd.polygon([vertices[face[0]], vertices[face[1]], vertices[face[2]]]).remove_z()
-                #if not triangle.geom.exterior.is_ccw:
-                #    raise DDDException("")
-                bounds = triangle.bounds()
 
-
-                if (abs(vn[0]) > abs(vn[1]) and abs(vn[0]) > abs(vn[2]) or
+                # Is it necessary to support this?
+                planar_only = False
+                if (planar_only and (abs(vn[0]) > abs(vn[1]) and abs(vn[0]) > abs(vn[2]) or
                     abs(vn[1]) > abs(vn[0]) and abs(vn[1]) > abs(vn[2]) or
-                    vn[2] < 0.):
+                    vn[2] < 0.)):
                     newfaces.append([len(newverts), len(newverts) + 1, len(newverts) + 2])
                     newverts.extend([vertices[face[0]], vertices[face[1]], vertices[face[2]]])
-                    #print(face)
-                    #print(face - np.min(face) + len(newverts))
-                    #newfaces.append(face - np.min(face) + len(newverts))
                     continue
+
+                v1 = vertices[face[0]]
+                v2 = vertices[face[1]]
+                v3 = vertices[face[2]]
+                vnp = None
+
+                # Project onto the XY plane (for shape operations) on a triplanar fashion
+                if abs(vn[0]) > abs(vn[1]) and abs(vn[0]) > abs(vn[2]):
+                    # Normal along X, project onto YZ (YZ onto XY)
+                    v1 = v1[[1, 2, 0]]
+                    v2 = v2[[1, 2, 0]]
+                    v3 = v3[[1, 2, 0]]
+                    vnp = vn[[1, 2, 0]]
+                elif abs(vn[1]) > abs(vn[0]) and abs(vn[1]) > abs(vn[2]):
+                    # Normal along Y, project onto XZ (XZ onto XY)
+                    v1 = v1[[2, 0, 1]]
+                    v2 = v2[[2, 0, 1]]
+                    v3 = v3[[2, 0, 1]]
+                    vnp = vn[[2, 0, 1]]
+                else:
+                    # Normal along Z, project onto XY (planar default)
+                    vnp = vn
+
+                # Get footprint
+                triangle = ddd.polygon([v1, v2, v3]).remove_z()
+                bounds = triangle.bounds()
 
                 # Function of the plane to interpolate third axis
                 # See: https://math.stackexchange.com/questions/753113/how-to-find-an-equation-of-the-plane-given-its-normal-vector-and-a-point-on-the
-                oan = vn.dot(vertices[face[0]])
-                zfunc = lambda x, y: (oan - vn[0] * x - vn[1] * y) / vn[2]
-                #zfunc = lambda x, y: 0
+                oan = vnp.dot(v1)
+                zfunc = lambda x, y: (oan - vnp[0] * x - vnp[1] * y) / vnp[2]
 
                 # Generate grid squares
                 #bounds = [min(bounds[0], bounds[2]), min(bounds[1], bounds[3]), max(bounds[0], bounds[2]), max(bounds[1], bounds[3])]
@@ -249,12 +266,16 @@ class DDDMeshOps():
                         geom = polygon.orient(geom, 1)  # orient polygon
 
                         gvs, gfs = creation.triangulate_polygon(geom)
-                        gvs = [[v[0], v[1], zfunc(v[0], v[1])] for v in gvs]
-                        #vertices = [[v[0], v[1], 0.0] for v in vertices]
-                        #for v in gvs:
-                        #    v[2] =
 
-                        flip = vn[2] < 0
+                        # Reproject to the original plane
+                        if abs(vn[0]) > abs(vn[1]) and abs(vn[0]) > abs(vn[2]):
+                            gvs = [[zfunc(v[0], v[1]), v[0], v[1]] for v in gvs]
+                        elif abs(vn[1]) > abs(vn[0]) and abs(vn[1]) > abs(vn[2]):
+                            gvs = [[v[1], zfunc(v[0], v[1]), v[0]] for v in gvs]
+                        else:
+                            gvs = [[v[0], v[1], zfunc(v[0], v[1])] for v in gvs]
+
+                        flip = vnp[2] < 0
                         if flip:
                             gfs = np.flip(gfs)
 
@@ -265,13 +286,6 @@ class DDDMeshOps():
                     except Exception as e:
                         logger.error("Could not triangulate triangle grid cell while subdividing to grid: %s", e)
 
-                '''
-                vnorm = np.linalg.norm(v)
-                if vnorm == 0:
-                    logger.error("Invalid triangle (linear dependent, no normal): %s", obj)
-                else:
-                    v = v / vnorm
-                '''
 
             # Note: adding an empty mesh will cause export errors and failure to load in Babylon
             if (len(newfaces) > 0):

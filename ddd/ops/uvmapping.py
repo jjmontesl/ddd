@@ -89,6 +89,7 @@ class DDDUVMapping():
                         result.extra['uv'][idx] = uv
 
                 if abs(v[0]) > abs(v[1]) and abs(v[0]) > abs(v[2]):
+                    # Normal along X, project onto YZ
                     p0, p1, p2 = result.mesh.vertices[face[0]], result.mesh.vertices[face[1]], result.mesh.vertices[face[2]]
                     setuv(face, face[0], (p0[1], p0[2]))
                     setuv(face, face[1], (p1[1], p1[2]))

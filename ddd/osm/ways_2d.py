@@ -544,7 +544,7 @@ class Ways2DOSMBuilder():
 
         # print(path.geom.type)
 
-        if path.geom.type != "LineString":
+        if path.geom.type != "LineString" or path.is_empty():
             logger.warn("Cannot generate roadlines for %s: way_1d %s is not a LineString.", way_2d, path)
             return
 

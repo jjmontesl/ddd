@@ -2849,6 +2849,10 @@ class DDDObject3(DDDObject):
 
         This method is based on the Trimesh method of the same name.
 
+        Note that other subdivision methods exist:
+        - for 2D LineStrings, check .subdivide_to_size()
+        - for 3D meshes, also see .subdivide_to_grid()
+
         TODO: Move this to meshops.
         """
         result = self.copy()
