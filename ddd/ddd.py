@@ -1434,9 +1434,14 @@ class DDDObject2(DDDObject):
                 for g in result.geom.geoms:
                     g.coords = [(x, y) for (x, y, _) in g.coords]
             elif result.geom.type == "Polygon":
-                result.geom.exterior.coords = [(x, y) for (x, y, _) in result.geom.exterior.coords]
+                #result.geom.exterior.coords = [(x, y) for (x, y, _) in result.geom.exterior.coords]
+                #for g in result.geom.interiors:
+                #    g.coords = [(x, y) for (x, y, _) in g.coords]
+                nnext = [(x, y) for (x, y, _) in result.geom.exterior.coords]
+                nnints = []
                 for g in result.geom.interiors:
-                    g.coords = [(x, y) for (x, y, _) in g.coords]
+                    nnints.append([(x, y) for (x, y, _) in g.coords])
+                result.geom = Polygon(nnext, nnints)
 
             else:
                 result.geom.coords = [(x, y) for (x, y, _) in result.geom.coords]

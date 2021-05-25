@@ -27,7 +27,7 @@ from ddd.pack.sketchy import plants, urban
 from ddd.geo import terrain
 from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
-from ddd.pack.sketchy.buildings import window_with_border, door
+from ddd.pack.sketchy.buildings import window_with_border, door, portal
 from ddd.osm.osmunits import parse_meters
 
 
@@ -162,6 +162,7 @@ class Buildings3DOSMBuilder():
                 # Remove the rest of the building
                 if part == building_2d:
                     part = part.subtract(entire_building_2d)
+                    part.validate()
                 if part.geom.is_empty:
                     continue
 
@@ -512,7 +513,7 @@ class Buildings3DOSMBuilder():
 
         part_outline = part.outline()
         vertices = part_outline.vertex_list()  # This will fail if part had no geometry (eg. it was empty or children-only)
-        segments_verts = zip(vertices[:-1], vertices[1:])
+        segments_verts = list(zip(vertices[:-1], vertices[1:]))
         segments = part.get('ddd:building:segments')
 
         item_width = 3
@@ -521,6 +522,10 @@ class Buildings3DOSMBuilder():
         # TODO: Temporary, add doors earlier
         doors = 0
         if floor_num == 0: doors = 1
+
+        if len(segments) != len(segments_verts):
+            logger.warn("Cannot generate body items floor for building (no segment analysis available): %s", building_3d)
+            return
 
         for idx, (v0, v1) in enumerate(segments_verts):
 
@@ -541,9 +546,15 @@ class Buildings3DOSMBuilder():
 
                 object_min_height = 0.0
 
-                if doors > 0:
+                if doors > 0 and segment.facade_type in ('main'):
                     doors -= 1
-                    obj = door()
+
+                    portal_type = random.choice(['door', 'portal'])
+                    if portal_type == 'door':
+                        obj = door()
+                    else:
+                        obj = portal()
+
                     obj = ddd.meshops.remove_faces_pointing(obj, ddd.VECTOR_BACKWARD)
                     obj = ddd.uv.map_cubic(obj)  # FIXME: Meshops "remove_faces_pointing" should fix UVs / normals
                     point_elevation = terrain.terrain_geotiff_elevation_value(p, self.osm.ddd_proj)

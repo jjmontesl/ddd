@@ -138,6 +138,8 @@ class Areas3DOSMBuilder():
 
     def generate_area_3d(self, area_2d):
 
+        logger.debug("Generating area 3D for: %s", area_2d)
+
         if area_2d.get('ddd:area:type', None) == 'pitch':
             return self.generate_area_3d_pitch(area_2d)
         elif area_2d.get('ddd:area:type', None) == 'water':
@@ -261,6 +263,16 @@ class Areas3DOSMBuilder():
                 area_3d = area_2d.copy3("Void area: %s" % area_2d.name)
 
             else:
+                logger.debug("Generating Area: %s" % area_2d)
+
+                # Validate area (areas should be correct at this point, but this avoids core dumps in triangulate())
+                try:
+                    area_2d = area_2d.clean(eps=-0.01)  # 0.01 didn't work for fixing errors
+                    area_2d.validate()
+                except Exception as e:
+                    logger.warn("Invalid area %s: %s", area_2d, e)
+                    return None
+
                 try:
                     height = area_2d.extra.get('ddd:area:height', area_2d.extra.get('ddd:height', 0.2))
                     if height:
@@ -284,6 +296,7 @@ class Areas3DOSMBuilder():
 
         # Subdivide (works badly, subdividing causes bad behavior in large trams):
         if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
+            #logger.debug("Subdividing: %s" % area_3d)
             #area_3d = area_3d.subdivide_to_size(float(ddd.data.get('ddd:area:subdivide')))
             area_3d = ddd.meshops.subdivide_to_grid(area_3d, float(ddd.data.get('ddd:area:subdivide')))
 

@@ -29,9 +29,16 @@ ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #col
 items = ddd.group3()
 
 
+
+item = buildings.portal()
+items.append(item)
+item.show()
+
+
 item = buildings.door()
 items.append(item)
 item.show()
+
 
 item = buildings.window_with_border()
 items.append(item)

@@ -583,7 +583,11 @@ class Ways2DOSMBuilder():
                 # Create line
                 pathline = path.copy()
                 if abs(line_distance) > 0.01:
-                    pathline.geom = pathline.geom.parallel_offset(line_distance, "left", resolution=2)
+                    try:
+                        pathline.geom = pathline.geom.parallel_offset(line_distance, "left", resolution=2)
+                    except Exception as e:
+                        logger.warn("Cannot create roadline for %s: %s", path, e)
+                        continue
                 line = pathline.buffer(0.15).material(ddd.mats.roadline)
                 line.extra['way_1d'] = pathline
 

@@ -167,7 +167,7 @@ def osm_model_generate_areas(osm, root, pipeline, obj):
     pipeline.data['_areas_areas_new'].append(area_3d)
 
 @dddtask()
-def osm_model_generate_areas_init(osm, root, pipeline):
+def osm_model_generate_areas_replacenode(osm, root, pipeline):
     root.remove(root.find("/Areas"))
     root.append(pipeline.data['_areas_areas_new'])
 

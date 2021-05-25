@@ -4,7 +4,7 @@
 
 import numpy as np
 import logging
-from ddd.ddd import ddd, DDDInstance
+from ddd.ddd import ddd, DDDInstance, DDDObject2
 import math
 from trimesh.base import Trimesh
 from trimesh import creation
@@ -207,12 +207,12 @@ class DDDMeshOps():
 
                 vnorm = np.linalg.norm(vn)
                 if vnorm == 0:
-                    logger.error("Invalid triangle (linear dependent, no normal): %s", obj)
+                    logger.error("Invalid triangle (linear dependent, no normal), in subdivide_to_grid(): %s", obj)
+                    continue
                 else:
                     vn = vn / vnorm
 
-
-                # Is it necessary to support this?
+                # This is here even if only for debugging (core dumps have been observed when using this method, this may avoid some? -> no)
                 planar_only = False
                 if (planar_only and (abs(vn[0]) > abs(vn[1]) and abs(vn[0]) > abs(vn[2]) or
                     abs(vn[1]) > abs(vn[0]) and abs(vn[1]) > abs(vn[2]) or
@@ -245,12 +245,25 @@ class DDDMeshOps():
 
                 # Get footprint
                 triangle = ddd.polygon([v1, v2, v3]).remove_z()
+                try:
+                    triangle.validate()
+                except Exception as e:
+                    logger.warn("Invalid projected triangle face %s: %s", obj, e)
+                    newfaces.append([len(newverts), len(newverts) + 1, len(newverts) + 2])
+                    newverts.extend([vertices[face[0]], vertices[face[1]], vertices[face[2]]])
+                    continue
+
                 bounds = triangle.bounds()
 
                 # Function of the plane to interpolate third axis
                 # See: https://math.stackexchange.com/questions/753113/how-to-find-an-equation-of-the-plane-given-its-normal-vector-and-a-point-on-the
                 oan = vnp.dot(v1)
                 zfunc = lambda x, y: (oan - vnp[0] * x - vnp[1] * y) / vnp[2]
+
+                # FIXME: this happens a lot
+                #if vnp[2] < ddd.EPSILON:
+                #    #logger.error("Cannot calculate z projection function for triangle subdivision: %s", obj)
+                #    continue
 
                 # Generate grid squares
                 #bounds = [min(bounds[0], bounds[2]), min(bounds[1], bounds[3]), max(bounds[0], bounds[2]), max(bounds[1], bounds[3])]
@@ -261,11 +274,25 @@ class DDDMeshOps():
                 for geom in grid2.geom:
                     #flip = ((idi % 2) + (idj % 2)) % 2
                     geom = geom.intersection(triangle.geom)
-                    if geom.type == 'Point' or geom.type == 'LineString' or geom.is_empty: continue
+                    if geom.type == 'Point' or geom.type == 'LineString' or geom.is_empty:
+                        continue
+
+                    # May be unnecessary, didn't solve the core dump issue
+                    try:
+                        ogeom = DDDObject2(geom=geom)
+                        ogeom = ogeom.clean(eps=0)
+                        ogeom.validate()
+                        geom = ogeom.geom
+                    except Exception as e:
+                        continue
+
                     try:
                         geom = polygon.orient(geom, 1)  # orient polygon
 
+                        #print(geom)
                         gvs, gfs = creation.triangulate_polygon(geom)
+
+                        if len(gfs) == 0: continue
 
                         # Reproject to the original plane
                         if abs(vn[0]) > abs(vn[1]) and abs(vn[0]) > abs(vn[2]):
@@ -283,6 +310,7 @@ class DDDMeshOps():
 
                         newfaces.extend(gfs)
                         newverts.extend(gvs)
+
                     except Exception as e:
                         logger.error("Could not triangulate triangle grid cell while subdividing to grid: %s", e)
 

@@ -16,6 +16,7 @@
 
 
 from ddd.ddd import ddd
+from _curses_panel import top_panel
 
 """
 Pocedures to build building related items, as seen from outside,
@@ -69,11 +70,11 @@ def window_with_border(width=1.6, height=1.2, border_depth=0.05, border_thick=0.
     return obj
 
 
-def window_grid():
+def window_grille():
     pass
 
 
-def door(width=1.5, height=2.2, depth=0.06):
+def door(width=1.4, height=2.2, depth=0.06):
     """
     A door, centered on X and aligned to floor plane, lying on the XZ plane.
     """
@@ -82,11 +83,53 @@ def door(width=1.5, height=2.2, depth=0.06):
     obj = obj.material(ddd.mats.wood)
     obj = ddd.uv.map_cubic(obj)
     obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
+
+    #handle = door_handle()
+    #obj.append(handle)
+
     return obj
 
 
-#def portal(width=1.6, height=2.2, border_depth=0.10):
-#    pass
+def door_handle(width=0.1, height=0.3):
+    """
+    """
+    pass
+
+
+def portal(width=3.6, height=2.8, frame_width=0.08, frame_depth=0.05, door_width=1.4, top_panel_height=0.8, bottom_panel_height=0.4):
+    """
+    A portal door set.
+    """
+
+    pdoor = door(door_width, height - top_panel_height)
+
+    obj = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Door Frame")
+    obj = obj.subtract(ddd.rect([-width * 0.5 + frame_width, -1, width * 0.5 - frame_width, height - frame_width]))
+
+    if top_panel_height > 0:
+        obj = obj.union(ddd.rect([-width * 0.5, height - top_panel_height, width * 0.5, height - top_panel_height + frame_width]))
+
+    if bottom_panel_height > 0:
+        obj = obj.union(ddd.rect([-width * 0.5, 0, width * 0.5, bottom_panel_height]))
+
+    obj = obj.extrude(frame_depth)
+
+    obj = obj.material(ddd.mats.wood)
+    obj = ddd.uv.map_cubic(obj)
+
+    glass = ddd.rect([-width * 0.5 + frame_width, bottom_panel_height, width * 0.5 - frame_width, height - frame_width], name="Window")
+    #obj = obj.extrude(depth)
+    glass = glass.triangulate()
+    glass = glass.translate([0, 0, 0.02])  # Translate a bit to avoid z-fighting
+    glass = glass.material(ddd.mats.glass)
+    glass = ddd.uv.map_cubic(glass)
+
+    obj.append(glass)
+    obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
+
+    obj.append(pdoor)
+
+    return obj
 
 
 #def column():
