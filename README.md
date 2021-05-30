@@ -30,8 +30,9 @@ packages which provide most of the geometry operations.
 - TTF based generation of text geometry.
 - Object catalog ("prefabs") support (for object and geometry reusing and runtime instancing).
 - Handle materials, normals and UV coordinates.
-- Basic collider primitives support. Texture atlas support.
-- Document generation transformation pipeline support.
+- Basic collider primitives support (for export only).
+- Texture atlas support.
+- Document generation transformation pipelines.
 - A simple procedural models library (trees, urban props...)
 - Heightmap and splatmap generation (for terrain engines and splatmap based shading).
 - OpenStreetMap data 2D and 3D generation pipelines.
@@ -45,6 +46,7 @@ to the project, note:
 
 - Treat operations as if they modified the object (many operations currently return
   a copy of the object but this will change for performance and consistency reasons).
+  Use copy() explicitly for copying an object.
 - Access to metadata (`extra`, `.get`...) and propagation to children may change.
 - Usage will gravitate towards a Node hierarchy where each node has a transform
   (currently only DDDInstance objects have a transform and all other geometries are
@@ -57,10 +59,11 @@ Please use the Issue tracker for questions, discussions and pull requests.
 If you need some ideas, here are some areas that need help:
 
 - Adding and documenting examples and tutorials.
-- Help with OSM the road and roadlines connectity code.
-- Improving the OSM generation pipeline.
 - Create a simple and flexible tree procedural generator and tree prefabs.
 - Adding other model packs and/or improving the aspect of the current assets pack.
+- Improve the OSM generation pipeline.
+- Improve road, signals and roadlines connectivity code.
+- Improve the HTML Viewer (BabylonJS + Javascript)
 
 Do not hesitate to get in touch if you have any question.
 
@@ -100,7 +103,8 @@ for the pip install to succeed, the path to the GDAL library needs to be defined
 
 **Using the Docker image**
 
-There is a Docker image recipe in the [ddd-docker](https://github.com/jjmontesl/ddd-docker) repository.
+There is a Docker image recipe in the [ddd-docker](https://github.com/jjmontesl/ddd-docker) repository
+which includes all dependencies.
 
 
 ## Examples
@@ -112,6 +116,7 @@ typing `ddd` followed by the script name:
 
     cd examples
     ddd operations.py
+    ddd sketchy.py
 
 **Quickly generate 3D from OSM**
 
@@ -144,12 +149,6 @@ TODO: Introduce doc here and move sections to where appropriate.
 ![ddd-gallery-periodictable](doc/gallery/20200628-periodictable.png "Periodic Table generated from CSV file")
 ![ddd-gallery-salamanca](doc/gallery/20200628-salamanca-cathedral-from-blender3-night.png "Salamanca Cathedral generated from OSM data (rendered by Blender)")
 ![ddd-gallery-hercules](doc/gallery/acoruna_hercules_750r_-8.406,43.386.png "Torre de Hercules 2D rendered from OSM data")
-
-
-## 3rd party assets
-
-Textures from: https://cc0textures.com/
-Grass billboards from: https://www.reinerstilesets.de/new-textures-billboard-grass/
 
 
 ## License

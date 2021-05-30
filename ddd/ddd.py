@@ -1356,21 +1356,21 @@ class DDDObject2(DDDObject):
         return geoms
 
     def coords_iterator(self, recurse=True):
-        if self.geom.type == 'MultiPolygon':
+        if self.geom and self.geom.type == 'MultiPolygon':
             for g in self.geom.geoms:
                 for coord in g.exterior.coords:
                     yield coord
-        elif self.geom.type == 'Polygon':
+        elif self.geom and self.geom.type == 'Polygon':
             for coord in self.geom.exterior.coords:
                 yield coord
-        elif self.geom.type == 'GeometryCollection':
+        elif self.geom and self.geom.type == 'GeometryCollection':
             for g in self.geom.geoms:
                 for coord in D1D2D3.shape(g).coords_iterator():
                     yield coord
-        elif self.geom.type == 'LineString':
+        elif self.geom and self.geom.type == 'LineString':
             for coord in self.geom.coords:
                 yield coord
-        else:
+        elif self.geom:
             raise NotImplementedError("Not implemented coords_iterator for geom: %s" % self.geom.type)
 
         if recurse:

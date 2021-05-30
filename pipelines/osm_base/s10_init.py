@@ -299,7 +299,7 @@ def osm_materials():
     '''
 
     # Glass
-    ddd.mats.glass = ddd.material("Glass", color='#baf3f5', #color='#b3b7c0', # extra={'ddd:transparent': True}
+    ddd.mats.glass = ddd.material("Glass", color='#5b8dbd', #color='#b3b7c0', # extra={'ddd:transparent': True}
                               metallic_factor=1.0, roughness_factor=0.0)  #, # index_of_refraction=1.36,)#
 
     # Vegetation (trees, hedges)

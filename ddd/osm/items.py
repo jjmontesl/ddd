@@ -103,7 +103,7 @@ class ItemsOSMBuilder():
             bounds = [random.uniform(2, 4), random.uniform(1, 3), random.uniform(1, 2)]
             variant = random.choice(range(4)) + 1
             item_3d = self.generate_item_3d_generic_catalog("natural-rock-%d" % variant, item_2d, lambda: landscape.rock(bounds), "Rock")
-            item_3d = item_3d.translate([0, 0, -random.uniform(0.0, 1.0)])
+            item_3d = item_3d.translate([0, 0, random.uniform(-0.5, 0.0)])
         elif item_2d.extra.get('osm:natural', None) == 'stone':
             #item_3d = self.generate_item_3d_generic_catalog("natural-stone-1", item_2d, lambda: landscape.rock([4, 4.5, 4.0]), "Stone")
             item_3d = self.generate_item_3d_generic(item_2d, lambda: landscape.rock([4, 4.5, 4.0]), "Stone")

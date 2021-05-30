@@ -44,7 +44,7 @@ class Buildings2DOSMBuilder():
 
         self.osm = osmbuilder
 
-    def preprocess_buildings_features(self, features_2d):
+    def preprocess_buildings_parenting(self, buildings_2d):
         """
         """
 
@@ -53,41 +53,126 @@ class Buildings2DOSMBuilder():
 
         # Assign each building part to a building, or transform it into a building if needed
         #features = sorted(features_2d.children, key=lambda f: f.geom.area)
-        features_2d_original = list(features_2d.children)
-        for feature in list(features_2d.children):
+        features_2d_original = list(buildings_2d.children)
+        for feature in list(buildings_2d.children):
             if feature.geom.type == 'Point': continue
 
             if feature.extra.get('osm:building:part', None) is None and feature.extra.get('osm:building', None) is None: continue
 
             # Find building
             #buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and ddd.polygon(o.geom.exterior.coords).contains(feature))
-            buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and o != feature and o.contains(feature) and o in features_2d_original)
+            building_parents = buildings_2d.select(func=lambda o: o.extra.get('osm:building', None) and o != feature and o.contains(feature) and o in features_2d_original)
 
-            if len(buildings.children) == 0:
+            if len(building_parents.children) == 0:
                 if feature.extra.get('osm:building', None) is None:
                     logger.warn("Building part with no building: %s", feature)
                     building = ddd.shape(feature.geom, name="Building (added): %s" % feature.name)
-                    building.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')
+                    building.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')  # TODO: Should be DDD
                     building.extra['ddd:building:parts'] = [feature]
                     feature.extra['ddd:building:parent'] = building
-                    features_2d.append(building)
+                    buildings_2d.append(building)
 
-            elif len(buildings.children) > 1:
+            elif len(building_parents.children) > 1:
                 # Sort by area and get the smaller one
-                buildings.children.sort(key=lambda b: b.geom.area, reverse=False)
-                logger.warn("Building part with multiple buildings: %s -> %s", feature, buildings.children)
+                building_parents.children.sort(key=lambda b: b.geom.area, reverse=False)
+                logger.warn("Building part with multiple buildings: %s -> %s", feature, building_parents.children)
 
-                feature.extra['ddd:building:parent'] = buildings.children[0]
-                if 'ddd:building:parts' not in buildings.children[0].extra:
-                    buildings.children[0].extra['ddd:building:parts'] = []
-                buildings.children[0].extra['ddd:building:parts'].append(feature)
+                feature.extra['ddd:building:parent'] = building_parents.children[0]
+                if 'ddd:building:parts' not in building_parents.children[0].extra:
+                    building_parents.children[0].extra['ddd:building:parts'] = []
+                building_parents.children[0].extra['ddd:building:parts'].append(feature)
 
             else:
-                logger.debug("Associating building part to building: %s -> %s", feature, buildings.children[0])
-                feature.extra['ddd:building:parent'] = buildings.children[0]
-                if 'ddd:building:parts' not in buildings.children[0].extra:
-                    buildings.children[0].extra['ddd:building:parts'] = []
-                buildings.children[0].extra['ddd:building:parts'].append(feature)
+                logger.debug("Associating building part to building: %s -> %s", feature, building_parents.children[0])
+                feature.extra['ddd:building:parent'] = building_parents.children[0]
+                if 'ddd:building:parts' not in building_parents.children[0].extra:
+                    building_parents.children[0].extra['ddd:building:parts'] = []
+                building_parents.children[0].extra['ddd:building:parts'].append(feature)
+
+
+    def preprocess_building_fixes(self, buildings_2d):
+        """
+        Arranges different building parts, subtracting them as needed. The building footprint
+        is taken as what remains after subtracting other parts inside. Floors and height need
+        to be considered here (?)
+
+        Following: https://wiki.openstreetmap.org/wiki/Simple_3D_Buildings
+
+        (?) This needs to be done before calculating contacts (buildings analyze), as it may alter building geometry.
+        """
+
+        # Normalize: check if there are building parts, and if needed create a building part to
+        # fill the footprint (for buildings that do not meet the new "entirely filled" norm).
+
+        # Resolve heights (by floor height, height_min, etc)
+
+        # Subtract overlapping areas that match exactly (or at min_height?)
+        # Subtracting should not be needed for new buildings with building parts and filled footprint, which should be ignored.
+        # But for those non following that, first calculate if the remaining footprint is significant and needs to be added.
+
+        #logger.info("Fixing building parts as needed.")
+
+        for building_2d in list(buildings_2d.children):
+            # Process only parents, as children are processed inside
+
+            if building_2d.extra.get('ddd:building:parent', None) in (None, building_2d):
+
+                parts = building_2d.extra.get('ddd:building:parts', [])
+                if not parts: continue
+
+                entire_building_2d = ddd.group2()
+                #building_2d.geom = None  # Geom is needed for centroid, but this geometry shall not be considered :-?
+
+                for part in (parts + [building_2d]):
+
+                    if part != building_2d and part.extra.get('osm:building', None) is not None:
+                        #part.set('ddd:building:elevation:min', default=elevation_min)
+                        #part.set('ddd:building:elevation:max', default=elevation_max)
+                        part.set('osm:building:part', building_2d.get('osm:building'))  ## TODO: Should be DDD
+                        entire_building_2d.append(part)
+
+                    '''
+                    try:
+                        floors = int(float(part.extra.get('ddd:building:levels', part.extra.get('osm:building:levels', base_floors))))
+                        floors_min = int(float(part.extra.get('ddd:building:min_level', part.extra.get('osm:building:min_level', base_floors_min))))
+
+                        if floors == 0:
+                            logger.warn("Building part with 0 floors (setting to 1): %s", floors)
+                            floors = 1
+                    '''
+
+                    # Remove the rest of the building
+                    # TODO: Only ground parts
+                    if part == building_2d:
+                        part = part.copy()
+                        part = part.subtract(entire_building_2d)
+                        part.validate()
+
+                        if not part.is_empty():
+                            logger.info("Fixing building with non-filled footprint: %s", building_2d)
+                            #del part.extra['osm:building']
+                            del part.extra['ddd:building:parts']
+                            #del part.extra['ddd:building']
+                            part.set('osm:building:part', building_2d.get('osm:building'))  # TODO: Shall be ddd:building...
+                            part.set('ddd:building:parent', building_2d)
+                            part.set('ddd:building:part:fixed', True)
+                            building_2d.get('ddd:building:parts').append(part)
+                            building_2d.geom = None
+                            buildings_2d.append(part)
+
+    def preprocess_building_reparent(self, buildings_2d):
+        for building in list(buildings_2d.children):
+            parent = building.extra.get('ddd:building:parent', None)
+            #logger.debug(f"Building: {building} Parent: {parent}")
+            if parent:
+                buildings_2d.remove(building)
+                parent.append(building)
+                building.set('ddd:building:items', [])
+            elif not building.children:
+                building.set('ddd:building:items', [])
+            else:
+                # Has children and no parent: should not have own geometry
+                building.geom = None  # Geom is needed for centroid, but this geometry shall not be considered :-?
 
 
     def process_buildings_analyze(self, buildings, ways_ref):
@@ -106,26 +191,32 @@ class Buildings2DOSMBuilder():
         ways_ref.index_create()
 
         self._vertex_cache = defaultdict(list)
+        # Note that parts are processed in an unordered (flattened) way here
         selected_parts = buildings.select(func=lambda o: o.geom, recurse=True)
         for part in selected_parts.children:
             if part.is_empty(): continue
+            if part.get('ddd:building:parts', None): continue  # Ignore parents as they are not rendered
             vertices = part.vertex_list(recurse=False)  # This will fail if part had no geometry (eg. it was empty or children-only)
             for vidx, v in enumerate(vertices[:-1]):  # ignoring last vertex, repeated
                 vidx = vidx % (len(vertices) - 1)
                 self._vertex_cache[v].append((part, vidx))
 
         for part in selected_parts.children:
-            if part.is_empty(): continue
+            if part.is_empty():
+                logger.warn("Skipping analysis of building with empty geometry: %s", part)
+                continue
             if part.geom.type != 'Polygon':
                 logger.warn("Skipping analysis of building with non Polygon geometry (not implemented): %s", part)
                 continue
+            if part.get('ddd:building:parts', None): continue  # Ignore parents as they are not rendered
             self.process_building_contacts(part)
-            self.process_building_hull_create(part)
+            self.process_building_convex_hull_create(part)
             self.process_building_segments_analyze(part, buildings_ref, ways_ref)
             self.process_building_hull_analyze(part, buildings_ref, ways_ref)
 
         buildings_ref.index_clear()
         ways_ref.index_clear()
+
 
     def process_building_contacts(self, part):
         """
@@ -156,7 +247,7 @@ class Buildings2DOSMBuilder():
         part.set('ddd:building:segments', segments)
 
 
-    def process_building_hull_create(self, part):
+    def process_building_convex_hull_create(self, part):
 
         # Convex hull
         # Generate convex hull segment,
@@ -279,7 +370,7 @@ class Buildings2DOSMBuilder():
             if distance > 10:
                 continue
 
-            feature.extra['osm:building'] = building
+            feature.extra['ddd:building'] = building
 
             if feature.extra.get('osm:amenity', None) or feature.extra.get('osm:shop', None):
                 # TODO: Do the opposite, create items we are interested in, avoid this exception
@@ -321,13 +412,15 @@ class Buildings2DOSMBuilder():
 
         TODO: this method predates selectors and pipelines. This can possibly be done directly or trough with ddd.closest() now. Check usages.
         """
-        closest_building = None
-        closest_distance = math.inf
-        for building in buildings_2d.children:
-            distance = point.distance(building)
-            if distance < closest_distance:
-                closest_building = building
-                closest_distance = distance
+        #closest_building = None
+        #closest_distance = math.inf
+        closest_building, closest_distance = buildings_2d.closest(point)
+
+        #for building in buildings_2d.children:
+        #    distance = point.distance(building)
+        #    if distance < closest_distance:
+        #        closest_building = building
+        #        closest_distance = distance
         return closest_building, closest_distance
 
 

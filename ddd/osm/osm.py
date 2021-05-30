@@ -212,7 +212,7 @@ class OSMBuilder():
             name = f.properties.get('name', defaultname)
             osmid = f.properties.get('id', None)
             if osmid is not None:
-                name = "%s_(%s)" % (name, osmid)
+                name = "%s (%s)" % (name, osmid)
 
             feature_2d = ddd.shape(f.geometry, name=name)
             feature_2d.extra['osm:feature'] = f

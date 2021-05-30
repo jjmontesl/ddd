@@ -114,8 +114,9 @@ class DDDPipeline():
     def run_pipeline_internal(self):
 
         tasks = self.tasks_sorted()
-        for task in tasks:
-            print("  " + str(task))
+        if D1D2D3Bootstrap.debug:
+            for task in tasks:
+                logger.debug("  " + str(task))
 
         # Find cached task
         first_task_idx = 0

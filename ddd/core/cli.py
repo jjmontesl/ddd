@@ -154,6 +154,8 @@ class D1D2D3Bootstrap():
 
         self.profile = args.profile
 
+        D1D2D3Bootstrap.debug = self.debug
+
         D1D2D3Bootstrap.export_marker = args.export_markers
         D1D2D3Bootstrap.export_mesh = args.export_meshes
         if not D1D2D3Bootstrap.export_mesh and not D1D2D3Bootstrap.export_marker:

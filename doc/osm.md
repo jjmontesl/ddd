@@ -19,14 +19,12 @@ process and present larger areas in chunks.
 - Ways and intersections processing (both in 1D and 2D)
 - Areas processing: containment and layering
 - Buildings and bulding parts relationships
-- (Heuristic) association and alignment of features (features/ways/areas/buildings to to ways/areas/buildings...)
-- Coastlines and riverbanks
+- Association and alignment of features to ways/areas/buildings...
+- Coastlines and rivers
 - Elevation model (2D contours, 3D elevation, stairs, filtering...)
-- 3D bridges, tunnels and (TODO) stairs
-- 3D buildings and roofs
-- Traffic signs and traffic lights
-- (TODO) Road lines and OSM traffic lanes tag support
-- (TODO) Road signs (crossings, marks)
+- 3D bridges, tunnels and stairs (WIP, very buggy)
+- 3D buildings and roofs (WIP)
+- Traffic signs, road marks and traffic lights
 
 - Full metadata traceability across 2D and 3D features (both OSM and internal's)
 - 2D and 3D outputs (SVG, PNG and GLTF)
@@ -42,6 +40,7 @@ process and present larger areas in chunks.
 
 
 ### OSM data import (preprocessing)
+
 
 Note: latest versions are doing and caching the extraction automatically from country-latest.pbf,
 so this step needs not to be done manually.

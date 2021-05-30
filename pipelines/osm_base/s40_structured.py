@@ -382,7 +382,12 @@ def osm_structured_generate_areas_interways(pipeline, osm, root, logger):
     logger.info("Generating union for interways.")
     union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]'),
                         root.find("/Areas").select('["ddd:layer" ~ "0|-1a"]') ])
-    #union = union.clean()
+
+    # Add buildings
+    buildings = root.find("/Buildings").union()
+    union.append(buildings)
+
+    # Calculate union
     union = osm.areas2.generate_union_safe(union)
     #union = union.clean()
 
@@ -413,6 +418,11 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
                         ])
     #union = union.clean_replace(eps=0.01)
     ##union = union.clean(eps=0.01)
+
+    # Add buildings
+    buildings = root.find("/Buildings").union()
+    union.append(buildings)
+
     union = osm.areas2.generate_union_safe(union)
     union = union.clean(eps=0.01)  # Removing this causes a core dump during 3D generation
 
@@ -490,6 +500,25 @@ def osm_structured_areas_link_items_nodes(root, osm):
 
 
 @dddtask(log=True)
+def osm_structured_building_fixes(pipeline, root, osm):
+    """
+    Fixes (OSM) buildings that contain parts that do not cover the entire footprint area,
+    by creating a building part for the remainder.
+    This does not apply to single-part buildings, which are kept as single objects.
+    """
+    buildings = root.find("/Buildings")
+    osm.buildings2.preprocess_building_fixes(buildings)
+
+
+@dddtask(log=True)
+def osm_structured_building_reparent(pipeline, root, osm):
+    """
+    Reparents building parts to buildings.
+    """
+    buildings = root.find("/Buildings")
+    osm.buildings2.preprocess_building_reparent(buildings)
+
+@dddtask(log=True)
 def osm_structured_building_analyze(pipeline, root, osm):
     """
     Produce building information: segments, floors, contacted buildings...
@@ -498,8 +527,13 @@ def osm_structured_building_analyze(pipeline, root, osm):
     buildings = root.find("/Buildings")
     #ways = root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False)
     ways = pipeline.data['ways1']
+
     osm.buildings2.process_buildings_analyze(buildings, ways)
     #buildings.show()
+
+    #buildings.save("/tmp/buildings.json")
+    #buildings.dump(data=True)
+    #sys.exit(1)
 
 
 @dddtask(log=True)
