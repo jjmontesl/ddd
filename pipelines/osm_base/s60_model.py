@@ -355,6 +355,16 @@ def osm_model_generate_ways_road_markings_combine(osm, root, pipeline):
     root.find("/Roadlines3/").append(roadmarks)
 
 
+@dddtask()  # path="/Items3/*", select='[ddd:material="Roadmarks"]')
+def osm_model_combine_materials(osm, root, pipeline):
+    """
+    Combine meshes with the same material in a single mesh.
+    """
+    ddd.meshops.combine_group(root.find("/Buildings"), key_func=lambda o: o.mat.name if o.mat else None)
+    ddd.meshops.combine_group(root.find("/Areas"), key_func=lambda o: o.mat.name if o.mat else None)
+    ddd.meshops.combine_group(root.find("/Ways"), key_func=lambda o: o.mat.name if o.mat else None)
+
+
 @dddtask()  # [!"intersection"]
 def osm_models_instances_buffers_buildings(pipeline, osm, root, logger):
     """
@@ -398,6 +408,15 @@ def osm_models_instances_buffers_items(pipeline, osm, root, logger):
 
             root.select_remove(path="/Items3/*", selector='["ddd:instance:key" = "%s"]' % key)
             root.find("/Items3").append(instance_buffer)
+
+
+@dddtask()
+def osm_models_splatmap_materials(pipeline, osm, root, logger):
+    """
+    Mark materials for splatmap usage.
+    """
+    root.find("/Areas").set('ddd:material:splatmap', True, children=True)
+    root.find("/Ways").set('ddd:material:splatmap', True, children=True)
 
 
 @dddtask(order="60.50.+", log=True)

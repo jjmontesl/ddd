@@ -325,3 +325,34 @@ class DDDMeshOps():
 
         return result
 
+    def combine_group(self, root, key_func):
+        """
+        Modifies the nodes tree.
+        """
+
+        # Retrieve keys
+        keys = set()
+        for o in root.recurse_objects()[1:]:
+            key = key_func(o)
+            if key:
+                keys.add(key)
+
+        # Combine objects by key
+        for key in keys:
+            objs = root.select(func=lambda o: key_func(o) == key)
+            root.select_remove(func=lambda o: key_func(o) == key)
+            logger.debug("Combining %d objects by key: %s", len(objs.children), keys)
+
+            instances = objs.select(func=lambda o: isinstance(o, DDDInstance), recurse=False)
+            instances.name = "Combined instances: %s" % key
+            objs.select_remove(func=lambda o: isinstance(o, DDDInstance))
+
+            combined = objs.combine()
+            combined.name = "Combined objects: %s" % key
+            root.append(combined)
+
+            root.append(instances)
+
+
+
+        return root

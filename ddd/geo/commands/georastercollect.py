@@ -55,17 +55,19 @@ class GeoRasterCollectCommand(DDDCommand):
 
         configs = []
 
-        for root, dirs, files in os.walk(basedir):
+        for root, dirs, files in os.walk(basedir, followlinks=True):
             for name in sorted(files):
 
                 path = str(os.path.join(root, name))
-                _, extension = os.path.splitext(path)
+                extension = "." + path.split(".")[-1]
                 if extension.lower() not in extensions:
                     continue
 
                 crs = 'EPSG:4326'
                 if 'eudem11/' in path or 'eu_dem_v11' in path: crs = 'EPSG:3035'
                 if 'ETRS89-HU29' in path: crs = 'EPSG:25829'
+                if 'ETRS89-HU30' in path: crs = 'EPSG:25830'
+                if 'ETRS89-HU31' in path: crs = 'EPSG:25831'
 
                 tile = GeoRasterTile.load(str(path), crs)
                 #print("File: %s  Transform: %s" % (str(path), tile.geotransform))

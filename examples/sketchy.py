@@ -32,12 +32,12 @@ items = ddd.group3()
 
 item = buildings.portal()
 items.append(item)
-item.show()
+#item.show()
 
 
 item = buildings.door()
 items.append(item)
-item.show()
+#item.show()
 
 
 item = buildings.window_with_border()
@@ -196,6 +196,10 @@ items.show()
 
 items = ddd.align.grid(items)
 items.append(ddd.helper.all())
-items.show()
+#items.show()
 items.save("/tmp/test.glb")
 
+
+items = ddd.meshops.combine_group(items, lambda o: o.mat.name if o.mat else None)
+items.dump()
+items.show()

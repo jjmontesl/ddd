@@ -3085,9 +3085,15 @@ class DDDObject3(DDDObject):
         return cmeshes
 
     def recurse_objects(self):
+        """
+        Returns a list of all objects recursively.
+        Includes the root node in first place.
+        Does not include DDDInstance or other objects.
+        """
         cobjs = [self]
         for c in self.children:
-            cobjs.extend(c.recurse_objects())
+            if isinstance(c, DDDObject3):
+                cobjs.extend(c.recurse_objects())
         return cobjs
 
     def show(self, instance_mesh=None, instance_marker=None):
