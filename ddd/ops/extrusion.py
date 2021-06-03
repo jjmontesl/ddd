@@ -207,8 +207,8 @@ def extrude_between_geoms_wrap(geom_a, geom_b, offset, base_height):
             geom_a = orient(geom_a, -1)
             geom_b = orient(geom_b, -1)
 
-    coords_a = geom_a.coords if geom_a.type == 'Point' else geom_a.exterior.coords[:-1]  # Linearrings repeat first/last point
-    coords_b = geom_b.coords if geom_b.type == 'Point' else geom_b.exterior.coords[:-1]  # Linearrings repeat first/last point
+    coords_a = geom_a.coords if geom_a.type != 'Polygon' else geom_a.exterior.coords[:-1]  # Linearrings repeat first/last point
+    coords_b = geom_b.coords if geom_b.type != 'Polygon' else geom_b.exterior.coords[:-1]  # Linearrings repeat first/last point
 
     # Find closest to coords_a[0] in b, and shift coords in b to match 0
     closest_idx = 0
@@ -221,8 +221,8 @@ def extrude_between_geoms_wrap(geom_a, geom_b, offset, base_height):
     #if closest_idx != 0: print("Closest Idx: %s" % closest_idx)
     coords_b = coords_b[closest_idx:] + coords_b[:closest_idx]
 
-    coords_a = coords_a[:] + [coords_a[0]]
-    coords_b = coords_b[:] + [coords_b[0]]
+    coords_a = coords_a[:] + ([coords_a[0]] if geom_a.type == 'Polygon' else [])
+    coords_b = coords_b[:] + ([coords_b[0]] if geom_b.type == 'Polygon' else [])
 
     return extrude_coords(coords_a, coords_b, offset, base_height)
 
@@ -230,16 +230,23 @@ def extrude_between_geoms_wrap(geom_a, geom_b, offset, base_height):
 def extrude_coords(coords_a, coords_b, distance, base_height=0):
 
     # Note that last vertex in polygons is repeated, we ignore it and use modulus for referring to vertex indices
+    # This reuses the vertices when closing the loop
+
+    is_poly_a = (coords_a[0] == coords_a[-1]) and len(coords_a) > 1
+    is_poly_b = (coords_b[0] == coords_b[-1]) and len(coords_b) > 1
+    modulus_a = (len(coords_a) - 1) if is_poly_a else len(coords_a)
+    modulus_b = (len(coords_b) - 1) if is_poly_b else len(coords_b)
+
     vertices = []
-    vertices.extend([(x, y, base_height) for x, y, *z in coords_a[:-1]])
+    vertices.extend([(x, y, base_height) for x, y, *z in (coords_a[:-1] if is_poly_a else coords_a)])
     vertices_b_idx = len(vertices)
-    vertices.extend([(x, y, base_height + distance) for x, y, *z in coords_b[:-1]])
+    vertices.extend([(x, y, base_height + distance) for x, y, *z in (coords_b[:-1] if is_poly_b else coords_b)])
 
     shape_a_idx = 0
     shape_b_idx = 0
 
-    def va(shape_a_idx): return vertices[shape_a_idx % (len(coords_a) - 1)]
-    def vb(shape_b_idx): return vertices[(shape_b_idx % (len(coords_b) - 1)) + vertices_b_idx]
+    def va(shape_a_idx): return vertices[shape_a_idx % modulus_a]
+    def vb(shape_b_idx): return vertices[(shape_b_idx % modulus_b) + vertices_b_idx]
     def ang(v): return (math.atan2(v[1], v[0]) + (math.pi * 2)) % (math.pi * 2)
     def diff(va, vb): return  [va[0] - vb[0], va[1] - vb[1], va[2] - vb[2]]
     def distsqr(v): return v[0] * v[0] + v[1] * v[1] + v[2] * v[2]
@@ -250,8 +257,8 @@ def extrude_coords(coords_a, coords_b, distance, base_height=0):
     last_tri = None
     while not (finished_a and finished_b):
 
-        la = distsqr(diff(va(shape_a_idx + 1), vb(shape_b_idx))) if (shape_a_idx < len(coords_a) - 1) else float("inf")
-        lb = distsqr(diff(vb(shape_b_idx + 1), va(shape_a_idx))) if (shape_b_idx < len(coords_b) - 1) else float("inf")
+        la = distsqr(diff(va(shape_a_idx + 1), vb(shape_b_idx))) if (shape_a_idx < modulus_a) else float("inf")
+        lb = distsqr(diff(vb(shape_b_idx + 1), va(shape_a_idx))) if (shape_b_idx < modulus_b) else float("inf")
         aa = ang(va(shape_a_idx))
         aan = ang(va(shape_a_idx + 1)) if (shape_a_idx < len(coords_a) - 1) else float("inf")
         ab = ang(vb(shape_b_idx))
@@ -266,10 +273,10 @@ def extrude_coords(coords_a, coords_b, distance, base_height=0):
 
         # Vertex modulus is used to handle repeated first-last vertex in polys
         if advance_b or finished_a:
-            ntri = [shape_a_idx % (len(coords_a) - 1), shape_b_idx % (len(coords_b) - 1) + vertices_b_idx, (shape_b_idx + 1) % (len(coords_b) - 1) + vertices_b_idx]
+            ntri = [shape_a_idx % modulus_a, shape_b_idx % modulus_b + vertices_b_idx, (shape_b_idx + 1) % modulus_b + vertices_b_idx]
             shape_b_idx +=1
         elif not advance_b or finished_b:
-            ntri = [shape_a_idx % (len(coords_a) - 1), shape_b_idx % (len(coords_b) - 1) + vertices_b_idx, (shape_a_idx + 1) % (len(coords_a) - 1)]
+            ntri = [shape_a_idx % modulus_a, shape_b_idx % modulus_b + vertices_b_idx, (shape_a_idx + 1) % modulus_a]
             shape_a_idx +=1
         else:
             raise AssertionError()
@@ -400,15 +407,14 @@ def extrude_dome(obj, height, steps=6, base_shape=None):
     base = obj if base_shape is None else base_shape
     obj = obj.copy()
 
-    stepheight = 1.0 / steps
     for i in range(steps):
-        stepy = (i + 1) * stepheight
-        stepx = math.sqrt(1 - (stepy ** 2))
-        stepbuffer = -(1 - stepx)
-        #obj = obj.extrude_step(base.buffer(stepbuffer * height), stepheight * height)
+        stepym = math.sin(i * math.pi * 0.5 / steps)
+        stepy = math.sin((i + 1) * math.pi * 0.5 / steps)
+        stepx = math.cos((i + 1) * math.pi * 0.5 / steps)
+        #if i == steps - 1: i = i - 0.05
 
-        shp = base.scale([stepx, stepx]) if stepx > 0 else base.centroid()
-        obj = obj.extrude_step(shp, stepheight * height)
+        shp = base.scale([stepx, stepx]) if (i < steps - 1) else base.centroid()
+        obj = obj.extrude_step(shp, (stepy - stepym) * height, cap=False)
 
     return obj
 
