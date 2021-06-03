@@ -344,15 +344,23 @@ class DDDMeshOps():
             logger.debug("Combining %d objects by key: %s", len(objs.children), keys)
 
             instances = objs.select(func=lambda o: isinstance(o, DDDInstance), recurse=False)
-            instances.name = "Combined instances: %s" % key
-            objs.select_remove(func=lambda o: isinstance(o, DDDInstance))
+            if len(instances.children) > 0:
+                instances.name = "Combined instances: %s" % key
+                objs.select_remove(func=lambda o: isinstance(o, DDDInstance))
+                root.append(instances)
 
-            combined = objs.combine()
-            combined.name = "Combined objects: %s" % key
-            root.append(combined)
-
-            root.append(instances)
-
-
+            for o in objs.recurse_objects()[1:]: o.children = []
+            if len(objs.children) > 0:
+                combined = objs.combine()
+                combined.name = "Combined objects: %s" % key
+                root.append(combined)
 
         return root
+
+    def combine_materials(self, root):
+        """
+        A convenience method to call `combine_group()` grouping by material name.
+        """
+        result = self.combine_group(root, lambda o: o.mat.name if o.mat else None)
+        return result
+

@@ -44,9 +44,10 @@ class DDDHelper():
         if grid_xz:
             objs.append(self.grid_xz(size, grid_space))
 
+        objs = objs.combine()
+
         if center is None:
             center = [0, 0, 0]
-
         objs = objs.translate([-center[0], -center[1], -center[2]])
 
         if around_center:
@@ -67,6 +68,7 @@ class DDDHelper():
         for j in range(int(size / grid_space) + 1):
             line2 = ddd.box([0, 0, j * grid_space, 0 + gw, size, j * grid_space + gw])
             grid.append(line2)
+        grid = grid.combine()
         return grid
 
     def grid_xz(self, size=10.0, grid_space=1.0):
@@ -78,6 +80,7 @@ class DDDHelper():
         for j in range(int(size / grid_space) + 1):
             line2 = ddd.box([0, 0, j * grid_space, size, 0 + gw, j * grid_space + gw])
             grid.append(line2)
+        grid = grid.combine()
         return grid
 
 

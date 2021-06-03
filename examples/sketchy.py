@@ -19,6 +19,7 @@ from ddd.pack.sketchy import urban, landscape, industrial, interior, sports,\
     vehicles, common, buildings
 from ddd.ddd import ddd
 import math
+import sys
 
 
 ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
@@ -200,6 +201,6 @@ items.append(ddd.helper.all())
 items.save("/tmp/test.glb")
 
 
-items = ddd.meshops.combine_group(items, lambda o: o.mat.name if o.mat else None)
+items = ddd.meshops.combine_materials(items)
 items.dump()
 items.show()

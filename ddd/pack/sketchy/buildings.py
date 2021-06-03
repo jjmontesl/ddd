@@ -30,7 +30,8 @@ def window_interior(width=1.6, height=1.2, depth=0.02):
     """
     obj = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Window")
     #obj = obj.extrude(depth)
-    obj = obj.triangulate().twosided().translate([0, 0, depth])
+    obj = obj.triangulate().translate([0, 0, depth])
+    #obj = obj.twosided()  # shall be optional, as back is not seen in many cases
     obj = obj.material(ddd.mats.glass)
     obj = ddd.uv.map_cubic(obj)
     obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)

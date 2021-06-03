@@ -2785,7 +2785,8 @@ class DDDObject3(DDDObject):
                 #offset = len(result.extra['uv'])
                 result.extra['uv'] = result.extra['uv'] + list(cc.extra['uv'])
 
-        #result.mesh.merge_vertices()  # This would vertices duplicated for UV coords
+        #if result.mesh:
+        #    result.mesh.merge_vertices()  # Causes incorrect UV coordinates. This would vertices duplicated for UV coords
         #result.mesh.fix_normals()
 
         result.children = []

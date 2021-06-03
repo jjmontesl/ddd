@@ -200,7 +200,6 @@ def extrude_between_geoms_wrap(geom_a, geom_b, offset, base_height):
     TODO: avoid duplication in geomops.vertex_order_align_snap().
     """
 
-
     # Ensure winding
     if (geom_a.type == "Polygon" and geom_b.type == "Polygon"):
         if (geom_a.exterior.is_ccw != geom_b.exterior.is_ccw):
@@ -224,22 +223,23 @@ def extrude_between_geoms_wrap(geom_a, geom_b, offset, base_height):
 
     coords_a = coords_a[:] + [coords_a[0]]
     coords_b = coords_b[:] + [coords_b[0]]
+
     return extrude_coords(coords_a, coords_b, offset, base_height)
 
 
 def extrude_coords(coords_a, coords_b, distance, base_height=0):
 
-
+    # Note that last vertex in polygons is repeated, we ignore it and use modulus for referring to vertex indices
     vertices = []
-    vertices.extend([(x, y, base_height) for x, y, *z in coords_a])
+    vertices.extend([(x, y, base_height) for x, y, *z in coords_a[:-1]])
     vertices_b_idx = len(vertices)
-    vertices.extend([(x, y, base_height + distance) for x, y, *z in coords_b])
+    vertices.extend([(x, y, base_height + distance) for x, y, *z in coords_b[:-1]])
 
     shape_a_idx = 0
     shape_b_idx = 0
 
-    def va(shape_a_idx): return vertices[shape_a_idx]
-    def vb(shape_b_idx): return vertices[(shape_b_idx) + vertices_b_idx]
+    def va(shape_a_idx): return vertices[shape_a_idx % (len(coords_a) - 1)]
+    def vb(shape_b_idx): return vertices[(shape_b_idx % (len(coords_b) - 1)) + vertices_b_idx]
     def ang(v): return (math.atan2(v[1], v[0]) + (math.pi * 2)) % (math.pi * 2)
     def diff(va, vb): return  [va[0] - vb[0], va[1] - vb[1], va[2] - vb[2]]
     def distsqr(v): return v[0] * v[0] + v[1] * v[1] + v[2] * v[2]
@@ -264,28 +264,28 @@ def extrude_coords(coords_a, coords_b, distance, base_height=0):
         elif norm == 'l2':
             advance_b = lb < la
 
+        # Vertex modulus is used to handle repeated first-last vertex in polys
         if advance_b or finished_a:
-            ntri = [shape_a_idx, shape_b_idx + vertices_b_idx, (shape_b_idx + 1) + vertices_b_idx]
+            ntri = [shape_a_idx % (len(coords_a) - 1), shape_b_idx % (len(coords_b) - 1) + vertices_b_idx, (shape_b_idx + 1) % (len(coords_b) - 1) + vertices_b_idx]
             shape_b_idx +=1
         elif not advance_b or finished_b:
-            ntri = [shape_a_idx, shape_b_idx + vertices_b_idx, (shape_a_idx + 1)]
+            ntri = [shape_a_idx % (len(coords_a) - 1), shape_b_idx % (len(coords_b) - 1) + vertices_b_idx, (shape_a_idx + 1) % (len(coords_a) - 1)]
             shape_a_idx +=1
         else:
             raise AssertionError()
 
         if last_tri == ntri: break
 
-        faces.append(ntri)
-        last_tri = ntri
         #print(ntri)
+        last_tri = ntri
+        if ntri[0] != ntri[1] and ntri[0] != ntri[2] and ntri[1] != ntri[2]:
+            faces.append(ntri)
 
         if shape_a_idx >= len(coords_a) - 1:
             finished_a = True
         if shape_b_idx >= len(coords_b) - 1:
             finished_b = True
 
-    #print(vertices)
-    #print(faces)
     return Trimesh(vertices, faces)
 
 

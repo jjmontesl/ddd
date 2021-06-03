@@ -144,12 +144,15 @@ def trafficlights_head(height=0.8, depth=0.3):
     discs = ddd.group([disc_green, disc_orange, disc_red], name="TrafficLight Discs").translate([0, 0, depth])  # Put discs over head
     head = ddd.group([head, discs], name="TrafficLight Head").translate([0, -height / 2.0, 0])  # Center vertically
     head = head.rotate([math.pi / 2.0, 0, 0])
+    head = ddd.uv.map_cubic(head)
+
     return head
 
 def trafficlights():
     head = trafficlights_head()
     post = curvedpost(arm_items=[head])
     post.name = "TrafficLight"
+    post = ddd.meshops.combine_materials(post)
     return post
 
 
@@ -784,7 +787,7 @@ def patio_umbrella(side=2.5, height=2.5):
     umbrella = umbrella.extrude_step(ddd.point(), umbrella_height, base=False, cap=False)
     umbrella = umbrella.twosided().translate([0, 0, height - umbrella_height - 0.02])
     umbrella = ddd.uv.map_cubic(umbrella)
-
+    #EXTRUSION_METHOD_WRAP
     item = ddd.group([base_weight, pole, umbrella])
     return item
 
