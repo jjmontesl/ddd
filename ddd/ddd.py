@@ -3087,7 +3087,7 @@ class DDDObject3(DDDObject):
 
     def recurse_objects(self):
         """
-        Returns a list of all objects recursively.
+        Returns a list of all objects recursively in preorder.
         Includes the root node in first place.
         Does not include DDDInstance or other objects.
         """

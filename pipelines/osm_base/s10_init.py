@@ -277,11 +277,17 @@ def osm_materials():
     ddd.mats.metal_paint_green = ddd.material("PaintGreen", color='#265e13',
                                               metallic_factor=0.6, roughness_factor=0.3, #bump_strength=2.0,
                                               texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Paint06/Paint06_*.jpg",)
+    ddd.mats.metal_paint_yellow = ddd.material("PaintYellow", color='#ebe015',
+                                              metallic_factor=0.6, roughness_factor=0.25, #bump_strength=2.0,
+                                              texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Paint06/Paint06_*.jpg",)
+    ddd.mats.metal_paint_red = ddd.material("PaintRed", color='#d01010',
+                                              metallic_factor=0.6, roughness_factor=0.25, #bump_strength=2.0,
+                                              texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Paint06/Paint06_*.jpg",)
+    ddd.mats.metal_paint_blue = ddd.material("PaintBlue", color='#184794',
+                                              metallic_factor=0.6, roughness_factor=0.25, #bump_strength=2.0,
+                                              texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Paint04/Paint04_*.jpg",)
 
     '''
-    self.metal_paint_red = ddd.material("PaintRed", color='#d01010')
-    self.metal_paint_yellow = ddd.material("PaintYellow", color='#ebe015')
-    self.metal_paint_blue = ddd.material("PaintBlue", color='#184794')
     self.metal_paint_white = ddd.material("PaintWhite", color='#f8fbff')
     self.metal_paint_black = ddd.material("PaintBlack", color='#000a17')
 

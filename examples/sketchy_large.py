@@ -17,10 +17,12 @@ item = landscape.lighthouse()
 items.append(item)
 #item.show()
 
-# TODO: Move generate_item_3d_historic_archaeological_site site generation to sketchy
+# TODO: Move generate_item_3d_historic_archaeological_site site generation to sketchy (?)
+'''
 item = osmitems.ItemsOSMBuilder(None).generate_item_3d_historic_archaeological_site(ddd.point())
 items.append(item)
 item.show()
+'''
 
 item = landscape.comm_tower()
 items.append(item)

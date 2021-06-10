@@ -327,8 +327,15 @@ class DDDMeshOps():
 
     def combine_group(self, root, key_func):
         """
-        Modifies the nodes tree.
+        Note that this modifies the node tree.
+
+        This maybe could be better done with a custom recursive function, maintaining
+        strucure as much as possible (instead of flattening before combining as currently done).
         """
+
+        # Flatten all objects. If this is not done, some objects are combined with children
+        # incoprrectly before being processed.
+        root.replace(root.flatten())
 
         # Retrieve keys
         keys = set()
@@ -338,9 +345,11 @@ class DDDMeshOps():
                 keys.add(key)
 
         # Combine objects by key
-        for key in keys:
+        added_objects = []
+
+        for key in sorted(keys):
             objs = root.select(func=lambda o: key_func(o) == key)
-            root.select_remove(func=lambda o: key_func(o) == key)
+            #root.select_remove(func=lambda o: key_func(o) == key)
             logger.debug("Combining %d objects by key: %s", len(objs.children), keys)
 
             instances = objs.select(func=lambda o: isinstance(o, DDDInstance), recurse=False)
@@ -348,12 +357,18 @@ class DDDMeshOps():
                 instances.name = "Combined instances: %s" % key
                 objs.select_remove(func=lambda o: isinstance(o, DDDInstance))
                 root.append(instances)
+                added_objects.append(instances)
 
             for o in objs.recurse_objects()[1:]: o.children = []
             if len(objs.children) > 0:
                 combined = objs.combine()
                 combined.name = "Combined objects: %s" % key
                 root.append(combined)
+                added_objects.append(combined)
+
+        # Remove objects
+        for key in keys:
+            root.select_remove(func=lambda o: key_func(o) == key and o not in added_objects)
 
         return root
 

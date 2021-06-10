@@ -364,7 +364,6 @@ def osm_model_combine_materials(osm, root, pipeline):
     ddd.meshops.combine_group(root.find("/Areas"), key_func=lambda o: o.mat.name if o.mat else None)
     ddd.meshops.combine_group(root.find("/Ways"), key_func=lambda o: o.mat.name if o.mat else None)
 
-
 @dddtask()  # [!"intersection"]
 def osm_models_instances_buffers_buildings(pipeline, osm, root, logger):
     """

@@ -142,7 +142,7 @@ def materials_pack_atlas(root, logger):
 
             # Colorize
             texture_color_rgba = np.array(mat.texture_color_rgba if mat.texture_color_rgba is not None else mat.color_rgba)
-            colorize_strength = 0.5
+            colorize_strength = 1.0  #
             white = np.array([255, 255, 255])
             texture_color_rgba[:3] = texture_color_rgba[:3] + (white - texture_color_rgba[:3]) * (1.0 - colorize_strength)
             albedo_array[:,:,:3] = ((albedo_array[:,:,:3] / 255) * (texture_color_rgba[:3] / 255)) * 255

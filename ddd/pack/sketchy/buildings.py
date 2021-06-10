@@ -80,10 +80,14 @@ def door(width=1.4, height=2.2, depth=0.06):
     A door, centered on X and aligned to floor plane, lying on the XZ plane.
     """
     obj = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Door")
-    obj = obj.extrude(depth).translate([0, 0, depth])
+    obj = obj.extrude(depth) # .translate([0, 0, depth])
     obj = obj.material(ddd.mats.wood)
     obj = ddd.uv.map_cubic(obj)
     obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
+
+    handle = door_handle_bar()
+    handle = handle.translate([-width * 0.4, -depth, 1.07])
+    obj.append(handle)
 
     #handle = door_handle()
     #obj.append(handle)
@@ -91,11 +95,16 @@ def door(width=1.4, height=2.2, depth=0.06):
     return obj
 
 
-def door_handle(width=0.1, height=0.3):
+def door_handle_bar(width=0.1, height=0.3, depth=0.05, separation=0.06):
     """
     """
-    pass
-
+    shape = ddd.rect([width, height], name="Door Handle").recenter()
+    obj = shape.scale([0.5, 0.5]).extrude_step(shape, separation, base=False)
+    obj = obj.extrude_step(shape, depth)
+    obj = obj.material(ddd.mats.metal)
+    obj = ddd.uv.map_cubic(obj)
+    obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    return obj
 
 def portal(width=3.6, height=2.8, frame_width=0.08, frame_depth=0.05, door_width=1.4, top_panel_height=0.8, bottom_panel_height=0.4):
     """

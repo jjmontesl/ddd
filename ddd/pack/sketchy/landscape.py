@@ -63,9 +63,10 @@ def lighthouse(height=10, r=1.5):
     lamp = lamp_ball(r=0.2).material(mat)
     lamp = ddd.uv.map_spherical(lamp)
 
-    top = post(top=lamp).translate([0, 0, height])
+    top = post(top=lamp, mat_post=ddd.mats.steel).translate([0, 0, height])
 
-    rail = disc.scale(1.2).extrude_step(disc.scale(1.2), 1.0, base=False, cap=False).translate([0, 0, height]).material(ddd.mats.railing)
+    rail = disc.scale(1.2).extrude_step(disc.scale(1.2), 1.0, base=False, cap=False)  #.twosided()
+    rail = rail.translate([0, 0, height]).material(ddd.mats.railing)
     rail = ddd.uv.map_cylindrical(rail)
 
     obj = ddd.group([obj, top, rail], name="Lighthouse Small")
