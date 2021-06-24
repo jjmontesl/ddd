@@ -46,8 +46,11 @@ class DDDGeoJSONFormat():
         data = {'_name': node_name,
                 '_path': extra['ddd:path'],
                 '_str': str(obj),
-                '_extra': extra,
+                #'_extra': extra,
                 '_material': str(obj.mat)}
+
+        # Collapse extra onto data
+        data.update(extra)
 
         if obj.geom:
             if obj.geom.type == 'Polygon':

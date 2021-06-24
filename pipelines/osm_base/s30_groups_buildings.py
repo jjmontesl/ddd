@@ -124,5 +124,13 @@ def osm_buildings_building_shed(pipeline, osm, root, obj):
     obj = obj.material(ddd.mats.wood)
     return obj
 
+# Materials
 
+@dddtask(path="/Buildings/*", select='["osm:building:material" = "timber_framing"]')
+def osm_buildings_building_material_timber_framing(pipeline, osm, root, obj):
+    obj.set('ddd:building:material', "wood")
+
+@dddtask(path="/Buildings/*", select='["osm:roof:material" = "timber_framing"]')
+def osm_buildings_roof_material_timber_framing(pipeline, osm, root, obj):
+    obj.set('ddd:roof:material', "wood")
 

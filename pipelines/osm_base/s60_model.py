@@ -324,9 +324,9 @@ def osm_model_elevation_apply_building(logger, obj, osm, pipeline, root):
         building_elevation = float(building_parent.extra['ddd:building:elevation'])
         obj = obj.translate([0, 0, building_elevation])
     else:
-        ddd.trace(locals())
+        #ddd.trace(locals())
         logger.error("No parent building elevation found for object %s (parent building: %s)", obj, building_parent)
-        raise DDDException("No parent building elevation found for object %s (parent building: %s)" % (obj, building_parent))
+        #raise DDDException("No parent building elevation found for object %s (parent building: %s)" % (obj, building_parent))
     obj = obj.translate([0, 0, -0.20])
     return obj
 

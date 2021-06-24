@@ -41,9 +41,7 @@ class GeoRasterCoverageCommand(DDDCommand):
         args = parser.parse_args(args)
 
     def run(self):
-
         logger.info("Generate a Geo Raster config files report map.")
-
         self.georaster_coverage()
 
     def georaster_coverage(self):
@@ -51,10 +49,16 @@ class GeoRasterCoverageCommand(DDDCommand):
         covermap = ddd.group2(name="DDD GeoRaster Coverage")
 
         tiles_config = settings.DDD_GEO_DEM_TILES
+        transformers = {}
         for tc in tiles_config:
 
+            logger.info("Inspecting DEM file: %s", tc['path'])
+
             crs = tc['crs'].lower()
-            transformer = pyproj.Transformer.from_proj(crs, 'epsg:4326', always_xy=True)
+            transformer = transformers.get(crs, None)
+            if not transformer:
+                transformer = pyproj.Transformer.from_proj(crs, 'epsg:4326', always_xy=True)
+                transformers[crs] = transformer
 
             projected_point_x0y0 = transformer.transform(tc['bounds'][0], tc['bounds'][1])
             projected_point_x0y1 = transformer.transform(tc['bounds'][0], tc['bounds'][3])
@@ -62,8 +66,20 @@ class GeoRasterCoverageCommand(DDDCommand):
             projected_point_x1y1 = transformer.transform(tc['bounds'][2], tc['bounds'][3])
 
             # Generate polygon in wgs84
-            tile = ddd.polygon([projected_point_x0y0, projected_point_x1y0,projected_point_x1y1, projected_point_x0y1])
+            tile = ddd.polygon([projected_point_x0y0, projected_point_x1y0, projected_point_x1y1, projected_point_x0y1])
             tile.name = "Tile: %s" % tc['path']
+
+            tile.extra.update(tc)
+
+            file_size = None
+            try:
+                file_size = os.path.getsize(tc['path'])
+            except FileNotFoundError as e:
+                pass
+
+            tile.extra['file_size'] = file_size
+            tile.extra['file_available'] = file_size is not None
+
             covermap.append(tile)
 
             #print(tc)

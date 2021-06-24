@@ -55,6 +55,9 @@ class GeoRasterCollectCommand(DDDCommand):
 
         configs = []
 
+        outProj = pyproj.Proj('EPSG:4326')
+        projs = {'EPSG:4326': outProj}
+
         for root, dirs, files in os.walk(basedir, followlinks=True):
             for name in sorted(files):
 
@@ -84,8 +87,10 @@ class GeoRasterCollectCommand(DDDCommand):
                 bounds = [minx, min(miny, maxy), maxx, max(miny, maxy)]
 
                 # Transform bounds to WGS84
-                inProj = pyproj.Proj(crs)
-                outProj = pyproj.Proj('EPSG:4326')
+                inProj = projs.get(crs, None)
+                if not inProj:
+                    inProj = pyproj.Proj(crs)
+                    projs[crs] = inProj
                 minx_wgs84, miny_wgs84 = pyproj.transform(inProj, outProj, minx, miny, always_xy=True)
                 maxx_wgs84, maxy_wgs84 = pyproj.transform(inProj, outProj, maxx, maxy, always_xy=True)
                 bounds_wgs84 = [minx_wgs84, min(miny_wgs84, maxy_wgs84), maxx_wgs84, max(miny_wgs84, maxy_wgs84)]
@@ -104,17 +109,29 @@ class GeoRasterCollectCommand(DDDCommand):
                           'geotransform': geotransform }
                 configs.append(config)
 
+        #configs.sort(key=lambda f: int(f['resolution_m']) if not math.isnan(f['resolution_m']) else 0)
+
         text = ""
+        last_dir = None
         for f in configs:
+
+            # Add newlines between groups
+            file_dir = f['path'].split("/")[:-1]
+            if file_dir != last_dir:
+                last_dir = file_dir
+                text += "\n"
+
             text += ("    {'path': '%s',\n" % f['path'])
             text += ("     'crs': '%s',\n" % f['crs'])
+            text += ("     'resolution_m': '%s',\n" % f['resolution_m'])
             #text += ("     'transform': %s,\n" % (f['transform'], ))
             text += ("     'bounds': %s,\n" % f['bounds'])
             text += ("     'bounds_wgs84_xy': %s},  # (%.3f m/pixel)\n" % (f['bounds_wgs84_xy'], f['resolution_m']))
-        #text += ("]\n")
 
+        #text += ("]\n")
 
         print(text)
 
+        logger.info("Found %d georaster files.", len(configs))
 
 

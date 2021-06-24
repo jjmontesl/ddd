@@ -286,6 +286,10 @@ class DDDMeshOps():
                     except Exception as e:
                         continue
 
+                    if geom is None:
+                        # Was removed by cleaning or validation
+                        continue
+
                     try:
                         geom = polygon.orient(geom, 1)  # orient polygon
 

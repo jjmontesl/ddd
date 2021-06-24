@@ -188,7 +188,7 @@ class Buildings3DOSMBuilder():
             floors = int(float(part.get('ddd:building:levels')))
             floors_min = int(float(part.get('ddd:building:min_level')))
             floor_0_height = part.get('ddd:building:level:0:height')
-            roof_height = part.get('ddd:roof:height')
+            roof_height = parse_meters(part.get('ddd:roof:height'))
 
             if floors == 0:
                 logger.warn("Building part with 0 floors (setting to 1): %s", floors)
@@ -198,7 +198,7 @@ class Buildings3DOSMBuilder():
             # FIXME: this code is duplicated inside building_part, but also used by roofs and for initial checks here
             floors_height = floor_0_height + (floors - 1) * 3.00  # Note that different floor heights
             floors_min_height = floors_min * 3.00  # TODO: account for variabe floors + interfloors height
-            min_height = float(part.extra.get('osm:min_height', floors_min_height))
+            min_height = parse_meters(part.extra.get('osm:min_height', floors_min_height))
             #max_height = parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
             max_height = parse_meters(part.extra.get('osm:height', floors_height)) - roof_height
             dif_height = max_height - min_height
@@ -244,11 +244,19 @@ class Buildings3DOSMBuilder():
         floor_0_height = part.extra.get('ddd:building:level:0:height')
         floors = part.extra.get('ddd:building:levels')
         floors_min = part.extra.get('ddd:building:min_level')
-        roof_height = part.get('ddd:roof:height')
+        roof_height = parse_meters(part.get('ddd:roof:height'))
+
+        try:
+            floors_min = int(floors_min)
+            floors = int(floors)
+        except Exception as e:
+            floors_min = 0
+            floors = 2
+            logger.error("Invalid ddd:building: attributes (levels, min_level...) in building %s: %s", part, e)
 
         floors_height = floor_0_height + (floors - 1) * 3.00
         floors_min_height = floors_min * 3.00
-        min_height = float(part.extra.get('osm:min_height', floors_min_height))
+        min_height = parse_meters(part.extra.get('osm:min_height', floors_min_height))
         #max_height = parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
         max_height = parse_meters(part.extra.get('osm:height', floors_height)) - roof_height
         dif_height = max_height - min_height
@@ -616,6 +624,10 @@ class Buildings3DOSMBuilder():
         return item_3d
 
     def generate_building_3d_amenities(self, building_3d):
+
+        if 'ddd:building:items' not in building_3d.extra:
+            logger.warn("Building with no linked items (ddd:building:items): %s", building_3d)
+            return
 
         for item_1d in building_3d.extra['ddd:building:items']:
 
