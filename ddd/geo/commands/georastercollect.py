@@ -109,7 +109,8 @@ class GeoRasterCollectCommand(DDDCommand):
                           'geotransform': geotransform }
                 configs.append(config)
 
-        #configs.sort(key=lambda f: int(f['resolution_m']) if not math.isnan(f['resolution_m']) else 0)
+        # TODO: Sort folders by resolution
+        # Sorting individual tiles is messy: configs.sort(key=lambda f: int(f['resolution_m']) if not math.isnan(f['resolution_m']) else 0)
 
         text = ""
         last_dir = None

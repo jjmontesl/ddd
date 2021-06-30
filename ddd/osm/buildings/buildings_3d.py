@@ -215,12 +215,12 @@ class Buildings3DOSMBuilder():
                 return
 
             # Roof
-            try:
-                roof = self.generate_building_3d_part_roof(part)
-                if roof:
-                    building_3d.children.append(roof)
-            except Exception as e:
-                logger.warning("Cannot generate roof: %s (geom: %s)" % (e, part.geom))
+            #try:
+            roof = self.generate_building_3d_part_roof(part)
+            if roof:
+                building_3d.children.append(roof)
+            #except Exception as e:
+            #    logger.warning("Cannot generate roof: %s (geom: %s)" % (e, part.geom))
 
         except ValueError as e:
             logger.error("Cannot generate building part %s: %s (geom: %s)" % (part, e, part.geom))
@@ -343,7 +343,7 @@ class Buildings3DOSMBuilder():
         roof = None
 
         roof_shape = part.get('ddd:roof:shape')
-        roof_height = part.get('ddd:roof:height')
+        roof_height = parse_meters(part.get('ddd:roof:height'))
 
         floors = int(float(part.get('ddd:building:levels')))
         floors_min = int(float(part.get('ddd:building:min_level')))

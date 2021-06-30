@@ -9,6 +9,7 @@ from ddd.ddd import ddd
 from ddd.util.dddrandom import weighted_choice
 import random
 import noise
+from ddd.util.common import parse_bool
 
 
 # Generate grass
@@ -60,7 +61,7 @@ def osm_augment_plants_condition(pipeline):
     """
     Run plant augmentation only if so configured (ddd:osm:augment:plants=True).
     """
-    return bool(pipeline.data.get('ddd:osm:augment:plants', False))
+    return parse_bool(pipeline.data.get('ddd:osm:augment:plants', False))
 
 
 # TODO: implement [!contains(["natural"="tree"])]

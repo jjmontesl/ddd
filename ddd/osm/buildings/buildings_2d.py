@@ -46,16 +46,32 @@ class Buildings2DOSMBuilder():
 
     def preprocess_buildings_parenting(self, buildings_2d):
         """
+        Resolves ddd:building:parts and ddd:building:parent relationships between all building parts.
         """
 
         logger.info("Preprocessing buildings and bulding parts 2D")
-        # TODO: create nested buildings them separately, consider them part of the bigger building for subtraction)
 
+        # Initialization of technical metadata
+        for building in list(buildings_2d.children):
+            if 'ddd:building:parts' not in building.extra:
+                building.extra['ddd:building:parts'] = []
+            #building.extra['ddd:building:items'] = []
+
+        '''
+        logger.info("Sorting 2D buildings (%d).", len(buildings_2d.children))
+        buildings_2d.children.sort(key=lambda a: a.get('ddd:area:area'))  # extra['ddd:area:area'])
+        '''
+
+        # TODO: create nested buildings separately, consider them part of the bigger building for subtraction)
         # Assign each building part to a building, or transform it into a building if needed
         #features = sorted(features_2d.children, key=lambda f: f.geom.area)
         features_2d_original = list(buildings_2d.children)
         for feature in list(buildings_2d.children):
+
             if feature.geom.type == 'Point': continue
+
+            # Skip parents, so nested buildings (eg. Torre de Hercules) are considered independently
+            if feature.extra.get('osm:building', None): continue
 
             if feature.extra.get('osm:building:part', None) is None and feature.extra.get('osm:building', None) is None: continue
 
@@ -65,28 +81,32 @@ class Buildings2DOSMBuilder():
 
             if len(building_parents.children) == 0:
                 if feature.extra.get('osm:building', None) is None:
-                    logger.warn("Building part with no building: %s", feature)
-                    building = ddd.shape(feature.geom, name="Building (added): %s" % feature.name)
-                    building.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')  # TODO: Should be DDD
-                    building.extra['ddd:building:parts'] = [feature]
-                    feature.extra['ddd:building:parent'] = building
-                    buildings_2d.append(building)
+
+                    # TODO: Maybe we could group "touching" building parts into building/new building (eg. Aquarium Finisterrae, Torre de Hercules stairs...)
+                    logger.debug("Building part with no building: %s", feature)
+                    #building = ddd.shape(feature.geom, name="Building (added): %s" % feature.name)
+                    #building.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')  # TODO: Should be DDD
+                    #building.extra['ddd:building:parts'].append(feature)
+                    #feature.extra['ddd:building:parent'] = building
+                    #buildings_2d.append(building)
+                    feature.extra['osm:building'] = feature.extra.get('osm:building:part', 'yes')  # TODO: Should be DDD
 
             elif len(building_parents.children) > 1:
-                # Sort by area and get the smaller one
+                # Sort by area and get the smallest one
+                # Needs to be multilevel as buildings can be multilevel (eg Torre de Hercules)
                 building_parents.children.sort(key=lambda b: b.geom.area, reverse=False)
-                logger.warn("Building part with multiple buildings: %s -> %s", feature, building_parents.children)
+                logger.debug("Building part with multiple buildings: %s -> %s", feature, building_parents.children)
 
                 feature.extra['ddd:building:parent'] = building_parents.children[0]
-                if 'ddd:building:parts' not in building_parents.children[0].extra:
-                    building_parents.children[0].extra['ddd:building:parts'] = []
+                #if 'ddd:building:parts' not in building_parents.children[0].extra:
+                #    building_parents.children[0].extra['ddd:building:parts'] = []
                 building_parents.children[0].extra['ddd:building:parts'].append(feature)
 
             else:
                 logger.debug("Associating building part to building: %s -> %s", feature, building_parents.children[0])
                 feature.extra['ddd:building:parent'] = building_parents.children[0]
-                if 'ddd:building:parts' not in building_parents.children[0].extra:
-                    building_parents.children[0].extra['ddd:building:parts'] = []
+                #if 'ddd:building:parts' not in building_parents.children[0].extra:
+                #    building_parents.children[0].extra['ddd:building:parts'] = []
                 building_parents.children[0].extra['ddd:building:parts'].append(feature)
 
 
@@ -125,10 +145,10 @@ class Buildings2DOSMBuilder():
 
                 for part in (parts + [building_2d]):
 
-                    if part != building_2d and part.extra.get('osm:building', None) is not None:
+                    if part != building_2d:  #  and part.extra.get('osm:building', None) is not None:
                         #part.set('ddd:building:elevation:min', default=elevation_min)
                         #part.set('ddd:building:elevation:max', default=elevation_max)
-                        part.set('osm:building:part', building_2d.get('osm:building'))  ## TODO: Should be DDD
+                        part.set('osm:building:part', default=building_2d.get('osm:building'))  ## TODO: Should be DDD
                         entire_building_2d.append(part)
 
                     '''
@@ -143,14 +163,17 @@ class Buildings2DOSMBuilder():
 
                     # Remove the rest of the building
                     # TODO: Only ground parts
-                    if part == building_2d:
+                    if part == building_2d and parts:
+                        #building_2d.dump(data=True)
+                        entire_building_2d = entire_building_2d.buffer(0.01)  # Tolerance margin for "not-entirelly-filled" building footprints
                         part = part.copy()
                         part = part.subtract(entire_building_2d)
                         part.validate()
 
                         if not part.is_empty():
                             logger.info("Fixing building with non-filled footprint: %s", building_2d)
-                            #del part.extra['osm:building']
+                            #ddd.group([building_2d, part.material(ddd.MAT_HIGHLIGHT)]).show()
+                            del part.extra['osm:building']
                             del part.extra['ddd:building:parts']
                             #del part.extra['ddd:building']
                             part.set('osm:building:part', building_2d.get('osm:building'))  # TODO: Shall be ddd:building...
@@ -159,6 +182,12 @@ class Buildings2DOSMBuilder():
                             building_2d.get('ddd:building:parts').append(part)
                             building_2d.geom = None
                             buildings_2d.append(part)
+
+                        #logger.debug("Removing parent building geometry: %s", building_2d)
+                        building_2d.geom = None  # TODO: We may need this footprint for convex shape calculation :?
+
+        buildings_2d.dump()
+        buildings_2d.show()
 
     def preprocess_building_reparent(self, buildings_2d):
         for building in list(buildings_2d.children):
@@ -397,7 +426,7 @@ class Buildings2DOSMBuilder():
             if len(buildings.children) > 1:
                 logger.warn("Item with multiple buildings: %s -> %s", item, buildings.children)
                 # Sort by area
-                buildings.children.sort(key=lambda b: b.geom.area, reverse=True)
+                buildings.children.sort(key=lambda b: b.geom.area if b.geom else 0, reverse=True)
 
             if len(buildings.children) > 0:
                 building = buildings.children[0]

@@ -59,7 +59,7 @@ setup(
         "trimesh[all] >= 3.5.0",  # -e git+https://github.com/mikedh/trimesh.git@8c5633028984b4abb1b7911208f7652119a3c96d#egg=trimesh
         "triangle >= 20190115.3",
 
-        "importlib-metadata < 4",  # required by ipyton required by open3D
+        "importlib-metadata < 4",  # required by ipython required by open3D
         "open3d >= 0.11.2",
 
         'matplotlib < 3.4',

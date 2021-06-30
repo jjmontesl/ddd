@@ -70,6 +70,9 @@ Do not hesitate to get in touch if you have any question.
 
 ## Installation
 
+DDD is tested on Ubuntu 18.04. Installation under Windows does not work.
+If you are on Windows, you may wish to try using Docker (see the "Using the docker image" section below).
+
 Clone the source repository:
 
     git clone https://github.com/jjmontesl/ddd

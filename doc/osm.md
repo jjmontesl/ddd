@@ -26,7 +26,7 @@ process and present larger areas in chunks.
 - 3D buildings and roofs (WIP)
 - Traffic signs, road marks and traffic lights
 
-- Full metadata traceability across 2D and 3D features (both OSM and internal's)
+- Full metadata traceability across 2D and 3D features
 - 2D and 3D outputs (SVG, PNG and GLTF)
 - 3D objects for many different OSM items
 - Tiled output generation

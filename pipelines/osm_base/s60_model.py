@@ -10,6 +10,7 @@ from ddd.pipeline.decorators import dddtask
 from ddd.geo import terrain
 from ddd.core.exception import DDDException
 import datetime
+from ddd.util.common import parse_bool
 
 
 """
@@ -355,7 +356,14 @@ def osm_model_generate_ways_road_markings_combine(osm, root, pipeline):
     root.find("/Roadlines3/").append(roadmarks)
 
 
-@dddtask()  # path="/Items3/*", select='[ddd:material="Roadmarks"]')
+@dddtask(order="65.40", condition=True)
+def osm_model_combine_materials_condition(pipeline):
+    """
+    Run plant augmentation only if so configured (ddd:osm:augment:plants=True).
+    """
+    return parse_bool(pipeline.data.get('ddd:osm:model:combine_materials', True))
+
+@dddtask(order="65.40.+")  # path="/Items3/*", select='[ddd:material="Roadmarks"]')
 def osm_model_combine_materials(osm, root, pipeline):
     """
     Combine meshes with the same material in a single mesh.
@@ -364,7 +372,8 @@ def osm_model_combine_materials(osm, root, pipeline):
     ddd.meshops.combine_group(root.find("/Areas"), key_func=lambda o: o.mat.name if o.mat else None)
     ddd.meshops.combine_group(root.find("/Ways"), key_func=lambda o: o.mat.name if o.mat else None)
 
-@dddtask()  # [!"intersection"]
+
+@dddtask(order="65.45")  # [!"intersection"]
 def osm_models_instances_buffers_buildings(pipeline, osm, root, logger):
     """
     """

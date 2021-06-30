@@ -26,17 +26,23 @@ def osm_generate_buildings_condition(pipeline):
 
 
 @dddtask(order="30.40.5.+", path="/Features/*", select='["geom:type" != "Point"]', filter=lambda o: o.extra.get("osm:building", None) is not None or o.extra.get("osm:building:part", None) is not None, log=True)
-def osm_generate_buildings(root, obj):
+def osm_generate_buildings_select_features(root, obj):
     item = obj.copy(name="Building: %s" % obj.name)
+
+    # TODO: Initialization of technical metadata shall be left to preprocess_, which actually manages it
     #item.extra['ddd:building:items'] = []
     if 'ddd:building:parts' not in item.extra: item.extra['ddd:building:parts'] = []
+
     item = item.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.building_4, ddd.mats.building_5]))
     root.find("/Buildings").append(item)
 
 
 @dddtask(order="30.40.10.+")
 def osm_generate_buildings_parenting(pipeline, osm, root, logger):
-    """Preprocesses buildings at OSM feature level, associating buildings and building parts."""
+    """
+    Preprocesses buildings at OSM feature level, associating buildings and building parts.
+
+    """
     features = root.find("/Buildings")
     osm.buildings2.preprocess_buildings_parenting(features)
 
