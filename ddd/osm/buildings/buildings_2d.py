@@ -49,7 +49,7 @@ class Buildings2DOSMBuilder():
         Resolves ddd:building:parts and ddd:building:parent relationships between all building parts.
         """
 
-        logger.info("Preprocessing buildings and bulding parts 2D")
+        logger.info("Preprocessing buildings and bulding parts 2D (%d objects)", len(buildings_2d.children))
 
         # Initialization of technical metadata
         for building in list(buildings_2d.children):
@@ -61,6 +61,8 @@ class Buildings2DOSMBuilder():
         logger.info("Sorting 2D buildings (%d).", len(buildings_2d.children))
         buildings_2d.children.sort(key=lambda a: a.get('ddd:area:area'))  # extra['ddd:area:area'])
         '''
+
+        #buildings_2d.index_create()
 
         # TODO: create nested buildings separately, consider them part of the bigger building for subtraction)
         # Assign each building part to a building, or transform it into a building if needed
@@ -77,7 +79,8 @@ class Buildings2DOSMBuilder():
 
             # Find building
             #buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and ddd.polygon(o.geom.exterior.coords).contains(feature))
-            building_parents = buildings_2d.select(func=lambda o: o.extra.get('osm:building', None) and o != feature and o.contains(feature) and o in features_2d_original)
+            feature_margin = feature.buffer(-0.05)
+            building_parents = buildings_2d.select(func=lambda o: o.extra.get('osm:building', None) and o != feature and o.contains(feature_margin) and o in features_2d_original)
 
             if len(building_parents.children) == 0:
                 if feature.extra.get('osm:building', None) is None:
@@ -109,6 +112,8 @@ class Buildings2DOSMBuilder():
                 #    building_parents.children[0].extra['ddd:building:parts'] = []
                 building_parents.children[0].extra['ddd:building:parts'].append(feature)
 
+        #buildings_2d.index_clear()
+
 
     def preprocess_building_fixes(self, buildings_2d):
         """
@@ -118,7 +123,7 @@ class Buildings2DOSMBuilder():
 
         Following: https://wiki.openstreetmap.org/wiki/Simple_3D_Buildings
 
-        (?) This needs to be done before calculating contacts (buildings analyze), as it may alter building geometry.
+        This needs to be done before calculating contacts (buildings analyze), as it may alter building geometry.
         """
 
         # Normalize: check if there are building parts, and if needed create a building part to
@@ -133,11 +138,18 @@ class Buildings2DOSMBuilder():
         #logger.info("Fixing building parts as needed.")
 
         for building_2d in list(buildings_2d.children):
-            # Process only parents, as children are processed inside
 
+            # Process only parents, as children are processed inside
             if building_2d.extra.get('ddd:building:parent', None) in (None, building_2d):
 
-                parts = building_2d.extra.get('ddd:building:parts', [])
+                '''
+                if 'Antigo' in building_2d.get('osm:name', ""):
+                    building_2d.dump(data=True)
+                    ddd.group([ddd.group2(building_2d.get('ddd:building:parts')).triangulate(),
+                               building_2d.material(ddd.MAT_HIGHLIGHT).triangulate().translate([0, 0, -5])]).show()
+                '''
+
+                parts = building_2d.extra.get('ddd:building:parts', None)
                 if not parts: continue
 
                 entire_building_2d = ddd.group2()
@@ -151,45 +163,55 @@ class Buildings2DOSMBuilder():
                         part.set('osm:building:part', default=building_2d.get('osm:building'))  ## TODO: Should be DDD
                         entire_building_2d.append(part)
 
-                    '''
-                    try:
-                        floors = int(float(part.extra.get('ddd:building:levels', part.extra.get('osm:building:levels', base_floors))))
-                        floors_min = int(float(part.extra.get('ddd:building:min_level', part.extra.get('osm:building:min_level', base_floors_min))))
-
-                        if floors == 0:
-                            logger.warn("Building part with 0 floors (setting to 1): %s", floors)
-                            floors = 1
-                    '''
-
                     # Remove the rest of the building
                     # TODO: Only ground parts
                     if part == building_2d and parts:
                         #building_2d.dump(data=True)
-                        entire_building_2d = entire_building_2d.buffer(0.01)  # Tolerance margin for "not-entirelly-filled" building footprints
                         part = part.copy()
-                        part = part.subtract(entire_building_2d)
-                        part.validate()
+                        entire_building_2d = entire_building_2d  # Tolerance margin for "not-entirelly-filled" building footprints
+                        part_remaining = part.subtract(entire_building_2d.buffer(0.05)).clean(0.01)
+                        part_remaining.validate()
 
-                        if not part.is_empty():
-                            logger.info("Fixing building with non-filled footprint: %s", building_2d)
-                            #ddd.group([building_2d, part.material(ddd.MAT_HIGHLIGHT)]).show()
+                        if not part_remaining.is_empty():
+                            part = part.subtract(entire_building_2d).clean(-0.01)
+                            #part.validate()
+
+                            logger.info("Fixing building with non-filled footprint: %s (%d parts)", building_2d, len(parts))
+
+                            '''
+                            if 'Antigo' in building_2d.get('osm:name', ""):
+                                building_2d.dump(data=True)
+                                ddd.group([building_2d, part.material(ddd.MAT_HIGHLIGHT)]).show()
+                            '''
+
                             del part.extra['osm:building']
-                            del part.extra['ddd:building:parts']
-                            #del part.extra['ddd:building']
+                            part.set('ddd:building:parts', [])
                             part.set('osm:building:part', building_2d.get('osm:building'))  # TODO: Shall be ddd:building...
                             part.set('ddd:building:parent', building_2d)
                             part.set('ddd:building:part:fixed', True)
-                            building_2d.get('ddd:building:parts').append(part)
                             building_2d.geom = None
-                            buildings_2d.append(part)
+                            for b2d in part.individualize(always=True).children:  # Flatten multipolygons
+                                building_2d.get('ddd:building:parts').append(b2d)
+                                buildings_2d.append(b2d)
 
                         #logger.debug("Removing parent building geometry: %s", building_2d)
                         building_2d.geom = None  # TODO: We may need this footprint for convex shape calculation :?
 
-        buildings_2d.dump()
-        buildings_2d.show()
+                '''
+                if 'Antigo' in building_2d.get('osm:name', ""):
+                    building_2d.dump(data=True)
+                    ddd.group(building_2d.get('ddd:building:parts') + [building_2d.material(ddd.MAT_HIGHLIGHT)]).show()
+                '''
+
+        #buildings_2d.dump()
+        #buildings_2d.show()
 
     def preprocess_building_reparent(self, buildings_2d):
+        """
+        This uses building:parent relations to build the node hierarchy.
+        Buildings are kept in a flatten hierarchy (as they came in) until this point.
+        """
+
         for building in list(buildings_2d.children):
             parent = building.extra.get('ddd:building:parent', None)
             #logger.debug(f"Building: {building} Parent: {parent}")

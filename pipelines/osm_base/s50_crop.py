@@ -19,7 +19,7 @@ from ddd.pipeline.decorators import dddtask
 @dddtask(order="50.80.10.+", log=True)
 def osm_crop(pipeline, osm, root, logger):
     """Crops features in different ways."""
-    pass
+    osm.area_crop2.index_clear()
 
 
 @dddtask(path="/Areas/*")
@@ -66,7 +66,8 @@ def osm_crop_apply_area(obj, osm, root, logger):
 def osm_crop_apply_centroid(obj, osm, root, logger):
     point = obj.centroid()
     contained = osm.area_crop2.contains(point)
-    if not contained: return False
+    if not contained:
+        return False
 
 
 @dddtask()

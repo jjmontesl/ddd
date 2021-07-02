@@ -108,7 +108,7 @@ class Areas2DOSMBuilder():
             if len(c.interiors) == 0:
                 continue
 
-            logger.info("Generating %d interiors.", len(c.interiors))
+            logger.debug("Generating %d interiors.", len(c.interiors))
             for interior in c.interiors:
                 area = ddd.polygon(interior.coords, name="Interways area")
                 if area:

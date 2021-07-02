@@ -267,6 +267,8 @@ def osm_structured_generate_ways_2d_intersections(osm, root):
 def osm_structured_subtract_buildings_calculate(pipeline, root, logger):
 
     buildings = root.find("/Buildings").union()
+    #buildings = buildings.clean(eps=0.00)
+    #buildings.show()
     pipeline.data['buildings'] = buildings
 
 @dddtask(path="/Ways/*", select='["ddd:subtract_buildings" = True]')
@@ -372,7 +374,6 @@ def osm_structured_areas_postprocess_water(root, osm):
     areas_2d = root.find("/Areas")
     ways_2d = root.find("/Ways")
     osm.areas2.generate_areas_2d_postprocess_water(areas_2d, ways_2d)
-
 
 
 @dddtask()
@@ -502,7 +503,7 @@ def osm_structured_areas_link_items_nodes(root, osm):
 @dddtask(log=True)
 def osm_structured_building_fixes(pipeline, root, osm):
     """
-    Fixes (OSM) buildings that contain parts that do not cover the entire footprint area,
+    Fixes (OSM) buildings that contain `building:part`s that do not cover the entire footprint area,
     by creating a building part for the remainder.
     This does not apply to single-part buildings, which are kept as single objects.
     """
