@@ -204,3 +204,5 @@ items.save("/tmp/test.glb")
 items = ddd.meshops.combine_materials(items)
 items.dump()
 items.show()
+items.save("/tmp/test.json")
+

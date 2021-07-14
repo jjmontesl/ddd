@@ -279,10 +279,11 @@ def osm_model_generate_items_ways(obj, osm, root):
 def osm_model_generate_items_ways_height(obj, osm, root):
     """
     This is currently used to extrude ItemsWays that have a height (eg. piers)
+
+    TODO: FIXME: This is only for piers? and is excluding fences and hedges. Reconsider this step entirely.
     """
 
     # TODO: Removing fence here, but what we should do is use exclusively these common generators based on TAGS. Keep refactoring.
-
     if obj.extra.get('osm:barrier', None) in ("fence", "hedge"):
         return
 
@@ -298,7 +299,7 @@ def osm_model_generate_items_ways_height(obj, osm, root):
         obj = obj.translate([0, 0, min_height])
     obj = ddd.uv.map_cubic(obj)
 
-    obj.extra['ddd:elevation'] = obj.get('ddd:area:elevation', 'geotiff')
+    obj.set('ddd:elevation', default=obj.get('ddd:area:elevation', 'geotiff'))
 
     root.find("/Items3").append(obj)
 
@@ -311,6 +312,17 @@ def osm_model_elevation_items_buildings(obj, osm, root):
     return obj
 
 
+'''
+@dddtask(path="/Items3/*", select='["ddd:min_height"]')
+def osm_model_elevation_apply_min_height(obj, osm, root):
+    """
+    Apply min_height to items.
+    """
+    min_height = float(obj.extra.get('ddd:min_height', 0.0))
+    obj = obj.translate([0, 0, min_height])
+    return obj
+'''
+
 @dddtask(path="/Items3/*", select='["ddd:elevation" = "geotiff"]')
 def osm_model_elevation_apply_terrain(obj, osm, root):
     obj = terrain.terrain_geotiff_elevation_apply(obj, osm.ddd_proj)
@@ -318,7 +330,16 @@ def osm_model_elevation_apply_terrain(obj, osm, root):
 
 @dddtask(path="/Items3/*", select='["ddd:elevation" = "building"]')
 def osm_model_elevation_apply_building(logger, obj, osm, pipeline, root):
-    """Apply elevation to items contained in a building."""
+    """
+    Apply elevation to items contained in a building.
+
+    This applies the base building elevation in the same fashion that all building parts
+    are leveled at the same base elevation.
+
+    This does not apply elevation based on the height of the container building part
+    (that remains TODO).
+    """
+
     building_parent = obj.extra['ddd:building:parent']
     logger.info("Building parent: %s %s", building_parent, building_parent.extra)
     if 'ddd:building:elevation' in building_parent.extra:

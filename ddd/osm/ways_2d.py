@@ -603,10 +603,13 @@ class Ways2DOSMBuilder():
                 else:
                     continue
 
-                # except Exception as e:
-                #    logger.error("Could not UV map Way 2D from path: %s %s %s: %s", line, line.geom, pathline.geom, e)
-                #    continue
-                line_3d = line.triangulate().translate([0, 0, 0.05])  # Temporary hack until fitting lines properly
+                try:
+                    line_3d = line.triangulate()
+                except ValueError as e:  # TODO: This shall be an appropriate DDDException
+                    logger.warn("Could not generate roadline for way %s: %s", way_2d, e)
+                    continue
+
+                line_3d = line_3d.translate([0, 0, 0.05])  # Temporary hack until fitting lines properly
                 vertex_func = self.osm.ways1.get_height_apply_func(path)
                 line_3d = line_3d.vertex_func(vertex_func)
                 line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)

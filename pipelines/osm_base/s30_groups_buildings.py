@@ -53,9 +53,22 @@ def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
 
 
 # Buildings attributes that can be done before structure (ways analysis, etc)
-
 # TODO: FIXME: this will set ddd:*, so osm:* needs to be copied beforehand if it exists
 
+
+# Settings per building attributes (bieng more specific, here we apply defaults first)
+
+@dddtask(path="/Buildings/*", select='["osm:historic:civilization" = "ancient_roman"]')
+def osm_buildings_historic_civilization_ancient_roman(pipeline, osm, root, obj):
+    """
+    Set defaults to parking_entrance.
+    """
+    obj.set('ddd:building:material', default="tiles_stones_veg_sparse")
+    obj = obj.material(ddd.mats.tiles_stones_veg_sparse)
+    return obj
+
+
+# Settings per building type
 
 @dddtask(path="/Buildings/*", select='["osm:amenity" = "cafe"]')
 def osm_buildings_amenity_cafe(pipeline, osm, root, obj):
@@ -77,6 +90,13 @@ def osm_buildings_amenity_parking_entrance(pipeline, osm, root, obj):
     obj.set('ddd:building:material', default="glass")
     obj.set('ddd:roof:shape', default="flat")
     obj = obj.material(ddd.mats.glass)
+    return obj
+
+@dddtask(path="/Buildings/*", select='["osm:man_made" = "lighthouse"]')
+def osm_generate_buildings_man_made_lighthouse(pipeline, osm, root, obj):
+    #obj.set('ddd:building:levels', default=1)
+    #obj.set('ddd:building:material', default="stone")
+    obj.set('ddd:building:windows', default='no')
     return obj
 
 @dddtask(path="/Buildings/*", select='["osm:man_made" = "reservoir_covered"]')

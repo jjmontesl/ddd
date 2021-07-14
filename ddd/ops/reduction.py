@@ -365,7 +365,7 @@ class DDDMeshOps():
 
             for o in objs.recurse_objects()[1:]: o.children = []
             if len(objs.children) > 0:
-                combined = objs.combine()
+                combined = objs.combine(indexes=True)
                 combined.name = "Combined objects: %s" % key
                 root.append(combined)
                 added_objects.append(combined)

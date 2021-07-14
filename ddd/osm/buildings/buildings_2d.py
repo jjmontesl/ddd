@@ -435,20 +435,15 @@ class Buildings2DOSMBuilder():
     def process_buildings_link_items_ways_to_buildings(self, buildings_all, items):
         for item in items.children:
 
-            '''
-            for building in buildings.children:
-                if building.contains(item):
-                    logger.info("Associating item %s to building %s.", item, building)
-                    item.extra['ddd:building:parent'] = building
-                    #building.extra['ddd:building:items_ways'].append(item)
-            '''
+            item_test = item.buffer(-ddd.EPSILON)
 
-            buildings = buildings_all.select(func=lambda o: o.extra.get('osm:building', None) and not o.extra.get('ddd:building:parent', None) and o.contains(item))
+            #buildings = buildings_all.select(func=lambda o: o.extra.get('osm:building', None) and not o.extra.get('ddd:building:parent', None) and o.contains(item))
+            buildings = buildings_all.select(func=lambda o: (o.extra.get('osm:building', None) or o.extra.get('osm:building:part', None)) and o.contains(item_test), recurse=True)
 
             if len(buildings.children) > 1:
                 logger.warn("Item with multiple buildings: %s -> %s", item, buildings.children)
-                # Sort by area
-                buildings.children.sort(key=lambda b: b.geom.area if b.geom else 0, reverse=True)
+                # Sort by area (smallest first, try to associate to the smallest building part that contains the feature)
+                buildings.children.sort(key=lambda b: b.geom.area if b.geom else 0, reverse=False)
 
             if len(buildings.children) > 0:
                 building = buildings.children[0]

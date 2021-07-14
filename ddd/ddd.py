@@ -1845,8 +1845,8 @@ class DDDObject2(DDDObject):
                 coords_a = list(self.geom.coords)
                 coords_b = list(self.geom.coords)
                 mesh = extrusion.extrude_coords(coords_a, coords_b, abs(height))
-                mesh2 = extrusion.extrude_coords(list(reversed(coords_a)), list(reversed(coords_b)), abs(height))
 
+                mesh2 = extrusion.extrude_coords(list(reversed(coords_a)), list(reversed(coords_b)), abs(height))
                 offset = len(list(mesh.vertices))
                 mesh.vertices = list(mesh.vertices) + list(mesh2.vertices)
                 mesh.faces = list(mesh.faces) + [(f[0] + offset, f[1] + offset, f[2] + offset) for f in mesh2.faces]
@@ -2758,7 +2758,7 @@ class DDDObject3(DDDObject):
     def union(self, other):
         return self._csg(other, operation='union')
 
-    def combine(self, name=None):
+    def combine(self, name=None, indexes=False):
         """
         Combine geometry for this and all children meshes into a single mesh.
         This will also combine UVs and normals. Metadata of the new element is created empty.
@@ -2768,8 +2768,15 @@ class DDDObject3(DDDObject):
         TODO: currently, the first material found will be applied to the parent (?)
         """
         result = self.copy(name=name)
+        indexes_list = []
+        base_index = 0
+
+        if result.mesh:
+            base_index = len(result.mesh.faces)
+            indexes_list.append( (base_index, self.metadata("", "")) )
+
         for c in self.children:
-            cc = c.combine()
+            cc = c.combine(indexes=indexes)
             if result.mat is None and cc.mat is not None: result = result.material(cc.mat)
 
             # Remove visuals, as Trimesh will try to concatenate UV but also textures
@@ -2777,6 +2784,7 @@ class DDDObject3(DDDObject):
             if cc.mesh: cc.mesh.visual = ColorVisuals()
 
             result.mesh = result.mesh + cc.mesh if result.mesh else cc.mesh
+
             #result.extra.update(cc.extra)
             #vertices = list(result.mesh.vertices) + list(cc.mesh.vertices)
             #result.mesh = Trimesh(vertices, faces)
@@ -2785,11 +2793,20 @@ class DDDObject3(DDDObject):
                 #offset = len(result.extra['uv'])
                 result.extra['uv'] = result.extra['uv'] + list(cc.extra['uv'])
 
+            # Store indexes and original objects
+            if indexes:
+                for ci in cc.get('ddd:combined:indexes'):
+                    base_index += ci[0]  # Accumulate for siblings
+                    indexes_list.append( (base_index, ci[1]) )
+
         #if result.mesh:
         #    result.mesh.merge_vertices()  # Causes incorrect UV coordinates. This would vertices duplicated for UV coords
         #result.mesh.fix_normals()
 
         result.children = []
+        if indexes:
+            result.set('ddd:combined:indexes', indexes_list)
+
         return result
 
     def extrude_step(self, obj_2d, offset, cap=True, base=None, method=D1D2D3.EXTRUSION_METHOD_WRAP):

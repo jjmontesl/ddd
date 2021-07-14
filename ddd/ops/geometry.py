@@ -70,7 +70,7 @@ class DDDGeometry():
         major_seg = ddd.line([midpoint_minor, [midpoint_minor[0] + vec_dir_major[0], midpoint_minor[1] + vec_dir_major[1]]])
         minor_seg = ddd.line([midpoint_major, [midpoint_major[0] + vec_dir_minor[0], midpoint_major[1] + vec_dir_minor[1]]])
 
-        # Generate lines, rotate and translate to area
+        # Calculate angle
         angle = math.atan2(length_seg.geom.coords[1][1] - length_seg.geom.coords[0][1],
                            length_seg.geom.coords[1][0] - length_seg.geom.coords[0][0])
 

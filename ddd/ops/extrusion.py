@@ -401,7 +401,6 @@ def extrude_step_multi(obj, steps, cap=True, base=True, scale_y=1.0, shape_callb
 
 def extrude_dome(obj, height, steps=6, base_shape=None):
     """
-    If height is passed, shape is adjusted to it.
     """
 
     base = obj if base_shape is None else base_shape

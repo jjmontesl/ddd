@@ -29,6 +29,8 @@ from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
 from ddd.pack.sketchy.buildings import window_with_border, door, portal
 from ddd.osm.osmunits import parse_meters
+from ddd.osm.buildings.buildings_3d_roof import BuildingsRoofs3DOSMBuilder
+from ddd.util.common import parse_bool
 
 
 # Get instance of logger for this module
@@ -41,6 +43,7 @@ class Buildings3DOSMBuilder():
     def __init__(self, osmbuilder):
 
         self.osm = osmbuilder
+        self.buildings_3d_roofs = BuildingsRoofs3DOSMBuilder(osmbuilder)
 
     def preprocess_buildings_3d(self, buildings_2d):
         """
@@ -101,22 +104,28 @@ class Buildings3DOSMBuilder():
         TODO: Do a lot more in tags in 2D and here, and generalize tasks to pipelines and tags.
         """
 
+        # Calculate floor 0 height from actual terrain elevation difference on building footprint
+        # TODO: sample more points, as sometimes footprint
+        elevation_min = building_2d.get('ddd:building:elevation:min')
+        elevation_max = building_2d.get('ddd:building:elevation:max')
+        elevation_diff = elevation_max - elevation_min
+        floor_0_height = 3 + elevation_diff # TODO: temporary for test, should be floor info
+
         floors = building_2d.extra.get('ddd:building:levels', building_2d.extra.get('osm:building:levels', None))
         floors_min = building_2d.extra.get('ddd:building:min_level', building_2d.extra.get('osm:building:min_level', 0))
+        building_height = parse_meters(building_2d.extra.get('osm:height', 0))
 
         # TODO: Do this in the pipeline or fail here if ddd:building:levels not set
         if not floors:
-            floors = random.randint(2, 8)
+            if building_height:
+                floors = int((building_height + 3 - floor_0_height) / 3.0)
+            else:
+                floors = random.randint(2, 8)
 
         floors = int(float(floors))
         floors_min = int(float(floors_min))
         base_floors = floors
         base_floors_min = floors_min
-
-        elevation_min = building_2d.get('ddd:building:elevation:min')
-        elevation_max = building_2d.get('ddd:building:elevation:max')
-        elevation_diff = elevation_max - elevation_min
-        floor_0_height = 3 + elevation_diff # TODO: temporary for test, should be floor info
 
         random.seed(hash(building_2d.name))
         building_material = random.choice(["building_1", "building_2", "building_3", "building_4", "building_5"])
@@ -216,7 +225,7 @@ class Buildings3DOSMBuilder():
 
             # Roof
             #try:
-            roof = self.generate_building_3d_part_roof(part)
+            roof = self.buildings_3d_roofs.generate_building_3d_part_roof(part)
             if roof:
                 building_3d.children.append(roof)
             #except Exception as e:
@@ -331,183 +340,24 @@ class Buildings3DOSMBuilder():
         min_height_accum = 0
         for floor_num in range(floors):
             floor_height = floor_0_height if floor_num == 0 else 3.0
+
+            # Get floor height, check whether it matches current building part height range
+            # TODO: propagate ddd:floor:min/max and allow each floor object to decide if it can be drawn
+            if (min_height_accum < min_height or
+                min_height_accum + floor_height > max_height):
+                # Floor not in facade range
+                continue
+
             for parti in part.individualize(always=True).children:  # Individualizing to allow for outline afterwards, not needed if floor metada nodes were already created by this time
                 self.generate_building_3d_part_body_items_floor(building_3d, parti, floor_num, min_height_accum, floor_height)
             min_height_accum = min_height_accum + floor_height
 
         return building_3d
 
-
-    def generate_building_3d_part_roof(self, part):
-
-        roof = None
-
-        roof_shape = part.get('ddd:roof:shape')
-        roof_height = parse_meters(part.get('ddd:roof:height'))
-
-        floors = int(float(part.get('ddd:building:levels')))
-        floors_min = int(float(part.get('ddd:building:min_level')))
-        floor_0_height = part.get('ddd:building:level:0:height')
-
-        roof_buffered = weighted_choice({True: 1, False: 5})
-        roof_buffer = random.uniform(0.5, 1.2)
-        roof_wall_material = weighted_choice({"stone": 3, "bricks": 1})
-        pbuffered = roof_buffered
-
-        floors_height = floor_0_height + (floors - 1) * 3.00
-        floors_min_height = floors_min * 3.00
-        min_height = float(part.extra.get('osm:min_height', floors_min_height))
-        #max_height = parse_meters(part.extra.get('osm:height', floors_height + min_height)) - roof_height
-        max_height = parse_meters(part.extra.get('osm:height', floors_height)) - roof_height
-        dif_height = max_height - min_height
-
-        roof_material = ddd.mats.roof_tiles
-        material_name = part.get('ddd:roof:material', part.get('osm:roof:material', None))
-        if material_name:
-            if hasattr(ddd.mats, material_name):
-                roof_material = getattr(ddd.mats, material_name)
-
-        if roof_shape == 'flat':
-            # Flat
-            default_height = 0.75
-            roof_height = roof_height if roof_height else default_height
-            roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude(roof_height).translate([0, 0, max_height]).material(roof_material)
-
-        elif roof_shape == 'terrace':
-            # Flat
-            usefence = random.uniform(0, 1) < 0.8
-            if usefence:
-                terrace = part.subtract(part.buffer(-0.4)).extrude(0.6).translate([0, 0, max_height]).material(getattr(ddd.mats, roof_wall_material))
-                fence = part.buffer(-0.2).outline().extrude(0.7).twosided().translate([0, 0, max_height + 0.6]).material(ddd.mats.railing)
-                roof = ddd.group3([terrace, fence], name="Roof")
-            else:
-                terrace = part.subtract(part.buffer(-0.4)).extrude(random.uniform(0.40, 1.20)).translate([0, 0, max_height]).material(ddd.mats.stone)
-                roof = ddd.group3([terrace], name="Roof")
-
-        elif roof_shape == 'pyramidal':
-            # Pointy
-            default_height = floors * 0.2 + random.uniform(2.0, 5.0)
-            roof_height = roof_height if roof_height else default_height
-            roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.centroid(), roof_height)
-            roof = roof.translate([0, 0, max_height]).material(roof_material)
-
-        elif roof_shape == 'attic':
-            # Attic
-            height = random.uniform(3.0, 4.0)
-            roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.buffer(-2), height, method=ddd.EXTRUSION_METHOD_SUBTRACT).translate([0, 0, max_height]).material(roof_material)
-
-        elif roof_shape == 'gabled':
-            # Attic
-            base = part.buffer(roof_buffer if pbuffered else 0)
-            orientation = "major"
-            if part.extra.get("osm:roof:orientation", "along") == "across": orientation = "minor"
-            (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(base)
-            axis_line = axis_major if orientation == "major" else axis_minor
-            default_height = random.uniform(3.0, 4.0)
-            roof_height = roof_height if roof_height else default_height
-            roof = base.extrude_step(axis_line, roof_height).translate([0, 0, max_height]).material(roof_material)
-
-            '''
-            #elif roof_shape == 'round':
-            # Attic
-            base = part.buffer(roof_buffer if pbuffered else 0)
-            orientation = "major"
-            if part.extra.get("osm:roof:orientation", "along") == "across": orientation = "minor"
-            (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(base)
-            axis_line = axis_major if orientation == "major" else axis_minor
-
-            major_seg_plus = ((axis_major.coords[0][0] + (axis_minor.coords[0][0] - axis_minor.coords[1][0]) * 0.5, axis_major.coords[0][1] + (axis_minor.coords[0][1] - axis_minor.coords[1][1]) * 0.5),
-                              (axis_major.coords[1][0] + (axis_minor.coords[0][0] - axis_minor.coords[1][0]) * 0.5, axis_major.coords[1][1] + (axis_minor.coords[0][1] - axis_minor.coords[1][1]) * 0.5))
-            minor_seg_plus = ((axis_minor.coords[0][0] + (axis_major.coords[0][0] - axis_major.coords[1][0]) * 0.5, axis_minor.coords[0][1] + (axis_major.coords[0][1] - axis_major.coords[1][1]) * 0.5),
-                              (axis_minor.coords[1][0] + (axis_major.coords[0][0] - axis_major.coords[1][0]) * 0.5, axis_minor.coords[1][1] + (axis_major.coords[0][1] - axis_major.coords[1][1]) * 0.5))
-
-
-
-            default_height = random.uniform(3.0, 4.0)
-            roof_height = roof_height if roof_height else default_height
-            roof = base.extrude_step(axis_line, roof_height).translate([0, 0, max_height]).material(roof_material)
-            '''
-
-        elif roof_shape == 'skillion':
-            # Attic
-            base = part.buffer(roof_buffer if pbuffered else 0)
-            orientation = "major"
-            if part.extra.get("osm:roof:orientation", "along") == "across": orientation = "minor"
-            (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(base)
-
-            axis_major = axis_major.geom
-            axis_minor = axis_minor.geom
-
-            major_seg_plus = ((axis_major.coords[0][0] + (axis_minor.coords[0][0] - axis_minor.coords[1][0]) * 0.5, axis_major.coords[0][1] + (axis_minor.coords[0][1] - axis_minor.coords[1][1]) * 0.5),
-                              (axis_major.coords[1][0] + (axis_minor.coords[0][0] - axis_minor.coords[1][0]) * 0.5, axis_major.coords[1][1] + (axis_minor.coords[0][1] - axis_minor.coords[1][1]) * 0.5))
-            minor_seg_plus = ((axis_minor.coords[0][0] + (axis_major.coords[0][0] - axis_major.coords[1][0]) * 0.5, axis_minor.coords[0][1] + (axis_major.coords[0][1] - axis_major.coords[1][1]) * 0.5),
-                              (axis_minor.coords[1][0] + (axis_major.coords[0][0] - axis_major.coords[1][0]) * 0.5, axis_minor.coords[1][1] + (axis_major.coords[0][1] - axis_major.coords[1][1]) * 0.5))
-
-            skillion_line = major_seg_plus if orientation == "major" else minor_seg_plus
-
-            # Create a 1 unit height flat roof and then calculate height along the skillion direction line for the top half vertices
-            roof = base.extrude(1.0)
-            #skillion_line = ddd.line(skillion_line)
-            #roof = base.extrude_step(skillion_line, roof_height).translate([0, 0, max_height]).material(roof_material)
-            default_height = random.uniform(1.0, 2.0)
-            roof_height = roof_height if roof_height else default_height
-            roof = roof.translate([0, 0, max_height]).material(roof_material)
-
-        elif roof_shape == 'hipped':
-
-            # TODO:
-            #  https://gis.stackexchange.com/questions/136143/how-to-compute-straight-skeletons-using-python
-            #  https://scikit-geometry.github.io/scikit-geometry/skeleton.html
-
-            # Attic
-            base = part.buffer(roof_buffer if pbuffered else 0)
-            orientation = "major"
-            if part.extra.get("osm:roof:orientation", "along") == "across": orientation = "minor"
-            (axis_major, axis_minor, axis_rot) = ddd.geomops.oriented_axis(base)
-            axis_line = axis_major if orientation == "major" else axis_minor
-            #other_axis_line = axis_minor if orientation == "major" else axis_major
-
-            axis_line = axis_line.intersection(axis_line.centroid().buffer(axis_minor.geom.length / 2, cap_style=ddd.CAP_ROUND, resolution=8))
-
-            default_height = random.uniform(1.0, 2.0)
-            roof_height = roof_height if roof_height else default_height
-            roof = base.extrude_step(axis_line, roof_height).translate([0, 0, max_height]).material(roof_material)
-
-        elif roof_shape == 'dome':
-            default_height = random.uniform(2.0, 4.0)
-            roof_height = roof_height if roof_height else default_height
-
-            roofbase = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2)
-            roof = roofbase.copy()
-
-            steps = 6
-            stepheight = 1.0 / steps
-            for i in range(steps):
-                stepy = (i + 1) * stepheight
-                stepx = math.sqrt(1 - (stepy ** 2))
-                stepbuffer = -(1 - stepx)
-                roof = roof.extrude_step(roofbase.buffer(stepbuffer * roof_height), stepheight * roof_height)
-            roof = roof.translate([0, 0, max_height]).material(roof_material)
-
-        #elif
-        # Reminder: https://scikit-geometry.github.io/scikit-geometry/skeleton.html
-        #  https://gis.stackexchange.com/questions/136143/how-to-compute-straight-skeletons-using-python
-
-        elif roof_shape == 'none':
-            pass
-
-        else:
-            logger.warning("Unknown roof shape: %s", roof_shape)
-
-        if roof:
-            roof = ddd.uv.map_cubic(roof)
-
-        return roof
-
     def generate_building_3d_part_body_hull(self, part):
         pass
 
-    def generate_building_3d_part_body_items_floor(self, building_3d, part, floor_num, min_height, height):
+    def generate_building_3d_part_body_items_floor(self, building_3d, part, floor_num, min_height, floor_height):
         """
         Windows, doors, etc... currently as a testing approach.
         Should use pre-created items (nodes, metadata...) or a building schema.
@@ -536,7 +386,7 @@ class Buildings3DOSMBuilder():
         for idx, (v0, v1) in enumerate(segments_verts):
 
             segment = segments[idx]
-            if segment.facade_type in ('contact'):  # , 'lateral'):
+            if segment.facade_type in ('contact', ):  # , 'lateral'):
                 continue
 
             v0, v1 = (np.array(v0), np.array(v1))
@@ -550,6 +400,7 @@ class Buildings3DOSMBuilder():
                 p = v0 + dir_vec * (d / seg_length)
                 #p, segment_idx, segment_coords_a, segment_coords_b = part_outline.interpolate_segment(d)
 
+                obj = None
                 object_min_height = 0.0
 
                 if doors > 0 and segment.facade_type in ('main'):
@@ -567,18 +418,22 @@ class Buildings3DOSMBuilder():
                     object_min_height = point_elevation - float(part.get('ddd:building:elevation:min', 0))
 
                 else:
-                    key = "building-window"
-                    object_min_height = min_height + height - 3.0 + 1.0
-                    obj  = self.osm.catalog.instance(key)
-                    if not obj:
-                        obj = window_with_border()
-                        obj = ddd.meshops.remove_faces_pointing(obj, ddd.VECTOR_BACKWARD)
-                        obj = ddd.uv.map_cubic(obj) # FIXME: Meshops "remove_faces_pointing" should fix UVs / normals
-                        obj = self.osm.catalog.add(key, obj)
 
-                obj = obj.rotate([0, 0, dir_angle + math.pi])
-                obj = obj.translate([p[0], p[1], object_min_height])
-                building_3d.append(obj)
+                    add_windows = parse_bool(part.get('ddd:building:windows', building_3d.get('ddd:building:windows', 'yes')))
+                    if add_windows:
+                        key = "building-window"
+                        object_min_height = min_height + floor_height - 3.0 + 1.0
+                        obj  = self.osm.catalog.instance(key)
+                        if not obj:
+                            obj = window_with_border()
+                            obj = ddd.meshops.remove_faces_pointing(obj, ddd.VECTOR_BACKWARD)
+                            obj = ddd.uv.map_cubic(obj) # FIXME: Meshops "remove_faces_pointing" should fix UVs / normals
+                            obj = self.osm.catalog.add(key, obj)
+
+                if obj:
+                    obj = obj.rotate([0, 0, dir_angle + math.pi])
+                    obj = obj.translate([p[0], p[1], object_min_height])
+                    building_3d.append(obj)
 
 
     def generate_building_3d_elevation(self, building_3d):
