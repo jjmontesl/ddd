@@ -7,8 +7,8 @@ import random
 from ddd.materials.atlas import TextureAtlasUtils
 
 ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
-                                  texture_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.png",
-                                  atlas_path=ddd.DATA_DIR  + "/materials/traffic_signs/traffic_signs_es_0.plist",
+                                  texture_path=ddd.DATA_DIR  + "/materials/traffic-signs-es/traffic_signs_es_0.png",
+                                  atlas_path=ddd.DATA_DIR  + "/materials/traffic-signs-es/traffic_signs_es_0.plist",
                                   extra={'ddd:texture:resize': 2048})
 
 
@@ -27,8 +27,8 @@ fig.show()
 
 '''
 ddd.mats.roadmarks = ddd.material(name="Roadmarks", color='#e8e8e8',
-                             texture_path=ddd.DATA_DIR + "/osmmaterials/RoadMarks/TexturesCom_Atlas_RoadMarkings2_White_1K_albedo_with_alpha.png",
-                             atlas_path=ddd.DATA_DIR  + "/osmmaterials/RoadMarks/RoadMarkings2.plist")
+                             texture_path=ddd.DATA_DIR + "/materials/road-marks-es/TexturesCom_Atlas_RoadMarkings2_White_1K_albedo_with_alpha.png",
+                             atlas_path=ddd.DATA_DIR  + "/materials/road-marks-es/RoadMarkings2.plist")
 
 fig = TextureAtlasUtils().create_sprite_from_atlas(ddd.mats.roadmarks, "give_way")
 fig.show()

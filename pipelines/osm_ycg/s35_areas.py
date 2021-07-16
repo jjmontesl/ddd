@@ -22,6 +22,7 @@ def generate_area_2d_school(self, area):
     area = area.material(ddd.mats.dirt)
     area.extra['ddd:height'] = 0.0
 
+    # TODO: Generate only if no borders or other wall/fence/barriers present
     area = self.generate_wallfence_2d(area, doors=2)
 
     return area
