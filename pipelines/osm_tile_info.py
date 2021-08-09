@@ -26,7 +26,8 @@ Called from local data dir as:
 """
 
 source_dir = "output/ddd_http/"
-source_regex = r"output/ddd_http/([0-9]+)/([0-9]+)/([0-9]+)(.*)"
+#source_regex = r"output/ddd_http/([0-9]+)/([0-9]+)/([0-9]+)(.*)"
+source_regex = r"./(17)/([0-9]+)/([0-9]+)(.*)"
 
 logger.info("Finding output results from: %s (%s)" % (source_dir, source_regex))
 
@@ -54,7 +55,11 @@ for filename in listing:
 
     if matches:
 
-        x, y, z = int(matches.group(2)), int(matches.group(3)), int(matches.group(1))
+        x, y, z = int(matches.group(2)), int(matches.group(3)), matches.group(1)
+        if z == '.':
+            z = 17
+        else:
+            z = int(z)
 
         data = {"z": z,
                 "x": x,

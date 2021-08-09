@@ -44,6 +44,11 @@ class Buildings2DOSMBuilder():
 
         self.osm = osmbuilder
 
+    def preprocess_buildings_individualize(self, buildings_2d):
+        """
+        """
+        return buildings_2d
+
     def preprocess_buildings_parenting(self, buildings_2d):
         """
         Resolves ddd:building:parts and ddd:building:parent relationships between all building parts.
@@ -70,6 +75,7 @@ class Buildings2DOSMBuilder():
         features_2d_original = list(buildings_2d.children)
         for feature in list(buildings_2d.children):
 
+            if not feature.geom: continue
             if feature.geom.type == 'Point': continue
 
             # Skip parents, so nested buildings (eg. Torre de Hercules) are considered independently

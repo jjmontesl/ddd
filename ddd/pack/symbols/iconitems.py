@@ -62,7 +62,11 @@ def iconitem(path, size=(1, 1), depth=0.2, bisel=None):
                 piece3 = None
 
         if not piece3 or piece3.is_empty() or piece3.extra['_extrusion_steps'] < 3:
-            piece3 = piece.extrude(depth)
+            try:
+                piece3 = piece.extrude(depth)
+            except:
+                logger.warn("Could not create iconitem for: %s", path)
+                return None
 
         result.append(piece3)
 
@@ -78,6 +82,8 @@ def iconitem_auto(text, size=(1, 1), depth=0.2, bisel=None):
     if not path:
         return None
     item = iconitem(path, size, depth, bisel)
+    if not item:
+        return None
     item.name = "Icon Item: %s" % (text)
     return item
 

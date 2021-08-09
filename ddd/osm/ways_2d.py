@@ -598,7 +598,11 @@ class Ways2DOSMBuilder():
                 line = line.individualize()
 
                 if line.geom and not line.geom.is_empty and line.geom.area > 0:
-                    uvmapping.map_2d_path(line, pathline, line_x_offset / 0.05)
+                    try:
+                        uvmapping.map_2d_path(line, pathline, line_x_offset / 0.05)
+                    except DDDException as e:
+                        logger.error("Error mapping UV coordinates for road line for %s: %s", way_2d, e)
+                        continue
                     pipeline.root.find("/Roadlines2").append(line)
                 else:
                     continue

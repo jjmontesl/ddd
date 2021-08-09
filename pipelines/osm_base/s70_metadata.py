@@ -15,7 +15,7 @@ from PIL.Image import Image
 
 '''
 @dddtask(order="70.01.+", cache=True)
-def osm_structured_cache(pipeline, osm, root, logger):
+def osm_metadata_condition(pipeline, osm, root, logger):
     """
     Caches current state to allow for faster reruns.
     """
@@ -25,7 +25,7 @@ def osm_structured_cache(pipeline, osm, root, logger):
 
 
 @dddtask(order="70.10.+")
-def osm_model_pre_propagate_base_height_areas(root, pipeline, osm, logger):
+def osm_metadata_generate_scene_metadata(root, pipeline, osm, logger):
     """
     Write accumulated metadata to a descriptor file.
     """

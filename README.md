@@ -70,6 +70,10 @@ Do not hesitate to get in touch if you have any question.
 
 ## Installation
 
+**IMPORTANT NOTE***: Installation currently requires patched version of some libraries, so the
+procedure below doesn't work without changes. Please refer to the ddd-docker project (see below)
+which configures a working installation.
+
 DDD is tested on Ubuntu 18.04. Installation under Windows does not work.
 If you are on Windows, you may wish to try using Docker (see the "Using the docker image" section below).
 
@@ -126,7 +130,7 @@ typing `ddd` followed by the script name:
 This generates a model centered on the given WGS84 coordinates (lat,lon),
 using a traverse mercator projection centered on the same point.
 
-    ddd osm-build --name my_osm_model --center=41.224, 1.725 --radius=125
+    ddd osm-build --name my_osm_model --center=-8.4054,43.3862 --radius=125
 
 Note that OSM 2D/3D generation requires additional configuration and input
 data. See the [OSM Generation Pipeline](doc/osm.md) for further information.

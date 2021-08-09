@@ -39,11 +39,6 @@ def osm_select_ways_roundabouts_oneway(obj, root):
 def osm_select_ways_footway_sidewalk_remove(obj, root):
     """Remove sidewalks."""
     return False
-
-@dddtask(path="/Ways/*", select='["osm:route"]')
-def osm_select_ways_routes_remove(obj, root):
-    """Remove routes."""
-    return False
 '''
 
 

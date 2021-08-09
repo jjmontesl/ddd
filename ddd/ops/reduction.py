@@ -376,10 +376,52 @@ class DDDMeshOps():
 
         return root
 
+    '''
     def combine_materials(self, root):
         """
         A convenience method to call `combine_group()` grouping by material name.
         """
         result = self.combine_group(root, lambda o: o.mat.name if o.mat else None)
         return result
+    '''
+
+    def combine_empty(self, root):
+        """
+        Walks nodes and recursively (leaf first) collapses empty nodes to metadata in root.
+
+        Metadata is added to a ddd:combined:metadata dictionary, indexed by path.
+        """
+        combined_metadata = {}
+        root.set('ddd:combined:metadata', combined_metadata)
+        def combine_empty_recursive(root, obj, path_prefix, name_suffix):
+            for idx, c in enumerate(obj.children):
+                combine_empty_recursive(root, c, path_prefix + obj.uniquename() + "/", name_suffix)
+                if not c.children and c.is_empty():
+                    combined_metadata[c.get('ddd:rpath')] = c.metadata("", "")
+            obj.children = [c for c in obj.children if c.children or not c.is_empty()]
+
+        combine_empty_recursive(root, root, "", "")
+        return root
+
+
+    def freeze_metadata(self, obj):
+        """
+        This method modifies objects metadata in place.
+        """
+
+        def freeze_metadata_recursive(obj, path_prefix, name_suffix):
+            metadata = obj.metadata(path_prefix, name_suffix)
+            obj.set('ddd:rpath', metadata.get('ddd:path'))
+
+            node_name = obj.uniquename()  # obj.name  # obj.uniquename()
+            if node_name is None:
+                node_name = "None"
+            for idx, c in enumerate(obj.children):
+                name_suffix = "#%d" % (idx)
+                freeze_metadata_recursive(c, path_prefix + node_name + "/", name_suffix)
+
+        freeze_metadata_recursive(obj, "", "")
+
+        return obj
+
 

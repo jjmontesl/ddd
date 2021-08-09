@@ -25,7 +25,8 @@ def osm_generate_buildings_condition(pipeline):
     return parse_bool(pipeline.data.get('ddd:osm:buildings', True))
 
 
-@dddtask(order="30.40.5.+", path="/Features/*", select='["geom:type" != "Point"]', filter=lambda o: o.extra.get("osm:building", None) is not None or o.extra.get("osm:building:part", None) is not None, log=True)
+@dddtask(order="30.40.5.+", path="/Features/*", select='["geom:type" != "Point"]["geom:type" != "MultiLineString"]',
+         filter=lambda o: o.extra.get("osm:building", None) is not None or o.extra.get("osm:building:part", None) is not None, log=True)
 def osm_generate_buildings_select_features(root, obj):
     item = obj.copy(name="Building: %s" % obj.name)
 
@@ -43,8 +44,12 @@ def osm_generate_buildings_parenting(pipeline, osm, root, logger):
     Preprocesses buildings at OSM feature level, associating buildings and building parts.
 
     """
-    features = root.find("/Buildings")
-    osm.buildings2.preprocess_buildings_parenting(features)
+    buildings = root.find("/Buildings")
+
+    buildings = osm.buildings2.preprocess_buildings_individualize(buildings)
+    root.find("/Buildings").replace(buildings)
+
+    osm.buildings2.preprocess_buildings_parenting(buildings)
 
 
 @dddtask(order="30.40.20.+")

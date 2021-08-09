@@ -22,6 +22,9 @@ class Areas2DOSMBuilder():
         self.osm = osmbuilder
 
     def generate_areas_2d_process(self, areas_2d_group, areas_2d, subtract):
+        """
+        Resolves area containment (ddd:area:container|contained).
+        """
 
         # TODO: Assign area before, it's where it's used. Fail here if not set,
         # Using all children from /Area causes problems, but should not, with repeated surfaces, errors in stairs processing
@@ -47,6 +50,8 @@ class Areas2DOSMBuilder():
         #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a']]).union()  # , areas_2d
         union = subtract.union()
 
+        #union = union.clean()  # In (rare) cases the narea subtract below fails with TopologicalError
+
         logger.info("Generating 2D areas (%d)", len(areas))
         for area in reversed(areas):
 
@@ -60,7 +65,13 @@ class Areas2DOSMBuilder():
 
             # Subtract areas contained (use contained relationship)
             narea = area.subtract(ddd.group2(area.extra['ddd:area:contained']))
-            narea = narea.subtract(union)
+            try:
+                narea = narea.subtract(union)
+            except TopologicalError as e:
+                logger.warn("Could not generate 2D area %s (cleaning): %s", area, e)
+                narea = narea.clean(-0.01)
+                narea = narea.subtract(union)
+
             #narea = narea.clean()  #eps=0.0)
 
             if narea and narea.geom:

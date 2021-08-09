@@ -144,9 +144,9 @@ class Buildings3DOSMBuilder():
         #    roof_shape = 'none'
         #    pbuffered = 0
         roof_shape = building_2d.get('ddd:roof:shape', building_2d.get('osm:roof:shape', roof_shape))
-        roof_height = float(building_2d.get('ddd:roof:height', building_2d.extra.get('osm:roof:height', 0)))
+        roof_height = parse_meters(building_2d.get('ddd:roof:height', building_2d.extra.get('osm:roof:height', 0)))
 
-
+        entire_building_3d = None
         parts = building_2d.extra.get('ddd:building:parts', None)
         if parts is None or len(building_2d.children) == 0:
             buildparts = [building_2d]
@@ -163,7 +163,7 @@ class Buildings3DOSMBuilder():
             part.set('ddd:building:elevation:min', default=elevation_min)
             part.set('ddd:building:elevation:max', default=elevation_max)
             part.set('ddd:building:min_level', default=part.extra.get('osm:building:min_level', base_floors_min))
-            part.set('ddd:building:levels', default=int(part.extra.get('osm:building:levels', base_floors)))
+            part.set('ddd:building:levels', default=int(float(part.extra.get('osm:building:levels', base_floors))))
             part.set('ddd:building:material', default=part.extra.get('osm:building:material', material_name))
             part.set('ddd:building:level:0:height', floor_0_height)
             part.set('ddd:roof:shape', default=part.extra.get('osm:roof:shape', roof_shape))
@@ -181,7 +181,10 @@ class Buildings3DOSMBuilder():
             else:
                 entire_building_3d = subbuilding
 
-        entire_building_3d.extra['ddd:building:building_2d'] = building_2d
+        if entire_building_3d:
+            entire_building_3d.extra['ddd:building:building_2d'] = building_2d
+        else:
+            entire_building_3d = None
 
         return entire_building_3d
 

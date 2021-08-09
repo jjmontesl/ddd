@@ -11,6 +11,7 @@ from ddd.geo import terrain
 from ddd.osm import osm
 from ddd.osm.osm import project_coordinates
 from ddd.pipeline.decorators import dddtask
+from ddd.core.exception import DDDException
 
 """
 """
@@ -64,7 +65,12 @@ def osm_crop_apply_area(obj, osm, root, logger):
 
 @dddtask(select='["ddd:crop" = "centroid"]')
 def osm_crop_apply_centroid(obj, osm, root, logger):
-    point = obj.centroid()
+    try:
+        point = obj.centroid()
+    except DDDException as e:
+        logger.warn("Could not find centroid for cropping for: %s", obj)
+        return False
+
     contained = osm.area_crop2.contains(point)
     if not contained:
         return False

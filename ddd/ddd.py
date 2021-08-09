@@ -2275,6 +2275,12 @@ class DDDInstance(DDDObject):
         obj.transform = self.transform.copy()
         return obj
 
+    def is_empty(self):
+        """
+        Instances are never considered empty, as they are assumed to contain something.
+        """
+        return False
+
     def vertex_iterator(self):
         rotation_matrix = transformations.quaternion_matrix(self.transform.rotation)
         for v in self.ref.vertex_iterator():
@@ -2761,9 +2767,13 @@ class DDDObject3(DDDObject):
     def combine(self, name=None, indexes=False):
         """
         Combine geometry for this and all children meshes into a single mesh.
-        This will also combine UVs and normals. Metadata of the new element is created empty.
+        This will also combine UVs and normals.
 
-        Does not modify the obejct, returns a copy of the geometry.
+        Metadata of the new element is cleaned (except for UVs and normals).
+        If indexes is true, metadata will contain 'ddd:combined:indexes' which
+        will contain triangle indexes and metadata for the combined objects.
+
+        Does not modify the object, returns a copy of the geometry.
 
         TODO: currently, the first material found will be applied to the parent (?)
         """
@@ -2779,7 +2789,7 @@ class DDDObject3(DDDObject):
             cc = c.combine(indexes=indexes)
             if result.mat is None and cc.mat is not None: result = result.material(cc.mat)
 
-            # Remove visuals, as Trimesh will try to concatenate UV but also textures
+            # Remove visuals, as when joining meshes Trimesh will try to concatenate UV but also textures
             if result.mesh: result.mesh.visual = ColorVisuals()
             if cc.mesh: cc.mesh.visual = ColorVisuals()
 

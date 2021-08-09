@@ -197,12 +197,14 @@ class Ways1DOSMBuilder():
                 continue
             if tuple(item.geom.coords[0][:2]) in vertex_cache:
                 logger.debug("Associating item to way: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
-                item.extra['osm:item:way'] = vertex_cache[item.geom.coords[0]][0]
-                item.extra['osm:item:ways'] = vertex_cache[item.geom.coords[0]]
-                for w in vertex_cache[item.geom.coords[0]]:
-                    if 'osm:way:items' not in w.extra:
-                        w.extra['osm:way:items'] = []
-                    w.extra['osm:way:items'].append(item)
+                item_coords =  vertex_cache[item.geom.coords[0]]
+                if len(item_coords) > 0:
+                    item.extra['osm:item:way'] = item_coords[0]
+                    item.extra['osm:item:ways'] = item_coords
+                    for w in vertex_cache[item.geom.coords[0]]:
+                        if 'osm:way:items' not in w.extra:
+                            w.extra['osm:way:items'] = []
+                        w.extra['osm:way:items'].append(item)
 
 
     def ways_1d_intersections(self, ways_1d):

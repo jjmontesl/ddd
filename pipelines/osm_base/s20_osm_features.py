@@ -44,6 +44,16 @@ def osm_features_crop_extended_area(pipeline, osm, root, obj):
     obj = obj.intersection(osm.area_filter2)
     return obj
 
+
+# Filtering for non-represented features
+
+@dddtask(path="/Features/*", select='["osm:route:bus"]')
+def osm_select_ways_routes_remove(obj, root):
+    """Remove routes."""
+    return False
+
+
+
 '''
 @dddtask(select='[osm:element="relation"]')
 def osm_load_remove_relations():

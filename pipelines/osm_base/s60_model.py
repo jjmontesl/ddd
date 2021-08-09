@@ -80,7 +80,7 @@ def osm_model_generate(osm, root):
     pass
 
 @dddtask(path="/Features", select='["osm:natural" = "coastline"]')
-def osm_model_generate_coastline(osm, root, obj):
+def osm_model_generate_coastline(osm, root, obj, logger):
 
     # Crop this feature as it has not been cropped
     area_crop = osm.area_crop2 if osm.area_crop2 else osm.area_filter2
@@ -89,6 +89,12 @@ def osm_model_generate_coastline(osm, root, obj):
         return
 
     coastlines_3d = coastlines_3d.individualize().extrude(15.0).translate([0, 0, -15.0])
+
+    # Subdivide
+    if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
+        logger.debug("Subdividing coastline meshes: %s", obj)
+        coastlines_3d = ddd.meshops.subdivide_to_grid(coastlines_3d, float(ddd.data.get('ddd:area:subdivide')))
+
     coastlines_3d = terrain.terrain_geotiff_elevation_apply(coastlines_3d, osm.ddd_proj)
     coastlines_3d = coastlines_3d.material(ddd.mats.rock)
     coastlines_3d = ddd.uv.map_cubic(coastlines_3d)
@@ -363,9 +369,31 @@ def osm_model_elevation_apply_terrain_max(obj, osm, root):
     return obj
 
 
+@dddtask(order="65.30.10")
+def osm_model_metadata_freeze_before_combine(pipeline, root):
+    """
+    This task walks the scene tree and eagerly resolves path information.
+    This is done in order to preserve scene hierarchy information before it is destroyed
+    by collapsing meshes into unique objects.
+    """
+    ddd.meshops.freeze_metadata(root)
+
+@dddtask(order="65.30.30")
+def osm_model_metadata_clean(pipeline):
+    """
+    Clears unused metadata (this depends on the target model usage), in order to prevent
+    unnecessary metadata to increase file size (some of the metadata, while useful for
+    debugging, is too verbose for many practical purposes).
+
+    This is done at this step before any final combining objects, as otherwise metadata
+    could be stored into the combined object index.
+    """
+    pass
+
+
 
 @dddtask()  # path="/Items3/*", select='[ddd:material="Roadmarks"]')
-def osm_model_generate_ways_road_markings_combine(osm, root, pipeline):
+def osm_model_combine_ways_road_markings(osm, root, pipeline):
     """
     Combine road markings in a single mesh, as they use the same atlas material.
     (Note that road marks are currently instanced via catalog, so using this requires considering that).
@@ -380,7 +408,7 @@ def osm_model_generate_ways_road_markings_combine(osm, root, pipeline):
 @dddtask(order="65.40", condition=True)
 def osm_model_combine_materials_condition(pipeline):
     """
-    Run plant augmentation only if so configured (ddd:osm:augment:plants=True).
+    Combine meshes by material condition (default is True).
     """
     return parse_bool(pipeline.data.get('ddd:osm:model:combine_materials', True))
 
@@ -393,10 +421,15 @@ def osm_model_combine_materials(osm, root, pipeline):
     ddd.meshops.combine_group(root.find("/Areas"), key_func=lambda o: o.mat.name if o.mat else None)
     ddd.meshops.combine_group(root.find("/Ways"), key_func=lambda o: o.mat.name if o.mat else None)
 
+    ddd.meshops.combine_empty(root.find("/Buildings"))
+    ddd.meshops.combine_empty(root.find("/Areas"))
+    ddd.meshops.combine_empty(root.find("/Ways"))
+
 
 @dddtask(order="65.45")  # [!"intersection"]
 def osm_models_instances_buffers_buildings(pipeline, osm, root, logger):
     """
+    Generates geometry instancing buffers for repeated DDDInstance objects in buildings.
     """
     keys = ('building-window',)
 
@@ -419,6 +452,7 @@ def osm_models_instances_buffers_buildings(pipeline, osm, root, logger):
 @dddtask()  # [!"intersection"]
 def osm_models_instances_buffers_items(pipeline, osm, root, logger):
     """
+    Generates geometry instancing buffers for repeated scenery DDDInstance objects.
     """
     keys = ('grassblade', 'grassblade-dry')
 
@@ -444,11 +478,11 @@ def osm_models_splatmap_materials(pipeline, osm, root, logger):
     """
     Mark materials for splatmap usage.
     """
-    root.find("/Areas").set('ddd:material:splatmap', True, children=True)
-    root.find("/Ways").set('ddd:material:splatmap', True, children=True)
+    root.find("/Areas").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)
+    root.find("/Ways").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)
 
 
-@dddtask(order="60.50.+", log=True)
+@dddtask(order="65.50.+", log=True)
 def osm_model_rest(pipeline, root, osm, logger):
 
     # Final grouping
@@ -464,6 +498,8 @@ def osm_model_rest(pipeline, root, osm, logger):
 
     scene = ddd.group(scene, name="Scene")
 
+    # Add metadata to tile root object
+    # (some of these are used by ddd-viewer format)
     metadataobj = ddd.instance(None, name="Metadata")
     metadataobj.set('tile:bounds_wgs84', pipeline.data['tile:bounds_wgs84'])
     metadataobj.set('tile:bounds_m', pipeline.data['tile:bounds_m'])

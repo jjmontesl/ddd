@@ -217,6 +217,7 @@ def osm_materials():
     ddd.mats.bricks = ddd.material(name="Bricks", color='#efae85', texture_color='#ffffff',
                                  metallic_factor=0.0, roughness_factor=1.0,  # bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bricks07/Bricks07_*.jpg",)
+    ddd.mats.brick = ddd.mats.bricks
 
     ddd.mats.tiles_stones = ddd.material(name="Tiles Stones", color='#7b7d69', texture_color='#ffffff',
                                  metallic_factor=0.0, roughness_factor=1.0,  # bump_strength=2.0,

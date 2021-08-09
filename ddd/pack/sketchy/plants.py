@@ -213,6 +213,7 @@ def tree_palm(height=14, r=0.30):
 
     objtrunk = obj.select(func=lambda o: o.mat == ddd.mats.bark).combine()
     objleaves = obj.select(func=lambda o: o.mat == ddd.mats.treetop).combine()
+    objleaves = ddd.uv.map_cubic(objleaves)
     #objleaves.mesh.merge_vertices()
     obj = ddd.group3([objtrunk, objleaves], name="Tree Palm")
 
