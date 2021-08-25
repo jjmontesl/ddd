@@ -27,6 +27,9 @@ develop-eggs
 /ROADMAP
 /build
 
+/examples/output/
+/examples/_cache/
+
 /private
 /private/data
 /private/output

@@ -18,7 +18,8 @@ The "model" stage of the build process is the first stage to handle 3D data.
 It selects 2D objects from the node tree (/Areas, /Buildings...) and generates the 3D
 geometry from them.
 
-The last steps of this stage apply some optimizations, such as mesh combination or instance grouping,
+The last steps of this stage (in separate files) apply some optimizations,
+such as mesh combination or instance grouping,
 before writing the output model to file.
 
 Note: Currently this stage replaces some branches of the node tree, and/or renames others
@@ -369,117 +370,28 @@ def osm_model_elevation_apply_terrain_max(obj, osm, root):
     return obj
 
 
-@dddtask(order="65.30.10")
-def osm_model_metadata_freeze_before_combine(pipeline, root):
+@dddtask(order="65.30.05")
+def osm_model_post():
     """
-    This task walks the scene tree and eagerly resolves path information.
-    This is done in order to preserve scene hierarchy information before it is destroyed
-    by collapsing meshes into unique objects.
-    """
-    ddd.meshops.freeze_metadata(root)
-
-@dddtask(order="65.30.30")
-def osm_model_metadata_clean(pipeline):
-    """
-    Clears unused metadata (this depends on the target model usage), in order to prevent
-    unnecessary metadata to increase file size (some of the metadata, while useful for
-    debugging, is too verbose for many practical purposes).
-
-    This is done at this step before any final combining objects, as otherwise metadata
-    could be stored into the combined object index.
+    Model postprocessing (s65_model_post) is processed here.
     """
     pass
-
-
-
-@dddtask()  # path="/Items3/*", select='[ddd:material="Roadmarks"]')
-def osm_model_combine_ways_road_markings(osm, root, pipeline):
-    """
-    Combine road markings in a single mesh, as they use the same atlas material.
-    (Note that road marks are currently instanced via catalog, so using this requires considering that).
-    """
-    roadmarks = root.find("/Items3").select(selector='["ddd:material"="Roadmarks"]')
-    roadmarks = roadmarks.combine()
-    # Remove roadmark elements
-    root.find("/Items3").select('[ddd:material="Roadmarks"]', apply_func=lambda o: False)
-    root.find("/Roadlines3/").append(roadmarks)
-
-
-@dddtask(order="65.40", condition=True)
-def osm_model_combine_materials_condition(pipeline):
-    """
-    Combine meshes by material condition (default is True).
-    """
-    return parse_bool(pipeline.data.get('ddd:osm:model:combine_materials', True))
-
-@dddtask(order="65.40.+")  # path="/Items3/*", select='[ddd:material="Roadmarks"]')
-def osm_model_combine_materials(osm, root, pipeline):
-    """
-    Combine meshes with the same material in a single mesh.
-    """
-    ddd.meshops.combine_group(root.find("/Buildings"), key_func=lambda o: o.mat.name if o.mat else None)
-    ddd.meshops.combine_group(root.find("/Areas"), key_func=lambda o: o.mat.name if o.mat else None)
-    ddd.meshops.combine_group(root.find("/Ways"), key_func=lambda o: o.mat.name if o.mat else None)
-
-    ddd.meshops.combine_empty(root.find("/Buildings"))
-    ddd.meshops.combine_empty(root.find("/Areas"))
-    ddd.meshops.combine_empty(root.find("/Ways"))
-
-
-@dddtask(order="65.45")  # [!"intersection"]
-def osm_models_instances_buffers_buildings(pipeline, osm, root, logger):
-    """
-    Generates geometry instancing buffers for repeated DDDInstance objects in buildings.
-    """
-    keys = ('building-window',)
-
-    for key in keys:
-        instances = root.select(path="/Buildings/*", selector='["ddd:instance:key" = "%s"]' % key)
-
-        if len(instances.children) > 0:
-            logger.info("Replacing %d building instances (%s) with a buffer.", len(instances.children), key)
-            buffer_matrices = np.zeros([len(instances.children) * 16, ])
-
-            for idx, instance in enumerate(instances.children):
-                buffer_matrices[idx * 16:idx * 16 + 16] = instance.transform.to_matrix().transpose().flatten()
-
-            instance_buffer = instances.children[0].copy()
-            instance_buffer.set('ddd:instance:buffer:matrices', list(buffer_matrices))
-
-            root.select_remove(path="/Buildings/*", selector='["ddd:instance:key" = "%s"]' % key)
-            root.find("/Buildings").append(instance_buffer)
-
-@dddtask()  # [!"intersection"]
-def osm_models_instances_buffers_items(pipeline, osm, root, logger):
-    """
-    Generates geometry instancing buffers for repeated scenery DDDInstance objects.
-    """
-    keys = ('grassblade', 'grassblade-dry')
-
-    for key in keys:
-        instances = root.select(path="/Items3/*", selector='["ddd:instance:key" = "%s"]' % key)
-
-        if len(instances.children) > 0:
-            logger.info("Replacing %d items instances (%s) with a buffer.", len(instances.children), key)
-            buffer_matrices = np.zeros([len(instances.children) * 16, ])
-
-            for idx, instance in enumerate(instances.children):
-                buffer_matrices[idx * 16:idx * 16 + 16] = instance.transform.to_matrix().transpose().flatten()
-
-            instance_buffer = instances.children[0].copy()
-            instance_buffer.set('ddd:instance:buffer:matrices', list(buffer_matrices))
-
-            root.select_remove(path="/Items3/*", selector='["ddd:instance:key" = "%s"]' % key)
-            root.find("/Items3").append(instance_buffer)
-
 
 @dddtask()
 def osm_models_splatmap_materials(pipeline, osm, root, logger):
     """
     Mark materials for splatmap usage.
+
+    FIXME: Materials shall be combined considering material:splatmap in mind, and keeping it
+    (this is currently lost if materials are combined).
     """
     root.find("/Areas").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)
     root.find("/Ways").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)
+
+
+@dddtask(order="66.10.+", log=True)
+def osm_models_rest_after_post():
+    pass
 
 
 @dddtask(order="65.50.+", log=True)

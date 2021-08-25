@@ -358,7 +358,7 @@ class DDDMeshOps():
 
             instances = objs.select(func=lambda o: isinstance(o, DDDInstance), recurse=False)
             if len(instances.children) > 0:
-                instances.name = "Combined instances: %s" % key
+                instances.name = "Combined Inst: %s" % key
                 objs.select_remove(func=lambda o: isinstance(o, DDDInstance))
                 root.append(instances)
                 added_objects.append(instances)
@@ -366,7 +366,7 @@ class DDDMeshOps():
             for o in objs.recurse_objects()[1:]: o.children = []
             if len(objs.children) > 0:
                 combined = objs.combine(indexes=True)
-                combined.name = "Combined objects: %s" % key
+                combined.name = "Combined Objs: %s" % key
                 root.append(combined)
                 added_objects.append(combined)
 

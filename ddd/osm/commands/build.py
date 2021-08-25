@@ -213,8 +213,8 @@ class OSMBuildCommand(DDDCommand):
 
         if force_get_data or not file_exists:
             logger.info("Data file '%s' not found or datasource:force_refresh is True. Trying to produce data." % datafile)
-            self.get_data(path, dataname, datacenter)
-            #self.get_data_osm(path, dataname, datacenter)
+            #self.get_data(path, dataname, datacenter)
+            self.get_data_osm(path, dataname, datacenter)
 
         # Read data
         files = [os.path.join(path, f) for f in [dataname + '.osm.geojson'] if os.path.isfile(os.path.join(path, f)) and f.endswith(".geojson")]
@@ -369,10 +369,10 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_base.s50_90_export_2d.py',
 
                                             'pipelines.osm_base.s60_model.py',
-                                            'pipelines.osm_base.s60_model_export_3d.py',
+                                            'pipelines.osm_base.s65_model_post_opt.py',
+                                            'pipelines.osm_base.s69_model_export_3d.py',
 
                                             'pipelines.osm_base.s70_metadata.py',
-
 
                                             'pipelines.osm_gdterrain.s60_heightmap_export.py',
                                             'pipelines.osm_gdterrain.s60_splatmap_export.py',
