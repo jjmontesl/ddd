@@ -370,13 +370,6 @@ def osm_model_elevation_apply_terrain_max(obj, osm, root):
     return obj
 
 
-@dddtask(order="65.30.05")
-def osm_model_post():
-    """
-    Model postprocessing (s65_model_post) is processed here.
-    """
-    pass
-
 @dddtask()
 def osm_models_splatmap_materials(pipeline, osm, root, logger):
     """
@@ -389,12 +382,8 @@ def osm_models_splatmap_materials(pipeline, osm, root, logger):
     root.find("/Ways").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)
 
 
-@dddtask(order="66.10.+", log=True)
-def osm_models_rest_after_post():
-    pass
-
-
-@dddtask(order="65.50.+", log=True)
+#@dddtask(order="65.50.+", log=True)
+@dddtask(order="60.95.+", log=True)
 def osm_model_rest(pipeline, root, osm, logger):
 
     # Final grouping

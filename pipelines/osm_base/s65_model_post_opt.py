@@ -23,7 +23,9 @@ individual objects as without object / instance combining.
 """
 
 
-@dddtask(order="65.30.10")
+
+
+@dddtask(order="65.30.40")
 def osm_model_metadata_freeze_before_combine(pipeline, root):
     """
     This task walks the scene tree and eagerly resolves path information.
@@ -31,19 +33,6 @@ def osm_model_metadata_freeze_before_combine(pipeline, root):
     by collapsing meshes into unique objects.
     """
     ddd.meshops.freeze_metadata(root)
-
-@dddtask(order="65.30.30")
-def osm_model_metadata_clean(pipeline):
-    """
-    Clears unused metadata (this depends on the target model usage), in order to prevent
-    unnecessary metadata to increase file size (some of the metadata, while useful for
-    debugging, is too verbose for many practical purposes).
-
-    This is done at this step before any final combining objects, as otherwise metadata
-    could be stored into the combined object index.
-    """
-    pass
-
 
 
 @dddtask()  # path="/Items3/*", select='[ddd:material="Roadmarks"]')

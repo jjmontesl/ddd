@@ -361,14 +361,19 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_base.s40_structured.py',
                                             'pipelines.osm_base.s40_structured_export_2d.py',
 
-                                            'pipelines.osm_common.s45_pitch.py',
+                                            'pipelines.osm_augment.s45_pitch.py',
 
                                             'pipelines.osm_base.s50_stairs.py',
                                             'pipelines.osm_base.s50_positioning.py',
                                             'pipelines.osm_base.s50_crop.py',
                                             'pipelines.osm_base.s50_90_export_2d.py',
 
+                                            'pipelines.osm_augment.s50_ways.py',
+                                            'pipelines.osm_augment.s55_plants.py',
+                                            'pipelines.osm_augment.s55_rocks.py',
+
                                             'pipelines.osm_base.s60_model.py',
+                                            'pipelines.osm_base.s65_model_metadata_clean.py',
                                             'pipelines.osm_base.s65_model_post_opt.py',
                                             'pipelines.osm_base.s69_model_export_3d.py',
 
@@ -377,12 +382,9 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_gdterrain.s60_heightmap_export.py',
                                             'pipelines.osm_gdterrain.s60_splatmap_export.py',
 
-                                            'pipelines.osm_augment.s50_ways.py',
-                                            'pipelines.osm_augment.s55_plants.py',
-                                            'pipelines.osm_augment.s55_rocks.py',
+                                            'pipelines.osm_extras.s30_icons.py',
 
-                                            'pipelines.osm_default_2d.s30_icons.py',
-
+                                            'pipelines.osm_extras.s80_model_compress.py',
 
                                             #'pipelines.osm_extras.mapillary.py',
                                             #'pipelines.osm_extras.ortho.py',

@@ -1,6 +1,13 @@
+[0.6.5]
+
 [0.6.4]
 
-
+  * Several fixes to triangulation and subdivision operations.
+  * Added a method for subdividing meshes consistently to a given grid (subdivide_to_grid()).
+  * Added metadata to GeoJSON export.
+  * Support for combining by groups (eg material) and generate batched object indices and metadata.
+  * Support for metadata removal in OSM pipeline.
+  * Added to OSM: windows and doors to buildings, swimming pools, rocks.
 
 [0.6.3]
 
