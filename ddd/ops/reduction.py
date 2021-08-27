@@ -7,7 +7,7 @@ import logging
 from ddd.ddd import ddd, DDDInstance, DDDObject2
 import math
 from trimesh.base import Trimesh
-from trimesh import creation
+from trimesh import creation, intersections
 from scipy import interpolate
 from shapely.geometry import Polygon, polygon
 
@@ -329,6 +329,19 @@ class DDDMeshOps():
 
         return result
 
+    def slice_plane(self, obj, plane_normal, plane_origin):
+
+        result = obj.copy()
+
+        result.children = [self.slice_plane(c) for c in result.children]
+
+        if result.mesh:
+            mesh = intersections.slice_mesh_plane(
+                result.mesh, plane_normal, plane_origin, cap=False, cached_dots=None)
+            result.mesh = mesh
+
+        return result
+
     def combine_group(self, root, key_func):
         """
         Note that this modifies the node tree.
@@ -396,7 +409,7 @@ class DDDMeshOps():
         def combine_empty_recursive(root, obj, path_prefix, name_suffix):
             for idx, c in enumerate(obj.children):
                 combine_empty_recursive(root, c, path_prefix + obj.uniquename() + "/", name_suffix)
-                if not c.children and c.is_empty():
+                if not c.children and c.is_empty() and 'ddd:rpath' in c.extra:
                     combined_metadata[c.get('ddd:rpath')] = c.metadata("", "")
             obj.children = [c for c in obj.children if c.children or not c.is_empty()]
 

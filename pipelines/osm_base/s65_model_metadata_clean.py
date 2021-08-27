@@ -46,6 +46,7 @@ def osm_metadata_clean_ddd_verbose(pipeline, osm, root, obj):
         'ddd:building:contacts',
         'ddd:building:segments',
         'ddd:building:convex',
+        'ddd:building:convex:segments',
     ]
 
     obj.extra = { k: v for k, v in obj.extra.items() if k not in keys }

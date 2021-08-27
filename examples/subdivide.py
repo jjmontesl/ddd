@@ -21,6 +21,11 @@ fig = ddd.meshops.subdivide_to_grid(fig, 0.5)
 fig.show()
 items.append(fig)
 
+# Test slicing with plane
+figa = ddd.meshops.slice_plane(fig, [-1, -1, -1], [0.3, 0.3, 0.3])
+figb = ddd.meshops.slice_plane(fig, [1, 1, 1], [0.3, 0.3, 0.3])
+ddd.group([figa, figb.material(ddd.MAT_HIGHLIGHT)]).show()
+
 
 # Subdivide to grid
 coords = [[10, 10], [5, 9], [3, 12], [1, 5], [-8, 0], [10, 0]]
