@@ -30,6 +30,8 @@ def osm_metadata_generate_scene_metadata(root, pipeline, osm, logger):
     Write accumulated metadata to a descriptor file.
     """
 
+    # TODO: Unify metadata
+
     # Include heightmap range if used
 
     data = {

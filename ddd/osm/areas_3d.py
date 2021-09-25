@@ -200,6 +200,19 @@ class Areas3DOSMBuilder():
 
                 #area_3d = area_3d.translate([0, 0, 0])
 
+            elif area_2d.extra.get('ddd:area:type', None) == 'rocky':
+                # Raise surface, then add random noise
+
+                area_3d = area_2d.extrude_step(area_2d.buffer(-0.3), 0.4, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-1.5), 0.2, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+
+                # TODO:
+                #last_cap_idx = result.extra.get('_extrusion_last_cap_idx', None)
+                #if last_cap_idx is not None:
+                #    faces = faces[:last_cap_idx]
+
+                # Subdivide and apply noise / tag to avoid further subdivisions (check if other surfaces can be tagged too, eg, playgrounds, etc)
+
             elif area_2d.extra.get('ddd:area:type', None) == 'bunker':
 
                 area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), -0.4, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)

@@ -68,9 +68,12 @@ class GeoRasterCollectCommand(DDDCommand):
 
                 crs = 'EPSG:4326'
                 if 'eudem11/' in path or 'eu_dem_v11' in path: crs = 'EPSG:3035'
+                if 'etrs89-hu28' in path.lower().replace("_", "-"): crs = 'EPSG:25828'
                 if 'etrs89-hu29' in path.lower().replace("_", "-"): crs = 'EPSG:25829'
                 if 'etrs89-hu30' in path.lower().replace("_", "-"): crs = 'EPSG:25830'
                 if 'etrs89-hu31' in path.lower().replace("_", "-"): crs = 'EPSG:25831'
+                #if 'ghs_pop' in path.lower(): crs = 'EPSG:54009'  # Population GeoTIFF datasource (see below, this EPSG number is unknown to the lib)
+                if 'ghs_pop' in path.lower(): crs = 'PROJCS["unnamed",GEOGCS["WGS 84",DATUM["unknown",SPHEROID["WGS84",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Mollweide"],PARAMETER["central_meridian",0],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["Meter",1]]'
 
                 tile = GeoRasterTile.load(str(path), crs)
                 #print("File: %s  Transform: %s" % (str(path), tile.geotransform))

@@ -371,6 +371,7 @@ class OSMBuildCommand(DDDCommand):
                                             'pipelines.osm_augment.s50_ways.py',
                                             'pipelines.osm_augment.s55_plants.py',
                                             'pipelines.osm_augment.s55_rocks.py',
+                                            'pipelines.osm_augment.s55_building_floors.py',
 
                                             'pipelines.osm_base.s60_model.py',
                                             'pipelines.osm_base.s65_model_metadata_clean.py',

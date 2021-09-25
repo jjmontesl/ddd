@@ -274,7 +274,7 @@ def tree_bush(height=1.0, r=0.30):
 
     obj = recursivetree(height=height, r=r, leaves_callback=leaves_callback, trunk_callback=trunk_callback,
                         fork_iters=2, fork_height_ratio=0.2)
-    obj = obj.translate([0, 0, -height * 0.25])
+    obj = obj.translate([0, 0, -height * 0.4])
 
     '''
     result = ddd.group3()

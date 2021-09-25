@@ -190,6 +190,15 @@ def osm_groups_areas_natural_fell(obj, osm):
     obj = obj.material(ddd.mats.forest)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:natural" = "grassland"]')
+def osm_groups_areas_natural_grassland(obj, osm):
+    """Define area data."""
+    obj.name = "Grassland: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:density'] = 0.0
+    obj = obj.material(ddd.mats.grass)
+    return obj
+
 @dddtask(path="/Areas/*", select='["osm:natural" = "wood"]')
 def osm_groups_areas_natural_wood(obj, osm):
     """Define area data."""
@@ -248,11 +257,19 @@ def osm_groups_areas_golf_bunker(obj, osm):
 @dddtask(path="/Areas/*", select='["osm:natural" = "bare_rock"]')
 def osm_groups_areas_natural_bare_rock(obj, osm):
     """Define area data."""
-    # Note that golf:bunker is also usually marked as natural:sand
     obj.name = "Bare Rock: %s" % obj.name
-    obj.extra['ddd:area:type'] = "default"  # sand / dunes
+    obj.extra['ddd:area:type'] = "default"
     obj = obj.material(ddd.mats.rock)
     obj.extra['ddd:height'] = 0.40
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:natural" = "bare_rock"]["osm:geological" = "volcanic_lava_field"]')
+def osm_groups_areas_geological_volcanic_lava_field(obj, osm):
+    """Define area data."""
+    obj.name = "Lava: %s" % obj.name
+    obj.extra['ddd:area:type'] = "rocky"  # should be rocky
+    obj = obj.material(ddd.mats.lava)
+    obj.extra['ddd:height'] = 1.50
     return obj
 
 

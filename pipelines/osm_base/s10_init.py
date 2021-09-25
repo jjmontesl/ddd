@@ -136,6 +136,10 @@ def osm_materials():
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Rock029_2K-JPG/Rock029_2K_*.jpg",
                                     extra={'uv:scale': 1.0, 'tags': ['orange', 'light brown', 'red', 'rock', 'stone', 'cliff', 'desert', 'ground']})
+    ddd.mats.lava = ddd.material(name="Lava", color='#d15e33', texture_color='#ffffff',
+                                    metallic_factor=0.5, roughness_factor=1.0, bump_strength=2.0, emissive_factor=1.0,
+                                    texture_path=ddd.DATA_DIR + "/osmmaterials/Lava003_2K-JPG/Lava003_2K_*.jpg",
+                                    extra={'uv:scale': 0.5, 'tags': ['orange', 'red', 'yellow', 'rock', 'stone', 'lava', 'magma']})
 
     ddd.mats.terrain_ground = ddd.material(name="Ground Clear", color='#a48f74', extra={'uv:scale': 1.0},  # 0.2
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,

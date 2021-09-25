@@ -8,6 +8,7 @@ from ddd.core import settings
 
 items = ddd.group3()
 
+
 mc = MapillaryClient(ddd.data['mapillary:client_id'])
 data = mc.images_list([-3.693955, 40.400690], limit=35)
 

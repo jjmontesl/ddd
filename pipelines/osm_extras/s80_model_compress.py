@@ -30,7 +30,8 @@ def osm_model_3d_compress_draco(root, osm, pipeline, logger):
 
     logger.info("Compressing GLB file to: %s", output_file_abs)
 
-    command = f'{node_bin} {draco_script} -d --draco.compressionLevel=0 --draco.unifiedQuantization=true -i {input_file_abs} -o {output_file_abs}'
+    #command = f'{node_bin} {draco_script} -d --draco.compressionLevel=0 --draco.unifiedQuantization=true -i {input_file_abs} -o {output_file_abs}'
+    command = f'{node_bin} {draco_script} -d --draco.compressionLevel=0 -i {input_file_abs} -o {output_file_abs}'
     subprocess.run(command, cwd=draco_home, shell=True, check=True)  # requires Python 3.5
 
     # Compare sizes
@@ -45,6 +46,3 @@ def osm_model_3d_compress_draco(root, osm, pipeline, logger):
     original_file = pipeline.data['filenamebase'] + ".uncompressed.glb"
     os.rename(input_file, original_file)
     os.rename(output_file, input_file)
-
-
-
