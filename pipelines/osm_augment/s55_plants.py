@@ -143,6 +143,7 @@ def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
             elif align == 'grid':
 
                 # Decimation would affect this afterwards
+                tree_area = tree_area.buffer(-1.0)
                 (major_seg, minor_seg, angle) = ddd.geomops.oriented_axis(tree_area)
 
                 num_trees = int((tree_area.geom.minimum_rotated_rectangle.area * tree_density_m2))
@@ -152,9 +153,9 @@ def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
 
                 minor_seg_centered = minor_seg.recenter()
                 for i in range(trees_major):
-                    p_major = major_seg.geom.interpolate(i * major_seg.geom.length / trees_major)
+                    p_major = major_seg.geom.interpolate(i * major_seg.geom.length / (trees_major - 1 if trees_major > 1 else 1))
                     for j in range(trees_minor):
-                        p_minor_offset = minor_seg_centered.geom.interpolate(j * minor_seg_centered.geom.length / trees_minor)
+                        p_minor_offset = minor_seg_centered.geom.interpolate(j * minor_seg_centered.geom.length / (trees_minor - 1 if trees_minor > 1 else 1))
                         p = (p_major.coords[0][0] + p_minor_offset.coords[0][0], p_major.coords[0][1] + p_minor_offset.coords[0][1])
 
                         if not tree_area.contains(ddd.point(p)):

@@ -128,7 +128,7 @@ def osm_groups_areas_landuse_orchard(obj, osm):
     obj.extra['ddd:area:type'] = "bunker"
     obj.extra['ddd:aug:itemfill'] = True
     obj.extra['ddd:aug:itemfill:align'] = "grid"
-    obj.extra['ddd:aug:itemfill:density'] = 0.0075
+    obj.extra['ddd:aug:itemfill:density'] = 0.01
     obj.extra['ddd:aug:itemfill:types'] = {'bush': 1}
     obj = obj.material(ddd.mats.park)
     return obj
