@@ -35,10 +35,10 @@ class D1D2D3Bootstrap():
         "texture-pack": ("ddd.materials.commands.texturepack.TexturePackCommand", "Pack textures into texture atlases"),
         "osm-build": ("ddd.osm.commands.build.OSMBuildCommand", "Build a scene or tile using the OSM Builder"),
         "osm-datainfo": ("ddd.osm.commands.areainfo.OSMDataInfoCommand", "Dump information about generated tiles"),
-        "osm-query": ("ddd.osm.commands.query", None),
         "geo-raster-collect": ("ddd.geo.commands.georastercollect.GeoRasterCollectCommand", "Collect georaster files and generate config."),
         "geo-raster-coverage": ("ddd.geo.commands.georastercoverage.GeoRasterCoverageCommand", "Generate a georaster coverage map."),
         "geo-population": ("ddd.geo.commands.geopopulation.GeoPopulationCommand", "Query the population model."),
+        "server-serve": ("ddd.server.commands.serve.ServerServeCommand", "Start the DDD Tool API."),
         "run": ("ddd.core.commands.run", "Runs a user-given script (default)"),  # default
         })
 

@@ -10,6 +10,8 @@ from ddd.util.dddrandom import weighted_choice
 import random
 import noise
 from ddd.util.common import parse_bool
+from ddd.core.exception import DDDException
+import math
 
 
 # Generate grass
@@ -111,26 +113,63 @@ def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
 
     trees = ddd.group2(name="Trees (Aug): %s" % area.name)
 
+    align = area.get('ddd:aug:itemfill:align', 'noise')
+
     if area.geom:
 
         tree_area = area  # area.intersection(ddd.shape(osm.area_crop)).union()
         if tree_area.geom:
-            # Decimation would affect after
-            num_trees = int((tree_area.geom.area * tree_density_m2))
-            #if num_trees == 0 and random.uniform(0, 1) < 0.5: num_trees = 1  # alone trees
-            if max_trees:
-                num_trees = min(num_trees, max_trees)
 
-            def filter_func_noise(coords):
-                val = noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
-                return (val > random.uniform(-0.5, 0.5))
+            if align == 'noise':
 
-            for p in tree_area.random_points(num_points=num_trees):
-                tree_type = weighted_choice(tree_types)
-                tree = ddd.point(p, name="Tree")
-                tree.extra['ddd:aug:status'] = 'added'
-                tree.extra['osm:natural'] = 'tree'  # TODO: Change to DDD
-                tree.extra['osm:tree:type'] = tree_type  # TODO: Change to DDD
-                trees.append(tree)
+                # Decimation would affect after
+                num_trees = int((tree_area.geom.area * tree_density_m2))
+                #if num_trees == 0 and random.uniform(0, 1) < 0.5: num_trees = 1  # alone trees
+                if max_trees:
+                    num_trees = min(num_trees, max_trees)
+
+                def filter_func_noise(coords):
+                    val = noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
+                    return (val > random.uniform(-0.5, 0.5))
+
+                for p in tree_area.random_points(num_points=num_trees):
+                    tree_type = weighted_choice(tree_types)
+                    tree = ddd.point(p, name="Tree")
+                    tree.extra['ddd:aug:status'] = 'added'
+                    tree.extra['osm:natural'] = 'tree'  # TODO: Change to DDD
+                    tree.extra['osm:tree:type'] = tree_type  # TODO: Change to DDD
+                    trees.append(tree)
+
+            elif align == 'grid':
+
+                # Decimation would affect after
+                (major_seg, minor_seg, angle) = ddd.geomops.oriented_axis(tree_area)
+
+                num_trees = int((tree_area.geom.minimum_rotated_rectangle.area * tree_density_m2))
+                major_minor_ratio = major_seg.geom.length / minor_seg.geom.length
+                trees_major = int(max(1, math.sqrt(num_trees) * major_minor_ratio))
+                trees_minor = int(max(1, math.sqrt(num_trees) * (1 / major_minor_ratio)))
+
+                minor_seg_centered = minor_seg.recenter()
+                for i in range(trees_major):
+                    p_major = major_seg.geom.interpolate(i * major_seg.geom.length / trees_major)
+                    for j in range(trees_minor):
+                        p_minor_offset = minor_seg_centered.geom.interpolate(j * minor_seg_centered.geom.length / trees_minor)
+                        p = (p_major.coords[0][0] + p_minor_offset.coords[0][0], p_major.coords[0][1] + p_minor_offset.coords[0][1])
+
+                        if not tree_area.contains(ddd.point(p)):
+                            continue
+
+                        tree_type = weighted_choice(tree_types)
+                        tree = ddd.point(p, name="Tree")
+                        tree.extra['ddd:aug:status'] = 'added'
+                        tree.extra['osm:natural'] = 'tree'  # TODO: Change to DDD
+                        tree.extra['osm:tree:type'] = tree_type  # TODO: Change to DDD
+                        trees.append(tree)
+
+            else:
+                raise DDDException("Invalid item align type: %s", align)
+
+
 
     return trees

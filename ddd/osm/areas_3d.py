@@ -203,8 +203,8 @@ class Areas3DOSMBuilder():
             elif area_2d.extra.get('ddd:area:type', None) == 'rocky':
                 # Raise surface, then add random noise
 
-                area_3d = area_2d.extrude_step(area_2d.buffer(-0.3), 0.4, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-1.5), 0.2, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_2d.extrude_step(area_2d.buffer(-0.3), 0.3, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-1.5), 0.5, method=ddd.EXTRUSION_METHOD_SUBTRACT)
 
                 # TODO:
                 #last_cap_idx = result.extra.get('_extrusion_last_cap_idx', None)

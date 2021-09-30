@@ -68,6 +68,16 @@ def osm_groups_areas_leisure_garden(obj, osm):
     obj = obj.material(ddd.mats.garden)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:landuse" = "farmland"]')
+def osm_groups_areas_landuse_farmland(obj, osm):
+    """Define area data."""
+    obj.name = "Farmland: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:density'] = 0.01
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 1}
+    obj = obj.material(ddd.mats.terrain_ground)
+    return obj
+
 @dddtask(path="/Areas/*", select='["osm:landuse" = "forest"]')
 def osm_groups_areas_landuse_forest(obj, osm):
     """Define area data."""
@@ -76,6 +86,17 @@ def osm_groups_areas_landuse_forest(obj, osm):
     obj.extra['ddd:aug:itemfill:density'] = 0.006
     obj.extra['ddd:aug:itemfill:types'] = {'default': 1, 'reed': 0.5}
     obj = obj.material(ddd.mats.forest)
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:landuse" = "greenhouse_horticulture"]')
+def osm_groups_areas_landuse_greenhouse_horticulture(obj, osm):
+    """Define area data."""
+    obj.name = "Greenhouse Hort: %s" % obj.name
+    obj.extra['ddd:area:type'] = "bunker"
+    obj.extra['ddd:aug:itemfill:density'] = 0.01
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 1}
+    obj = obj.material(ddd.mats.terrain_ground)
+    # TODO: Add plastic covering / build greenshouse
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:landuse" = "industrial"]')
@@ -93,18 +114,10 @@ def osm_groups_areas_landuse_vineyard(obj, osm):
     """Define area data."""
     obj.name = "Vineyard: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
-    obj.extra['ddd:aug:itemfill:density'] = 0.001
-    obj.extra['ddd:aug:itemfill:types'] = {'default': 1}  # Should be small trees
-    obj = obj.material(ddd.mats.terrain_ground)
-    return obj
-
-@dddtask(path="/Areas/*", select='["osm:landuse" = "farmland"]')
-def osm_groups_areas_landuse_farmland(obj, osm):
-    """Define area data."""
-    obj.name = "Farmland: %s" % obj.name
-    obj.extra['ddd:area:type'] = "park"
-    obj.extra['ddd:aug:itemfill:density'] = 0.01
-    obj.extra['ddd:aug:itemfill:types'] = {'reed': 1}
+    obj.extra['ddd:aug:itemfill'] = True
+    obj.extra['ddd:aug:itemfill:align'] = "grid"
+    obj.extra['ddd:aug:itemfill:density'] = 0.002
+    obj.extra['ddd:aug:itemfill:types'] = {'bush': 1}  # Should be small trees
     obj = obj.material(ddd.mats.terrain_ground)
     return obj
 
@@ -113,24 +126,27 @@ def osm_groups_areas_landuse_orchard(obj, osm):
     """Define area data."""
     obj.name = "Orchard: %s" % obj.name
     obj.extra['ddd:area:type'] = "bunker"
-    obj.extra['ddd:aug:itemfill:density'] = 0.01
+    obj.extra['ddd:aug:itemfill'] = True
+    obj.extra['ddd:aug:itemfill:align'] = "grid"
+    obj.extra['ddd:aug:itemfill:density'] = 0.0075
     obj.extra['ddd:aug:itemfill:types'] = {'bush': 1}
     obj = obj.material(ddd.mats.park)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:landuse" = "plant_nursery"]')
 def osm_groups_areas_landuse_plant_nursery(obj, osm):
-    """Define area data."""
+    """Land that is used solely for plant nurseries, which grow live plants for sale."""
     obj.name = "Plant Nursery: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill'] = True
     obj.extra['ddd:aug:itemfill:density'] = 0.01
-    obj.extra['ddd:aug:itemfill:types'] = {'reed': 1}
+    obj.extra['ddd:aug:itemfill:types'] = {'bush': 1}
     obj = obj.material(ddd.mats.terrain_ground)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:landuse" = "quarry"]')
 def osm_groups_areas_landuse_quarry(obj, osm):
-    """Define area data."""
+    """Area of land used for surface extraction (open-pit mining)."""
     obj.name = "Quarry: %s" % obj.name
     obj.extra['ddd:area:type'] = "bunker"
     #obj.extra['ddd:aug:itemfill:density'] = 0.01
@@ -263,13 +279,23 @@ def osm_groups_areas_natural_bare_rock(obj, osm):
     obj.extra['ddd:height'] = 0.40
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:natural" = "scree"]')  # scree: pedregal
+def osm_groups_areas_natural_scree(obj, osm):
+    """Define area data."""
+    obj.name = "Scree: %s" % obj.name
+    obj.extra['ddd:area:type'] = "default"
+    obj = obj.material(ddd.mats.rock)
+    #obj.extra['ddd:height'] = 0.40
+    return obj
+
+
 @dddtask(path="/Areas/*", select='["osm:natural" = "bare_rock"]["osm:geological" = "volcanic_lava_field"]')
 def osm_groups_areas_geological_volcanic_lava_field(obj, osm):
     """Define area data."""
     obj.name = "Lava: %s" % obj.name
     obj.extra['ddd:area:type'] = "rocky"  # should be rocky
     obj = obj.material(ddd.mats.lava)
-    obj.extra['ddd:height'] = 1.50
+    obj.extra['ddd:height'] = 0.05  # height raises the surface causing it to have ground below, good in this case, but should fit floor (height 0.0) (so, how were kerbs made? they don't have ground)
     return obj
 
 
@@ -419,5 +445,14 @@ def osm_groups_areas_man_made_bridge(obj, root):
     root.find("/Areas").children.extend(obj.children)
     return False
     #return obj
+
+
+# Areas attributes
+# TODO: Move to separate file (?)
+
+@dddtask(path="/Areas/*", select='["osm:trees" = "banana_plants"]')
+def osm_groups_trees_banana_plants(obj, osm):
+    """Specifies that an orchard is a banana plantation."""
+    obj.set('ddd:aug:itemfill:types', {'palm': 1})
 
 

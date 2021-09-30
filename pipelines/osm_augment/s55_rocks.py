@@ -23,8 +23,8 @@ def osm_augment_rocks_condition(pipeline):
 
 
 # Generate grass
-# TODO: Do this per area type
-@dddtask(order="55.52.+", path="/Areas/*", select='["ddd:material" ~ "Park|Forest|Rock|Ground|Dirt|Ground Clear"]')
+# TODO: Do this per area type, separate augment tagging like for plants, so it can be set earlier
+@dddtask(order="55.52.+", path="/Areas/*", select='["ddd:material" ~ "Park|Forest|Rock|Ground|Dirt|Ground Clear"];["osm:natural" = "scree"]')
 def osm_augment_rocks_generate_rocks(obj, osm, root):
     """
     """
