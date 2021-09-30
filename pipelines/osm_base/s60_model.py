@@ -374,9 +374,6 @@ def osm_model_elevation_apply_terrain_max(obj, osm, root):
 def osm_models_splatmap_materials(pipeline, osm, root, logger):
     """
     Mark materials for splatmap usage.
-
-    FIXME: Materials shall be combined considering ddd:material:splatmap in mind, and keeping it
-    (this is currently lost if materials are combined).
     """
     root.find("/Areas").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)
     root.find("/Ways").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)

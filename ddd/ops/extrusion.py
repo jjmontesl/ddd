@@ -62,9 +62,9 @@ def extrude_step(obj, shape, offset, cap=True, method=EXTRUSION_METHOD_WRAP):
     elif geom_b.type == "LineString" and method == EXTRUSION_METHOD_WRAP:
         geom_b = Polygon(list(geom_b.coords) + [geom_b.coords[0]])
     elif geom_b.is_empty and method == EXTRUSION_METHOD_SUBTRACT:
-        logger.debug("Cannot extrude subtract to empty geometry. Skipping / flattening.")
+        logger.debug("Cannot extrude subtract to empty geometry. Skipping / flattening: %s", obj)
     elif geom_b.type == "LineString" and method == EXTRUSION_METHOD_SUBTRACT:
-        logger.info("Cannot extrude subtract to linestring. Skipping / flattening.")
+        logger.info("Cannot extrude subtract to linestring. Skipping / flattening: %s", obj)
         geom_b = Point()
 
     vertices = list(result.mesh.vertices) if result.mesh else []

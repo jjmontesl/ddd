@@ -142,7 +142,7 @@ def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
 
             elif align == 'grid':
 
-                # Decimation would affect after
+                # Decimation would affect this afterwards
                 (major_seg, minor_seg, angle) = ddd.geomops.oriented_axis(tree_area)
 
                 num_trees = int((tree_area.geom.minimum_rotated_rectangle.area * tree_density_m2))

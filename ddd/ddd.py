@@ -896,10 +896,10 @@ class DDDObject():
         """
         return self.select(func=func)
 
-    def select_remove(self, selector=None, path=None, func=None):
+    def select_remove(self, selector=None, path=None, func=None, recurse=True):
         def task_select_apply_remove(o):
             return False
-        return self.select(selector=selector, path=path, func=func, apply_func=task_select_apply_remove)
+        return self.select(selector=selector, path=path, func=func, apply_func=task_select_apply_remove, recurse=recurse)
 
     '''
     def apply(self, func):
@@ -2817,6 +2817,10 @@ class DDDObject3(DDDObject):
             if cc.mesh: cc.mesh.visual = ColorVisuals()
 
             result.mesh = result.mesh + cc.mesh if result.mesh else cc.mesh
+
+            # TODO: Combine metadata
+            if cc.get('ddd:material:splatmap', None):
+                result.set('ddd:material:splatmap', cc.get('ddd:material:splatmap'))
 
             #result.extra.update(cc.extra)
             #vertices = list(result.mesh.vertices) + list(cc.mesh.vertices)

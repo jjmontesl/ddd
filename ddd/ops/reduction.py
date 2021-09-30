@@ -330,6 +330,11 @@ class DDDMeshOps():
         return result
 
     def slice_plane(self, obj, plane_normal, plane_origin):
+        """
+        Slices a mesh using a plane, and keeps the half on the positive side.
+
+        TODO: test how this behaves with UVs and normals.
+        """
 
         result = obj.copy()
 
@@ -344,6 +349,9 @@ class DDDMeshOps():
 
     def combine_group(self, root, key_func):
         """
+        Walks a node tree grouping nodes using the provided "key_function" callback,
+        then combines each group.
+
         Note that this modifies the node tree.
 
         This maybe could be better done with a custom recursive function, maintaining
@@ -365,9 +373,12 @@ class DDDMeshOps():
         added_objects = []
 
         for key in sorted(keys):
-            objs = root.select(func=lambda o: key_func(o) == key)
+
+            # Selects obejcts to combine by group key (ignores objects with children, as root was flattened and targets should have no children)
+            objs = root.select(func=lambda o: o != root and not o.children and key_func(o) == key)
+
             #root.select_remove(func=lambda o: key_func(o) == key)
-            logger.debug("Combining %d objects by key: %s", len(objs.children), keys)
+            logger.debug("Combining %d objects by key: %s", len(objs.children), key)
 
             instances = objs.select(func=lambda o: isinstance(o, DDDInstance), recurse=False)
             if len(instances.children) > 0:
@@ -376,12 +387,20 @@ class DDDMeshOps():
                 root.append(instances)
                 added_objects.append(instances)
 
+            # Dangerous: this clears the combined root when processing the key "None_False" (which selects the root node and clears it)
+            # FIXME: why is this line here at all?
             for o in objs.recurse_objects()[1:]: o.children = []
+
             if len(objs.children) > 0:
                 combined = objs.combine(indexes=True)
                 combined.name = "Combined Objs: %s" % key
+                logger.info(combined)
+                logger.info(root)
                 root.append(combined)
+                logger.info(root)
                 added_objects.append(combined)
+
+            logger.debug("Combined objects result for key %s: %s", key, combined)
 
         # Remove objects
         for key in keys:
@@ -389,14 +408,6 @@ class DDDMeshOps():
 
         return root
 
-    '''
-    def combine_materials(self, root):
-        """
-        A convenience method to call `combine_group()` grouping by material name.
-        """
-        result = self.combine_group(root, lambda o: o.mat.name if o.mat else None)
-        return result
-    '''
 
     def combine_empty(self, root):
         """

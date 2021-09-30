@@ -61,20 +61,23 @@ def osm_model_combine_materials(osm, root, pipeline):
     Combine meshes with the same material in a single mesh.
     """
 
-    '''
     # Note this attempt didn't work so far, it was work in progress ?
     # Groups objects by material name and in two subgroups: layer 0 and "Others"
+    #mat_layer_function = lambda o: (str(o.mat.name if o.mat else None) + "_" +
+    #                                ("0" if o.get('ddd:layer', "0") == "0" else "R"))
+
     mat_layer_function = lambda o: (str(o.mat.name if o.mat else None) + "_" +
-                                    ("0" if o.get('ddd:layer', "0") == "0" else "R"))
+                                    str(o.get('ddd:material:splatmap', False)))
 
     ddd.meshops.combine_group(root.find("/Buildings"), key_func=mat_layer_function)
     ddd.meshops.combine_group(root.find("/Areas"), key_func=mat_layer_function)
     ddd.meshops.combine_group(root.find("/Ways"), key_func=mat_layer_function)
-    '''
 
+    '''
     ddd.meshops.combine_group(root.find("/Buildings"), key_func=lambda o: o.mat.name if o.mat else None)
     ddd.meshops.combine_group(root.find("/Areas"), key_func=lambda o: o.mat.name if o.mat else None)
     ddd.meshops.combine_group(root.find("/Ways"), key_func=lambda o: o.mat.name if o.mat else None)
+    '''
 
     ddd.meshops.combine_empty(root.find("/Buildings"))
     ddd.meshops.combine_empty(root.find("/Areas"))

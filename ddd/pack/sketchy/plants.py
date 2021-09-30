@@ -165,6 +165,8 @@ def palm_leaf(length=3, fallfactor=1):
     obj = obj.scale([length, length, length]).twosided()
     obj = obj.clean()
 
+    obj = obj.twosided()
+
     #if 'uv' in obj.extra: del(obj.extra['uv'])
     obj = ddd.uv.map_cubic(obj)
     obj.extra['ddd:collider'] = False
