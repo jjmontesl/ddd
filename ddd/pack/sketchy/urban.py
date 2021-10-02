@@ -38,6 +38,11 @@ logger = logging.getLogger(__name__)
 
 
 def cable(a, b, thick=0.20):
+    """
+    Rigid cable (segment) between two points.
+
+    TODO: this extrusion approach and rotation can be improved using extrude along like cable_catenary does.
+    """
     a = np.array(a)
     b = np.array(b)
 
@@ -60,11 +65,19 @@ def cable(a, b, thick=0.20):
 
     return cable
 
-def catenary_cable(a, b, thick=0.20, length_ratio=1.1):
+def catenary_cable(a, b, thick=0.10, length_ratio=1.1):
+    """
+    TODO: move catenary calculations to "path" module and also check Trimesh paths to support that.
+
+    The library requires the anchor to be below the fairlead.
+    """
 
     a = np.array(a)
     b = np.array(b)
     dist = np.linalg.norm(a - b)
+
+    if (a[2] > b[2]):
+        a, b = b, a
 
     length = dist * length_ratio
     w = 0  # submerged weight

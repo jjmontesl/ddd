@@ -6,6 +6,8 @@ import logging
 import math
 import random
 
+import numpy as np
+
 from ddd.ddd import ddd
 from ddd.pack.sketchy import plants, urban, landscape, industrial, sports
 from ddd.geo import terrain
@@ -626,9 +628,11 @@ class ItemsOSMBuilder():
         item_3d = item_2d.copy3(name="Powerline: %s" % item_2d.name)
 
         for (pa, pb) in zip(coords[:-1], coords[1:]):
-            pa = (pa[0], pa[1], 10.0 + terrain_geotiff_elevation_value(pa, self.osm.ddd_proj))
-            pb = (pb[0], pb[1], 10.0 + terrain_geotiff_elevation_value(pb, self.osm.ddd_proj))
-            item_cable = urban.catenary_cable(pa, pb, length_ratio=1.05)
+            pa = (pa[0], pa[1], 13.8 + terrain_geotiff_elevation_value(pa, self.osm.ddd_proj))
+            pb = (pb[0], pb[1], 13.8 + terrain_geotiff_elevation_value(pb, self.osm.ddd_proj))
+            dist = np.linalg.norm(np.array(pa) - np.array(pb))
+            length_ratio = 1 + (0.05 / (dist / 10))
+            item_cable = urban.catenary_cable(pa, pb, length_ratio=length_ratio)
             item_3d.append(item_cable)
 
         item_3d.extra['_height_mapping'] = 'none'

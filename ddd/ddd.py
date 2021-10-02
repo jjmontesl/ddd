@@ -1685,6 +1685,10 @@ class DDDObject2(DDDObject):
     def individualize(self, remove_interiors=False, always=False):
         """
         Return a group of multiple DDD2Objects if the object is a GeometryCollection.
+
+        If `always` is true, always create a parent node which contains a node per geometry even
+        if it was already a simple geometry. This is useful if we want to iterate individual
+        geometries regardless of the original geometry type.
         """
         result = self.copy()
 

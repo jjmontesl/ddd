@@ -18,6 +18,7 @@ from ddd.core.exception import DDDException
 import sys
 from shapely import ops
 from shapely.ops import linemerge
+from shapely.errors import TopologicalError
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -525,7 +526,13 @@ class Ways2DOSMBuilder():
                 #if other.get("ddd:layer") != way.get("ddd:layer"): continue
 
                 if way.intersects(other):
-                    isec = way.intersection(other).union()
+
+                    try:
+                        isec = way.intersection(other).union()
+                    except TopologicalError as e:
+                        logger.error("Could not resolve intersection intersection %s - %s: %s", way, other, e)
+                        continue
+
                     if isec.geom and isec.geom.area > 0:  #and not way.touches(other):
                         #logger.debug("Intersection intersection: %s > %s", way, other)
 

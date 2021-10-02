@@ -91,8 +91,9 @@ def osm_augment_trees_generate(logger, pipeline, root, obj):
     tree_types = {'default': 1, 'palm': 0.001}
     tree_types = obj.extra.get("ddd:aug:itemfill:types", tree_types)
 
-    trees = generate_area_2d_park(obj, tree_density_m2, tree_types)
-    root.find("/ItemsNodes").children.extend(trees.children)
+    for o in obj.individualize(always=True).children:
+        trees = generate_area_2d_park(obj, tree_density_m2, tree_types)
+        root.find("/ItemsNodes").children.extend(trees.children)
 
 
 def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
