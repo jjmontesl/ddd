@@ -73,15 +73,16 @@ def osm_select_items_ways_power_line(root, osm, obj):
     """Define item data."""
     obj = obj.copy()
     obj.name = "Power line: %s" % obj.name
-    obj.extra['ddd:width'] = 0.1
-    obj.extra['ddd:height'] = 0.1
-    obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 11.0))
-    obj.extra['ddd:layer'] = 2
+    #obj.extra['ddd:width'] = 0.1
+    #obj.extra['ddd:height'] = 0.1
+    #obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 11.0))
+    #obj.extra['ddd:layer'] = 2
     #obj.extra['ddd:way:weight'] = 100
     #obj.extra['ddd:way:lanes'] = None
     #obj.extra['ddd:base_height'] = 10.0
     obj = obj.material(ddd.mats.cable_metal)
     # TODO: Resolve tower/posts/building + connectors
+    # TODO: Resolve this in a dedicated item builder for cabling / poles / poles in walls-buildings...
     numcables = int(obj.get('osm:cables', 2))
     for i in range(numcables):
         cable = obj.copy()

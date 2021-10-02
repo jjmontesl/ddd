@@ -62,7 +62,7 @@ py==1.8.0
 pybind11==2.4.dev4
 pybullet==2.7.7
 pycairo==1.19.1
-pycatenary==0.3
+pycatenary==0.4
 pycollada==0.7
 pycparser==2.20
 pycsg==0.3.3

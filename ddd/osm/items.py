@@ -16,6 +16,7 @@ from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
 from ddd.pack.symbols import iconitems
 from ddd.ops import filters
+from ddd.geo.terrain import terrain_geotiff_elevation_value
 
 
 # Get instance of logger for this module
@@ -159,6 +160,10 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_generic(item_2d, urban.childrens_playground_slide, "Playground Slide")
         elif item_2d.extra.get('osm:playground', None) == 'monkey_bar':
             item_3d = self.generate_item_3d_generic(item_2d, urban.childrens_playground_arc, "Playground Monkey Bar Arc")
+
+        elif item_2d.extra.get('osm:power', None) in ('line', 'minor_line'):
+            # TODO: Tilt objects using a generic tilting mechanism (also, this one may be also based on terrain gradient)
+            item_3d = self.generate_item_3d_powerline(item_2d)
 
         elif item_2d.extra.get('osm:golf', None) == 'hole':
             # TODO: Tilt objects using a generic tilting mechanism (also, this one may be also based on terrain gradient)
@@ -613,19 +618,22 @@ class ItemsOSMBuilder():
         item_3d.name = 'Hedge: %s' % item_2d.name
         return item_3d
 
-    '''
-    def generate_item_3d_coastline(self, item_2d):
-        """
-        Expects a line.
-        """
-        #height = item_2d.extra['ddd:item:height']
-        sys.exit(1)
-        item_3d = item_2d.extrude(10.0).translate([0, 0, -10])
-        item_3d = ddd.uv.map_cubic(item_3d)
-        item_3d.extra['_height_mapping'] = item_3d.extra.get('_height_mapping', 'terrain_geotiff_elevation_apply')
-        item_3d.name = 'Coastline: %s' % item_2d.name
+
+    def generate_item_3d_powerline(self, item_2d):
+
+        coords = item_2d.geom.coords
+
+        item_3d = item_2d.copy3(name="Powerline: %s" % item_2d.name)
+
+        for (pa, pb) in zip(coords[:-1], coords[1:]):
+            pa = (pa[0], pa[1], 10.0 + terrain_geotiff_elevation_value(pa, self.osm.ddd_proj))
+            pb = (pb[0], pb[1], 10.0 + terrain_geotiff_elevation_value(pb, self.osm.ddd_proj))
+            item_cable = urban.catenary_cable(pa, pb, length_ratio=1.05)
+            item_3d.append(item_cable)
+
+        item_3d.extra['_height_mapping'] = 'none'
+
         return item_3d
-    '''
 
     def generate_item_3d_street_lamp(self, item_2d):
 

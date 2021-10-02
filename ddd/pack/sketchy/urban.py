@@ -15,21 +15,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
 import math
+import random
+import re
+
+from pycatenary.cable import MooringLine
+import numpy as np
+from trimesh import transformations
 
 from ddd.ddd import ddd
-from ddd.ops import filters, extrusion
-import logging
-from ddd.text import fonts
 from ddd.lighting.lights import PointLight
-import sys
-import re
-import random
-from trimesh import transformations
-import numpy as np
+from ddd.materials.atlas import TextureAtlasUtils
+from ddd.ops import filters, extrusion
 from ddd.ops.extrusion import extrude_step_multi, extrude_dome
 from ddd.pack.sketchy import interior, vehicles
-from ddd.materials.atlas import TextureAtlasUtils
+from ddd.text import fonts
 
 
 # Get instance of logger for this module
@@ -58,6 +59,45 @@ def cable(a, b, thick=0.20):
     cable = cable.translate(a)
 
     return cable
+
+def catenary_cable(a, b, thick=0.20, length_ratio=1.1):
+
+    a = np.array(a)
+    b = np.array(b)
+    dist = np.linalg.norm(a - b)
+
+    length = dist * length_ratio
+    w = 0  # submerged weight
+    EA = 560e3  # axial stiffness
+    floor = False   # if True, contact is possible at the level of the ancho
+
+    l1 = MooringLine(L=length, w=w, EA=EA, anchor=a, fairlead=b, floor=floor)
+    l1.computeSolution()
+    #l1.plot2D()
+    #l1.plot3D()
+
+    # get xyz coordinates along line (between 0. and total line length)
+    #T = l1.getTension(s)
+    #xyz = l1.s2xyz(s)
+    #dxyz = l1.ds2xyz(s)
+
+    # Build cable
+    points_d = np.linspace(0, length, int(length / 3) + 3, endpoint=True)
+    points_cable = []
+    for d in points_d:
+        p = l1.s2xyz(d)
+        points_cable.append(p)
+
+    base = ddd.point(name="Catenary").buffer(thick / 2, resolution=3)
+    path = ddd.line(points_cable)
+    item = base.extrude_along(path)
+    #item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CW)
+    item = item.material(ddd.mats.steel)
+
+    item = ddd.uv.map_cylindrical(item)  # Incorrect, should map along catenary, during construction
+
+    return item
+
 
 def post(height=2.00, r=0.075, top=None, side=None, mat_post=None):
     """
