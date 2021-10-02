@@ -5,7 +5,6 @@ from ddd.ddd import ddd
 import math
 import sys
 from ddd.text import fonts
-from trimesh.grouping import merge_vertices
 
 items = ddd.group3()
 
@@ -17,12 +16,15 @@ fig2 = ddd.rect([-3, -1, -1, 1])
 figh = fig1.subtract(fig2)
 fig = figh.extrude_step(figh, 1.0, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
 fig = fig.extrude_step(figh.buffer(-0.25), 1.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+fig = fig.material(ddd.mats.logo)
+fig = ddd.uv.map_cubic(fig)
 fig = ddd.meshops.subdivide_to_grid(fig, 0.5)
 fig.show()
 items.append(fig)
 
 # Test slicing with plane
 figa = ddd.meshops.slice_plane(fig, [-1, -1, -1], [0.3, 0.3, 0.3])
+#figa = ddd.uv.map_cubic(figa)  # This should not be needed, slice_plane should do this
 figb = ddd.meshops.slice_plane(fig, [1, 1, 1], [0.3, 0.3, 0.3])
 ddd.group([figa, figb.material(ddd.MAT_HIGHLIGHT)]).show()
 

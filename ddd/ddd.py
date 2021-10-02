@@ -2928,6 +2928,9 @@ class DDDObject3(DDDObject):
 
 
     def clean(self):
+        """
+        Note that this is merging vertices (currently without considering normals or UVs).
+        """
         result = self.copy()
         result.mesh.merge_vertices()
         result.mesh.remove_degenerate_faces()

@@ -180,14 +180,34 @@ class DDDMeshOps():
 
         return obj
 
+    def interpolate_uv(self, f, p1, p2, p3, uv1, uv2, uv3):
+        # From: https://answers.unity.com/questions/383804/calculate-uv-coordinates-of-3d-point-on-plane-of-m.html
+        # Calculate vectors from point f to vertices p1, p2 and p3:
+
+        #ddd.trace(locals())
+
+        f1 = p1 - f
+        f2 = p2 - f
+        f3 = p3 - f
+
+        # Calculate the areas and factors (order of parameters doesn't matter):
+        a = np.linalg.norm(np.cross(p1-p2, p1-p3))  # main triangle area a
+        a1 = np.linalg.norm(np.cross(f2, f3)) / a  # p1's triangle area / a
+        a2 = np.linalg.norm(np.cross(f3, f1)) / a  # p2's triangle area / a
+        a3 = np.linalg.norm(np.cross(f1, f2)) / a  # p3's triangle area / a
+
+        # Find the uv corresponding to point f (uv1/uv2/uv3 are associated to p1/p2/p3):
+        uv = np.array(uv1) * a1 + np.array(uv2) * a2 + np.array(uv3) * a3;
+
+        return uv
 
     def subdivide_to_grid(self, obj, grid_size=2.0):  #, min_distance=0.1):
         """
         Subdivides a mesh ensuring that every face has vertices in the grid.
 
-        TODO: optionally and by default flip in checkerboard (like grid3 does)
         TODO: Update UVs / normals.
         TODO: mention this method in the doc for DDDObject3.subdivide
+        TODO: optionally and by default flip in checkerboard (like grid3 does)
         """
         result = obj.copy()
 
@@ -196,7 +216,9 @@ class DDDMeshOps():
         if result.mesh:
             newverts = []
             newfaces = []
+            newuvs = []
             vertices, faces = result.mesh.vertices, result.mesh.faces
+            uvs = result.get('uv', None)
 
             for face in faces:
 
@@ -315,14 +337,28 @@ class DDDMeshOps():
                         newfaces.extend(gfs)
                         newverts.extend(gvs)
 
+                        if uvs:
+                            (uv1, uv2, uv3) = (uvs[face[0]], uvs[face[1]], uvs[face[2]])
+                            (p1, p2, p3) = (vertices[face[0]], vertices[face[1]], vertices[face[2]])
+                            for gv in gvs:
+                                nuv = self.interpolate_uv(gv, p1, p2, p3, uv1, uv2, uv3)
+                                newuvs.append(nuv)
+
                     except Exception as e:
                         logger.error("Could not triangulate triangle grid cell while subdividing to grid: %s", e)
+                        continue
 
 
             # Note: adding an empty mesh will cause export errors and failure to load in Babylon
             if (len(newfaces) > 0):
-                result.mesh = Trimesh(newverts, newfaces)
-                result.mesh.merge_vertices()
+                #result.mesh = Trimesh(newverts, newfaces)  # removed as this was merging vertices
+                result.mesh.vertices = newverts
+                result.mesh.faces = newfaces
+
+                if uvs:
+                    result.set('uv', newuvs)
+
+                #result.mesh.merge_vertices()
                 #result.mesh.fix_normals()
             else:
                 result.mesh = None
@@ -333,7 +369,7 @@ class DDDMeshOps():
         """
         Slices a mesh using a plane, and keeps the half on the positive side.
 
-        TODO: test how this behaves with UVs and normals.
+        TODO: This is not considering UVs and normals.
         """
 
         result = obj.copy()

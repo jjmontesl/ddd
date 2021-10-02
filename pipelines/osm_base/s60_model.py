@@ -304,6 +304,12 @@ def osm_model_generate_items_ways_height(obj, osm, root):
     obj = obj.extrude(dif_height)
     if min_height:
         obj = obj.translate([0, 0, min_height])
+
+    # Subdivide
+    # TODO: Is this the correct place to subdivide fences? ItemWays are also subdivides but in s60_model
+    if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
+        obj = ddd.meshops.subdivide_to_grid(obj, float(ddd.data.get('ddd:area:subdivide')))
+
     obj = ddd.uv.map_cubic(obj)
 
     obj.set('ddd:elevation', default=obj.get('ddd:area:elevation', 'geotiff'))

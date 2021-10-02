@@ -30,8 +30,8 @@ def osm_model_3d_compress_draco(root, osm, pipeline, logger):
 
     logger.info("Compressing GLB file to: %s", output_file_abs)
 
-    #command = f'{node_bin} {draco_script} -d --draco.compressionLevel=0 --draco.unifiedQuantization=true -i {input_file_abs} -o {output_file_abs}'
-    command = f'{node_bin} {draco_script} -d --draco.compressionLevel=0 -i {input_file_abs} -o {output_file_abs}'
+    #command = f'{node_bin} {draco_script} -d --draco.compressionLevel=0 --draco.unifiedQuantization=true --draco.quantizePositionBits=11 -i {input_file_abs} -o {output_file_abs}'
+    command = f'{node_bin} {draco_script} -d --draco.compressionLevel=0 --draco.unifiedQuantization=true --draco.quantizePositionBits=12 -i {input_file_abs} -o {output_file_abs}'
     subprocess.run(command, cwd=draco_home, shell=True, check=True)  # requires Python 3.5
 
     # Compare sizes

@@ -204,7 +204,7 @@ class Areas3DOSMBuilder():
                 # Raise surface, then add random noise
 
                 area_3d = area_2d.extrude_step(area_2d.buffer(-0.3), 0.3, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-1.5), 0.5, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-1.5), 1.2, method=ddd.EXTRUSION_METHOD_SUBTRACT)
 
                 # TODO:
                 #last_cap_idx = result.extra.get('_extrusion_last_cap_idx', None)
@@ -307,11 +307,13 @@ class Areas3DOSMBuilder():
                 logger.warning("Null area geometry (children?): %s", area_2d)
             area_3d = DDDObject3()
 
-        # Subdivide (works badly, subdividing causes bad behavior in large trams):
+        # Subdivide
         if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
             #logger.debug("Subdividing: %s" % area_3d)
             #area_3d = area_3d.subdivide_to_size(float(ddd.data.get('ddd:area:subdivide')))
             area_3d = ddd.meshops.subdivide_to_grid(area_3d, float(ddd.data.get('ddd:area:subdivide')))
+            if area_3d.mesh:
+                area_3d.mesh.merge_vertices()  # Smoothes surface # TODO: Use a merge/smooth in ddd
 
         area_3d = ddd.uv.map_cubic(area_3d)
 

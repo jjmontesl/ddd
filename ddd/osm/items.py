@@ -591,6 +591,11 @@ class ItemsOSMBuilder():
         item_3d.extra['_height_mapping'] = item_3d.extra.get('ddd:elevation', 'terrain_geotiff_elevation_apply')
         item_3d.name = 'Fence: %s' % item_2d.name
 
+        # Subdivide
+        # TODO: Is this the correct place to subdivide fences? ItemWays are also subdivides but in s60_model
+        if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
+            item_3d = ddd.meshops.subdivide_to_grid(item_3d, float(ddd.data.get('ddd:area:subdivide')))
+
         return item_3d
 
     def generate_item_3d_hedge(self, item_2d):

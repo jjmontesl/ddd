@@ -286,6 +286,7 @@ def osm_groups_areas_natural_scree(obj, osm):
     obj.extra['ddd:area:type'] = "default"
     obj = obj.material(ddd.mats.rock)
     #obj.extra['ddd:height'] = 0.40
+    # TODO: Customize rock augmentation and splatting mix (rock / ground)
     return obj
 
 
@@ -293,9 +294,10 @@ def osm_groups_areas_natural_scree(obj, osm):
 def osm_groups_areas_geological_volcanic_lava_field(obj, osm):
     """Define area data."""
     obj.name = "Lava: %s" % obj.name
-    obj.extra['ddd:area:type'] = "rocky"  # should be rocky
+    obj.set('ddd:area:type', "rocky")  # should be rocky
+    obj.set('ddd:height', 0.05)  # height raises the surface causing it to have ground below, good in this case, but should fit floor (height 0.0) (so, how were kerbs made? they don't have ground)
+    obj.set('ddd:layer', "0")  # forces layer 0
     obj = obj.material(ddd.mats.lava)
-    obj.extra['ddd:height'] = 0.05  # height raises the surface causing it to have ground below, good in this case, but should fit floor (height 0.0) (so, how were kerbs made? they don't have ground)
     return obj
 
 

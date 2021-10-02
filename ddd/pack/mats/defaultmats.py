@@ -16,6 +16,11 @@ class DefaultMaterials(MaterialsCollection):
 
     def __init__(self):
 
+        # Various
+        self.logo = ddd.material(name="DDD Logo", color='#7ed956',
+                                 metallic_factor=1.0, roughness_factor=0.00,  # index_of_refraction=1.36,
+                                 texture_path=ddd.DATA_DIR + "/materials/dddlogo.png")
+
         # Ways
         self.asphalt = ddd.material(name="Asphalt", color='#202020')
         self.pathwalk = ddd.material(name="WayPedestrian", color='#78281e')
@@ -102,7 +107,6 @@ class DefaultMaterials(MaterialsCollection):
         self.building_2 = ddd.material(color='#bdb9a0')
         self.building_3 = ddd.material(color='#c49156')
         self.roof_tiles = ddd.material("RoofTiles", color='#f25129')
-
 
         # Colors
         self.red = ddd.material("Color Red", color='#ff0000')
