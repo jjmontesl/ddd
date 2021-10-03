@@ -530,7 +530,7 @@ class Ways2DOSMBuilder():
                     try:
                         isec = way.intersection(other).union()
                     except TopologicalError as e:
-                        logger.error("Could not resolve intersection intersection %s - %s: %s", way, other, e)
+                        logger.error("Could not resolve intersection intersection %s - %s: %s", way, other)
                         continue
 
                     if isec.geom and isec.geom.area > 0:  #and not way.touches(other):
@@ -594,7 +594,8 @@ class Ways2DOSMBuilder():
                         pathline.geom = pathline.geom.parallel_offset(line_distance, "left", resolution=2)
                     except Exception as e:
                         logger.warn("Cannot create roadline for %s: %s", path, e)
-                        continue
+                        # This return is done since it avoids a subsequent TopologyError if using "continue"
+                        return
                 line = pathline.buffer(0.15).material(ddd.mats.roadline)
                 line.extra['way_1d'] = pathline
 

@@ -1057,11 +1057,14 @@ class DDDObject2(DDDObject):
     def __repr__(self):
         return "%s(%s, name=%s, geom=%s (%s verts), children=%d)" % (self.__class__.__name__, id(self), self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
-    def copy(self, name=None):
+    def copy(self, name=None, copy_children=True):
         """
         Copies children, geometry (deep copying the object) and metadata (shallow copy) recursively.
         """
-        obj = DDDObject2(name=name if name else self.name, children=[c.copy() for c in self.children], geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
+        children = []
+        if copy_children:
+            children = [c.copy() for c in self.children]
+        obj = DDDObject2(name=name if name else self.name, children=children, geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
         return obj
 
     def copy3(self, name=None, mesh=None):
@@ -1697,34 +1700,34 @@ class DDDObject2(DDDObject):
         if self.geom and self.geom.type == 'GeometryCollection':
             result.geom = None
             for partialgeom in self.geom.geoms:
-                newobj = self.copy()
+                newobj = self.copy(copy_children=False)
                 newobj.geom = partialgeom
                 newchildren.append(newobj)
 
         elif self.geom and self.geom.type == 'MultiPolygon':
             result.geom = None
             for partialgeom in self.geom.geoms:
-                newobj = self.copy()
+                newobj = self.copy(copy_children=False)
                 newobj.geom = partialgeom
                 newchildren.append(newobj)
 
         elif self.geom and self.geom.type == 'MultiLineString':
             result.geom = None
             for partialgeom in self.geom.geoms:
-                newobj = self.copy()
+                newobj = self.copy(copy_children=False)
                 newobj.geom = partialgeom
                 newchildren.append(newobj)
 
         elif self.geom and self.geom.type == 'Polygon' and remove_interiors and self.geom.interiors:
             result.geom = None
-            newobj = self.copy()
+            newobj = self.copy(copy_children=False)
             newobj.geom = self.geom.exterior
             newchildren.append(newobj)
 
         elif always:
             # Move as a children for consistency
             result.geom = None
-            newobj = self.copy()
+            newobj = self.copy(copy_children=False)
             newobj.geom = self.geom
             newchildren.append(newobj)
 

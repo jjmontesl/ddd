@@ -44,6 +44,7 @@ class DDDGeometry():
         """
 
         rectangle = obj.geom.minimum_rotated_rectangle
+        logger.debug("Calculting oriented axis for: %s min_rotated: %s", obj, rectangle)
 
         coords = rectangle.exterior.coords[:-1]
 

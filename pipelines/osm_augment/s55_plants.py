@@ -92,7 +92,7 @@ def osm_augment_trees_generate(logger, pipeline, root, obj):
     tree_types = obj.extra.get("ddd:aug:itemfill:types", tree_types)
 
     for o in obj.individualize(always=True).children:
-        trees = generate_area_2d_park(obj, tree_density_m2, tree_types)
+        trees = generate_area_2d_park(o, tree_density_m2, tree_types)
         root.find("/ItemsNodes").children.extend(trees.children)
 
 
@@ -143,10 +143,14 @@ def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
 
             elif align == 'grid':
 
-                # Decimation would affect this afterwards
+                # Give some margin for grid, and check the area is still a polygon
                 tree_area = tree_area.buffer(-1.0)
+                if tree_area.is_empty() or tree_area.geom.type != "Polygon":
+                    return trees
+
                 (major_seg, minor_seg, angle) = ddd.geomops.oriented_axis(tree_area)
 
+                # Decimation would affect this afterwards
                 num_trees = int((tree_area.geom.minimum_rotated_rectangle.area * tree_density_m2))
                 major_minor_ratio = major_seg.geom.length / minor_seg.geom.length
                 trees_major = int(max(1, math.sqrt(num_trees) * major_minor_ratio))
@@ -171,7 +175,5 @@ def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
 
             else:
                 raise DDDException("Invalid item align type: %s", align)
-
-
 
     return trees
