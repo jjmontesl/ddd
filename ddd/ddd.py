@@ -2386,7 +2386,11 @@ class DDDInstance(DDDObject):
 
     def combine(self, name=None):
         """
-        Combine geometry of this instance. This allows instances to be combined.
+        Combine geometry of this instance.
+
+        This is done by combining the actual geometry of each mesh referenced by the instance·
+
+        This allows instances to be combined or expanded in batches, at the expense of multiplying their geometry.
 
         TODO: Maybe this method should not exist, and client code should either replace instances before combining (there's curerntly no method for that),
               or remove them if they are to be managed separately.
@@ -2797,15 +2801,16 @@ class DDDObject3(DDDObject):
     def combine(self, name=None, indexes=False):
         """
         Combine geometry for this and all children meshes into a single mesh.
-        This will also combine UVs and normals.
+        This will also combine UVs (note: normals currently not considered).
 
         Metadata of the new element is cleaned (except for UVs and normals).
-        If indexes is true, metadata will contain 'ddd:combined:indexes' which
+        If indexes is true, metadata will contain 'ddd:batch:indexes' which
         will contain triangle indexes and metadata for the combined objects.
 
         Does not modify the object, returns a copy of the geometry.
 
-        TODO: currently, the first material found will be applied to the parent (?)
+        TODO: consider normals
+        TODO: currently, the first material found will be applied to the parent -show warning (?)-
         """
         result = self.copy(name=name)
         indexes_list = []
@@ -2839,7 +2844,7 @@ class DDDObject3(DDDObject):
 
             # Store indexes and original objects
             if indexes:
-                for ci in cc.get('ddd:combined:indexes'):
+                for ci in cc.get('ddd:batch:indexes'):
                     base_index += ci[0]  # Accumulate for siblings
                     indexes_list.append( (base_index, ci[1]) )
 
@@ -2849,7 +2854,7 @@ class DDDObject3(DDDObject):
 
         result.children = []
         if indexes:
-            result.set('ddd:combined:indexes', indexes_list)
+            result.set('ddd:batch:indexes', indexes_list)
 
         return result
 

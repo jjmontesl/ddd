@@ -383,7 +383,7 @@ class DDDMeshOps():
 
         return result
 
-    def combine_group(self, root, key_func):
+    def batch_group(self, root, key_func):
         """
         Walks a node tree grouping nodes using the provided "key_function" callback,
         then combines each group.
@@ -394,7 +394,7 @@ class DDDMeshOps():
         strucure as much as possible (instead of flattening before combining as currently done).
         """
 
-        # Flatten all objects. If this is not done, some objects are combined with children
+        # Flatten all objects. If this is not done, some objects are batched with children
         # incoprrectly before being processed.
         root.replace(root.flatten())
 
@@ -418,25 +418,25 @@ class DDDMeshOps():
 
             instances = objs.select(func=lambda o: isinstance(o, DDDInstance), recurse=False)
             if len(instances.children) > 0:
-                instances.name = "Combined Inst: %s" % key
+                instances.name = "batched Inst: %s" % key
                 objs.select_remove(func=lambda o: isinstance(o, DDDInstance))
                 root.append(instances)
                 added_objects.append(instances)
 
-            # Dangerous: this clears the combined root when processing the key "None_False" (which selects the root node and clears it)
+            # Dangerous: this clears the batched root when processing the key "None_False" (which selects the root node and clears it)
             # FIXME: why is this line here at all?
             for o in objs.recurse_objects()[1:]: o.children = []
 
             if len(objs.children) > 0:
-                combined = objs.combine(indexes=True)
-                combined.name = "Combined Objs: %s" % key
-                logger.info(combined)
+                batched = objs.combine(indexes=True)
+                batched.name = "Batched Objs: %s" % key
+                logger.info(batched)
                 logger.info(root)
-                root.append(combined)
+                root.append(batched)
                 logger.info(root)
-                added_objects.append(combined)
+                added_objects.append(batched)
 
-            logger.debug("Combined objects result for key %s: %s", key, combined)
+            logger.debug("Batched objects result for key %s: %s", key, batched)
 
         # Remove objects
         for key in keys:
@@ -445,22 +445,22 @@ class DDDMeshOps():
         return root
 
 
-    def combine_empty(self, root):
+    def batch_empty(self, root):
         """
         Walks nodes and recursively (leaf first) collapses empty nodes to metadata in root.
 
-        Metadata is added to a ddd:combined:metadata dictionary, indexed by path.
+        Metadata is added to a ddd:batch:metadata dictionary, indexed by path.
         """
-        combined_metadata = {}
-        root.set('ddd:combined:metadata', combined_metadata)
-        def combine_empty_recursive(root, obj, path_prefix, name_suffix):
+        batched_metadata = {}
+        root.set('ddd:batch:metadata', batched_metadata)
+        def batch_empty_recursive(root, obj, path_prefix, name_suffix):
             for idx, c in enumerate(obj.children):
-                combine_empty_recursive(root, c, path_prefix + obj.uniquename() + "/", name_suffix)
+                batch_empty_recursive(root, c, path_prefix + obj.uniquename() + "/", name_suffix)
                 if not c.children and c.is_empty() and 'ddd:rpath' in c.extra:
-                    combined_metadata[c.get('ddd:rpath')] = c.metadata("", "")
+                    batched_metadata[c.get('ddd:rpath')] = c.metadata("", "")
             obj.children = [c for c in obj.children if c.children or not c.is_empty()]
 
-        combine_empty_recursive(root, root, "", "")
+        batch_empty_recursive(root, root, "", "")
         return root
 
 

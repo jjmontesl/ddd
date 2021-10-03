@@ -26,7 +26,7 @@ individual objects as without object / instance combining.
 
 
 @dddtask(order="65.30.40")
-def osm_model_metadata_freeze_before_combine(pipeline, root):
+def osm_model_metadata_freeze_before_batch(pipeline, root):
     """
     This task walks the scene tree and eagerly resolves path information.
     This is done in order to preserve scene hierarchy information before it is destroyed
@@ -69,19 +69,19 @@ def osm_model_combine_materials(osm, root, pipeline):
     mat_layer_function = lambda o: (str(o.mat.name if o.mat else None) + "_" +
                                     str(o.get('ddd:material:splatmap', False)))
 
-    ddd.meshops.combine_group(root.find("/Buildings"), key_func=mat_layer_function)
-    ddd.meshops.combine_group(root.find("/Areas"), key_func=mat_layer_function)
-    ddd.meshops.combine_group(root.find("/Ways"), key_func=mat_layer_function)
+    ddd.meshops.batch_group(root.find("/Buildings"), key_func=mat_layer_function)
+    ddd.meshops.batch_group(root.find("/Areas"), key_func=mat_layer_function)
+    ddd.meshops.batch_group(root.find("/Ways"), key_func=mat_layer_function)
 
     '''
-    ddd.meshops.combine_group(root.find("/Buildings"), key_func=lambda o: o.mat.name if o.mat else None)
-    ddd.meshops.combine_group(root.find("/Areas"), key_func=lambda o: o.mat.name if o.mat else None)
-    ddd.meshops.combine_group(root.find("/Ways"), key_func=lambda o: o.mat.name if o.mat else None)
+    ddd.meshops.batch_group(root.find("/Buildings"), key_func=lambda o: o.mat.name if o.mat else None)
+    ddd.meshops.batch_group(root.find("/Areas"), key_func=lambda o: o.mat.name if o.mat else None)
+    ddd.meshops.batch_group(root.find("/Ways"), key_func=lambda o: o.mat.name if o.mat else None)
     '''
 
-    ddd.meshops.combine_empty(root.find("/Buildings"))
-    ddd.meshops.combine_empty(root.find("/Areas"))
-    ddd.meshops.combine_empty(root.find("/Ways"))
+    ddd.meshops.batch_empty(root.find("/Buildings"))
+    ddd.meshops.batch_empty(root.find("/Areas"))
+    ddd.meshops.batch_empty(root.find("/Ways"))
 
 
 @dddtask(order="65.45")  # [!"intersection"]

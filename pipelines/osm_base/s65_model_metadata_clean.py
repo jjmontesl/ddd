@@ -78,7 +78,7 @@ def osm_metadata_clean_ddd_minimal(pipeline, osm, root, obj):
         'ddd:instance:key',
         'ddd:instance:buffer:matrices',
 
-        'ddd:combined:indices',
+        'ddd:batch:indices',
     ]
 
     obj.extra = { k: v for k, v in obj.extra.items() if not k.startswith('ddd:') or k in keep_keys }
