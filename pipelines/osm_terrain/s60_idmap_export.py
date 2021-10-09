@@ -26,12 +26,12 @@ import hashlib
 # TODO: Doing this on stage 59 as buildings are deleted (keep 2D and 3D versions in the tree for late usage, also for terrain_export)
 
 @dddtask(order="59.89.+.10", condition=True)
-def osm_gdterrain_export_idmap_condition(pipeline):
-    return bool(pipeline.data.get('ddd:gdterrain:idmap', False))
+def osm_terrain_export_idmap_condition(pipeline):
+    return bool(pipeline.data.get('ddd:terrain:idmap', False))
 
 
 @dddtask(order="*.10.+")
-def osm_gdterrain_export_idmap(root, pipeline, osm, logger):
+def osm_terrain_export_idmap(root, pipeline, osm, logger):
 
     ddd_bounds = osm.area_crop.bounds
     wgs84_min = terrain.transform_ddd_to_geo(osm.ddd_proj, ddd_bounds[:2])

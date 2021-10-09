@@ -380,8 +380,8 @@ class OSMBuildCommand(DDDCommand):
 
                                             'pipelines.osm_base.s70_metadata.py',
 
-                                            'pipelines.osm_gdterrain.s60_heightmap_export.py',
-                                            'pipelines.osm_gdterrain.s60_splatmap_export.py',
+                                            'pipelines.osm_terrain.s60_heightmap_export.py',
+                                            'pipelines.osm_terrain.s60_splatmap_export.py',
 
                                             'pipelines.osm_extras.s30_icons.py',
 

@@ -19,12 +19,12 @@ import math
 
 
 @dddtask(order="69.89.+.10", condition=True)
-def osm_gdterrain_export_heightmap_condition(pipeline):
-    return bool(pipeline.data.get('ddd:gdterrain:heightmap', False))
+def osm_terrain_export_heightmap_condition(pipeline):
+    return bool(pipeline.data.get('ddd:terrain:heightmap', False))
 
 
 @dddtask(order="*.10.+")
-def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
+def osm_terrain_export_heightmap(root, osm, pipeline, logger):
 
     # Get chunk heightmap from elevation engine
 
@@ -37,7 +37,7 @@ def osm_gdterrain_export_heightmap(root, osm, pipeline, logger):
     wgs84_max = terrain.transform_ddd_to_geo(osm.ddd_proj, ddd_bounds[2:])
     wgs84_bounds = wgs84_min + wgs84_max
 
-    heightmap_size = pipeline.data.get('ddd:gdterrain:heightmap:size', 128)
+    heightmap_size = pipeline.data.get('ddd:terrain:heightmap:size', 128)
 
     logger.info("Generating heightmap for area: ddd_bounds=%s, wgs84_bounds=%s, size=%s", ddd_bounds, wgs84_bounds, heightmap_size)
 

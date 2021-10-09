@@ -21,6 +21,8 @@ import shutil
 logger = logging.getLogger(__name__)
 
 """
+Moves tile files to a subdirectory under a z/x/y structure.
+
 Called from local data dir as:
 
     ddd ~/git/ddd/pipelines/osm_tile_dir.py

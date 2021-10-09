@@ -4,8 +4,6 @@
 
 import sys
 
-import pyproj
-
 from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.osm import osm
@@ -43,14 +41,3 @@ pipeline.data['ddd:test:output:intermediate'] = True  # associate to debug confi
 
 pipeline.run()
 
-'''
-
-pipeline.data['ddd:osm:water'] = False
-pipeline.data['ddd:osm:underwater'] = False
-
-pipeline.data['ddd:osm:augment:plants'] = False
-pipeline.data['ddd:osm:augment:kerbs'] = False
-pipeline.data['ddd:osm:augment:way_props'] = False
-
-pipeline.data['ddd:osm:alignment:items'] = False
-'''

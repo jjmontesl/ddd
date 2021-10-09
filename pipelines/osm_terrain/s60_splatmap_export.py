@@ -26,7 +26,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 # TODO: This is required by s70 descriptor export, but should not
 @dddtask(order="59.89.+.10")
-def osm_gdterrain_export_splatmap_init(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap_init(root, pipeline, osm, logger):
     splatmap = ddd.group2(name="Splatmap")
     root.append(splatmap)
 
@@ -77,13 +77,13 @@ def osm_gdterrain_export_splatmap_init(root, pipeline, osm, logger):
 
 # TODO: Doing this on stage 59 as buildings are deleted (keep 2D and 3D versions in the tree for late usage, also for terrain_export)
 @dddtask(order="59.89.+.10", condition=True)
-def osm_gdterrain_export_splatmap_condition(pipeline):
-    return parse_bool(pipeline.data.get('ddd:gdterrain:splatmap', False))
+def osm_terrain_export_splatmap_condition(pipeline):
+    return parse_bool(pipeline.data.get('ddd:terrain:splatmap', False))
 
 
 
 @dddtask(order="*.10.+")
-def osm_gdterrain_export_splatmap_channels_all(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap_channels_all(root, pipeline, osm, logger):
     for i in range(pipeline.data['splatmap:channels_num']):
         mat = pipeline.data['splatmap:channels_materials'][i]
         objs = ddd.group2()
@@ -97,49 +97,49 @@ def osm_gdterrain_export_splatmap_channels_all(root, pipeline, osm, logger):
 
 '''
 @dddtask()
-def osm_gdterrain_export_splatmap_channel_0_terrain(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap_channel_0_terrain(root, pipeline, osm, logger):
     objs = root.select('["ddd:material" = "Ground"]')
     objs.name = 'Channel0'
     root.find("/Splatmap").append(objs)
 
 @dddtask()
-def osm_gdterrain_export_splatmap_channel_1_dirt(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap_channel_1_dirt(root, pipeline, osm, logger):
     objs = root.select('["ddd:material" = "Dirt"]')
     objs.name = 'Channel1'
     root.find("/Splatmap").append(objs)
 
 @dddtask()
-def osm_gdterrain_export_splatmap_channel_2_rock(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap_channel_2_rock(root, pipeline, osm, logger):
     objs = root.select('["ddd:material" = "Rock"]')
     objs.name = 'Channel2'
     root.find("/Splatmap").append(objs)
 
 @dddtask()
-def osm_gdterrain_export_splatmap_channel_3_park(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap_channel_3_park(root, pipeline, osm, logger):
     objs = root.select('["ddd:material" ~ "Park|Forest"]')
     objs.name = 'Channel3'
     root.find("/Splatmap").append(objs)
 
 @dddtask()
-def osm_gdterrain_export_splatmap_channel_4_sand(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap_channel_4_sand(root, pipeline, osm, logger):
     objs = root.select('["ddd:material" = "Sand"]')
     objs.name = 'Channel4'
     root.find("/Splatmap").append(objs)
 
 @dddtask()
-def osm_gdterrain_export_splatmap_channel_5(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap_channel_5(root, pipeline, osm, logger):
     objs = root.select('["ddd:material" = "NONE"]')
     objs.name = 'Channel5'
     root.find("/Splatmap").append(objs)
 
 @dddtask()
-def osm_gdterrain_export_splatmap_channel_6_pedestrian(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap_channel_6_pedestrian(root, pipeline, osm, logger):
     objs = root.select('["ddd:material" = "WayPedestrian"]')
     objs.name = 'Channel6'
     root.find("/Splatmap").append(objs)
 
 @dddtask()
-def osm_gdterrain_export_splatmap_channel_7_grass(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap_channel_7_grass(root, pipeline, osm, logger):
     objs = root.select('["ddd:material" ~ "Grass|Garden"]')
     objs.name = 'Channel7'
     root.find("/Splatmap").append(objs)
@@ -148,7 +148,7 @@ def osm_gdterrain_export_splatmap_channel_7_grass(root, pipeline, osm, logger):
 
 
 
-def osm_gdterrain_splatmap_detail_id(pipeline, obj):
+def osm_terrain_splatmap_detail_id(pipeline, obj):
     """
     """
     idmap = pipeline.data['splatmap:ids']
@@ -173,7 +173,7 @@ def osm_gdterrain_splatmap_detail_id(pipeline, obj):
 
 
 @dddtask()
-def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
+def osm_terrain_export_splatmap(root, pipeline, osm, logger):
     """
     Exports
     """
@@ -183,8 +183,8 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
     wgs84_max = terrain.transform_ddd_to_geo(osm.ddd_proj, ddd_bounds[2:])
     wgs84_bounds = wgs84_min + wgs84_max
 
-    splatmap_size = pipeline.data.get('ddd:gdterrain:splatmap:size', 128)
-    use_detailmap = pipeline.data.get('ddd:gdterrain:splatmap:detailmap', False)
+    splatmap_size = pipeline.data.get('ddd:terrain:splatmap:size', 128)
+    use_detailmap = pipeline.data.get('ddd:terrain:splatmap:detailmap', False)
 
     logger.info("Generating splatmap for area: ddd_bounds=%s, wgs84_bounds=%s, size=%s", ddd_bounds, wgs84_bounds, splatmap_size)
 
@@ -271,7 +271,7 @@ def osm_gdterrain_export_splatmap(root, pipeline, osm, logger):
 
                         if not pixel_item.intersects(pixel_rect): continue
 
-                        detail_id = osm_gdterrain_splatmap_detail_id(pipeline, cand_item)
+                        detail_id = osm_terrain_splatmap_detail_id(pipeline, cand_item)
                         id_matrix[yi, xi, chan_idx] = detail_id
 
 

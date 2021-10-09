@@ -215,6 +215,16 @@ def osm_groups_areas_natural_grassland(obj, osm):
     obj = obj.material(ddd.mats.grass)
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:natural" = "heath"]')
+def osm_groups_areas_natural_heath(obj, osm):
+    """A dwarf-shrub habitat, characterized by open, low-growing woody vegetation."""
+    obj.name = "Heath: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 1, 'bush': 1}
+    obj.extra['ddd:aug:itemfill:density'] = 0.00075
+    obj = obj.material(ddd.mats.terrain_ground)
+    return obj
+
 @dddtask(path="/Areas/*", select='["osm:natural" = "wood"]')
 def osm_groups_areas_natural_wood(obj, osm):
     """Define area data."""
@@ -269,6 +279,26 @@ def osm_groups_areas_golf_bunker(obj, osm):
     obj.name = "Bunker: %s" % obj.name
     obj.extra['ddd:area:type'] = "bunker"  # sand / dunes
     return obj
+
+@dddtask(path="/Areas/*", select='["osm:golf" = "fairway"]')
+def osm_groups_areas_golf_fairway(obj, osm):
+    """Define area data."""
+    # Note that golf:bunker is also usually marked as natural:sand
+    obj.name = "Fairway: %s" % obj.name
+    #obj.extra['ddd:area:type'] = "defau"  # sand / dunes
+    obj = obj.material(ddd.mats.garden)  # There's also an exception for this in surface:grass
+    obj.extra['ddd:area:type'] = "default"
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:golf" = "green"]')
+def osm_groups_areas_leisure_golf_green(obj, osm):
+    """Define area data."""
+    obj.name = "Golf Green: %s" % obj.name
+    obj.extra['ddd:area:type'] = "park"  # should be default, or golf (for the irregaularity), but currently default is raising height :?
+    # TODO: Disable grass blades generation here using augmentation metadata (grass blades are currently hard coded in s55_plants)
+    obj = obj.material(ddd.mats.grass)
+    return obj
+
 
 @dddtask(path="/Areas/*", select='["osm:natural" = "bare_rock"]')
 def osm_groups_areas_natural_bare_rock(obj, osm):
@@ -373,15 +403,6 @@ def osm_groups_areas_leisure_golf_course(obj, osm):
     #obj.extra['ddd:area:type'] = "default"
     obj.extra['ddd:area:type'] = "park"  # should be default, or golf (for the irregaularity), but currently default is raising height :?
     obj = obj.material(ddd.mats.park)
-    return obj
-
-@dddtask(path="/Areas/*", select='["osm:golf" = "green"]')
-def osm_groups_areas_leisure_golf_green(obj, osm):
-    """Define area data."""
-    obj.name = "Golf Green: %s" % obj.name
-    obj.extra['ddd:area:type'] = "park"  # should be default, or golf (for the irregaularity), but currently default is raising height :?
-    # TODO: Disable grass blades generation here using augmentation metadata (grass blades are currently hard coded in s55_plants)
-    obj = obj.material(ddd.mats.grass)
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:public_transport" = "platform"];["osm:railway" = "platform"]')

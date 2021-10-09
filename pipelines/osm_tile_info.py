@@ -13,13 +13,15 @@ import re
 import geojson
 from pygeotile.tile import Tile
 from ddd.ddd import ddd
-
+import datetime
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
 
 """
+Walk a tile directory and report about available tiles.
+
 Called from local data dir as:
 
     ddd ~/git/ddd/pipelines/osm_tile_info.py
@@ -27,16 +29,18 @@ Called from local data dir as:
 
 source_dir = "output/ddd_http/"
 #source_regex = r"output/ddd_http/([0-9]+)/([0-9]+)/([0-9]+)(.*)"
-source_regex = r"./(17)/([0-9]+)/([0-9]+)(.*)"
+source_regex = r".*(17)/([0-9]+)/([0-9]+)(.*)"
 
 logger.info("Finding output results from: %s (%s)" % (source_dir, source_regex))
 
 
-use_file = "/tmp/tiles.txt"
+#use_file = "/tmp/tiles.txt"
+use_file = None
 if use_file:
     listing = open(use_file, "r").read().split("\n")
 else:
     listing = glob.glob(source_dir + "**/*.glb", recursive=True)
+    listing = [f[len(source_dir):] for f in listing]
 
 
 features = []
@@ -47,8 +51,12 @@ for filename in listing:
     #dirname = os.path.dirname(filename)
     #basename = os.path.basename(filename)
 
+
     if not filename.endswith(".glb"):
         continue
+    if filename.endswith(".uncompressed.glb"):
+        continue
+    #print(filename)
 
     #logger.debug(filename)
     matches = re.match(source_regex, filename)
@@ -79,12 +87,16 @@ for filename in listing:
         center = (center_lon, center_lat)
         area = ddd.rect([min_lon, min_lat, max_lon, max_lat]).geom
 
+        mtime = datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(source_dir, filename)))
+        age = datetime.datetime.now() - mtime
+
         feature = geojson.Feature(geometry=area,
                                   properties={"available": True, #exists > 0,
                                               "name": filename,
                                               "z": z,
                                               "x": x,
                                               "y": y,
+                                              "mtime": str(mtime),
                                               "size": os.stat(filename).st_size if os.path.exists(filename) else None} )
         if (z, x ,y) not in feature_idx:
             feature_idx[(z, x, y)] = feature
@@ -96,6 +108,8 @@ for filename in listing:
 feature_collection = geojson.FeatureCollection(features)
 dump = geojson.dumps(feature_collection, sort_keys=True, indent=4)
 print(dump + "\n")
+
+logger.info("Found %d files." % len(features))
 
 
 '''
