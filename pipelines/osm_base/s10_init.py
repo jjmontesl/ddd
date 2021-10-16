@@ -246,6 +246,12 @@ def osm_materials():
                                            # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_nrm.jpg",)
     ddd.mats.concrete = ddd.mats.cement
 
+    ddd.mats.marble_white = ddd.material(name="Marble White", color='#c0c3c8', extra={'uv:scale': 1.0},  #
+                                         metallic_factor=0.4, roughness_factor=0.05,  # bump_strength=2.0,
+                                         texture_path=ddd.DATA_DIR + "/osmmaterials/Marble012/Marble012_2K_*.jpg",)
+    ddd.mats.marble = ddd.mats.marble_white
+
+
     # ddd.mats.stone = ddd.material(name="Stone", color='#484846', # Solid stone material, for waycross, beams, or similar (not to be confused with stones, in plural, though may be using the same texture)
     #                              texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
     #                              extra={'uv:scale': 1.0, 'tags': []})

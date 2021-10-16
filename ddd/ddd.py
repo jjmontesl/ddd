@@ -1067,11 +1067,14 @@ class DDDObject2(DDDObject):
         obj = DDDObject2(name=name if name else self.name, children=children, geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat)
         return obj
 
-    def copy3(self, name=None, mesh=None):
+    def copy3(self, name=None, mesh=None, copy_children=False):
         """
         Copies this DDDObject2 into a DDDObject3, maintaining metadata but NOT children or geometry.
         """
-        obj = DDDObject3(name=name if name else self.name, children=[], mesh=mesh, extra=dict(self.extra), material=self.mat)
+        if copy_children:
+            obj = DDDObject3(name=name if name else self.name, children=[], mesh=mesh, extra=dict(self.extra), material=self.mat)
+        else:
+            obj = DDDObject3(name=name if name else self.name, children=[c.copy3() for c in self.children], mesh=mesh, extra=dict(self.extra), material=self.mat)
         return obj
 
     def replace(self, obj):
@@ -2233,6 +2236,8 @@ class DDDObject2(DDDObject):
         return geoms
 
     def save(self, path, instance_marker=None, instance_mesh=None, scale=1.0):
+        """
+        """
 
         if instance_marker is None:
             instance_marker = D1D2D3Bootstrap.export_marker
@@ -2269,6 +2274,11 @@ class DDDObject2(DDDObject):
 
         else:
             raise DDDException("Invalid 2D save format (filename=%s)" % path)
+
+        # If path is just a .extension (eg .glb), returns the result file as a byte buffer.
+        return_data = (path.split(".")[0] == '')
+        if return_data:
+            return data
 
         with open(path, 'wb') as f:
             f.write(data)
@@ -2938,6 +2948,45 @@ class DDDObject3(DDDObject):
 
         return result
 
+    def merge_vertices(self, keep_normals=False):
+        """
+        Merges vertices. Modifies the object in place
+
+        Merges vertices of each children recursively (but keeps structure, does not merge between objects).
+
+        @see Also see trimesh.smoothed and trimesh.merge_vertices.
+        """
+
+        for c in self.children:
+            c.merge_vertices(keep_normals=keep_normals)
+
+        self.mesh.merge_vertices(use_norm=keep_normals)  # use_tex=True, use_norm=True)
+
+        return self
+
+    def smooth(self, angle=math.pi / 3):  #, facet_minarea=None):
+        """
+        Smoothes normals. Returns a copy of the object.
+
+        Angle must be below pi/2, else it fails (trimesh will generate a non-smoothed object).
+
+        Note that this requires vertices that need smoothed to be merged already, but this operation may split
+        vertices if needed (and vertex count will change).
+
+        It smoothes vertices of each children recursively (but keeps structure, does not merge between objects).
+
+        @see Also see trimesh.smoothed and trimesh.merge_vertices.
+        """
+        result = self.copy()
+
+        result.children = [c.smooth() for c in result.children]
+
+        result.mesh = self.mesh.smoothed(angle=angle, facet_minarea=None)  # facet_minarea)
+
+        #result.mesh.merge_vertices(use_tex=True, use_norm=True)
+
+        return result
+
 
     def clean(self):
         """
@@ -3283,6 +3332,11 @@ class DDDObject3(DDDObject):
         else:
             logger.error("Cannot save. Invalid 3D filename format: %s", path)
             raise DDDException("Cannot save. Invalid 3D filename format: %s" % path)
+
+        # If path is just a .extension (eg .glb), returns the result file as a byte buffer.
+        return_data = (path.split(".")[0] == '')
+        if return_data:
+            return data
 
         #scene.export(path)
         with open(path, 'wb') as f:

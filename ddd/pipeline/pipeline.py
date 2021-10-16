@@ -38,6 +38,8 @@ class DDDPipeline():
 
     def load(self, configfiles):
 
+        DDDTask._tasks = []
+
         if not isinstance(configfiles, str):
             for filename in configfiles:
                 self.load(filename)

@@ -205,7 +205,7 @@ def trafficlights():
     head = trafficlights_head()
     post = curvedpost(arm_items=[head])
     post.name = "TrafficLight"
-    post = ddd.meshops.combine_materials(post)
+    post = ddd.meshops.batch_by_material(post)
     return post
 
 

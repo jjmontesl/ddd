@@ -8,6 +8,7 @@ from csv import DictReader
 from ddd.pipeline.pipeline import DDDPipeline
 from ddd.pipeline.decorators import dddtask
 import logging
+import random
 
 
 """
@@ -95,7 +96,7 @@ def each(root, obj):
 '''
 
 @dddtask(path="/Elements2/*", filter=lambda o: 'element:symbol' in o.extra)  # select="wp:article=*",
-def periodictable_pilars(root, obj):
+def periodictable_pilars2(root, obj):
     """
     Create a pilar for each element.
 
@@ -138,15 +139,31 @@ def type_halogen(root, obj):
     obj = obj.material(ddd.mats.water)
     return obj
 
+@dddtask(cache=True)
+def cache(pipeline, root, logger):
+    """
+    Caches current state to allow for faster reruns.
+    """
+    return "/tmp/ddd.cache"
+
 @dddtask(path="/Elements3/*", log=True)
 def create_base(root, obj):
     year = int(obj.extra['element:year']) if obj.extra['element:year'] else -10000
-    age = 2020 - year
+    age = 2021 - year
     height = (math.log(age, 2) - 1) * 0.4 + 0.02
-    base = ddd.disc(r=1.5, name="Base").material(ddd.mats.stone)
-    base = base.extrude(height)
+    disc = ddd.disc(r=1.5, name="Base").material(ddd.mats.marble_white)
+    base = disc.extrude_step(disc, 0.5)
+    base = base.extrude_step(disc.buffer(-0.2), 0.0)
+    base = base.extrude_step(disc.buffer(-0.2), height)
+    base = base.extrude_step(disc.buffer(0.2), 0.0)
+    base = base.extrude_step(disc.buffer(0.2), 0.2)
 
-    obj = obj.translate([0, 0, height])
+    #base = ddd.uv.map_cylindrical(base)
+    #base = base.merge_vertices()
+    base = base.smooth(angle=math.pi * 0.40)
+    base = ddd.uv.map_cylindrical(base, split=False)
+
+    obj = obj.translate([0, 0, height + 0.5])
     obj.append(base)
 
     return obj
@@ -157,6 +174,7 @@ def position(root, obj):
     pos_x = int(obj.extra['element:group']) * element_size[0]
     pos_y = int(obj.extra['element:period']) * element_size[1]
     obj = obj.translate((pos_x, -pos_y, 0))
+    obj.set("test", "test")
     return obj
 
 
@@ -165,7 +183,8 @@ def position(root, obj):
 def show(root):
     """
     """
-    root.find("/Elements3").save("/tmp/periodictable.glb")
-    root.find("/Elements3").show()
+    #root.find("/Elements3").save("/tmp/periodictable.glb")
+    #root.find("/Elements3").show()
+    pass
 
 

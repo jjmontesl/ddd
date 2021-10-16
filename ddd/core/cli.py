@@ -38,8 +38,8 @@ class D1D2D3Bootstrap():
         "geo-raster-collect": ("ddd.geo.commands.georastercollect.GeoRasterCollectCommand", "Collect georaster files and generate config."),
         "geo-raster-coverage": ("ddd.geo.commands.georastercoverage.GeoRasterCoverageCommand", "Generate a georaster coverage map."),
         "geo-population": ("ddd.geo.commands.geopopulation.GeoPopulationCommand", "Query the population model."),
-        "server-serve": ("ddd.server.commands.serve.ServerServeCommand", "Start the DDD Tool API."),
-        "run": ("ddd.core.commands.run", "Runs a user-given script (default)"),  # default
+        "serve": ("ddd.server.commands.serve.ServerServeCommand", "Start the DDD Tool API."),
+        "run": ("ddd.core.commands.run.RunCommand", "Runs a given pipeline or script (default)"),  # default
         })
 
     def __init__(self):

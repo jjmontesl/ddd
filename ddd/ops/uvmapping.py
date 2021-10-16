@@ -41,7 +41,7 @@ class DDDUVMapping():
         result.children = [self.map_3d_random(c) for c in result.children]
         return result
 
-    def map_cubic(self, obj, offset=None, scale=None):
+    def map_cubic(self, obj, offset=None, scale=None, split=True):
         """
         FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
         before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
@@ -75,7 +75,7 @@ class DDDUVMapping():
 
                 def setuv(face, idx, uv):
                     uv = (uv[0] * scale[0] + offset[0], uv[1] * scale[1] + offset[1])
-                    if result.extra['uv'][idx] != None and (result.extra['uv'][idx] != uv):
+                    if split and result.extra['uv'][idx] != None and (result.extra['uv'][idx] != uv):
                         # FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
                         # before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
                         newidx = len(result.mesh.vertices)
@@ -108,11 +108,13 @@ class DDDUVMapping():
         result.children = [self.map_cubic(c, offset, scale) for c in result.children]
         return result
 
-    def map_spherical(self, obj):
-        return self.map_cubic(obj)
+    def map_spherical(self, obj, split=True):
+        return self.map_cubic(obj, split=split)
 
-    def map_cylindrical(self, obj):
-        return self.map_cubic(obj)
+    def map_cylindrical(self, obj, split=True):
+        """
+        """
+        return self.map_cubic(obj, split=split)
 
     def map_xy(self, obj):
         raise NotImplementedError()

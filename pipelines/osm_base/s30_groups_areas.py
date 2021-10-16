@@ -272,6 +272,15 @@ def osm_groups_areas_natural_scrub(obj, osm):
     obj = obj.material(ddd.mats.forest)  # wetland
     return obj
 
+@dddtask(path="/Areas/*", select='["osm:natural" = "shingle"]')
+def osm_groups_areas_natural_shingle(obj, osm):
+    """An accumulation of rounded rock fragments, usually pebbles and gravel, but sometimes larger, deposited and shaped by movement of water."""
+    obj.name = "Shingle: %s" % obj.name
+    obj.extra['ddd:area:type'] = "raised"
+    obj = obj.material(ddd.mats.terrain_pebbles_sparse)  # wetland
+    return obj
+
+
 @dddtask(path="/Areas/*", select='["osm:golf" = "bunker"]')
 def osm_groups_areas_golf_bunker(obj, osm):
     """Define area data."""
@@ -287,6 +296,16 @@ def osm_groups_areas_golf_fairway(obj, osm):
     obj.name = "Fairway: %s" % obj.name
     #obj.extra['ddd:area:type'] = "defau"  # sand / dunes
     obj = obj.material(ddd.mats.garden)  # There's also an exception for this in surface:grass
+    obj.extra['ddd:area:type'] = "default"
+    return obj
+
+@dddtask(path="/Areas/*", select='["osm:golf" = "rough"]')
+def osm_groups_areas_golf_rough(obj, osm):
+    """Define area data."""
+    # Note that golf:bunker is also usually marked as natural:sand
+    obj.name = "Rough: %s" % obj.name
+    #obj.extra['ddd:area:type'] = "defau"  # sand / dunes
+    obj = obj.material(ddd.mats.park)  # There's also an exception for this in surface:grass
     obj.extra['ddd:area:type'] = "default"
     return obj
 

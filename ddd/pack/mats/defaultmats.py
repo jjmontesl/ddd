@@ -60,6 +60,7 @@ class DefaultMaterials(MaterialsCollection):
         self.stone = ddd.material(name="Stone", color='#9c9378')
         self.cement = ddd.material(name="Concrete", color='#b8b8a0')
         self.bricks = ddd.material(name="Bricks", color='#d49156')
+        self.marble_white = ddd.material(name="Marble White", color='#c0c3c8', metallic_factor=0.4, roughness_factor=0.05)
 
         self.wood = ddd.material(name="Wood", color='#efae85')
 

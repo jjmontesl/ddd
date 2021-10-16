@@ -239,7 +239,7 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
                 if (yi in (0, splatmap_size - 1)):
                     cover_factor *= 2
 
-                # Augmentation tests: sand (12)
+                # Augmentation tests: sand (12) - extend sand around
                 if chan_idx == 12 and not channel_items_sand_spread_union.is_empty():
                     if cover_factor < 0.99:
                         distance = channel_items_sand_spread_union.distance(ddd.point([x, y]))
@@ -254,7 +254,7 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
                         splat_matrix[yi, xi, :] -= cover_factor  # Reduce others
 
 
-                # Augmentation tests: park (10)
+                # Augmentation tests: park (10) - mixes ground and rock
                 if chan_idx == 10 or chan_idx == 11:
                     if cover_factor > 0.95:
                         reduce_factor = noise.pnoise2(x_utm * 0.03, y_utm * 0.03, octaves=3, persistence=2.2, lacunarity=0.7, repeatx=4096, repeaty=4096, base=0)

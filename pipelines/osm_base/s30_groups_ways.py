@@ -321,8 +321,15 @@ def osm_select_ways_raceway(obj, root):
     obj.extra['ddd:way:lanes'] = 1
     obj.extra['ddd:way:width'] = 8.0
     # obj = obj.material(ddd.mats.dirt)
-    root.find("/Ways").append(obj)
 
+    obj.set('ddd:way:roadlines', True)
+
+    if obj.get('osm:sport') == "motor":
+        obj.set('ddd:way:width', 12.0)
+    if obj.get('osm:sport') == "karting":
+        obj.set('ddd:way:width', 6.0)
+
+    root.find("/Ways").append(obj)
 
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:railway" = "rail"]')

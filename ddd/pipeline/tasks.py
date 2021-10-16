@@ -33,6 +33,7 @@ class DDDTask(object):
 
     """
 
+
     _tasks = []
 
     def __init__(self, name=None, path=None, select=None, filter=None,

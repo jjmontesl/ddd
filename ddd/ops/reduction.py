@@ -463,6 +463,10 @@ class DDDMeshOps():
         batch_empty_recursive(root, root, "", "")
         return root
 
+    def batch_by_material(self, root):
+        mat_layer_function = lambda o: (str(o.mat.name if o.mat else None))
+        root = ddd.meshops.batch_group(root, key_func=mat_layer_function)
+        return root
 
     def freeze_metadata(self, obj):
         """

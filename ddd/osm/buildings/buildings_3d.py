@@ -453,6 +453,10 @@ class Buildings3DOSMBuilder():
         item_1d = item_3d.extra.get('ddd:item', None)
         building_2d = building_3d.get('ddd:building:building_2d')
 
+        if building_2d.is_empty() is None:
+            logger.warn("Cannot snap item to empty geometry: %s", building_3d)
+            return None
+
         if building_2d.geom.type == "MultiPolygon":
             logger.warn("Cannot snap to MultiPolygon building (ignoring item_3d)  TODO: usecommon snap functions which should support MultiPolygon")
             return None

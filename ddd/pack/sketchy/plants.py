@@ -271,6 +271,9 @@ def tree_bush(height=1.0, r=0.30):
         #return section
     def leaves_callback(height):
         tt = treetop(r=0.5 + 0.4 * height, subdivisions=0).material(ddd.mats.treetop)
+        #tt = tt.merge_vertices()
+        #tt = tt.smooth(angle=math.pi * 0.40)
+        #tt = ddd.uv.map_spherical(tt, split=False)
         return tt
 
     obj = recursivetree(height=height, r=r, leaves_callback=leaves_callback, trunk_callback=trunk_callback,
@@ -284,13 +287,14 @@ def tree_bush(height=1.0, r=0.30):
     obj = result
     obj = ddd.meshops.reduce_quadric_decimation(obj, target_ratio=0.5)
     '''
-    obj = ddd.meshops.reduce(obj)
 
 
-    obj.name = "Tree Busgh"
+    obj.name = "Bush"
 
     #objtrunk = obj.select(func=lambda o: o.mat == ddd.mats.bark).combine()
     objleaves = obj.select(func=lambda o: o.mat == ddd.mats.treetop).combine()
+    objleaves = ddd.meshops.reduce(objleaves)
+
     obj = ddd.group3([objleaves], name="Tree Default")
 
     return obj

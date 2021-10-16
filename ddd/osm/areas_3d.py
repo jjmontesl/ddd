@@ -169,7 +169,12 @@ class Areas3DOSMBuilder():
                     areas_3d.append(self.generate_area_3d(a))
                 return ddd.group3(areas_3d, extra=area_2d.extra)
 
-            if area_2d.extra.get('ddd:area:type', None) == 'park':
+            if area_2d.extra.get('ddd:area:type', None) == 'raised':
+
+                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), 0.1, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+
+            elif area_2d.extra.get('ddd:area:type', None) == 'park':
 
                 area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), 0.1, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
                 area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), 0.1, method=ddd.EXTRUSION_METHOD_SUBTRACT)

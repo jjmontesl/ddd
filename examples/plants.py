@@ -3,40 +3,45 @@
 from ddd.pack.sketchy import urban, landscape, industrial, plants
 from ddd.ddd import ddd
 import math
+from ddd.pipeline.decorators import dddtask
 
-items = ddd.group3()
+@dddtask(order="10")
+def pipeline_start(pipeline, root):
 
-heights = (3.0, 5.0, 10.0, 15.0)
+    items = ddd.group3()
 
-for h in heights:
-    item = landscape.rock([h * 0.2, h * 0.2, h * 0.1])
-    items.append(item)
+    heights = (3.0, 5.0, 10.0, 15.0)
 
-for h in heights:
-    item = plants.reed(height=h)
-    items.append(item)
+    for h in heights:
+        item = landscape.rock([h * 0.2, h * 0.2, h * 0.1])
+        items.append(item)
 
-for h in heights:
-    item = plants.tree_default(height=h)
-    items.append(item)
+    for h in heights:
+        item = plants.reed(height=h)
+        items.append(item)
 
-for h in heights:
-    item = plants.tree_palm(height=h)
-    items.append(item)
+    for h in heights:
+        item = plants.tree_default(height=h)
+        items.append(item)
 
-for h in heights:
-    item = plants.tree_fir(height=h)
-    items.append(item)
+    for h in heights:
+        item = plants.tree_palm(height=h)
+        items.append(item)
 
-for h in heights:
-    item = plants.tree_bush(height=h * 0.2)
-    items.append(item)
+    for h in heights:
+        item = plants.tree_fir(height=h)
+        items.append(item)
 
-items = ddd.align.grid(items, width=4)
-items.append(ddd.helper.all())
-items.show()
+    for h in heights:
+        item = plants.tree_bush(height=h * 0.2)
+        items.append(item)
 
-items.save("/tmp/test.glb")
-items.save("/tmp/test.json"
+    items = ddd.align.grid(items, width=4)
+    items.append(ddd.helper.all())
 
-           )
+    #items.show()
+    #items.save("/tmp/test.glb")
+    #items.save("/tmp/test.json")
+    pipeline.root = items
+    #root.append(items)
+
