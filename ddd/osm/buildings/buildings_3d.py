@@ -19,18 +19,18 @@ import logging
 import math
 import random
 import sys
-import numpy as np
 
+from ddd.core.exception import DDDException
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
-from ddd.pack.sketchy import plants, urban
 from ddd.geo import terrain
-from ddd.core.exception import DDDException
-from ddd.util.dddrandom import weighted_choice
-from ddd.pack.sketchy.buildings import window_with_border, door, portal
-from ddd.osm.osmunits import parse_meters
 from ddd.osm.buildings.buildings_3d_roof import BuildingsRoofs3DOSMBuilder
+from ddd.pack.sketchy import plants, urban
+from ddd.pack.sketchy.buildings import window_with_border, door, portal
 from ddd.util.common import parse_bool
+from ddd.util.common import parse_meters
+from ddd.util.dddrandom import weighted_choice
+import numpy as np
 
 
 # Get instance of logger for this module

@@ -28,7 +28,7 @@ def terrain_grid(bounds, detail=1.0, height=1.0, scale=0.025):
         distance = bounds
         bounds = [-distance, -distance, distance, distance]
 
-    mesh = ddd.grid3(bounds, detail=detail)
+    mesh = ddd.grid3(bounds, detail=detail, name="Terrain grid")
 
     #func = lambda x, y: 2.0 * noise.pnoise2(x, y, octaves=3, persistence=0.5, lacunarity=2.0, repeatx=1024, repeaty=1024)
     def func(x, y):

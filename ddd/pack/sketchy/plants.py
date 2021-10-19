@@ -108,7 +108,8 @@ def tree_default(height=3.5, r=0.40, fork_iters=2, fork_height_ratio=0.35):
 
     def trunk_callback(height):
         section = ddd.regularpolygon(sides=5, r=r).extrude(height)
-        section = ddd.uv.map_cylindrical(section)
+        section = section.smooth(math.pi)
+        section = ddd.uv.map_cylindrical(section, split=False)
         section = section.material(ddd.mats.bark)
         return section
     def leaves_callback(height):
@@ -167,6 +168,7 @@ def palm_leaf(length=3, fallfactor=1):
 
     #if 'uv' in obj.extra: del(obj.extra['uv'])
     obj = obj.twosided()
+    #obj = obj.smooth(math.pi / 2)
     obj = ddd.uv.map_cubic(obj)
     obj.extra['ddd:collider'] = False
 
@@ -188,7 +190,8 @@ def tree_palm(height=14, r=0.30):
         section = ddd.regularpolygon(sides=5, r=r).extrude_step(ddd.regularpolygon(sides=5, r=r*0.8), height * 0.15)
         section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.8).translate([random.uniform(-0.4, 0.4), random.uniform(-0.4, 0.4)]), height * 0.35)
         section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.7).translate([random.uniform(-0.3, 0.3), random.uniform(-0.3, 0.3)]), height * 0.5)
-        section = ddd.uv.map_cylindrical(section)
+        section = section.smooth(math.pi)
+        section = ddd.uv.map_cylindrical(section, split=False)
         section = section.material(ddd.mats.bark)
         return section
 

@@ -1072,9 +1072,9 @@ class DDDObject2(DDDObject):
         Copies this DDDObject2 into a DDDObject3, maintaining metadata but NOT children or geometry.
         """
         if copy_children:
-            obj = DDDObject3(name=name if name else self.name, children=[], mesh=mesh, extra=dict(self.extra), material=self.mat)
-        else:
             obj = DDDObject3(name=name if name else self.name, children=[c.copy3() for c in self.children], mesh=mesh, extra=dict(self.extra), material=self.mat)
+        else:
+            obj = DDDObject3(name=name if name else self.name, children=[], mesh=mesh, extra=dict(self.extra), material=self.mat)
         return obj
 
     def replace(self, obj):
@@ -1454,26 +1454,31 @@ class DDDObject2(DDDObject):
         return None
 
     def remove_z(self):
+        """
+        Removes the z coordinate leaving 2-dimension vectors for coordinates. Does nothing if the geometry is already 2-dimensional.
+
+        This method returns a copy of the object, and applies the same operation to children.
+        """
         result = self.copy()
         if self.geom:
             if result.geom.type == "MultiPolygon":
                 for g in result.geom.geoms:
-                    g.coords = [(x, y) for (x, y, _) in g.coords]
+                    g.coords = [(c[0], c[1]) for c in g.coords]
             elif result.geom.type == "MultiLineString":
                 for g in result.geom.geoms:
-                    g.coords = [(x, y) for (x, y, _) in g.coords]
+                    g.coords = [(c[0], c[1]) for c in g.coords]
             elif result.geom.type == "Polygon":
                 #result.geom.exterior.coords = [(x, y) for (x, y, _) in result.geom.exterior.coords]
                 #for g in result.geom.interiors:
                 #    g.coords = [(x, y) for (x, y, _) in g.coords]
-                nnext = [(x, y) for (x, y, _) in result.geom.exterior.coords]
+                nnext = [(c[0], c[1]) for c in result.geom.exterior.coords]
                 nnints = []
                 for g in result.geom.interiors:
-                    nnints.append([(x, y) for (x, y, _) in g.coords])
+                    nnints.append([(c[0], c[1]) for c in g.coords])
                 result.geom = Polygon(nnext, nnints)
 
             else:
-                result.geom.coords = [(x, y) for (x, y, _) in result.geom.coords]
+                result.geom.coords = [(c[0], c[1]) for c in result.geom.coords]
         result.children = [c.remove_z() for c in result.children]
         return result
 
@@ -1913,7 +1918,7 @@ class DDDObject2(DDDObject):
         Extrudes a shape along a path
         """
         trimesh_path = path.geom.coords
-        mesh = creation.sweep_polygon(self.geom, trimesh_path, triangle_args="p", engine='triangle')
+        mesh = creation.sweep_polygon(self.remove_z().geom, trimesh_path, triangle_args="p", engine='triangle')
         mesh.fix_normals()
         result = self.copy3()
         result.mesh = mesh
@@ -2981,7 +2986,8 @@ class DDDObject3(DDDObject):
 
         result.children = [c.smooth() for c in result.children]
 
-        result.mesh = self.mesh.smoothed(angle=angle, facet_minarea=None)  # facet_minarea)
+        if self.mesh:
+            result.mesh = self.mesh.smoothed(angle=angle, facet_minarea=None)  # facet_minarea)
 
         #result.mesh.merge_vertices(use_tex=True, use_norm=True)
 

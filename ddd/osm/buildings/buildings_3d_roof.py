@@ -28,7 +28,7 @@ from ddd.geo import terrain
 from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
 from ddd.pack.sketchy.buildings import window_with_border, door, portal
-from ddd.osm.osmunits import parse_meters
+from ddd.util.common import parse_meters
 
 
 # Get instance of logger for this module

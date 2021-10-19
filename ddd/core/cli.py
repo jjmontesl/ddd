@@ -38,8 +38,8 @@ class D1D2D3Bootstrap():
         "geo-raster-collect": ("ddd.geo.commands.georastercollect.GeoRasterCollectCommand", "Collect georaster files and generate config."),
         "geo-raster-coverage": ("ddd.geo.commands.georastercoverage.GeoRasterCoverageCommand", "Generate a georaster coverage map."),
         "geo-population": ("ddd.geo.commands.geopopulation.GeoPopulationCommand", "Query the population model."),
-        "serve": ("ddd.server.commands.serve.ServerServeCommand", "Start the DDD Tool API."),
-        "run": ("ddd.core.commands.run.RunCommand", "Runs a given pipeline or script (default)"),  # default
+        "serve": ("ddd.server.commands.serve.ServerServeCommand", "Start the DDD Tool API for a pipeline."),
+        "run": ("ddd.core.commands.run.RunCommand", "Runs a given pipeline or script (default)."),  # default
         })
 
     def __init__(self):
@@ -96,8 +96,9 @@ class D1D2D3Bootstrap():
 
         parser.add_argument("--export-meshes", action="store_true", default=False, help="export instance meshes")
         parser.add_argument("--export-markers", action="store_true", default=False, help="export instance markers (default)")
-        parser.add_argument("--export-normals", action="store_true", default=False, help="export normals")
-        parser.add_argument("--export-textures", action="store_true", default=False, help="export textures")
+
+        parser.add_argument("--no-normals", dest="export_normals", action="store_false", default=True, help="don't export normals")
+        parser.add_argument("--no-textures", dest="export_textures", action="store_false", default=True, help="don't export textures")
 
         parser.add_argument("--renderer", default="pyglet", nargs="?", choices=('pyrender', 'pyglet', 'none'), help="renderer backend (default: %(default)s)")
 
@@ -183,6 +184,9 @@ class D1D2D3Bootstrap():
 
         if self.command in self.commands:
             self.command = self.commands[self.command][0]
+        else:
+            unparsed_args = [self.command] + unparsed_args
+            self.command = self.commands['run'][0]
 
         self._unparsed_args = unparsed_args
 

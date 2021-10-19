@@ -1,6 +1,6 @@
 # ddd - DDD123
-# Library for procedural scene modelling.
-# Jose Juan Montes 2020
+# Library for simple scene modelling.
+# Jose Juan Montes and Contributors 2019-2021
 
 import sys
 
@@ -80,7 +80,7 @@ def stage_11_hide_boundaries(obj):
 '''
 
 @dddtask(order="20.95.+", cache=True)
-def osm_features_cache(pipeline, osm, root, logger):
+def osm_features_cache(pipeline, root, logger):
     """
     Caches current state to allow for faster reruns.
     """

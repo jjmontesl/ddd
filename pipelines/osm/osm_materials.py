@@ -2,16 +2,6 @@
 # Library for procedural scene modelling.
 # Jose Juan Montes 2020
 
-import sys
-
-import numpy as np
-from PIL import Image
-
-from ddd.ddd import ddd, DDDMaterial
-from ddd.pipeline.decorators import dddtask
-from ddd.pipeline.pipeline import DDDPipeline
-import PIL
-
 """
 Collects materials and exports them in different formats:
 
@@ -22,6 +12,17 @@ Run as:
 
     ddd osm_materials.py  --export-textures --cache-clear [-p ddd:texture:resize=256]
 """
+
+import sys
+
+from PIL import Image
+import PIL
+
+from ddd.ddd import ddd, DDDMaterial
+from ddd.pipeline.decorators import dddtask
+from ddd.pipeline.pipeline import DDDPipeline
+import numpy as np
+
 
 pipeline = DDDPipeline(['pipelines.osm_base.s10_init.py',
                         ], name="OSM Build Pipeline")

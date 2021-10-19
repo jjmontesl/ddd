@@ -609,7 +609,7 @@ def osm_structured_finished(pipeline, osm, root, logger):
 
 
 @dddtask(order="49.95.+", cache=True)
-def osm_structured_cache(pipeline, osm, root, logger):
+def osm_structured_cache(pipeline, root, logger):
     """
     Caches current state to allow for faster reruns.
     """

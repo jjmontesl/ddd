@@ -1,6 +1,6 @@
-# ddd - D1D2D3
+# ddd - DDD123
 # Library for simple scene modelling.
-# Jose Juan Montes 2020
+# Jose Juan Montes and Contributors 2019-2021
 
 import datetime
 import importlib
@@ -79,7 +79,10 @@ class DDDPipeline():
                 order = task.order
                 if order is None: order = '*.+'
                 if order.startswith('*.'):
-                    order = ".".join([str(e) for e in tasks[-1]._order_num[:-1]] + order.split(".")[1:])
+                    if len(tasks) == 0:
+                        order = "1"
+                    else:
+                        order = ".".join([str(e) for e in tasks[-1]._order_num[:-1]] + order.split(".")[1:])
 
                 order_split = order.split(".")
                 for (el_idx, el_str) in enumerate(order_split):
@@ -120,12 +123,21 @@ class DDDPipeline():
             for task in tasks:
                 logger.debug("  " + str(task))
 
+        # Run init tasks
+        for task_idx, task in enumerate(tasks):
+            if task.init:
+                # Get cache filename (None means that the task is not cached but needed to run before other cache tasks)
+                logger.info("Running initialization task: %s", task)
+                filename = task.run(self)
+
         # Find cached task
         first_task_idx = 0
         for task_idx, task in enumerate(reversed(tasks)):
             if task.cache:
+                # Get cache filename (None means that the task is not cached but needed to run before other cache tasks)
+                logger.debug("Running caching task evaluation: %s", task)
                 filename = task.run(self)
-                if os.path.exists(filename):
+                if filename and os.path.exists(filename):
                     # Delete cached file if so specified
                     if D1D2D3Bootstrap.cache_clear is not None and tuple(task._order_num) >= D1D2D3Bootstrap.cache_clear:
                         logger.info("Deleting cached pipeline state (--cache-clear=%s): %s", D1D2D3Bootstrap.cache_clear, filename)
@@ -140,6 +152,9 @@ class DDDPipeline():
 
         skip_tasks = None
         for task_idx, task in enumerate(tasks):
+
+            if task.init:
+                continue
 
             if task_idx < first_task_idx and not task.cache_override:
                 continue

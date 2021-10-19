@@ -107,7 +107,9 @@ def catenary_cable(a, b, thick=0.10, length_ratio=1.1):
     #item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CW)
     item = item.material(ddd.mats.steel)
 
-    item = ddd.uv.map_cylindrical(item)  # Incorrect, should map along catenary, during construction
+    item = item.merge_vertices()
+    item = item.smooth(angle=math.pi * 2/3)
+    item = ddd.uv.map_cubic(item, split=False)  # FIXME: Incorrect, should map along catenary, during construction
 
     return item
 

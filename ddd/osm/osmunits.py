@@ -28,6 +28,7 @@ from ddd.geo import terrain
 from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
 from ddd.pack.sketchy.buildings import window_with_border, door
+from ddd.util import common
 
 
 # Get instance of logger for this module
@@ -36,14 +37,6 @@ logger = logging.getLogger(__name__)
 
 from pint import UnitRegistry
 ureg = UnitRegistry()
-
-
-
-def parse_meters(expr):
-    quantity = ureg.parse_expression(str(expr))
-    if not isinstance(quantity, float) and not isinstance(quantity, int):
-        quantity = quantity.to(ureg.meter).magnitude
-    return float(quantity)
 
 
 def parse_material(name, color):

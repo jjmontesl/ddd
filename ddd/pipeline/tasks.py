@@ -1,6 +1,6 @@
-# ddd - D1D2D3
+# ddd - DDD123
 # Library for simple scene modelling.
-# Jose Juan Montes 2020
+# Jose Juan Montes and Contributors 2019-2021
 
 import functools
 import inspect
@@ -31,6 +31,9 @@ class DDDTask(object):
     It order starts with '*', the asterisk is replaced by the previous task number except the
     last number (eg if last task is 10.10.1, with '*.50' this task becomes '10.10.50').
 
+    Init tasks are run initially.
+
+    Caching tasks (cache=True) are then evaluated in reverse order.
     """
 
 
@@ -39,7 +42,8 @@ class DDDTask(object):
     def __init__(self, name=None, path=None, select=None, filter=None,
                  order=None, #parent=None, before=None, after=None,
                  log=None, recurse=False,
-                 condition=False, cache=False, cache_override=False):
+                 condition=False, cache=False, cache_override=False, init=False,
+                 params=None):
 
         self.name = name
 
@@ -53,6 +57,7 @@ class DDDTask(object):
         self.condition = condition
         self.cache = cache
         self.cache_override = cache_override
+        self.init = init
 
         self.log = log
 
@@ -60,6 +65,9 @@ class DDDTask(object):
         self.filter = filter
         self.recurse = recurse
         self.replace = True
+
+        # Dictionary of parameters introduced by the task
+        self.params = params
 
         try:
             self.selector = DDDSelector(select) if select else None

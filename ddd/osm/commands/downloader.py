@@ -26,34 +26,6 @@ from ddd.core.cli import D1D2D3Bootstrap
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-def download_block(bounds, filename):
-    """
-    Example URL: https://www.openstreetmap.org/api/0.6/map?bbox=12.99765%2C49.75022%2C13.00776%2C49.75531
-    """
-
-    osm_download_url = r'https://www.openstreetmap.org/api/0.6/map?bbox=%.5f,%.5f,%.5f,%.5f'
-
-    url = osm_download_url % (bounds[0], bounds[1], bounds[2], bounds[3])
-    #url = url.replace('-', r'%2D')
-    #url = url.replace('-', r'%2D')
-    #filename = "private/data/osm/" + "%s/%s-%.3f,%.3f.osm" % (name, name, bounds[0], bounds[1])
-
-    force_get_data = parse_bool(D1D2D3Bootstrap.data.get('ddd:osm:datasource:force_refresh', False))
-
-    if os.path.exists(filename) and not force_get_data:
-        logger.debug("Exists: %s (skipping)", filename)
-        return
-
-    logger.info("Downloading: %s (%s)", filename, url)
-
-    try:
-        request = urllib.request.urlopen(url)
-        with open(filename,'wb') as output:
-            output.write(request.read())
-    except HTTPError as e:
-        logger.error("Could not retrieve '%s': %s", url, e)
-        raise
-
 
 '''
 def download_area(bounds, chunk=0.01, filename=None):

@@ -1,26 +1,26 @@
 # ddd - D1D2D3
 # Library for simple scene modelling.
-# Jose Juan Montes 2020
+# Jose Juan Montes 2020-2021
 
 import argparse
+import asyncio
+from concurrent import futures
+import concurrent
 import logging
+import sys
 
 from aiohttp import web
 import socketio
+from watchdog.events import FileSystemEventHandler, FileModifiedEvent
+from watchdog.observers import Observer
 
 from ddd.core import settings
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.command import DDDCommand
+from ddd.ddd import DDDObject2, DDDObject3
 from ddd.osm import osm
-import concurrent
-from concurrent import futures
-import asyncio
 from ddd.pipeline.pipeline import DDDPipeline
-from ddd.ddd import DDDObject2
 
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, FileModifiedEvent
-import sys
 
 #from osm import OSMDDDBootstrap
 # Get instance of logger for this module
@@ -28,6 +28,11 @@ logger = logging.getLogger(__name__)
 
 
 class RollbackImporter:
+    """
+    Monkey patches "import" to keep track of imported modules, in order to
+    later remove and reload them if needed.
+    """
+
     def __init__(self):
         "Creates an instance and installs as the global importer"
         self.previousModules = sys.modules.copy()
@@ -98,6 +103,10 @@ class ServerServeCommand(DDDCommand):
         logger.info("Starting DDD server tool API (ws://).")
 
         D1D2D3Bootstrap._instance._unparsed_args = None
+
+        # Disable builtin rendering
+        logger.info("Disabling builtin rendering.")
+        D1D2D3Bootstrap.renderer = "none"
 
         self.loop = asyncio.get_event_loop()
 
@@ -188,15 +197,34 @@ class ServerServeCommand(DDDCommand):
 
         return status
 
+    def format_node(self, node):
+        """
+        Formats nodes for dddserver representation.
+
+        This includes transforming 2D to 3D nodes as needed.
+        """
+        """
+        Copies this DDDObject2 into a DDDObject3, maintaining metadata but NOT children or geometry.
+        """
+        if isinstance(node, DDDObject2):
+            result = node.copy3()
+            if node.geom:
+                result.mesh = node.triangulate().mesh
+        else:
+            result = node
+        result.children = [self.format_node(c) for c in node.children]
+        return result
+
     def result_get(self):
         root = self.pipeline.root
 
+        # Process result
         #if isinstance(root, DDDObject2):
         #    root = root.copy3(copy_children=True)
         #root = root.find("/Elements3")
-        root = root
+        root = self.format_node(root)
 
-        #scene1.save("gltf-hierarchy-ddd.glb")
+        # Export
         try:
             result_data = root.save(".glb")
         except Exception as e:
