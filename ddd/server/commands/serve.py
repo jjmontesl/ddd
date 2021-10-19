@@ -172,6 +172,7 @@ class ServerServeCommand(DDDCommand):
     def status_get(self):
 
         tasks_sorted = self.pipeline.tasks_sorted()
+
         tasks = [{
             'name': t.name,
             'order': t.order,
@@ -179,7 +180,7 @@ class ServerServeCommand(DDDCommand):
 
             'path': t.path,
             'condition': t.condition != None,
-            'selector': t.selector.select if t.selector else None,
+            'selector': t.selector.selector if t.selector else None,
             'filter': t.filter != None,
             'recurse': t.recurse,
             'replace': t.replace,
@@ -188,7 +189,11 @@ class ServerServeCommand(DDDCommand):
             'cache_override': t.cache_override,
 
             #'funcargs': t._funcargs,
-            'description': t._funcargs[0].__doc__ } for t in tasks_sorted]
+            'description': t._funcargs[0].__doc__,
+
+            'run_seconds': t._run_seconds,
+            'run_selected': t._run_selected,
+        } for t in tasks_sorted]
 
         status = {
             'script': self.script,

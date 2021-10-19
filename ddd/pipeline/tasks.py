@@ -13,6 +13,7 @@ from ddd.core.selectors.selector import DDDSelector
 from ddd.core.selectors.selector_ebnf import selector_ebnf
 from ddd.ddd import ddd
 from ddd.core.exception import DDDException
+import datetime
 
 
 # Get instance of logger for this module
@@ -45,6 +46,10 @@ class DDDTask(object):
                  condition=False, cache=False, cache_override=False, init=False,
                  params=None):
 
+        # Metrics
+        self._run_seconds = None
+        self._run_selected = None
+
         self.name = name
 
         self.order = order
@@ -65,6 +70,7 @@ class DDDTask(object):
         self.filter = filter
         self.recurse = recurse
         self.replace = True
+
 
         # Dictionary of parameters introduced by the task
         self.params = params
@@ -101,6 +107,11 @@ class DDDTask(object):
 
     def run(self, pipeline):
 
+        self._run_seconds = None
+        self._run_selected = None
+
+        start_time = datetime.datetime.now()
+
         try:
             #logger.warn("DEBUG: %s", pipeline.root.select(path="/Areas", selector='[osm:id = "way-112075680"]', recurse=True))
             #logger.warn("DEBUG: %s", pipeline.root.select(path="/Ways", selector='[osm:id = "way-112075680"]', recurse=True))
@@ -111,27 +122,33 @@ class DDDTask(object):
 
         #logger.info("Task select: filter=%s select=%s path=%s", self.filter, self.selector, self.path)
 
-        if (self.path or self.selector or self.filter): return self.run_each(pipeline)
+        if (self.path or self.selector or self.filter):
+            result =  self.run_each(pipeline)
 
-        #if self.log:
-        self.runlog()
-        #else:
-        #    logger.debug("Running task: %s", self)
+        else:
 
-        func = self._funcargs[0]
-        sig = inspect.signature(func)
-        kwargs = {}
-        for arg in sig.parameters.keys():
-            if arg == 'r': kwargs['r'] = pipeline.root
-            elif arg == 'root': kwargs['root'] = pipeline.root
-            elif arg == 'p': kwargs['r'] = pipeline
-            elif arg == 'pipeline': kwargs['pipeline'] = pipeline
-            elif arg == 'o': kwargs['o'] = None
-            elif arg == 'obj': kwargs['obj'] = None
-            elif arg == 'logger': kwargs['logger'] = logging.getLogger(func.__module__)
-            elif arg in pipeline.data: kwargs[arg] = pipeline.data[arg]
+            #if self.log:
+            self.runlog()
+            #else:
+            #    logger.debug("Running task: %s", self)
 
-        result = func(**kwargs)
+            func = self._funcargs[0]
+            sig = inspect.signature(func)
+            kwargs = {}
+            for arg in sig.parameters.keys():
+                if arg == 'r': kwargs['r'] = pipeline.root
+                elif arg == 'root': kwargs['root'] = pipeline.root
+                elif arg == 'p': kwargs['r'] = pipeline
+                elif arg == 'pipeline': kwargs['pipeline'] = pipeline
+                elif arg == 'o': kwargs['o'] = None
+                elif arg == 'obj': kwargs['obj'] = None
+                elif arg == 'logger': kwargs['logger'] = logging.getLogger(func.__module__)
+                elif arg in pipeline.data: kwargs[arg] = pipeline.data[arg]
+
+            result = func(**kwargs)
+
+        end_time = datetime.datetime.now()
+        self._run_seconds = (end_time - start_time).total_seconds()
 
         return result
 
@@ -160,7 +177,9 @@ class DDDTask(object):
         #else:
         #    logger.debug("Running task %ws for %d objects.", self, objs.count())
 
+        self._run_selected = 0
         def task_select_apply(o):
+            self._run_selected += 1
             try:
                 if 'o' in kwargs: kwargs['o'] = o
                 if 'obj' in kwargs: kwargs['obj'] = o
