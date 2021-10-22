@@ -8,13 +8,20 @@ from ddd.pack.sketchy.urban import catenary_cable, post
 from ddd.pipeline.decorators import dddtask
 
 
-@dddtask(order="10")
+@dddtask(order="10",
+         params={
+             'ddd:example:catenary:length_ratio_factor': 0.025
+        })
 def pipeline_start(pipeline, root):
     """
     Draws several catenary cables.
     """
 
     items = ddd.group3(name="Catenary test")
+
+
+    length_ratio_factor = pipeline.data.get('ddd:example:catenary:length_ratio_factor', 0.025)
+    pipeline.data['ddd:example:catenary:length_ratio_factor'] = length_ratio_factor
 
     post_a = post(6)
     items.append(post_a)
@@ -27,7 +34,7 @@ def pipeline_start(pipeline, root):
 
         pd = d / 12 * (i + 1)
         pb = [math.cos(a) * pd, math.sin(a) * pd, h]
-        obj = catenary_cable(pa, pb, length_ratio=1 + (0.025 / (d/10)))
+        obj = catenary_cable(pa, pb, length_ratio=1 + (length_ratio_factor / (d/10)))
         #obj.show()
         items.append(obj)
 

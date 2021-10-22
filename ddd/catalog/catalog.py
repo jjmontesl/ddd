@@ -7,6 +7,7 @@ from ddd.ddd import ddd
 import pickle
 import os
 from ddd.core.cli import D1D2D3Bootstrap
+from ddd.core import settings
 
 
 # Get instance of logger for this module
@@ -30,7 +31,7 @@ class PrefabCatalog():
 
     def __init__(self):
         self._cache = {}
-        self.path = "./_catalog"
+        self.path = settings.DDD_WORKDIR + "/_catalog"
         self.autosave = True
         self.autoload = True
 

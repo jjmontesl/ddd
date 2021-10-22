@@ -72,6 +72,8 @@ def iconitem(path, size=(1, 1), depth=0.2, bisel=None):
 
     result = result.rotate(ddd.ROT_FLOOR_TO_FRONT)
     result = result.combine()
+    result = ddd.uv.map_cubic(result)
+
     result.name = "Icon Item"
 
     return result

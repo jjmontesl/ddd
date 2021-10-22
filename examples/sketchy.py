@@ -206,8 +206,8 @@ def pipeline_start(pipeline, root):
     #items.save("/tmp/test.glb")
 
     #items = ddd.meshops.batch_by_material(items)
-    items.dump()
-    #items.show()
+    #items.dump()
+    items.show()
     #items.save("/tmp/test.json")
 
     pipeline.root = items

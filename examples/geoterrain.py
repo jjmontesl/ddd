@@ -17,7 +17,10 @@ def pipeline_start(pipeline, root):
     Generate a terrain mesh from a DEM.
     """
 
-    coords_latlon = [42.232606, -8.726203]
+    # Latitude and Longitude (EPSG:4326 - WGS84)
+    coords_latlon = [42.232606, -8.726203]  # Vigo
+
+    # Create a UTM projection centered on the target coordinates
     ddd_proj = pyproj.Proj(proj="tmerc",
                            lon_0=coords_latlon[1], lat_0=coords_latlon[0],
                            k=1,

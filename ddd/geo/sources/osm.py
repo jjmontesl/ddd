@@ -87,7 +87,7 @@ class OnlineOSMDataSource(OSMDataSource):
             logger.info("Retrieving data to %s (%s)", selectedosmfile, bounds)
             self.download_osm(bounds, selectedosmfile, force_get_data)
 
-        self.convert_to_geojson()
+        self.convert_to_geojson(selectedosmfile, datapath, dataname)
 
 
 class PBFOSMDataSource(OSMDataSource):
@@ -114,5 +114,5 @@ class PBFOSMDataSource(OSMDataSource):
             subprocess.check_output(['osmconvert', mainpbffile, "-b=%.3f,%.3f,%.3f,%.3f" % (bounds[0], bounds[1], bounds[2], bounds[3]),
                                      '-o=%s' % selectedpbffile])
 
-        self.convert_to_geojson()
+        self.convert_to_geojson(selectedpbffile, datapath, dataname)
 

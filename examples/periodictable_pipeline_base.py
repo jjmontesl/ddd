@@ -43,13 +43,6 @@ def start_run(root):
             feature = ddd.point(name="Element: %s" % row['Element'])
             for k in row.keys():
                 feature.extra['element:' + k.lower()] = row[k]
-            '''
-            feature.extra['element:number'] =
-            feature.extra['csv:number'] =
-            feature.extra['csv:year'] =
-            feature.extra['csv:name'] =
-            feature.extra['csv:symbol'] =
-            '''
             features.append(feature)
 
     features.name="Elements2"

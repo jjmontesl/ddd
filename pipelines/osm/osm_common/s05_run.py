@@ -3,6 +3,7 @@
 # Jose Juan Montes 2020
 import datetime
 from ddd.osm import osm
+from ddd.core import settings
 
 '''
 from ddd.core import settings
@@ -133,7 +134,8 @@ def osm_bootstrap_data_fetch(root, pipeline, logger):
     # Check if geojson file is available
     #sides = 15 * 0.01  # Approximate degrees to km
 
-    path = pipeline.data.get('ddd:osm:datasource:path', "../data/osm/")
+    path = pipeline.data.get('ddd:osm:datasource:path', settings.DDD_WORKDIR + "/../data/osm/")
+    logger.info("OSM source data path: %s", path)
 
     sides = 5 * 0.001
     roundto = sides / 3
@@ -180,7 +182,7 @@ def osm_bootstrap_projection(root, pipeline, logger):
 @dddtask()
 def osm_bootstrap_areas(root, pipeline, logger):
 
-    chunk_size = 250  # 500: 4/km2,  250: 16/km2,  200: 25/km2,  125: 64/km2
+    chunk_size = None  # 250  # 500: 4/km2,  250: 16/km2,  200: 25/km2,  125: 64/km2
     chunk_size_extra_filter = 250  # salamanca: 250  # vigo: 500 # rivers...
 
     pipeline.data['ddd:osm:area:chunk_size'] = chunk_size
@@ -190,7 +192,6 @@ def osm_bootstrap_areas(root, pipeline, logger):
     ddd_proj = pipeline.data['ddd:osm:proj:ddd']
     area_shape = pipeline.data['ddd:osm:area:shape']
 
-    area_ddd = None
     if area_shape is not None:
         trans_func = partial(pyproj.transform, osm_proj, ddd_proj)
         area_ddd = ops.transform(trans_func, area_shape)
@@ -220,7 +221,7 @@ def osm_bootstrap_bbox_crop_filter(root, pipeline, logger):
     chunk_size = pipeline.data.get('ddd:osm:area:chunk_size', None)
     chunk_size_extra_filter = pipeline.data.get('ddd:osm:area:chunk_size_extra_filter', None)
 
-    path = pipeline.data.get('ddd:osm:output:path', "../output")
+    path = pipeline.data.get('ddd:osm:output:dir', settings.DDD_WORKDIR)
 
     '''
     if self.chunk_size:
@@ -271,8 +272,10 @@ def osm_bootstrap_bbox_crop_filter(root, pipeline, logger):
 
     pipeline.data['ddd:osm:area:crop'] = area_crop
     pipeline.data['ddd:osm:area:filter'] = area_filter
-    pipeline.data['ddd:osm:output:shortname'] = shortname
-    pipeline.data['ddd:osm:output:filename'] = filename
+    pipeline.data['ddd:osm:output:shortname'] = shortname  # Canonical filename
+    pipeline.data['ddd:osm:output:filename'] = filename  # Full path and canonical name and extension for default .glb file
+    pipeline.data['ddd:osm:output:filenamebase'] = filenamebase  # Full path and canonical name with no extension or variants
+    pipeline.data['filenamebase'] = filenamebase  # Legacy compatibility (instead of ddd:osm:output:filenamebase)
 
 
 @dddtask()
@@ -331,7 +334,7 @@ def osm_bootstrap_generate(root, pipeline, logger):
 
     shortname = pipeline.data['ddd:osm:output:shortname']
     filename = pipeline.data['ddd:osm:output:filename']
-    filenamebase = pipeline.data['filenamebase']
+    filenamebase = pipeline.data['ddd:osm:output:filenamebase']
     area_ddd = pipeline.data.get('ddd:osm:area:ddd', None)
     osm_proj = pipeline.data['ddd:osm:proj:osm']
     ddd_proj = pipeline.data['ddd:osm:proj:ddd']
@@ -343,8 +346,6 @@ def osm_bootstrap_generate(root, pipeline, logger):
 
     logger.info("Generating: %s", filename)
     pipeline.name = "OSM Build Pipeline"
-
-    pipeline.data['filenamebase'] = filenamebase
 
     pipeline.data['ddd:pipeline:start_date'] = datetime.datetime.now()
 

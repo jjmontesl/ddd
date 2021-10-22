@@ -430,10 +430,7 @@ class DDDMeshOps():
             if len(objs.children) > 0:
                 batched = objs.combine(indexes=True)
                 batched.name = "Batched Objs: %s" % key
-                logger.info(batched)
-                logger.info(root)
                 root.append(batched)
-                logger.info(root)
                 added_objects.append(batched)
 
             logger.debug("Batched objects result for key %s: %s", key, batched)

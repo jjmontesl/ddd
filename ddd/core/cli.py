@@ -141,7 +141,7 @@ class D1D2D3Bootstrap():
         self.command = args.command
 
         self.configs = args.config if args.config else []
-        self.configs = ['~/.ddd.conf', './ddd.conf'] + self.configs
+        #self.configs = ['~/.ddd.conf', './ddd.conf'] + self.configs
 
         self.visualize_errors = args.visualize_errors
         self.overwrite = args.overwrite
@@ -191,17 +191,23 @@ class D1D2D3Bootstrap():
         self._unparsed_args = unparsed_args
 
     def runconfig(self):
-        data = {}
         for configname in self.configs:
             path = configname
             path = os.path.expanduser(path)
             path = os.path.abspath(path)
             if os.path.exists(path):
                 logger.info("Running config file: %s", configname)
-                source = None
-                with open(path) as f:
-                    source = f.read()
-                exec(source, globals(), {'data': data})
+                #source = None
+                #with open(path) as f:
+                #    source = f.read()
+                #exec(source, globals(), {'data': data})
+                settings.DDD_INCLUDE(path)  # Uses DDD_INCLUDE from settings
+                settings.DDD_NORMALIZE_PATHS()
+            else:
+                logger.warn("Config file not found: %s", configname)
+
+        # Override default configs and loaded configs with command line parameters (originally in D1D2D3Bootstrap.data)
+        data = settings.data
         data.update(D1D2D3Bootstrap.data)
         D1D2D3Bootstrap.data = data
 
@@ -229,20 +235,31 @@ class D1D2D3Bootstrap():
                 command = command[:-3]
 
             # Try to import as module
-            result = None
+            modulename = ".".join(command.split(".")[:-1])
+            classname = command.split(".")[-1]
+            if modulename:
+                modul = importlib.import_module(modulename)
+                if hasattr(modul, classname):
+                    clazz = getattr(modul, classname)
+                    cliobj = clazz()
+                    cliobj.parse_args(self._unparsed_args)
+                    cliobj.run()
 
+            '''
+            result = None
             try:
                 script_abspath = os.path.abspath(command)
+                logger.debug("Running command: %s", script_abspath)
                 script_dirpath = os.path.dirname(script_abspath)
                 scriptname = os.path.basename(command)
-                logger.info("Appending to sys.path: %s" % script_dirpath)
-                sys.path.append(script_dirpath)
 
                 importlib.import_module(scriptname)  #, globals={'ddd_bootstrap': self})
                 result = True
             except ModuleNotFoundError as e:
                 result = False
+            '''
 
+            '''
             if not result:
                 modulename = ".".join(command.split(".")[:-1])
                 classname = command.split(".")[-1]
@@ -263,6 +280,7 @@ class D1D2D3Bootstrap():
             # Try to import as class
 
             #__import__(command[:-3], globals={'ddd_bootstrap': self})
+            '''
 
         except DDDException as e:
             logger.error("Error: %s (obj: %s)" % (e, e.ddd_obj))

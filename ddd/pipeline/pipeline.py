@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class DDDPipeline():
 
-    def __init__(self, configfiles=None, name=None):
+    def __init__(self, config=None, name=None):
 
         self.name = name
         self.tasks = None
@@ -30,33 +30,35 @@ class DDDPipeline():
 
         self.data = dict(D1D2D3Bootstrap.data)
 
-        if configfiles:
-            self.load(configfiles)
+        self.config = config
+        if config:
+            self.load(config)
 
     def __repr__(self):
         return "Pipeline(name=%r)" % (self.name)
 
-    def load(self, configfiles):
+    def load(self, configfile):
 
         DDDTask._tasks = []
 
-        if not isinstance(configfiles, str):
-            for filename in configfiles:
-                self.load(filename)
-            return
-
         # Load file
-        logger.debug("Loading pipeline config: %s", configfiles)
+        logger.debug("Loading pipeline config: %s", configfile)
 
-        if configfiles.endswith(".py"): configfiles = configfiles[:-3]
+        script_abspath = os.path.abspath(configfile)
+        script_dirpath = os.path.dirname(configfile)
+        script_name = os.path.basename(configfile)
+        module_name = script_name[:-3]  # remove .py
+
         try:
-            script_abspath = os.path.abspath(configfiles)
-            script_dirpath = os.path.dirname(configfiles)
+            # Add to path
             #sys.path.append(script_dirpath)
-            sys.path.append("..")
-            importlib.import_module(configfiles)  #, globals={'ddd_bootstrap': self})
+            if script_dirpath not in sys.path:
+                logger.info("Appending to path: %s", script_dirpath)
+                sys.path.append(script_dirpath)
+
+            importlib.import_module(module_name)  #, globals={'ddd_bootstrap': self})
         except ModuleNotFoundError as e:
-            raise DDDException("Could not load pipeline definition file: %s" % configfiles)
+            raise DDDException("Could not load pipeline definition file: %s" % configfile)
 
         self.tasks = DDDTask._tasks
 
@@ -207,7 +209,6 @@ class DDDPipeline():
         logger.info("Pipeline processing time: %d:%04.1f m" % (time_run_m, time_run_s))
 
         return self.root
-
 
 '''
 class DDDDoItTaskLoader(doit.cmd_base.TaskLoader2):

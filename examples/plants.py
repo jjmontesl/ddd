@@ -39,7 +39,7 @@ def pipeline_start(pipeline, root):
         items.append(item)
 
     items = ddd.align.grid(items, width=4)
-    items.append(ddd.helper.all())
+    items.append( ddd.helper.all(size=40.0, center=[5, 5, 0]).twosided() )
 
     #items.show()
     #items.save("/tmp/test.glb")

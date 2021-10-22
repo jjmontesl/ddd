@@ -48,7 +48,7 @@ class DDDHelper():
 
         if center is None:
             center = [0, 0, 0]
-        objs = objs.translate([-center[0], -center[1], -center[2]])
+        objs = objs.translate([-center[0], -center[1], -center[2] if len(center) > 2 else 0])
 
         if around_center:
             objs = objs.translate([-size / 2, -size / 2, 0])

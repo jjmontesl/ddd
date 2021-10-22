@@ -317,15 +317,16 @@ class Areas3DOSMBuilder():
             #logger.debug("Subdividing: %s" % area_3d)
             #area_3d = area_3d.subdivide_to_size(float(ddd.data.get('ddd:area:subdivide')))
             area_3d = ddd.meshops.subdivide_to_grid(area_3d, float(ddd.data.get('ddd:area:subdivide')))
-            if area_3d.mesh:
-                area_3d.mesh.merge_vertices()  # Smoothes surface # TODO: Use a merge/smooth in ddd
+            area_3d.merge_vertices()  # Smoothes surface by unifying normals (modifies in place)
 
         area_3d = ddd.uv.map_cubic(area_3d)
 
         # Apply elevation
         area_3d = self.generate_area_3d_apply_elevation(area_2d, area_3d)
 
-        area_3d.extra = dict(area_2d.extra)
+        #area_3d.extra = dict(area_2d.extra)
+        area_3d.copy_from(area_2d)
+
         area_3d.children.extend( [self.generate_area_3d(c) for c in area_2d.children] )
 
         return area_3d

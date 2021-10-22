@@ -471,6 +471,8 @@ class DDDMaterial():
             - texture_color: optional color to be used if a textured material is being generated (--export-texture), instead of the default color.
             - alpha_mode: one of OPAQUE, BLEND and MASK (used with alpha_cutoff)
 
+        TODO: texture_color was a hack and it's being used inconsistently, along with vertex colors usage which need to be reviewed and its impact on BabylonJS checked
+
         Color is hex color.
         """
 
@@ -1744,7 +1746,7 @@ class DDDObject2(DDDObject):
         return result
 
 
-    def triangulate(self, twosided=False):
+    def triangulate(self, twosided=False, ignore_children=False):
         """
         Returns a triangulated mesh (3D) from this 2D shape.
         """
@@ -1800,7 +1802,8 @@ class DDDObject2(DDDObject):
         else:
             result = DDDObject3()
 
-        result.children.extend([c.triangulate(twosided) for c in self.children])
+        if not ignore_children:
+            result.children.extend([c.triangulate(twosided) for c in self.children])
 
         # Copy extra information from original object
         #result.name = self.name if result.name is None else result.name
@@ -2965,15 +2968,16 @@ class DDDObject3(DDDObject):
         for c in self.children:
             c.merge_vertices(keep_normals=keep_normals)
 
-        self.mesh.merge_vertices(use_norm=keep_normals)  # use_tex=True, use_norm=True)
+        if self.mesh:
+            self.mesh.merge_vertices(use_norm=keep_normals)  # use_tex=True, use_norm=True)
 
         return self
 
-    def smooth(self, angle=math.pi / 3):  #, facet_minarea=None):
+    def smooth(self, angle=math.pi * 0.475):  #, facet_minarea=None):
         """
         Smoothes normals. Returns a copy of the object.
 
-        Angle must be below pi/2, else it fails (trimesh will generate a non-smoothed object).
+        Eg. Using PI/2 (90 degrees) makes square corners, using < PI/2 smooths square corners.
 
         Note that this requires vertices that need smoothed to be merged already, but this operation may split
         vertices if needed (and vertex count will change).
@@ -3082,6 +3086,7 @@ class DDDObject3(DDDObject):
 
         if self.mat:
 
+            # Apply material uv:scale from material metadata if available
             uvscale = self.mat.extra.get('uv:scale', None)
             if uvscale:
                 uvs = [[v[0] * uvscale, v[1] * uvscale] for v in uvs]
@@ -3090,16 +3095,19 @@ class DDDObject3(DDDObject):
             mat = self.mat._trimesh_material()
             self.mesh.visual = TextureVisuals(uv=uvs, material=mat)  # Material + UVs
 
-            # Vertex Colors
-            #if self.mat.extra.get('ddd:vertex_colors', False):
+            # Vertex Colors (note that vertex colors take space)
+            # Vertex colors tint meshes in BabylonJS (multiply)
             if self.mat.color:
-                cvs = ColorVisuals(mesh=self.mesh, face_colors=[self.mat.color_rgba for f in self.mesh.faces])  # , material=material
-                # Hack vertex_colors into TextureVisuals
-                # WARN: Trimehs GLTF export modified to suppot this:
-                #  gltf.py:542:      if mesh.visual.kind in ['vertex', 'face'] or hasattr(mesh.visual, 'vertex_colors'):
-                #  gltf.py:561       remove elif, use if
-                # TODO: UPDATE: new approach see https://github.com/mikedh/trimesh/pull/925 TextureVisuals.vertex_attributes['color']
-                self.mesh.visual.vertex_colors = cvs.vertex_colors
+                # Note that color and texture_color seem to be used inconsistently when creating the PBRMaterial: document, move to metadata...?
+                #cvs = ColorVisuals(mesh=self.mesh, face_colors=[self.mat.color_rgba for f in self.mesh.faces])  # , material=material
+
+                #Force vertex colors for test purposes
+                #test_color = (1.0, 0.2, 0.2, 1.0)  #trimesh.visual.color.hex_to_rgba("#ff0000")
+                #cvs = ColorVisuals(mesh=self.mesh, face_colors=[test_color for f in self.mesh.faces])  # , material=material
+
+                # Assign vertex colors (this takes more space)
+                #self.mesh.visual.vertex_attributes['color'] = cvs.vertex_colors
+                pass
 
         else:
             #logger.debug("No material set for mesh: %s", self)

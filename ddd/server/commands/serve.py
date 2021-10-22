@@ -20,6 +20,8 @@ from ddd.core.command import DDDCommand
 from ddd.ddd import DDDObject2, DDDObject3
 from ddd.osm import osm
 from ddd.pipeline.pipeline import DDDPipeline
+import json
+import os
 
 
 #from osm import OSMDDDBootstrap
@@ -72,6 +74,8 @@ class FileChangedEventHandler(FileSystemEventHandler):
         logger.info("File monitoring event: %s", ev)
 
         if not isinstance(ev, FileModifiedEvent):
+            return
+        if not ev.src_path.endswith(".py"):
             return
 
         logger.info("Reloading pipeline.")
@@ -137,8 +141,7 @@ class ServerServeCommand(DDDCommand):
         async def status_get(sid, data):
             logger.info("Websocket status_get: %s %s", sid, data)
             status = self.status_get()
-            #return status
-            logger.info("Sending status: %s", status)
+            #logger.debug("Sending status: %s", status)
             await self.sio.emit('status', status, room=sid)
 
         @self.sio.event
@@ -191,12 +194,18 @@ class ServerServeCommand(DDDCommand):
             #'funcargs': t._funcargs,
             'description': t._funcargs[0].__doc__,
 
+            'params': t.params,
+
             'run_seconds': t._run_seconds,
             'run_selected': t._run_selected,
         } for t in tasks_sorted]
 
+        # Serialize and deserialize to ensure data is JSON serializable (converts objects to strings)
+        data = json.loads(json.dumps(self.pipeline.data, default=str))
+
         status = {
             'script': self.script,
+            'data': data,
             'tasks': tasks
         }
 
@@ -208,16 +217,30 @@ class ServerServeCommand(DDDCommand):
 
         This includes transforming 2D to 3D nodes as needed.
         """
-        """
-        Copies this DDDObject2 into a DDDObject3, maintaining metadata but NOT children or geometry.
-        """
         if isinstance(node, DDDObject2):
             result = node.copy3()
             if node.geom:
-                result.mesh = node.triangulate().mesh
+                try:
+                    triangulated = node.triangulate(ignore_children=True)
+                    result.mesh = triangulated.mesh
+                except Exception as e:
+                    logger.warn("Could not triangulate 2D object for 3D representation export (%s): %s", node, e)
         else:
-            result = node
-        result.children = [self.format_node(c) for c in node.children]
+            result = node.copy()
+
+        # Temporary hack to separate flat elements
+        increment = 0.025
+        accum = 0.0
+        newchildren = []
+        for c in node.children:
+            nc = self.format_node(c)
+            if isinstance(c, DDDObject2):
+                accum += increment
+                nc = nc.translate([0, 0, accum])
+            newchildren.append(nc)
+
+        result.children = newchildren
+
         return result
 
     def result_get(self):
@@ -260,7 +283,7 @@ class ServerServeCommand(DDDCommand):
         except Exception as e:
             pass
 
-        self.pipeline = DDDPipeline([self.script], name="DDD Server Build Pipeline")
+        self.pipeline = DDDPipeline(self.script, name="DDD Server Build Pipeline")
 
     async def pipeline_run(self):
 
@@ -285,7 +308,23 @@ class ServerServeCommand(DDDCommand):
 
         logger.info("Starting file monitoring.")
         observer = Observer()
-        observer.schedule(event_handler, path, recursive=True)
+
+        # Main file
+        #observer.schedule(event_handler, path, recursive=False)
+
+        # Main file dir recursively
+        observer.schedule(event_handler, os.path.dirname(os.path.abspath(path)), recursive=True)
+
+        # Imported files
+        '''
+        for modname in self.rollbackImporter.newModules.keys():
+            logger.info("Monitoring: %s", modname)
+            try:
+                observer.schedule(event_handler, sys.modules[modname].__file__, recursive=False)
+            except Exception as e:
+                logger.info(e)
+        '''
+
         observer.start()
 
         #try:

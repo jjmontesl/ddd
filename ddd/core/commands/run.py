@@ -52,7 +52,7 @@ class RunCommand(DDDCommand):
 
         logger.info("Running DDD123 script.")
 
-        pipeline = DDDPipeline([self.script], name="DDD Server Build Pipeline")
-        #pipeline.data['filenamebase'] = filenamebase
+        pipeline = DDDPipeline(self.script, name="DDD Server Build Pipeline")
 
+        # Run pipeline
         pipeline.run()

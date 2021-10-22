@@ -23,6 +23,7 @@ from shapely.geometry.polygon import LinearRing
 from ddd.ddd import ddd
 import logging
 from ddd.core.exception import DDDException
+import math
 
 
 # Get instance of logger for this module
@@ -30,6 +31,25 @@ logger = logging.getLogger(__name__)
 
 
 class DDDUVMapping():
+
+    def _setuv(self, face, idx, uv):
+        """
+        Helper function to set a UV on a mesh vertex
+        """
+        uv = (uv[0] * scale[0] + offset[0], uv[1] * scale[1] + offset[1])
+        if split and result.extra['uv'][idx] != None and (result.extra['uv'][idx] != uv):
+            # FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
+            # before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
+            newidx = len(result.mesh.vertices)
+            result.mesh.vertices = np.array(list(result.mesh.vertices) + [result.mesh.vertices[idx]])
+            if face[0] == idx: face[0] = newidx
+            if face[1] == idx: face[1] = newidx
+            if face[2] == idx: face[2] = newidx
+            result.extra['uv'].append(uv)
+            #raise ValueError("Cannot map same vertex twice in cubic mapping.")
+        else:
+            result.extra['uv'][idx] = uv
+
 
     def map_random(self, obj_3d):
         """
@@ -108,13 +128,122 @@ class DDDUVMapping():
         result.children = [self.map_cubic(c, offset, scale) for c in result.children]
         return result
 
-    def map_spherical(self, obj, split=True):
-        return self.map_cubic(obj, split=split)
+    def map_spherical(self, obj, offset=None, scale=None, split=True):
+        """
+        Uses a vertical cylinder centered on (0, 0).
 
-    def map_cylindrical(self, obj, split=True):
+        TODO: "split" does not apply here, check and remove
+        TODO: use numpy for all vertices at once, see https://stackoverflow.com/questions/4116658/faster-numpy-cartesian-to-spherical-coordinate-conversion
         """
+        if scale is None: scale = (1, 1)
+        if offset is None: offset = (0, 0)
+
+        result = obj.copy()
+        if result.mesh:
+
+            result.extra['uv'] = [None for idx, v in enumerate(result.mesh.vertices)]
+
+            #logger.debug("UV mapping object: %s", obj)
+            for face in result.mesh.faces:
+                v1 = result.mesh.vertices[face[1]] - result.mesh.vertices[face[0]]
+                v2 = result.mesh.vertices[face[2]] - result.mesh.vertices[face[0]]
+                v = np.cross(v1, v2)
+
+                vnorm = np.linalg.norm(v)
+                if vnorm == 0:
+                    logger.error("Invalid triangle (linear dependent, no normal): %s", obj)
+                else:
+                    v = v / vnorm
+
+                def setuv(face, idx, uv):
+                    uv = (uv[0] * scale[0] + offset[0], uv[1] * scale[1] + offset[1])
+                    if split and result.extra['uv'][idx] != None and (result.extra['uv'][idx] != uv):
+                        # FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
+                        # before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
+                        newidx = len(result.mesh.vertices)
+                        result.mesh.vertices = np.array(list(result.mesh.vertices) + [result.mesh.vertices[idx]])
+                        if face[0] == idx: face[0] = newidx
+                        if face[1] == idx: face[1] = newidx
+                        if face[2] == idx: face[2] = newidx
+                        result.extra['uv'].append(uv)
+                        #raise ValueError("Cannot map same vertex twice in cubic mapping.")
+                    else:
+                        result.extra['uv'][idx] = uv
+
+                # From: https://stackoverflow.com/questions/4116658/faster-numpy-cartesian-to-spherical-coordinate-conversion
+                def cart2sph(x,y,z):
+                    XsqPlusYsq = x**2 + y**2
+                    r = math.sqrt(XsqPlusYsq + z**2)               # r
+                    elev = math.atan2(z,math.sqrt(XsqPlusYsq))     # theta
+                    az = math.atan2(y,x)                           # phi
+                    return r, elev, az
+
+                # Map sphere
+                p0, p1, p2 = result.mesh.vertices[face[0]], result.mesh.vertices[face[1]], result.mesh.vertices[face[2]]
+                r0, theta0, phi0 = cart2sph(*p0)
+                r1, theta1, phi1 = cart2sph(*p1)
+                r2, theta2, phi2 = cart2sph(*p2)
+                setuv(face, face[0], (0.5 + (phi0 / (math.pi * 2)), 0.5 + theta0 / (math.pi * 1)))
+                setuv(face, face[1], (0.5 + (phi1 / (math.pi * 2)), 0.5 + theta1 / (math.pi * 1)))
+                setuv(face, face[2], (0.5 + (phi2 / (math.pi * 2)), 0.5 + theta2 / (math.pi * 1)))
+
+        result.children = [self.map_cubic(c, offset, scale) for c in result.children]
+        return result
+
+    def map_cylindrical(self, obj, scale=None, offset=None, split=True):
         """
-        return self.map_cubic(obj, split=split)
+        Uses a vertical cylinder centered on (0, 0).
+        """
+        if scale is None: scale = (1, 1)
+        if offset is None: offset = (0, 0)
+
+        result = obj.copy()
+        if result.mesh:
+
+            result.extra['uv'] = [None for idx, v in enumerate(result.mesh.vertices)]
+            #logger.debug("UV mapping object: %s", obj)
+            for face in result.mesh.faces:
+                v1 = result.mesh.vertices[face[1]] - result.mesh.vertices[face[0]]
+                v2 = result.mesh.vertices[face[2]] - result.mesh.vertices[face[0]]
+                v = np.cross(v1, v2)
+
+                vnorm = np.linalg.norm(v)
+                if vnorm == 0:
+                    logger.error("Invalid triangle (linear dependent, no normal): %s", obj)
+                else:
+                    v = v / vnorm
+
+                def setuv(face, idx, uv):
+                    uv = (uv[0] * scale[0] + offset[0], uv[1] * scale[1] + offset[1])
+                    if split and result.extra['uv'][idx] != None and (result.extra['uv'][idx] != uv):
+                        # FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
+                        # before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
+                        newidx = len(result.mesh.vertices)
+                        result.mesh.vertices = np.array(list(result.mesh.vertices) + [result.mesh.vertices[idx]])
+                        if face[0] == idx: face[0] = newidx
+                        if face[1] == idx: face[1] = newidx
+                        if face[2] == idx: face[2] = newidx
+                        result.extra['uv'].append(uv)
+                        #raise ValueError("Cannot map same vertex twice in cubic mapping.")
+                    else:
+                        result.extra['uv'][idx] = uv
+
+                if abs(v[2]) > abs(v[0]) and abs(v[2]) > abs(v[1]):
+                    # Normal along Z, project onto X (caps)
+                    p0, p1, p2 = result.mesh.vertices[face[0]], result.mesh.vertices[face[1]], result.mesh.vertices[face[2]]
+                    setuv(face, face[0], (p0[0], p0[1]))
+                    setuv(face, face[1], (p1[0], p1[1]))
+                    setuv(face, face[2], (p2[0], p2[1]))
+                else:
+                    # Map cylinder
+                    p0, p1, p2 = result.mesh.vertices[face[0]], result.mesh.vertices[face[1]], result.mesh.vertices[face[2]]
+                    angle0, angle1, angle2 = math.atan2(p0[1], p0[0]), math.atan2(p1[1], p1[0]), math.atan2(p2[1], p2[0])
+                    setuv(face, face[0], (angle0 / (math.pi * 2), p0[2]))
+                    setuv(face, face[1], (angle1 / (math.pi * 2), p1[2]))
+                    setuv(face, face[2], (angle2 / (math.pi * 2), p2[2]))
+
+        result.children = [self.map_cubic(c, offset, scale) for c in result.children]
+        return result
 
     def map_xy(self, obj):
         raise NotImplementedError()

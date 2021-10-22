@@ -2,24 +2,11 @@
 # Library for simple scene modelling.
 # Jose Juan Montes and Contributors 2019-2021
 
-import logging
 import os
 import sys
 
-
-# Get instance of logger for this module
-logger = logging.getLogger(__name__)
-
-
-DDD_EXECUTABLE = sys.executable
-
-DDD_BASEDIR = './'  # Stress we are using the working directory and avoids /
-
-
-DDD_DATADIR = DDD_BASEDIR + 'data/'
-if 'DDD_DATADIR' in os.environ:
-    DDD_DATADIR = os.environ['DDD_DATADIR']
-DDD_DATADIR = os.path.abspath(DDD_DATADIR) + "/"
+# Data properties (these properties are shared with ddd / pipeline)
+data = {}
 
 # Allow config files to include other files
 def DDD_INCLUDE(config_file):
@@ -28,9 +15,34 @@ def DDD_INCLUDE(config_file):
         sys.stderr.write("Loading config from: %s\n" % config_file)
         exec(open(config_file).read(), locals(), globals())
 
+def DDD_NORMALIZE_PATHS():
+    global DDD_DATADIR
+    DDD_DATADIR = os.path.abspath(os.path.expanduser(DDD_DATADIR)) + "/"
+    global DDD_WORKDIR
+    DDD_WORKDIR = os.path.abspath(os.path.expanduser(DDD_WORKDIR)) + "/"
+
+# Global settings
+DDD_EXECUTABLE = sys.executable
+
+DDD_DATADIR = './data/'
+if 'DDD_DATADIR' in os.environ:
+    DDD_DATADIR = os.environ['DDD_DATADIR']
+
+DDD_WORKDIR = './output/'  # Stress we are using the working directory and avoids /
+if 'DDD_WORKDIR' in os.environ:
+    DDD_WORKDIR = os.environ['DDD_WORKDIR']
+
+DDD_NORMALIZE_PATHS()
+
+# Default settings
 
 
+# Load user settings
 DDD_INCLUDE('~/.ddd.conf')
 
+# Load extra settings in the data directory (recommended for data-related settings)
 DDD_INCLUDE(DDD_DATADIR + '/ddd.conf')
+
+DDD_NORMALIZE_PATHS()
+
 

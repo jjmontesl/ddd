@@ -96,8 +96,9 @@ def recursivetree_new(height, spawn=1, levels=1, #fork_height_ratio=2/3,
 def treetop(r=1.75, flatness=0.3, subdivisions=1):
     treetop = ddd.sphere(center=ddd.point([random.uniform(-r * 0.2, r * 0.2), random.uniform(-r * 0.2, r * 0.2), 0]), r=r, subdivisions=subdivisions)
     treetop = treetop.scale([1.0, 1.0, (1.0 - flatness) * random.uniform(0.85, 1.15)])
+    treetop = treetop.smooth(math.pi * 2 / 3)
+    treetop = ddd.uv.map_spherical(treetop, scale=[3, 2])
     treetop = filters.noise_random(treetop, scale=0.25)
-    treetop = ddd.uv.map_spherical(treetop)
     treetop.extra['ddd:collider'] = False
     treetop.name = "Treetop"
     return treetop
@@ -108,8 +109,8 @@ def tree_default(height=3.5, r=0.40, fork_iters=2, fork_height_ratio=0.35):
 
     def trunk_callback(height):
         section = ddd.regularpolygon(sides=5, r=r).extrude(height)
-        section = section.smooth(math.pi)
-        section = ddd.uv.map_cylindrical(section, split=False)
+        section = section.smooth(math.pi * 0.45)
+        section = ddd.uv.map_cylindrical(section, scale=(2, 2), split=False)
         section = section.material(ddd.mats.bark)
         return section
     def leaves_callback(height):
@@ -168,8 +169,8 @@ def palm_leaf(length=3, fallfactor=1):
 
     #if 'uv' in obj.extra: del(obj.extra['uv'])
     obj = obj.twosided()
-    #obj = obj.smooth(math.pi / 2)
-    obj = ddd.uv.map_cubic(obj)
+    obj = obj.smooth(math.pi / 12)
+    obj = ddd.uv.map_cubic(obj, split=False)
     obj.extra['ddd:collider'] = False
 
     return obj
@@ -190,7 +191,7 @@ def tree_palm(height=14, r=0.30):
         section = ddd.regularpolygon(sides=5, r=r).extrude_step(ddd.regularpolygon(sides=5, r=r*0.8), height * 0.15)
         section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.8).translate([random.uniform(-0.4, 0.4), random.uniform(-0.4, 0.4)]), height * 0.35)
         section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.7).translate([random.uniform(-0.3, 0.3), random.uniform(-0.3, 0.3)]), height * 0.5)
-        section = section.smooth(math.pi)
+        section = section.smooth(math.pi * 0.45)
         section = ddd.uv.map_cylindrical(section, split=False)
         section = section.material(ddd.mats.bark)
         return section
@@ -253,11 +254,15 @@ def tree_fir(height=20, r=0.2):
         lobj = layer.copy(name="Fir leaves %d" % i)
         lscale = top_r * (1 / numlayers) * (numlayers - i)
         lobj = layer.scale([lscale, lscale, lscale]).translate([0, 0, lh])
-        lobj = ddd.uv.map_cubic(lobj)
+        #lobj = ddd.uv.map_cubic(lobj)
         leaves.append(lobj)
 
+    leaves = leaves.combine()
+    leaves  = leaves.merge_vertices()
+    #leaves  = leaves.smooth(math.pi*2)
+    leaves  = ddd.uv.map_spherical(leaves, scale=[4, 8], split=False)
 
-    obj = ddd.group3([section.combine(), leaves.combine()], name="Fir")
+    obj = ddd.group3([section.combine(), leaves], name="Fir")
     #obj.show()
     return obj
 
@@ -276,12 +281,12 @@ def tree_bush(height=1.0, r=0.30):
         tt = treetop(r=0.5 + 0.4 * height, subdivisions=0).material(ddd.mats.treetop)
         #tt = tt.merge_vertices()
         #tt = tt.smooth(angle=math.pi * 0.40)
-        #tt = ddd.uv.map_spherical(tt, split=False)
+        #tt = ddd.uv.map_spherical(tt)
         return tt
 
     obj = recursivetree(height=height, r=r, leaves_callback=leaves_callback, trunk_callback=trunk_callback,
                         fork_iters=2, fork_height_ratio=0.2)
-    obj = obj.translate([0, 0, -height * 0.4])
+    obj = obj.translate([0, 0, -height * 0.2])
 
     '''
     result = ddd.group3()
@@ -297,6 +302,7 @@ def tree_bush(height=1.0, r=0.30):
     #objtrunk = obj.select(func=lambda o: o.mat == ddd.mats.bark).combine()
     objleaves = obj.select(func=lambda o: o.mat == ddd.mats.treetop).combine()
     objleaves = ddd.meshops.reduce(objleaves)
+    objleaves = ddd.uv.map_spherical(objleaves, scale=[2, 2])
 
     obj = ddd.group3([objleaves], name="Tree Default")
 
@@ -320,7 +326,7 @@ def reed(height=None, leaves=None):
         item = ddd.polygon([[-lb, 0.0], [lb, 0.0], [0, lh]], name="Reed leaf").triangulate().twosided().material(ddd.mats.treetop)
         item = item.rotate(ddd.ROT_FLOOR_TO_FRONT)
         item = ddd.group([item, item.rotate(ddd.ROT_TOP_CW)], name="Reed leaf")
-        item = ddd.uv.map_cubic(item, scale=(0.2, 2.0))
+        item = ddd.uv.map_cubic(item, scale=(2.0, 0.5), offset=(random.uniform(0, 1), random.uniform(0, 1)))
         item = item.rotate([0, 0, random.uniform(0, math.pi)])
         item = item.rotate([random.uniform(0.1, 0.3), 0, 0])
         torsion_advance = math.pi / 4
