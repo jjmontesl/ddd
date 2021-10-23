@@ -3,11 +3,13 @@
 # Jose Juan Montes 2020
 
 
-from ddd.pipeline.decorators import dddtask
-from ddd.ddd import ddd
-from ddd.util.common import parse_bool
-import subprocess
 import os
+import subprocess
+
+from ddd.core import settings
+from ddd.ddd import ddd
+from ddd.pipeline.decorators import dddtask
+from ddd.util.common import parse_bool
 
 
 @dddtask(order="80.10.10.+")
@@ -21,7 +23,7 @@ def osm_model_3d_compress_draco(root, osm, pipeline, logger):
     input_file = pipeline.data['filenamebase'] + ".glb"
     output_file = pipeline.data['filenamebase'] + ".compressed.glb"
 
-    draco_home = "/home/jjmontes/git/ddd-gltf-draco/"
+    draco_home = settings.DDD_GLTF_DRACO_HOME
     draco_script = draco_home + "node_modules/gltf-pipeline/bin/gltf-pipeline.js"
     node_bin = "node"
 

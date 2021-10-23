@@ -34,6 +34,7 @@ setup(
 
     install_requires = [
         "aiohttp >= 3.7.4.post0",
+        "chardet < 4.0",
         "CairoSVG >= 2.4.2",
         "freetype-py >= 2.1.0.post1",
         #"GDAL >= 2.2.3",
@@ -47,6 +48,7 @@ setup(
         "pandas < 1.2.0",
         "Pillow >= 8.2.0",
         "pint >= 0.12",
+        "pycatenary >= 0.4.0",
         "pycsg >= 0.3.3",
         "pyGeoTile >= 1.0.6",
         "pyglet >= 1.4.0b1",

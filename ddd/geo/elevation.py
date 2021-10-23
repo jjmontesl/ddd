@@ -8,6 +8,7 @@ import math
 from ddd.geo.georaster import GeoRasterLayer
 from ddd.core import settings
 from ddd.core.exception import DDDException
+from ddd.util.common import parse_bool
 
 
 # Get instance of logger for this module
@@ -23,6 +24,8 @@ class ElevationModel:
         self.dem = GeoRasterLayer(settings.DDD_GEO_DEM_TILES)
         self.egm = None
 
+        self.dummy = parse_bool(settings.DDD_SETTINGS_GET("DDD_GEO_ELEVATION_DUMMY", False))
+
     @staticmethod
     def instance():
         if ElevationModel._instance is None:
@@ -33,6 +36,7 @@ class ElevationModel:
         return self.elevation(point)
 
     def elevation(self, point):
+        if self.dummy: return 1
         value = self.dem.value(point)
 
         if not math.isfinite(value):

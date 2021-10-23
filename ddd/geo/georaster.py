@@ -57,6 +57,7 @@ class GeoRasterTile:
             #    raise DDDException("Georaster file must have 1 band only.")
 
         except Exception as e:
+            logger.warn("Could not read georaster file %s: %s", georaster_file, e)
             raise DDDException("Could not read georaster file %s: %s", georaster_file, e)
 
         return tile

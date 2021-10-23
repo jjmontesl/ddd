@@ -15,6 +15,9 @@ def DDD_INCLUDE(config_file):
         sys.stderr.write("Loading config from: %s\n" % config_file)
         exec(open(config_file).read(), locals(), globals())
 
+def DDD_SETTINGS_GET(key, default=None):
+    return globals().get(key, default)
+
 def DDD_NORMALIZE_PATHS():
     global DDD_DATADIR
     DDD_DATADIR = os.path.abspath(os.path.expanduser(DDD_DATADIR)) + "/"
@@ -25,12 +28,15 @@ def DDD_NORMALIZE_PATHS():
 DDD_EXECUTABLE = sys.executable
 
 DDD_DATADIR = './data/'
-if 'DDD_DATADIR' in os.environ:
-    DDD_DATADIR = os.environ['DDD_DATADIR']
-
 DDD_WORKDIR = './output/'  # Stress we are using the working directory and avoids /
-if 'DDD_WORKDIR' in os.environ:
-    DDD_WORKDIR = os.environ['DDD_WORKDIR']
+
+for k, v in os.environ.items()  :
+    if k.startswith('DDD'):
+        globals()[k] = v
+#if 'DDD_DATADIR' in os.environ:
+#    DDD_DATADIR = os.environ['DDD_DATADIR']
+#if 'DDD_WORKDIR' in os.environ:
+#    DDD_WORKDIR = os.environ['DDD_WORKDIR']
 
 DDD_NORMALIZE_PATHS()
 

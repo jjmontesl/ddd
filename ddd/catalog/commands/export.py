@@ -3,19 +3,37 @@
 # Jose Juan Montes 2020
 
 
-from ddd.ddd import ddd
+import logging
+
+import argparse
+
 from ddd.catalog.catalog import PrefabCatalog
+from ddd.core.command import DDDCommand
 
-catalog = PrefabCatalog()
-catalog.loadall()
 
-# Save
-catalog.export("/tmp/catalog.glb")
-catalog.export()
+# Get instance of logger for this module
+logger = logging.getLogger(__name__)
 
-# Show items
-#items = ddd.group3([catalog.instance(c) for c in catalog._cache.values()])
-#items = ddd.align.grid(items, space=10.0)
-#items.append(ddd.helper.all())
-#items.show()
-catalog.show()
+
+class CatalogExportCommand(DDDCommand):
+
+    def parse_args(self, args):
+
+        parser = argparse.ArgumentParser()  # description='', usage = ''
+        args = parser.parse_args(args)
+
+    def run(self):
+
+        catalog = PrefabCatalog()
+        catalog.loadall()
+
+        # Save
+        #catalog.export("/tmp/catalog.glb")
+        catalog.export()
+
+        # Show items
+        #items = ddd.group3([catalog.instance(c) for c in catalog._cache.values()])
+        #items = ddd.align.grid(items, space=10.0)
+        #items.append(ddd.helper.all())
+        #items.show()
+        catalog.show()
