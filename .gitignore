@@ -23,8 +23,10 @@ develop-eggs
 
 *.sqlite
 
+/DEVEL.md
 /TODO.txt
 /ROADMAP
+
 /build
 
 /examples/output/

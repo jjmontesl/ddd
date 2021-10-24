@@ -282,7 +282,7 @@ def osm_bootstrap_bbox_crop_filter(root, pipeline, logger):
 def osm_bootstrap_skip_existing(root, pipeline, logger):
     filename = pipeline.data['ddd:osm:output:filename']
     if not D1D2D3Bootstrap._instance.overwrite and os.path.exists(filename):
-        logger.info("Skipping: %s (already exists)", filename)
+        logger.warn("Skipping: %s (already exists)", filename)
         sys.exit(0)
 
 @dddtask()
