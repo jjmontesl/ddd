@@ -23,7 +23,6 @@ Called from local data dir as:
 @dddtask()
 def pipeline_start(pipeline, root, logger):
     """
-    Draws several catenary cables.
     """
     source_dir = os.path.join(settings.DDD_WORKDIR, "ddd_http/")
     source_regexp = r"ddd_http_([0-9]+)_([0-9]+)_([0-9]+)(.*)"
