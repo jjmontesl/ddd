@@ -555,8 +555,10 @@ class DDDMaterial():
                     alpha_mode = self.alpha_mode if self.alpha_mode else ('MASK' if self.alpha_cutoff else 'OPAQUE')
                     im_normal = self.get_texture_normal() if self.texture_normal_path else None
                     im_emissive = self.get_texture_emissive() if self.texture_emissive_path else None
+                    im_metallicroughness = self.get_texture_roughness() if self.texture_roughness_path else None
                     mat = PBRMaterial(name=self.name, baseColorTexture=im, baseColorFactor=self.texture_color_rgba if self.texture_color_rgba is not None else self.color_rgba,
                                       normalTexture=im_normal, doubleSided=self.double_sided,
+                                      metallicRoughnessTexture=im_metallicroughness,
                                       metallicFactor=self.metallic_factor, roughnessFactor=self.roughness_factor,
                                       alphaMode=alpha_mode, alphaCutoff=self.alpha_cutoff,
                                       emissiveFactor=np.array([self.emissive_factor, self.emissive_factor, self.emissive_factor, 1.0]), emissiveTexture=im_emissive)  # , ambient, specular, glossiness)

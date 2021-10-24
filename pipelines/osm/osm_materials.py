@@ -1,7 +1,6 @@
 # ddd - DDD123
 # Library for procedural scene modelling.
 # Jose Juan Montes 2020
-
 """
 Collects materials and exports them in different formats:
 
@@ -13,26 +12,24 @@ Run as:
     ddd osm_materials.py  --export-textures --cache-clear [-p ddd:texture:resize=256]
 """
 
-import sys
+import json
 
 from PIL import Image
 import PIL
 
 from ddd.ddd import ddd, DDDMaterial
 from ddd.pipeline.decorators import dddtask
-from ddd.pipeline.pipeline import DDDPipeline
 import numpy as np
+import osm_base.s10_init
 
-
-pipeline = DDDPipeline(['pipelines.osm_base.s10_init.py',
-                        ], name="OSM Build Pipeline")
-
-# TODO: Move to init?
-#osmbuilder = osm.OSMBuilder(area_crop=area_crop, area_filter=area_filter, osm_proj=osm_proj, ddd_proj=ddd_proj)
-pipeline.data['osm'] = None
 
 @dddtask()
-def materials_list(root, osm):
+def materials_init(root, pipeline):
+    pipeline.data['osm'] = None
+
+
+@dddtask()
+def materials_list(root):
 
     mats = ddd.group3(name="Materials")
     root.append(mats)
@@ -89,7 +86,7 @@ def convert_to_linear(im):
 
 
 @dddtask()
-def materials_pack_atlas(root, logger):
+def materials_pack_atlas(pipeline, root, logger):
 
     atlas_texsize = int(pipeline.data.get('ddd:texture:resize', None))
     atlas_cols = 4
@@ -189,7 +186,15 @@ def materials_pack_atlas(root, logger):
     im.save("splatmap-textures-atlas-normals-%d.png" % atlas_texsize, "PNG")
     #im.save(pipeline.data['filenamebase'] + ".splatmap-4chan-0_3-" + str(splatmap_size) + ".png", "PNG")
 
+    # Atributes
+    roughness = []
+    metallic = []
+    for m in mats:
+        roughness.append(m.roughness_factor)
+        metallic.append(m.metallic_factor)
+    data = {'roughness': roughness,
+            'metallic': metallic}
+    print(json.dumps(data, indent=4))
 
-pipeline.run()
 
 

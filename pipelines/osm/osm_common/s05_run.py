@@ -134,7 +134,7 @@ def osm_bootstrap_data_fetch(root, pipeline, logger):
     # Check if geojson file is available
     #sides = 15 * 0.01  # Approximate degrees to km
 
-    path = pipeline.data.get('ddd:osm:datasource:path', settings.DDD_WORKDIR + "/../data/osm/")
+    path = pipeline.data.get('ddd:osm:datasource:path', os.path.join(settings.DDD_WORKDIR, "data/osm/"))
     logger.info("OSM source data path: %s", path)
 
     sides = 5 * 0.001
