@@ -85,7 +85,9 @@ def pipeline_start(pipeline, root, logger):
             center = (center_lon, center_lat)
             area = ddd.rect([min_lon, min_lat, max_lon, max_lat]).geom
 
-            mtime = datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(source_dir, filename)))
+            file_path = os.path.join(source_dir, filename)
+
+            mtime = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
             age = datetime.datetime.now() - mtime
 
             feature = geojson.Feature(geometry=area,
@@ -95,7 +97,7 @@ def pipeline_start(pipeline, root, logger):
                                                   "x": x,
                                                   "y": y,
                                                   "mtime": str(mtime),
-                                                  "size": os.stat(filename).st_size if os.path.exists(filename) else None} )
+                                                  "size": os.stat(file_path).st_size if os.path.exists(file_path) else None} )
             if (z, x ,y) not in feature_idx:
                 feature_idx[(z, x, y)] = feature
                 features.append(feature)
