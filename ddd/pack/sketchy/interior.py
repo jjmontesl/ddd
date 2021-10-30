@@ -2,19 +2,10 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
-import math
+import logging
 
 from ddd.ddd import ddd
-from ddd.ops import filters
-import logging
-from ddd.text import fonts
-from ddd.lighting.lights import PointLight
-import sys
-import re
-import random
 from trimesh import transformations
-import numpy as np
-from ddd.ops.extrusion import extrude_step_multi, extrude_dome
 
 
 # Get instance of logger for this module

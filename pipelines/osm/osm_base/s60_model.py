@@ -4,6 +4,7 @@
 
 
 import numpy as np
+import trimesh
 
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
@@ -11,6 +12,8 @@ from ddd.geo import terrain
 from ddd.core.exception import DDDException
 import datetime
 from ddd.util.common import parse_bool
+from ddd.text.font import DDDFontAtlas
+from ddd.text.text2d import Text2D
 
 
 """
@@ -383,6 +386,49 @@ def osm_models_splatmap_materials(pipeline, osm, root, logger):
     """
     root.find("/Areas").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)
     root.find("/Ways").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)
+
+
+@dddtask()
+def osm_model_texts_fonts(pipeline, root, logger):
+    """
+    Test 2D text generation.
+    """
+    #pipeline.data['font'] = Font()
+    pipeline.data['font:material'] = ddd.material(name="Font", color='#f88888',
+                                                  texture_path="test-greyscale.png",
+                                                  #texture_normal_path=ddd.DATA_DIR + "/materials/road-marks-es/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
+                                                  #atlas_path="/materials/road-marks-es/RoadMarkings2.plist",
+                                                  alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
+                                                  extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096})
+    pipeline.data['font:atlas'] = DDDFontAtlas.load_atlas("test-font.dddfont.json")
+
+
+@dddtask(path="/*", select='["ddd:text"]')
+def osm_model_texts_generate(pipeline, osm, root, logger, obj):
+
+    text2d = Text2D(pipeline.data['font:atlas'])
+
+    text = obj.get('ddd:text')
+    #logger.info("Creating 2D text for: %s", text)
+
+    width = obj.get('ddd:text:width') / len(text)
+    height = obj.get('ddd:text:height') / 2.5
+
+    item = text2d.text(text)
+    item = item.combine().recenter()
+    item = item.material(pipeline.data['font:material'])
+
+    # Place text on object
+    if item.mesh:
+        #xform = obj.transform.to_matrix()
+        item = item.scale([width, height, 1])
+        item = item.rotate(ddd.ROT_FLOOR_TO_FRONT)
+        #item.mesh.vertices = trimesh.transform_points(item.mesh.vertices, xform)
+        item.mesh.vertices = obj.transform.transform_vertices(item.mesh.vertices)
+
+        root.find("/Items3").append(item)
+    else:
+        logger.error("Failed to generate text 2D mesh: %s %s", text, obj)
 
 
 #@dddtask(order="65.50.+", log=True)

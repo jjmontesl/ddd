@@ -116,6 +116,7 @@ class ServerServeCommand(DDDCommand):
 
         # Create pipeline
         self.pipeline = None
+        self.running = False
 
         # Start python-socketio
         self.sio = socketio.AsyncServer(cors_allowed_origins='*')
@@ -147,14 +148,7 @@ class ServerServeCommand(DDDCommand):
         @self.sio.event
         async def result_get(sid, data):
             logger.info("Websocket result_get: %s %s", sid, data)
-            result = self.result_get()
-            #return status
-            if result:
-                logger.info("Sending result: %s bytes", len(result))
-                await self.sio.emit('result', {'data': result}, room=sid)
-            else:
-                logger.info("No result to send.")
-
+            await self.result_send(sid)
 
         @self.sio.event
         def disconnect(sid):
@@ -171,6 +165,14 @@ class ServerServeCommand(DDDCommand):
         except KeyboardInterrupt:
             logger.info("Interrupted by user.")
 
+
+    def status2_get(self):
+        status = {
+            'script': self.script,
+            'status': {
+                'running': self.running,
+            }
+        }
 
     def status_get(self):
 
@@ -261,6 +263,16 @@ class ServerServeCommand(DDDCommand):
 
         return result_data
 
+    async def result_send(self, sid=None):
+
+        result = self.result_get()
+        #return status
+        if result:
+            logger.info("Sending result: %s bytes", len(result))
+            await self.sio.emit('result', {'data': result}, room=sid)
+        else:
+            logger.info("No result to send.")
+
     async def pipeline_init(self):
         #self.pipeline = DDDPipeline([self.script], name="DDD Server Build Pipeline")
         self.pipeline_reload()
@@ -287,18 +299,25 @@ class ServerServeCommand(DDDCommand):
 
     async def pipeline_run(self):
 
+        if self.running:
+            logger.warn("Pipeline already running.")
+            return
+
+        self.running = True
+
         with futures.ThreadPoolExecutor() as pool:
             logger.info("Running in thread pool.")
             run_result = await self.loop.run_in_executor(pool, self.pipeline_run_blocking)
             logger.info("Thread pool result: %s", run_result)
 
-        result = self.result_get()
-        await self.sio.emit('result', {'data': result})  #, room=sid)
+        self.running = False
+
+        asyncio.ensure_future(self.result_send())
 
     def pipeline_run_blocking(self):
         self.pipeline.run()
 
-        return True
+        return self.running
 
     def start_file_monitoring(self):
 

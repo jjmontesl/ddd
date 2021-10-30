@@ -30,7 +30,7 @@ from ddd.materials.atlas import TextureAtlasUtils
 from ddd.ops import filters, extrusion
 from ddd.ops.extrusion import extrude_step_multi, extrude_dome
 from ddd.pack.sketchy import interior, vehicles
-from ddd.text import fonts
+from ddd.text.text3d import Text3D
 
 
 # Get instance of logger for this module
@@ -578,7 +578,7 @@ def sculpture(d=1.0, height=4.0):
 
     return item
 
-def sculpture_text(text, d=1.0, height=4.0, vertical=False):
+def sculpture_text(text, d=1.0, height=3.0, vertical=False):
     """
     An urban sculpture, sitting centered on the XY plane.
     """
@@ -586,7 +586,7 @@ def sculpture_text(text, d=1.0, height=4.0, vertical=False):
     #pedestal = ddd.uv.map_cubic(pedestal)
 
     logger.debug("Generating text for: %s", text)
-    item = fonts.text(text)
+    item = Text3D.quick_text(text)
     item = item.extrude(0.5).material(ddd.mats.bronze).recenter()
 
     if vertical:

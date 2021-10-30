@@ -8,7 +8,7 @@ from ddd.pack.sketchy import urban, landscape
 from ddd.ddd import ddd
 import math
 import sys
-from ddd.text import fonts
+from ddd.text.text3d import Text3D
 import logging
 
 from ddd.pipeline.decorators import dddtask
@@ -183,7 +183,7 @@ def pipeline_start(pipeline, root):
 
     # Convex shapes with holes - subtract method
     fig = ddd.group3()
-    text = fonts.text("86A").scale(2.0)
+    text = Text3D.quick_text("86A").scale(2.0)
     for f in text.children:
         #f.replace(f.subtract(f.buffer(-0.2)))
         fe = f.extrude_step(f.buffer(-0.05), 0.2, method=ddd.EXTRUSION_METHOD_SUBTRACT)

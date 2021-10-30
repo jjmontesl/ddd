@@ -2,26 +2,12 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
-import json
 import logging
-import math
 
-from shapely import geometry, affinity, ops
-from trimesh import transformations
-
-from ddd.core.exception import DDDException
-from ddd.core.cli import D1D2D3Bootstrap
 from builtins import staticmethod
-from abc import abstractstaticmethod
-from shapely.geometry.base import BaseMultipartGeometry
-import base64
 from ddd.ddd import ddd
 from svgpathtools import svg2paths
 from svgpath2mpl import parse_path
-from ddd.formats.loader import parse_svg_path
-from shapely.ops import polygonize
-from shapely.geometry.multipolygon import MultiPolygon
-import matplotlib
 
 
 # Get instance of logger for this module
@@ -33,9 +19,6 @@ class DDDSVGLoader():
     def load_svg(path):
         """
         """
-        #paths = parse_svg_path.parse_svg_path(path)
-        #print(paths)
-        #return
 
         paths, attributes = svg2paths(path)
 

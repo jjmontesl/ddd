@@ -125,7 +125,7 @@ class DDDUVMapping():
                     setuv(face, face[1], (p1[0], p1[1]))
                     setuv(face, face[2], (p2[0], p2[1]))
 
-        result.children = [self.map_cubic(c, offset, scale) for c in result.children]
+        result.children = [self.map_cubic(c, offset, scale, split=split) for c in result.children]
         return result
 
     def map_spherical(self, obj, offset=None, scale=None, split=True):
@@ -187,7 +187,7 @@ class DDDUVMapping():
                 setuv(face, face[1], (0.5 + (phi1 / (math.pi * 2)), 0.5 + theta1 / (math.pi * 1)))
                 setuv(face, face[2], (0.5 + (phi2 / (math.pi * 2)), 0.5 + theta2 / (math.pi * 1)))
 
-        result.children = [self.map_cubic(c, offset, scale) for c in result.children]
+        result.children = [self.map_cubic(c, offset, scale, split=split) for c in result.children]
         return result
 
     def map_cylindrical(self, obj, scale=None, offset=None, split=True):
@@ -242,7 +242,7 @@ class DDDUVMapping():
                     setuv(face, face[1], (angle1 / (math.pi * 2), p1[2]))
                     setuv(face, face[2], (angle2 / (math.pi * 2), p2[2]))
 
-        result.children = [self.map_cubic(c, offset, scale) for c in result.children]
+        result.children = [self.map_cubic(c, offset, scale, split=split) for c in result.children]
         return result
 
     def map_xy(self, obj):

@@ -6,19 +6,19 @@ from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 
 
-@dddtask(order="30.90", condition=True)
+@dddtask(order="30.90.99", condition=True)
 def osm_features_export_2d_condition(pipeline):
     return bool(pipeline.data.get('ddd:osm:output:intermediate', False))
 
 
-@dddtask(order="30.90.+", path="/Ways/*")
+@dddtask(order="30.90.99.+", path="/Ways/*")
 def osm_groups_ways_svg_style(obj):
     """Sets SVG line width for ways."""
     # Use osm:lanes if set, otherwise use lanes
     obj.extra['svg:stroke-width'] = obj.extra['ddd:way:width']
 
 
-@dddtask(order="30.90.+")
+@dddtask(order="30.90.99.+")
 def osm_groups_export_2d_processed(root):
     """Export current 2D root node without alterations to JSON and SVG."""
 
@@ -29,7 +29,7 @@ def osm_groups_export_2d_processed(root):
     root.save("/tmp/osm-groups.svg")
 
 
-@dddtask(order="30.90.+")
+@dddtask(order="30.90.99.+")
 def osm_groups_export_2d(root):
 
     root = root.copy()

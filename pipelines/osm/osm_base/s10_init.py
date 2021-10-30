@@ -71,7 +71,7 @@ def osm_materials():
                                       extra={'ddd:texture:resize': 1024})
 
     ddd.mats.asphalt = ddd.material(name="Asphalt", color='#202020', extra={'uv:scale': 0.25},  # 0.25  color='#202020',
-                                    metallic_factor=0.0, roughness_factor=0.43, index_of_refraction=1.0, direct_lighting=0.76, bump_strength=2.0,
+                                    metallic_factor=0.1, roughness_factor=2.5, index_of_refraction=1.0, direct_lighting=0.76, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Asphalt/Asphalt01_*.jpg",)
                                     # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Asphalt/Asphalt01_nrm.jpg",)
 
@@ -89,12 +89,12 @@ def osm_materials():
                                  # texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Height.png",)
 
     ddd.mats.park = ddd.material(name="Park", color='#1db345', extra={'uv:scale': 0.25},  # 0.25
-                                 metallic_factor=0.3, roughness_factor=0.85, bump_strength=2.0,  # index_of_refraction=1.36,
+                                 metallic_factor=0.0, roughness_factor=1.15, bump_strength=2.0,  # index_of_refraction=1.36,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_*.jpg")
                                  # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",
                                  # texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_disp.jpg",)
     ddd.mats.forest = ddd.material(name="Forest", color='#3a6e17', extra={'uv:scale': 0.25},  # 0.25
-                                 metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,  # index_of_refraction=1.36,
+                                 metallic_factor=0.0, roughness_factor=1.25, bump_strength=2.0,  # index_of_refraction=1.36,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_*.jpg",)
                                  # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_nrm.jpg",
                                  # texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground03/Ground03_disp.jpg",)
@@ -142,16 +142,16 @@ def osm_materials():
                                     # texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground044_2K-JPG/Ground044_2K_Displacement.jpg", )
     ddd.mats.terrain_rock = ddd.mats.rock_lightbrown
     ddd.mats.terrain_pebbles_sparse = ddd.material(name="Ground Pebbles Sparse", color='#e6821e', texture_color='#ffffff', extra={'uv:scale': 0.25},  # 0.2
-                                    metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
+                                    metallic_factor=0.0, roughness_factor=1.3, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Ground039_2K-JPG/Ground039_2K_*.jpg",)
                                     # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground039_2K-JPG/Ground039_2K_Normal.jpg",
                                     # texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground039_2K-JPG/Ground039_2K_Displacement.jpg", )
-    ddd.mats.terrain_veg_dead_sparse = ddd.material(name="Ground Veg Dead Sparse", color='#e6821e', extra={'uv:scale': 0.25},  # 0.2
+    ddd.mats.terrain_veg_dead_sparse = ddd.material(name="Ground Veg Dead Sparse", color='#a49f74', extra={'uv:scale': 0.25},  # 0.2
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Ground36/Ground36_*.jpg",)
                                     # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Ground36/Ground36_nrm.jpg",
                                     # texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/[2K]Ground36/Ground36_disp.jpg", )
-    ddd.mats.terrain_autumm = ddd.material(name="Ground Autumm", color='#e6821e', extra={'uv:scale': 0.25},  # 0.2
+    ddd.mats.terrain_autumm = ddd.material(name="Ground Autumm", color='#a89874', extra={'uv:scale': 0.25},  # 0.2
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Ground23/Ground23_*.jpg",)
                                     # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground23/Ground23_nrm.jpg",)
@@ -208,7 +208,7 @@ def osm_materials():
                                   texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Metal19/Metal19_*.jpg",
                                   extra={'uv:scale': 0.25})
     ddd.mats.bronze = ddd.material(name="Bronze", color='#f0cb11',  # texture_color='#ffffff',
-                                  metallic_factor=0.975, roughness_factor=0.1,  # bump_strength=2.0,
+                                  metallic_factor=0.975, roughness_factor=0.9,  # bump_strength=2.0,
                                   texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Metal18/Metal18_*.jpg",
                                   extra={'uv:scale': 0.25, 'tags': ['metal', 'bronze', 'rusty', 'orange', 'pbr']})
     ddd.mats.metal = ddd.mats.steel
@@ -292,10 +292,6 @@ def osm_materials():
     self.metal_paint_white = ddd.material("PaintWhite", color='#f8fbff')
     self.metal_paint_black = ddd.material("PaintBlack", color='#000a17')
 
-    # Plastics
-    self.plastic_transparent = ddd.material(color='e8e0e4', extra={'ddd:transparent': True})  # name="PlasticTransparent",
-    self.plastic_black = ddd.material(color='#2c2936')
-
 
     # Lights
     self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')
@@ -305,9 +301,21 @@ def osm_materials():
 
     '''
 
+    # Plastics
+    #self.plastic_transparent = ddd.material(color='e8e0e4', extra={'ddd:transparent': True})  # name="PlasticTransparent",
+    #self.plastic_black = ddd.material(color='#2c2936')
+    ddd.mats.plastic_green = ddd.material("Plastic Green", color='#64a80a',
+                                          metallic_factor=0.0, roughness_factor=0.05,
+                                          texture_path=ddd.DATA_DIR + "/osmmaterials/Plastic010_2K-JPG/Plastic010_2K_*.jpg",
+                                          extra={'uv:scale': 0.5, 'tags': ['plastic', 'pbr', 'smooth', 'green', 'clean', 'coloured']})
+    ddd.mats.plastic_green_rough = ddd.material("Plastic Green Rough", color='#64a80a',
+                                          metallic_factor=0.0, roughness_factor=0.05,
+                                          texture_path=ddd.DATA_DIR + "/osmmaterials/Plastic004_2K-JPG/Plastic004_2K_*.jpg",
+                                          extra={'uv:scale': 0.5, 'tags': ['plastic', 'pbr', 'rough', 'green', 'coloured']})
+
     # Glass
-    ddd.mats.glass = ddd.material("Glass", color='#5b8dbd',  # color='#b3b7c0', # extra={'ddd:transparent': True}
-                              metallic_factor=1.0, roughness_factor=0.0)  # , # index_of_refraction=1.36,)#
+    ddd.mats.glass = ddd.material("Glass", color='#2e4163',  # color='#b3b7c0', # extra={'ddd:transparent': True}
+                              metallic_factor=0.0, roughness_factor=0.0)  # , # index_of_refraction=1.36,)#
 
     # Vegetation (trees, hedges)
     ddd.mats.bark = ddd.material(name="Bark", color='#df9e75', extra={'uv:scale': 1.0},

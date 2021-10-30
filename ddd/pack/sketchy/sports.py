@@ -5,9 +5,7 @@
 import math
 
 from ddd.ddd import ddd
-from ddd.ops import filters
 import logging
-from ddd.text import fonts
 from ddd.pack.sketchy import urban
 from ddd.pack.sketchy.urban import post, curvedpost
 

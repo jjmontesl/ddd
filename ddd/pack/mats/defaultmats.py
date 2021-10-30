@@ -82,7 +82,7 @@ class DefaultMaterials(MaterialsCollection):
         self.plastic_white = ddd.material("Plastic White", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)
 
         # Glass
-        self.glass = ddd.material("Glass", color='#baf3f5')  #  , extra={'ddd:transparent': True}
+        self.glass = ddd.material("Glass", color='#2e4163', metallic_factor=0.0, roughness_factor=0.0)  #  , extra={'ddd:transparent': True}
 
         # Lights
         self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')

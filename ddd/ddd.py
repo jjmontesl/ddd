@@ -446,12 +446,13 @@ class DDDMaterial():
         if image is None:
             image = PIL.Image.open(path)
 
-            # Resampling (get ddd:texture:resize f
-            resample_size = 512
+            # Resample texture if needed
+            resample_size = None  # 512
             resample_size = D1D2D3Bootstrap.data.get('ddd:texture:resize', resample_size)
             if material:
                 resample_size = material.extra.get('ddd:texture:resize', resample_size)
-            resample_size = int(resample_size)
+            if resample_size:
+                resample_size = int(resample_size)
 
             if resample_size and resample_size > 0 and image.size[0] > resample_size:
                 logger.info("Resampling texture to %dx%d: %s", resample_size, resample_size, path)
@@ -1984,6 +1985,7 @@ class DDDObject2(DDDObject):
         result = self.copy()
         if self.geom:
             result.geom = result.geom.simplify(distance, preserve_topology=True)
+            #result.geom = result.geom.simplify(distance)  #, preserve_topology=True)
         result.children = [c.simplify(distance) for c in self.children]
         return result
 
@@ -2554,9 +2556,18 @@ class DDDTransform():
                   'scale': self.scale}
         return result
 
+    def transform_vertices(self, vertices):
+        node_transform = transformations.concatenate_matrices(
+            transformations.translation_matrix(self.position),
+            transformations.quaternion_matrix(self.rotation)
+        )
+        return trimesh.transform_points(vertices, node_transform)
+
     def to_matrix(self):
         """
-        Returns a HTM for the translation, rotaiton and scale represented by this Transform.
+        Returns a HTM for the translation, rotation and scale represented by this Transform.
+
+        NOTE: This method was created to export Babylon instance lists, and seems to not work for DDD transforms. Rename accordingly?
         """
 
         #rot = quaternion_from_euler(-math.pi / 2, 0, 0, "sxyz")
@@ -2575,8 +2586,6 @@ class DDDTransform():
             #transformations.scale_matrix(self.scale),
             transformations.quaternion_matrix(self.rotation),
         )
-
-
 
         return node_transform
 

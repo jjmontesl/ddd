@@ -2,13 +2,8 @@
 # Library for simple scene modelling.
 # Jose Juan Montes and Contributors 2019-2021
 
-import math
-import sys
-
 from ddd.ddd import ddd
-from ddd.pack.sketchy import urban, landscape
 from ddd.pipeline.decorators import dddtask
-from ddd.text import fonts
 
 
 @dddtask(order="10")
@@ -18,8 +13,6 @@ def pipeline_start(pipeline, root):
     """
 
     items = ddd.group3()
-
-
 
     # Subdivision to grid
     fig1 = ddd.rect([-4, -2, 4, 2])
@@ -74,7 +67,6 @@ def pipeline_start(pipeline, root):
     fig = fig.extrude_step(ddd.point(), 2)
     fig = fig.subdivide_to_size(0.5)
     items.append(fig)
-
 
     # Remove bottom test
     fig = ddd.cube(d=2)

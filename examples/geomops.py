@@ -1,29 +1,24 @@
-# Jose Juan Montes 2019-2021
+# ddd - DDD123
+# Library for simple scene modelling.
+# Jose Juan Montes and Contributors 2019-2021
 
 """
 Tests several 2D and 3D geometry operations.
 """
 
-from ddd.pack.sketchy import urban, landscape
-from ddd.ddd import ddd
-import math
-import sys
-from ddd.text import fonts
 import logging
 
+from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 
 
 @dddtask()
-def pipeline_test_line_substring(pipeline, root):
+def pipeline_test_line_substring(pipeline, root, logger):
     """
     Tests geometric operations.
     """
 
     items = ddd.group3()
-
-    # Get instance of logger for this module
-    logger = logging.getLogger(__name__)
 
     # Test substrings
     obj = ddd.line([(0, 0), (4, 0)])
