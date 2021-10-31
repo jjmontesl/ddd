@@ -170,18 +170,18 @@ def fonts(pipeline, root, logger):
     Test 2D text generation.
     """
     #pipeline.data['font'] = Font()
-    pipeline.data['font:material'] = ddd.material(name="Font", color='#f88888',
-                                                  texture_path="test-greyscale.png",
-                                                  #texture_normal_path=ddd.DATA_DIR + "/materials/road-marks-es/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
-                                                  #atlas_path="/materials/road-marks-es/RoadMarkings2.plist",
-                                                  alpha_cutoff=0.05, metallic_factor=0.0, roughness_factor=1.0,
-                                                  extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096})
-
+    pipeline.data['font:atlas:dddfonts_01_64'] = ddd.material(name="DDDFonts-01-64", color='#f88888',
+                                                texture_path=ddd.DATA_DIR + "/fontatlas/dddfonts_01_64.greyscale.png",
+                                                #texture_normal_path=ddd.DATA_DIR + "/materials/road-marks-es/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
+                                                #atlas_path="/materials/road-marks-es/RoadMarkings2.plist",
+                                                alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
+                                                extra={'ddd:material:type': 'font', 'ddd:collider': False, 'ddd:shadows': False,
+                                                       'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096})
 
 @dddtask(path="/Elements3/*")
 def font(root, pipeline, obj):
-    atlas = DDDFontAtlas.load_atlas("test-font.dddfont.json")
-    text2d = Text2D(atlas)
+    atlas = DDDFontAtlas.load_atlas(ddd.DATA_DIR + "/fontatlas/dddfonts_01_64.dddfont.json")
+    text2d = Text2D(atlas, "Oliciy-default-64", pipeline.data['font:atlas:dddfonts_01_64'])
     pipeline.data['text2d'] = text2d
 
 '''
@@ -207,12 +207,21 @@ def texts_front(root, pipeline, obj):
     text2d = pipeline.data['text2d']
 
     result = text2d.text(obj.extra['element:element'])
-    result = result.material(pipeline.data['font:material'])
-    #result = result.material(ddd.MAT_HIGHLIGHT)
-
-    result = result.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    result = result.material(text2d.material)
     result = result.scale([0.5, 0.5, 0.5])
     result = result.recenter()
+    #result = result.material(ddd.MAT_HIGHLIGHT)
+
+    textdata = f"{obj.extra['element:year']}"
+    result2 = text2d.text(textdata)
+    if result2 and not result2.is_empty():
+        result2 = result2.recenter()
+        result2 = result2.scale([0.25, 0.25, 0.25]).translate([0, 1])
+        result.append(result2)
+
+    result = result.combine()
+
+    result = result.rotate(ddd.ROT_FLOOR_TO_FRONT)
 
     def flat_to_curve(x, y, z, idx):
         source_span = 2.0 / 2.0  # centered on 0

@@ -22,9 +22,9 @@ from ddd.osm import osm
 from ddd.pipeline.pipeline import DDDPipeline
 import json
 import os
+import traceback
 
 
-#from osm import OSMDDDBootstrap
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,12 @@ class FileChangedEventHandler(FileSystemEventHandler):
             return
 
         logger.info("Reloading pipeline.")
-        self.dddserver.pipeline_reload()
+        try:
+            self.dddserver.pipeline_reload()
+        except Exception as e:
+            logger.warn("Could not reload pipeline: %s", e)
+            print(traceback.format_exc())
+            return
 
         # TODO: Move this interface to ServerServeCommand
         asyncio.run_coroutine_threadsafe(self.dddserver.pipeline_run(), self.dddserver.loop)
@@ -307,6 +312,7 @@ class ServerServeCommand(DDDCommand):
 
         with futures.ThreadPoolExecutor() as pool:
             logger.info("Running in thread pool.")
+
             run_result = await self.loop.run_in_executor(pool, self.pipeline_run_blocking)
             logger.info("Thread pool result: %s", run_result)
 
@@ -315,9 +321,14 @@ class ServerServeCommand(DDDCommand):
         asyncio.ensure_future(self.result_send())
 
     def pipeline_run_blocking(self):
-        self.pipeline.run()
+        try:
+            self.pipeline.run()
+        except Exception as e:
+            logger.warn("Error running pipeline: %s", e)
+            print(traceback.format_exc())
+            return False
 
-        return self.running
+        return True
 
     def start_file_monitoring(self):
 

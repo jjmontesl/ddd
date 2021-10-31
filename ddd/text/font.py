@@ -34,7 +34,7 @@ class DDDFontAtlas():
     """
 
     def __init__(self):
-        self.glyphs = {}
+        self.index = {}
         self.texture_width = None
         self.texture_height = None
 
@@ -46,7 +46,7 @@ class DDDFontAtlas():
         """
         atlas = DDDFontAtlas()
         with open(filepath, "r") as f:
-            atlas.glyphs = json.load(f)
+            atlas.index = json.load(f)
         return atlas
 
 

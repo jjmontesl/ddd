@@ -2,14 +2,11 @@
 # Library for simple scene modelling.
 # Jose Juan Montes and Contributors 2019-2021
 
-from freetype import Face
-
-from svgpath2mpl import parse_path
-
-from svgpathtools import wsvg, Line, QuadraticBezier, Path
-
 from ddd.ddd import ddd, DDDObject2
-from svgpathtools.path import CubicBezier
+import logging
+
+# Get instance of logger for this module
+logger = logging.getLogger(__name__)
 
 
 class Text2D():
@@ -21,8 +18,10 @@ class Text2D():
     TODO: Better naming for 2D (atlased quads) and 3D (geometry).
     """
 
-    def __init__(self, atlas):
+    def __init__(self, atlas, fontface=None, material=None):
         self.atlas = atlas
+        self.fontface = fontface
+        self.material = material
 
     def text(self, text):
         """
@@ -45,8 +44,11 @@ class Text2D():
             else:
 
                 char_2d, glyph = self.char(c)
+                if char_2d is None:
+                    continue
 
                 """
+                    'font': self.font
                     'codepoint': glyph.codepoint,
                     'x0': glyph.x0,
                     'y0': glyph.y0,
@@ -81,8 +83,9 @@ class Text2D():
 
                 origin_x += horiAdvance / font_size
 
-        text = ddd.group(chars, name="Text: %s" % text)
+        text = ddd.group3(chars, name="Text: %s" % text)
         #text = text.scale([1, 1, 1]).recenter(onplane=True)
+        text = text.combine()
 
         return text
 
@@ -90,7 +93,11 @@ class Text2D():
     def char(self, ch):
 
         #print(ch)
-        glyph = self.atlas.glyphs['glyphs'][str(ord(ch))]
+        try:
+            glyph = self.atlas.index['faces'][self.fontface]['glyphs'][str(ord(ch))]
+        except KeyError as e:
+            logger.error("Could not find font character (font=%s, char=%s)", self.fontface, ch)
+            return (None, None)
         #print(glyph)
 
         quad = ddd.rect().triangulate()

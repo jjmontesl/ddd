@@ -14,6 +14,7 @@ import datetime
 from ddd.util.common import parse_bool
 from ddd.text.font import DDDFontAtlas
 from ddd.text.text2d import Text2D
+import random
 
 
 """
@@ -394,19 +395,37 @@ def osm_model_texts_fonts(pipeline, root, logger):
     Test 2D text generation.
     """
     #pipeline.data['font'] = Font()
-    pipeline.data['font:material'] = ddd.material(name="Font", color='#f88888',
-                                                  texture_path="test-greyscale.png",
-                                                  #texture_normal_path=ddd.DATA_DIR + "/materials/road-marks-es/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
-                                                  #atlas_path="/materials/road-marks-es/RoadMarkings2.plist",
-                                                  alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
-                                                  extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096})
-    pipeline.data['font:atlas'] = DDDFontAtlas.load_atlas("test-font.dddfont.json")
+    pipeline.data['font:atlas:opensansemoji64'] = ddd.material(name="FontOpenSansEmoji-64", color='#f88888',
+                                                texture_path=ddd.DATA_DIR + "/fontatlas/opensansemoji64.greyscale.png",
+                                                alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
+                                                extra={'ddd:material:type': 'font', 'ddd:collider': False, 'ddd:shadows': False,
+                                                       'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096})
+    pipeline.data['font:atlas:dddfonts_01_64'] = ddd.material(name="DDDFonts-01-64", color='#f88888',
+                                                texture_path=ddd.DATA_DIR + "/fontatlas/dddfonts_01_64.greyscale.png",
+                                                #texture_normal_path=ddd.DATA_DIR + "/materials/road-marks-es/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
+                                                #atlas_path="/materials/road-marks-es/RoadMarkings2.plist",
+                                                alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
+                                                extra={'ddd:material:type': 'font', 'ddd:collider': False, 'ddd:shadows': False,
+                                                       'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096})
+
+    atlas = DDDFontAtlas.load_atlas(ddd.DATA_DIR + "/fontatlas/dddfonts_01_64.dddfont.json")
+
+    pipeline.data['font:opensansemoji'] = Text2D(atlas, "OpenSansEmoji-default-64", pipeline.data['font:atlas:dddfonts_01_64'])
+    pipeline.data['font:oliciy'] = Text2D(atlas, "Oliciy-default-64", pipeline.data['font:atlas:dddfonts_01_64'])
+    pipeline.data['font:technasans'] = Text2D(atlas, "TechnaSans-default-64", pipeline.data['font:atlas:dddfonts_01_64'])
+    pipeline.data['font:adolphus'] = Text2D(atlas, "Adolphus-default-64", pipeline.data['font:atlas:dddfonts_01_64'])
+
+    pipeline.data['ddd:osm:fonts'] = ['font:opensansemoji',
+                                      'font:oliciy',
+                                      'font:technasans',
+                                      'font:adolphus']
 
 
 @dddtask(path="/*", select='["ddd:text"]')
 def osm_model_texts_generate(pipeline, osm, root, logger, obj):
 
-    text2d = Text2D(pipeline.data['font:atlas'])
+    fontkey = random.choice(pipeline.data['ddd:osm:fonts'])
+    text2d = pipeline.data[fontkey]
 
     text = obj.get('ddd:text')
     #logger.info("Creating 2D text for: %s", text)
@@ -416,7 +435,7 @@ def osm_model_texts_generate(pipeline, osm, root, logger, obj):
 
     item = text2d.text(text)
     item = item.combine().recenter()
-    item = item.material(pipeline.data['font:material'])
+    item = item.material(text2d.material)
 
     # Place text on object
     if item.mesh:

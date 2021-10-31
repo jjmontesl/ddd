@@ -7,6 +7,7 @@ import logging
 from ddd.ddd import ddd
 import math
 from shapely.geometry.polygon import LinearRing
+from ddd.core.exception import DDDException
 
 
 # Get instance of logger for this module
@@ -28,8 +29,14 @@ class DDDSnap():
         else:
             obj = self._last_linearized
 
+        result = point.copy()
 
-        coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = obj.closest_segment(point)
+        try:
+            coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = obj.closest_segment(point)
+        except DDDException as e:
+            logger.warn("Could not snap project point %s onto %s", point, obj)
+            return result
+
 
         dirvec_d = [coords_p[0] - point.geom.coords[0][0], coords_p[1] - point.geom.coords[0][1]]
         dirvec_l = math.sqrt(dirvec_d[0] ** 2 + dirvec_d[1] ** 2)
@@ -49,7 +56,6 @@ class DDDSnap():
         if penetrate:
             coords_p = [coords_p[0] + dirvec[0] * penetrate * exterior, coords_p[1] + dirvec[1] * penetrate * exterior]
 
-        result = point.copy()
         result.geom.coords = coords_p
         result.extra['ddd:angle:calculated'] = math.atan2(dirvec[1], dirvec[0]) + (math.pi if exterior < 0 else 0)
         result.extra['ddd:angle'] = result.extra['ddd:angle'] if result.extra.get('ddd:angle', None) is not None else result.extra['ddd:angle:calculated']
