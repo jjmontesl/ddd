@@ -48,6 +48,7 @@ setup(
         "pandas < 1.2.0",
         "Pillow >= 8.2.0",
         "pint >= 0.12",
+        "portion >= 2.2.0",
         "pycatenary >= 0.4.0",
         "pycsg >= 0.3.3",
         "pyGeoTile >= 1.0.6",

@@ -17,6 +17,14 @@ from ddd.util.common import parse_bool
 """
 
 
+@dddtask(order="64.10.10", condition=True)
+def osm_model_combine_materials_condition(pipeline):
+    """
+    Combine meshes by material condition (default is True).
+    """
+    return parse_bool(pipeline.data.get('ddd:osm:model:metadata_clean', True))
+
+
 @dddtask(order="64.10.10.+")
 def osm_model_metadata_clean(pipeline):
     """

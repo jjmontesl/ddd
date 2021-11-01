@@ -1015,6 +1015,12 @@ class DDDObject():
         return result
 
     def flatten(self):
+        """
+        Flattens the node hierarchy recursively.
+
+        This affects the node hierarchy only, not geometries (in contrast to individualize, which will
+        for example also split multipolygons).
+        """
 
         result = self.copy()
         result.children = []

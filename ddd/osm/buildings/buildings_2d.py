@@ -16,21 +16,12 @@
 
 
 import logging
-import math
-import random
-import sys
 import numpy as np
-
-from ddd.ddd import DDDObject2, DDDObject3
-from ddd.ddd import ddd
-from ddd.pack.sketchy import plants, urban
-from ddd.geo import terrain
-from ddd.core.exception import DDDException
-from ddd.util.dddrandom import weighted_choice
-from ddd.pack.sketchy.buildings import window_with_border, door
 from collections import defaultdict
+
+from ddd.ddd import ddd
+from ddd.core.exception import DDDException
 from ddd.osm.buildings.building import BuildingContact, BuildingSegment
-from shapely.strtree import STRtree
 
 
 # Get instance of logger for this module
@@ -67,7 +58,7 @@ class Buildings2DOSMBuilder():
         buildings_2d.children.sort(key=lambda a: a.get('ddd:area:area'))  # extra['ddd:area:area'])
         '''
 
-        #buildings_2d.index_create()
+        buildings_2d.index_create()
 
         # TODO: create nested buildings separately, consider them part of the bigger building for subtraction)
         # Assign each building part to a building, or transform it into a building if needed
@@ -86,7 +77,11 @@ class Buildings2DOSMBuilder():
             # Find building
             #buildings = features_2d.select(func=lambda o: o.extra.get('osm:building', None) and ddd.polygon(o.geom.exterior.coords).contains(feature))
             feature_margin = feature.buffer(-0.05)
-            building_parents = buildings_2d.select(func=lambda o: o.extra.get('osm:building', None) and o != feature and o.contains(feature_margin) and o in features_2d_original)
+            #building_parents = buildings_2d.select(func=lambda o: o.extra.get('osm:building', None) and o != feature and o.geom in candidate_parents and o.contains(feature_margin) and o in features_2d_original)
+
+            candidate_parents = buildings_2d._strtree.query(feature_margin.geom)
+            building_parents = [o._ddd_obj for o in candidate_parents if o._ddd_obj.get('osm:building', None) and o._ddd_obj != feature and o._ddd_obj.contains(feature_margin) and o._ddd_obj in features_2d_original]
+            building_parents = ddd.group2(building_parents)
 
             if len(building_parents.children) == 0:
                 if feature.extra.get('osm:building', None) is None:
@@ -118,7 +113,7 @@ class Buildings2DOSMBuilder():
                 #    building_parents.children[0].extra['ddd:building:parts'] = []
                 building_parents.children[0].extra['ddd:building:parts'].append(feature)
 
-        #buildings_2d.index_clear()
+        buildings_2d.index_clear()
 
 
     def preprocess_building_fixes(self, buildings_2d):
@@ -248,6 +243,7 @@ class Buildings2DOSMBuilder():
         ways_ref.index_create()
 
         self._vertex_cache = defaultdict(list)
+        self._segment_cache = defaultdict(list)
         # Note that parts are processed in an unordered (flattened) way here
         selected_parts = buildings.select(func=lambda o: o.geom, recurse=True)
         for part in selected_parts.children:
@@ -258,6 +254,7 @@ class Buildings2DOSMBuilder():
                 vidx = vidx % (len(vertices) - 1)
                 self._vertex_cache[v].append((part, vidx))
 
+        # Create segments
         for part in selected_parts.children:
             if part.is_empty():
                 logger.warn("Skipping analysis of building with empty geometry: %s", part)
@@ -268,6 +265,16 @@ class Buildings2DOSMBuilder():
             if part.get('ddd:building:parts', None): continue  # Ignore parents as they are not rendered
             self.process_building_contacts(part)
             self.process_building_convex_hull_create(part)
+
+        # Now analize segments
+        for part in selected_parts.children:
+            if part.is_empty():
+                logger.warn("Skipping analysis of building with empty geometry: %s", part)
+                continue
+            if part.geom.type != 'Polygon':
+                logger.warn("Skipping analysis of building with non Polygon geometry (not implemented): %s", part)
+                continue
+            if part.get('ddd:building:parts', None): continue  # Ignore parents as they are not rendered
             self.process_building_segments_analyze(part, buildings_ref, ways_ref)
             self.process_building_hull_analyze(part, buildings_ref, ways_ref)
 
@@ -282,12 +289,17 @@ class Buildings2DOSMBuilder():
 
         # Find contacted building parts
         vertices = part.vertex_list(recurse=False)  # This will fail if part had no geometry (eg. it was empty or children-only)
+
+        '''
         contacted = []
         for vidx, v in enumerate(vertices[:-1]):
             vidx = vidx % (len(vertices) - 1)
+            # Buiding contact contains the other part, own index and other index
             contacted = contacted + [BuildingContact(pc[0], vidx, pc[1]) for pc in self._vertex_cache[v] if pc[0] != part]
         #part.set('ddd:building:contacts', list(set(contacted)))
         part.set('ddd:building:contacts', {c.self_idx: c for c in list(set(contacted))} )
+        part.set('ddd:building:contacts_all', [c for c in list(set(contacted)) ])
+        '''
 
         # Mark each segment with:
         #seg_length = np.sqrt(dir_vec.dot(dir_vec))
@@ -299,7 +311,7 @@ class Buildings2DOSMBuilder():
             #v0, v1 = (np.array(v0), np.array(v1))
             #dir_vec = v1 - v0
             #dir_angle = math.atan2(dir_vec[1], dir_vec[0])
-
+            self._segment_cache[segment.vertex_key()].append(segment)
             segments.append(segment)  # Use type!
         part.set('ddd:building:segments', segments)
 
@@ -364,8 +376,8 @@ class Buildings2DOSMBuilder():
         """
 
         # Check if segment touches another segment in this or other building
+        '''
         contacts = part.get('ddd:building:contacts')
-
         seg_vert_idx_a = segment.seg_idx
         seg_vert_idx_b = (segment.seg_idx + 1) % (len(part.vertex_list()) - 1)
         contact_a = contacts.get(seg_vert_idx_a, None)
@@ -376,9 +388,14 @@ class Buildings2DOSMBuilder():
             # Check that segment is contiguous on the "other" geometry (note it can also cycle around vertex list)
             if abs(coa - cob) == 1 or (abs(coa - cob) == len(contact_a.other.vertex_list()) - 2):
                 segment.contact = contact_a.other
+        '''
 
-        #    if
-        #if BuildingSegment
+        othersegments = self._segment_cache[segment.vertex_key()]
+        othersegments = [s for s in othersegments if s.building != part]
+        if othersegments:
+            segment.contact = othersegments[0]
+        if len(othersegments) > 1:
+            logger.warn("Building segment with several contacts to other buildings, using only first contact.")
 
         # Get the closest (forward) way to the segment,
         seg_center = (np.array(segment.p2) + np.array(segment.p1)) / 2
@@ -407,8 +424,6 @@ class Buildings2DOSMBuilder():
         else:
             # TODO: Check way weights for main/secondary facades
             segment.facade_type = 'main'  # secondary / lateral / back
-
-
 
 
     def process_buildings_link_items_to_buildings(self, buildings_2d, items_1d):

@@ -101,6 +101,9 @@ class Buildings3DOSMBuilder():
         """
         Buildings 2D may contain references to building parts.
 
+        This section also sets ddd:building:building_2d, for parent buildings and building parts, referencing
+        the respective 2D geometry (eg. to be used for snapping or footprints).
+
         TODO: Do a lot more in tags in 2D and here, and generalize tasks to pipelines and tags.
         """
 
@@ -349,6 +352,7 @@ class Buildings3DOSMBuilder():
             if (min_height_accum < min_height or
                 min_height_accum + floor_height > max_height):
                 # Floor not in facade range
+                min_height_accum = min_height_accum + floor_height
                 continue
 
             for parti in part.individualize(always=True).children:  # Individualizing to allow for outline afterwards, not needed if floor metada nodes were already created by this time
@@ -366,8 +370,10 @@ class Buildings3DOSMBuilder():
         Should use pre-created items (nodes, metadata...) or a building schema.
         """
 
-        part_outline = part.outline()
-        vertices = part_outline.vertex_list()  # This will fail if part had no geometry (eg. it was empty or children-only)
+        #building_3d.set('DEBUG:build-part-body-floor:%s' % (floor_num), True)
+
+        #part_outline = part.outline()
+        vertices = part.vertex_list()  # This will fail if part had no geometry (eg. it was empty or children-only)
         segments_verts = list(zip(vertices[:-1], vertices[1:]))
         segments = part.get('ddd:building:segments', None)
 
@@ -400,6 +406,7 @@ class Buildings3DOSMBuilder():
             num_items = int(seg_length / item_width) if seg_length > min_seg_width else 0
 
             for d in np.linspace(0.0, seg_length, num_items + 2, endpoint=True)[1:-1]:
+                #building_3d.set('DEBUG:segment-point:%s:%s:%s' % (idx, floor_num, d), True)
                 p = v0 + dir_vec * (d / seg_length)
                 #p, segment_idx, segment_coords_a, segment_coords_b = part_outline.interpolate_segment(d)
 
@@ -424,6 +431,7 @@ class Buildings3DOSMBuilder():
 
                     add_windows = parse_bool(part.get('ddd:building:windows', building_3d.get('ddd:building:windows', 'yes')))
                     if add_windows:
+                        #building_3d.set('DEBUG:added_windows:%s:%s' % (idx, floor_num), True)
                         key = "building-window"
                         object_min_height = min_height + floor_height - 3.0 + 1.0
                         obj  = self.osm.catalog.instance(key)
@@ -451,26 +459,59 @@ class Buildings3DOSMBuilder():
 
         # Find building segment to snap
         item_1d = item_3d.extra.get('ddd:item', None)
-        building_2d = building_3d.get('ddd:building:building_2d')
 
-        if building_2d.is_empty() is None:
+        building_2d = building_3d.get('ddd:building:parent', building_3d.get('ddd:building:building_2d', None))
+        if building_2d: building_2d = building_2d.get('osm:original', building_2d)
+        #building_2d = item_3d.get('ddd:building').get('ddd:building:building_2d', None)
+
+        logger.debug("Snapping %s to %s, using 2D %s", item_3d, building_3d, building_2d)
+
+        if building_2d is None:
+            logger.error("Could not find linked building 2D geometry to snap item %s to building %s.", item_3d, building_3d)
+            return None
+
+        if building_2d.is_empty():
             logger.warn("Cannot snap item to empty geometry: %s", building_3d)
+            return None
+
+        '''
+        if building_2d.geom is None:
+            logger.warn("Cannot snap item to building with no geometry (fixme: building was not considered empty though): %s", building_2d)
             return None
 
         if building_2d.geom.type == "MultiPolygon":
             logger.warn("Cannot snap to MultiPolygon building (ignoring item_3d)  TODO: usecommon snap functions which should support MultiPolygon")
             return None
+        '''
 
-        line = building_2d.geom.exterior
-        closest_distance_to_closest_point_in_exterior = line.project(item_1d.geom.centroid)
-        #closest_point, closest_segment = self.closest_building_2d_segment(amenity, building_2d)
-        #closest_point = line.interpolate(closest_distance_to_closest_point_in_exterior)
-        closest_point, segment_idx, segment_coords_a, segment_coords_b = DDDObject2(geom=line).interpolate_segment(closest_distance_to_closest_point_in_exterior)
+        #lines = building_2d.individualize()  # geom.exterior
+
+        # Project only to facade lines
+        building_2d_margin = building_2d.buffer(-1)
+        lines = []
+        for b in building_3d.children:
+            for s in b.get('ddd:building:segments', []):
+                l = ddd.line([s.p1, s.p2], )
+                #l.set('ddd:building:segment') = s
+                if s.facade_type != 'contact' and not building_2d_margin.contains(l):
+                    lines.append(l)
+
+        if len(lines) == 0:
+            logger.error("No segments geometry to snap item %s to building %s.", item_3d, building_3d)
+            return None
+
+        lines = ddd.group2(lines)
+
+        closest_point, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d = lines.closest_segment(item_1d.centroid())
 
         dir_ver = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
         dir_ver_length = math.sqrt(dir_ver[0] ** 2 + dir_ver[1] ** 2)
         dir_ver = (dir_ver[0] / dir_ver_length, dir_ver[1] / dir_ver_length)
         angle = math.atan2(dir_ver[1], dir_ver[0])
+
+        # Reverse angle if point is inside
+        if building_2d.contains(item_1d.centroid()):
+            angle = angle + math.pi
 
         #if not building_2d.geom.contains(amenity.geom):
         #    angle = -angle
@@ -480,78 +521,91 @@ class Buildings3DOSMBuilder():
         #logger.debug("Amenity: %s Closest point: %s Closest Segment: %s Angle: %s" % (amenity.geom.centroid, closest_point, closest_segment, angle))
 
         # Align rotation
-        item_3d = item_3d.rotate([0, 0, angle + math.pi])  # + math.pi / 2.0
+        item_3d = item_3d.rotate([0, 0, angle])  # + math.pi / 2.0
         item_3d = item_3d.translate([closest_point[0], closest_point[1], 0])
+
+        # Raise to floor level, since currently items are not considered by floor
+        point_elevation = terrain.terrain_geotiff_elevation_value(item_1d.centroid().geom.coords[0], self.osm.ddd_proj)
+        extra_elevation = point_elevation - building_3d.get('ddd:building:elevation:min')
+        item_3d = item_3d.translate([0, 0, extra_elevation])
 
         return item_3d
 
     def generate_building_3d_amenities(self, building_3d):
+        """
+        """
 
+        '''
         if 'ddd:building:items' not in building_3d.extra:
+            # FIXME: This is happening as building parents with children don't contain items information themselves atm
             logger.warn("Building with no linked items (ddd:building:items): %s", building_3d)
             return
+        '''
 
-        for item_1d in building_3d.extra['ddd:building:items']:
+        # Find children amenities, but link them to the whole building (so no interiors are used)
+        # TODO: This shall be resolved earlier, in order to assign facade segments to amenities, shops. portals, windows...
+        for bp in building_3d.select('["ddd:building:items"]', recurse=False).children:
 
-            if item_1d.extra.get('osm:amenity', None) == 'pharmacy':
+            for item_1d in bp.extra['ddd:building:items']:
 
-                coords = item_1d.geom.centroid.coords[0]
+                if item_1d.extra.get('osm:amenity', None) == 'pharmacy':
 
-                # Side sign
-                item = urban.sign_pharmacy_side(size=1.0)
-                item.copy_from(item_1d)
+                    # Side sign
+                    item = urban.sign_pharmacy_side(size=1.0)
+                    item.copy_from(item_1d)
 
-                '''
-                # Plain sign (front view on facade)
-                item = urban.sign_pharmacy(size=1.2)
-                item = item.translate([0, -0.25, 2.0])  # no post
-                '''
-                item.extra['ddd:item'] = item_1d
-                item = self.snap_to_building(item, building_3d)
-                item = item.translate([0, 0, 3.0])  # no post
-                #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
-                building_3d.children.append(item)
+                    '''
+                    # Plain sign (front view on facade)
+                    item = urban.sign_pharmacy(size=1.2)
+                    item = item.translate([0, -0.25, 2.0])  # no post
+                    '''
+                    item.extra['ddd:item'] = item_1d
+                    item = self.snap_to_building(item, building_3d)
+                    if item:
+                        item = item.translate([0, 0, 3.0])  # no post
+                        #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
+                        building_3d.children.append(item)
 
-            elif item_1d.extra.get('osm:amenity', None) and item_1d.extra.get('osm:amenity', None) not in ('fountain', 'taxi', 'post_box', 'bench', 'toilets', 'parking_entrance'):
-                # Except parking?
+                elif item_1d.extra.get('osm:amenity', None) and item_1d.extra.get('osm:amenity', None) not in ('fountain', 'taxi', 'post_box', 'bench', 'toilets', 'parking_entrance'):
+                    # Except parking?
 
-                #coords = amenity.geom.centroid.coords[0]
-                #panel_text = amenity.extra['amenity'] if amenity.extra['amenity'] else None
-                panel_text = item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else (item_1d.extra['osm:amenity'].upper() if item_1d.extra['osm:amenity'] else None)
-                item = urban.panel(width=3.2, height=0.9, text=panel_text)
-                item.copy_from(item_1d)
-                item.extra['ddd:item'] = item_1d
-                item.name = "Panel: %s %s" % (item_1d.extra['osm:amenity'], item_1d.extra.get('osm:name', None))
-                item = self.snap_to_building(item, building_3d)
-                if item:
-                    item = item.translate([0, 0, 3.2])  # no post
-                    color = random.choice(["#d41b8d", "#a7d42a", "#e2de9f", "#9f80e2"])
-                    item.children[0] = item.children[0].material(ddd.material(color=color), include_children=False)
-                    #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
-                    building_3d.children.append(item)
+                    #coords = amenity.geom.centroid.coords[0]
+                    #panel_text = amenity.extra['amenity'] if amenity.extra['amenity'] else None
+                    panel_text = item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else (item_1d.extra['osm:amenity'].upper() if item_1d.extra['osm:amenity'] else None)
+                    item = urban.panel(width=3.2, height=0.9, text=panel_text)
+                    item.copy_from(item_1d)
+                    item.extra['ddd:item'] = item_1d
+                    item.name = "Panel: %s %s" % (item_1d.extra['osm:amenity'], item_1d.extra.get('osm:name', None))
+                    item = self.snap_to_building(item, building_3d)
+                    if item:
+                        item = item.translate([0, 0, 3.2])  # no post
+                        color = random.choice(["#d41b8d", "#a7d42a", "#e2de9f", "#9f80e2"])
+                        item.children[0] = item.children[0].material(ddd.material(color=color), include_children=False)
+                        #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
+                        building_3d.children.append(item)
+                    else:
+                        logger.info("Could not snap item to building (skipping item): %s", item_1d)
+                    #building_3d.show()
+
+                elif item_1d.extra.get('osm:shop', None):
+                    #coords = item_1d.geom.centroid.coords[0]
+                    panel_text = (item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else item_1d.extra['osm:shop'])
+                    item = urban.panel(width=2.5, height=0.8, text=panel_text)
+                    item.copy_from(item_1d)
+                    item.extra['ddd:item'] = item_1d
+                    item.name = "Shop Panel: %s %s" % (item_1d.extra['osm:shop'], item_1d.extra.get('osm:name', None))
+                    item = self.snap_to_building(item, building_3d)
+                    if item:
+                        item = item.translate([0, 0, 3.1])  # no post
+                        color = random.choice(["#c41a7d", "#97c41a", "#f2ee0f", "#0f90f2"])
+                        item.children[0] = item.children[0].material(ddd.material(color=color), include_children=False)
+                        #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
+                        building_3d.children.append(item)
+                    else:
+                        logger.info("Could not snap item to building (skipping item): %s", item)
+
                 else:
-                    logger.info("Could not snap item to building (skipping item): %s", item)
-                #building_3d.show()
-
-            elif item_1d.extra.get('osm:shop', None):
-                #coords = item_1d.geom.centroid.coords[0]
-                panel_text = (item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else item_1d.extra['osm:shop'])
-                item = urban.panel(width=2.5, height=0.8, text=panel_text)
-                item.copy_from(item_1d)
-                item.extra['ddd:item'] = item_1d
-                item.name = "Shop Panel: %s %s" % (item_1d.extra['osm:shop'], item_1d.extra.get('osm:name', None))
-                item = self.snap_to_building(item, building_3d)
-                if item:
-                    item = item.translate([0, 0, 2.8])  # no post
-                    color = random.choice(["#c41a7d", "#97c41a", "#f2ee0f", "#0f90f2"])
-                    item.children[0] = item.children[0].material(ddd.material(color=color), include_children=False)
-                    #item = terrain.terrain_geotiff_min_elevation_apply(item, self.osm.ddd_proj)
-                    building_3d.children.append(item)
-                else:
-                    logger.info("Could not snap item to building (skipping item): %s", item)
-
-            else:
-                logger.debug("Unknown building-related item: %s", item_1d)
+                    logger.debug("Unknown building-related item: %s", item_1d)
 
 
 

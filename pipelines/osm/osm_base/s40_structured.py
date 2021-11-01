@@ -267,6 +267,7 @@ def osm_structured_generate_ways_2d_intersections(osm, root):
 def osm_structured_subtract_buildings_calculate(pipeline, root, logger):
 
     buildings = root.find("/Buildings").union()
+    #buildings = ddd.group2()
     #buildings = buildings.clean(eps=0.00)
     #buildings.show()
     pipeline.data['buildings'] = buildings
@@ -375,6 +376,16 @@ def osm_structured_areas_postprocess_water(root, osm):
     ways_2d = root.find("/Ways")
     osm.areas2.generate_areas_2d_postprocess_water(areas_2d, ways_2d)
 
+@dddtask()
+def osm_structured_generate_areas_calculate_buildings_footprint(pipeline, osm, root, logger):
+    """Calculates building footprint to be removed from areas (terrain, sidewalk...)."""
+    # FIXME: This condition for footprints is weak, use a building footprint generation function
+    # Also, seems that at this moment ddd:building:min_level, etc are not available (is it too soon? min/max levels/height shall be available earlier)
+    buildings = root.select(path="/Buildings/*", func=lambda o:
+        (o.get('ddd:building:parent', None) or not o.get('ddd:building:parts', None)) and
+        o.get("osm:building:min_level", None) is None)
+    buildings = buildings.union()
+    pipeline.data['buildings_level_0'] = buildings
 
 @dddtask()
 def osm_structured_generate_areas_interways(pipeline, osm, root, logger):
@@ -385,7 +396,7 @@ def osm_structured_generate_areas_interways(pipeline, osm, root, logger):
                         root.find("/Areas").select('["ddd:layer" ~ "0|-1a"]') ])
 
     # Add buildings
-    buildings = root.find("/Buildings").union()
+    buildings = pipeline.data['buildings_level_0']
     union.append(buildings)
 
     # Calculate union
@@ -404,7 +415,7 @@ def osm_structured_generate_areas_interways(pipeline, osm, root, logger):
     root.find("/Areas").append(interiors.children)
 
 @dddtask()
-def osm_structured_generate_areas_ground_fill(osm, root, logger):
+def osm_structured_generate_areas_ground_fill(pipeline, osm, root, logger):
     """
     Generates (fills) remaining ground areas (not between ways or otherwise occupied by other areas).
     Ground must come after every other area (interways, etc), as it is used to "fill" missing gaps.
@@ -421,7 +432,7 @@ def osm_structured_generate_areas_ground_fill(osm, root, logger):
     ##union = union.clean(eps=0.01)
 
     # Add buildings
-    buildings = root.find("/Buildings").union()
+    buildings = pipeline.data['buildings_level_0']
     union.append(buildings)
 
     union = osm.areas2.generate_union_safe(union)

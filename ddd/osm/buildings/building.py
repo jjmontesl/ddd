@@ -51,7 +51,23 @@ class BuildingSegment:
 
     def __repr__(self):
         return "%s (convex=%s, contact=%s, closest_way=%s, building_front=%s, facade_type=%s)" % (
-            self.seg_idx, self.seg_convex_idx, self.contact, self.closest_way, self.building_front, self.facade_type)
+            self.seg_idx, self.seg_convex_idx, self.contact.building if self.contact else None, self.closest_way, self.building_front, self.facade_type)
+
+    def vertex_key(self):
+        a, b = (self.p1, self.p2) if (self.p1 < self.p2) else (self.p2, self.p1)
+        return "%.4f,%.4f-%.4f,%.4f" % (a[0], a[1], b[0], b[1])
+
+    '''
+    def __hash__(self):
+        a, b = (self.p1, self.p2) if (self.p1 < self.p2) else (self.p2, self.p1)
+        return hash(a, b)
+
+    def __eq__(self, other):
+        a, b = (self.p1, self.p2) if (self.p1 < self.p2) else (self.p2, self.p1)
+        oa, ob = (other.p1, other.p2) if (other.p1 < other.p2) else (other.p2, other.p1)
+        return (a == oa and b == ob)
+    '''
+
 
 class Building():  # DDDObject3, DDDDataObject
 

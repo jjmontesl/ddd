@@ -325,6 +325,7 @@ def osm_model_generate_items_ways_height(obj, osm, root):
 def osm_model_elevation_items_buildings(obj, osm, root):
     """Apply elevation from building to building related items."""
     # TODO: (?) Associate earlier to building, and build building with all items, then apply elevation from here to building?
+    # Note: this is used for fences and other objects, but not to items (nodes) that are linked to the building, there is some divergence here
     obj.extra['ddd:elevation'] = "building"
     return obj
 

@@ -18,16 +18,9 @@
 import logging
 import math
 import random
-import sys
-import numpy as np
 
-from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
-from ddd.pack.sketchy import plants, urban
-from ddd.geo import terrain
-from ddd.core.exception import DDDException
 from ddd.util.dddrandom import weighted_choice
-from ddd.pack.sketchy.buildings import window_with_border, door, portal
 from ddd.util.common import parse_meters
 
 
