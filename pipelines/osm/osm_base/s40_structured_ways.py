@@ -27,9 +27,9 @@ after.
 - Split ways:
   - by the middle nodes if needed (eg. for highway crossings).
   - by every join with other ways
-  - items are associated to paths (TODO: document criteria, nodes only -check if we are getting nearby objects too somewhere, hopefuly not-)
+  - items are associated to paths (TODO: document criteria)
   - (TODO: itemways processing, what is it doing - other ways ie castle_wall are processed elsewhere ?)
-  - ways are generated in 2D from the lines
+  - ways are generated in 2D from lines
 - Areas:
   - areas are generated between ways
   - areas are generated for every other space not occupied in the generation area
@@ -162,8 +162,7 @@ def osm_structured_ways_1d_intersections(osm, root):
     """
     Generate intersection data structure.
 
-    This is currently stored in elements metadata (intersection, intersection_start...)
-    and in the osm.intersections attribute.
+    This is currently stored in elements metadata (intersection, intersection_start...).
     """
     osm.ways1.ways_1d_intersections(root.find("/Ways"))
 
@@ -171,8 +170,6 @@ def osm_structured_ways_1d_intersections(osm, root):
 @dddtask(path="/Ways/*")
 def osm_structured_ways_length(osm, root, obj):
     """
-    Splits all ways into the minimum pieces that have only an intersection at each end.
-    This method modifies the passed in node, manipulating children to avoid ways with multiple intersections.
     """
     obj.set('ddd:way:length', obj.length())
 
@@ -246,6 +243,108 @@ def osm_structured_generate_ways_2d(pipeline, root, osm):
     root.append(ways2)
 
 
+@dddtask(path="/Areas/*", select='[!"ddd:layer"]')
+def osm_structured_areas_layer(osm, root, obj):
+    layer = obj.extra.get('osm:layer', "0")
+    obj.set('ddd:layer', default=layer)
+
+'''
+@dddtask(path="/Ways/*", select='[!"ddd:layer"]')
+def osm_structured_ways_layer(osm, root, obj):
+    layer = obj.extra.get('osm:layer', "0")
+    obj.set('ddd:layer', layer)
+'''
+
+@dddtask()
+def osm_structured_generate_areas_calculate_buildings_ground_footprint(pipeline, osm, root, logger):
+    """Calculates building footprint to be removed from areas (terrain, sidewalk...)."""
+    # FIXME: This condition for footprints is weak, use a building footprint generation function
+    # Also, seems that at this moment ddd:building:min_level, etc are not available (is it too soon? min/max levels/height shall be available earlier)
+    buildings = root.select(path="/Buildings/*", func=lambda o:
+        (o.get('ddd:building:parent', None) or not o.get('ddd:building:parts', None)) and
+        o.get("osm:building:min_level", None) is None)
+    buildings = buildings.union()
+    pipeline.data['buildings_level_0'] = buildings
+
+
+@dddtask()
+def osm_structured_generate_areas_interways_phase1(pipeline, osm, root, logger):
+    """
+    Generates interior areas between ways.
+    This does not include ways that are overlaid / absorbed into their container areas (eg. paths over sidewalks).
+    NOTE: "way:overlay" may be better named "way:interways", as it is really used for that for now (way/area priority is also used for other resolutions, think path/cycle/road)
+    """
+
+    logger.info("Generating union for interways.")
+    union = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]')
+
+    # Calculate union
+    union = osm.areas2.generate_union_safe(union)
+    #union = union.clean()
+
+    # Add building lvel 0
+    buildings = pipeline.data['buildings_level_0']
+    areas = root.find("/Areas").select('["ddd:layer" ~ "0|-1a"]')
+    subtract_union = osm.areas2.generate_union_safe(ddd.group2([buildings, areas]))
+
+    logger.debug("Generating interways from interiors.")
+    interiors = osm.areas2.generate_areas_2d_ways_interiors(union)
+    interiors = interiors.material(ddd.mats.pavement)  # sidewalk
+    interiors.set('ddd:area:type', 'sidewalk', children=True)
+    interiors.set('ddd:kerb', True, children=True)
+    interiors.set('ddd:height', 0.2, children=True)
+    interiors.set('ddd:layer', "0", children=True)
+    #interiors = interiors.clean()
+
+    # Set a copy of itself as original area (so it can be cut and used for sidewalk kerb calculations)
+    for interior in interiors.children:
+        interior.set('ddd:area:area', interior.geom.area)
+        interior.set('ddd:area:original', interior.union())
+        # TODO: I think this should not be needed here, as buildings/areas shall be removed from all areas later anyway?
+        #interior = interior.subtract(subtract_union).clean().individualize(always=True)
+
+        root.find("/Areas").append(interior)
+
+'''
+@dddtask()
+def osm_structured_generate_areas_interways_phase1_augment_ways(pipeline, osm, root, logger):
+    """
+    Experimenting with aumenting sidewalks / kerbs
+    """
+
+    # TODO: if done, this shall generate at different layers and according to way metadata
+
+    logger.info("Generating sidewalks for ways.")
+    ways = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]')
+
+    # Add building lvel 0
+    #buildings = pipeline.data['buildings_level_0']
+    #union.append(buildings)
+
+    # Calculate union
+    #union = osm.areas2.generate_union_safe(union)
+    #union = union.clean()
+
+    logger.debug("Generating sidewalks from ways.")
+
+    for way in ways.children:
+        sidewalk = way.buffer(4.0).subtract(way).individualize(always=True).flatten().clean(eps=-0.01)
+        sidewalk = sidewalk.material(ddd.mats.pavement)
+        sidewalk.set('ddd:area:type', 'sidewalk', children=True)
+        sidewalk.set('ddd:kerb', True, children=True)
+        sidewalk.set('ddd:height', 0.2, children=True)
+        sidewalk.set('ddd:layer', "0", children=True)
+
+        for sidewalk_item in sidewalk.children:
+            if sidewalk_item.is_empty(): continue
+            sidewalk_item.set('ddd:area:area', sidewalk_item.geom.area)
+            # Set a copy of itself as original area (so it can be cut and used for sidewalk kerb calculations)
+            sidewalk_item.set('ddd:area:original', sidewalk_item.copy())
+            # TODO: I think this should not be needed here, as buildings shall be removed from all areas later anyway?
+            #interior.replace(interior.subtract(buildings).clean())
+            root.find("/Areas").append(sidewalk_item)
+'''
+
 @dddtask()
 def osm_structured_generate_ways_2d_intersections(osm, root):
     """
@@ -272,13 +371,17 @@ def osm_structured_subtract_buildings_calculate(pipeline, root, logger):
     #buildings.show()
     pipeline.data['buildings'] = buildings
 
+
 @dddtask(path="/Ways/*", select='["ddd:subtract_buildings" = True]')
 def osm_structured_subtract_buildings(pipeline, root, logger, obj):
     """Subtract buildings from objects that cannot overlap them."""
     #buildings_2d_union = self.osm.buildings_2d.union()
     #way_2d = way_2d.subtract(self.osm.buildings_2d_union)
     obj = obj.clean(eps=0.05)
-    buildings = pipeline.data['buildings']
+
+    #buildings = pipeline.data['buildings']
+    buildings = pipeline.data['buildings_level_0']
+
     try:
         obj = obj.subtract(buildings)
     except Exception as e:
@@ -286,10 +389,17 @@ def osm_structured_subtract_buildings(pipeline, root, logger, obj):
     return obj
 
 
-@dddtask(path="/Areas/*", select='[!"ddd:layer"]')
-def osm_structured_areas_layer(osm, root, obj):
-    layer = obj.extra.get('osm:layer', "0")
-    obj.set('ddd:layer', layer)
+@dddtask()
+def osm_structured_generate_ways_2d_individualize(osm, root, logger):
+    """
+    Individualize all ways in MultiPolygons and flatten them all.
+    """
+    logger.warn("Individualizing ways early works around way overlay issues with multipolygons, but causes wrong joints (eg. for road lines).")
+    ways_2d = root.find("/Ways")
+
+    ways_2d = ways_2d.individualize().flatten()
+    root.find("/Ways").replace(ways_2d)
+
 
 
 @dddtask()
@@ -376,28 +486,23 @@ def osm_structured_areas_postprocess_water(root, osm):
     ways_2d = root.find("/Ways")
     osm.areas2.generate_areas_2d_postprocess_water(areas_2d, ways_2d)
 
-@dddtask()
-def osm_structured_generate_areas_calculate_buildings_footprint(pipeline, osm, root, logger):
-    """Calculates building footprint to be removed from areas (terrain, sidewalk...)."""
-    # FIXME: This condition for footprints is weak, use a building footprint generation function
-    # Also, seems that at this moment ddd:building:min_level, etc are not available (is it too soon? min/max levels/height shall be available earlier)
-    buildings = root.select(path="/Buildings/*", func=lambda o:
-        (o.get('ddd:building:parent', None) or not o.get('ddd:building:parts', None)) and
-        o.get("osm:building:min_level", None) is None)
-    buildings = buildings.union()
-    pipeline.data['buildings_level_0'] = buildings
 
+'''
 @dddtask()
-def osm_structured_generate_areas_interways(pipeline, osm, root, logger):
-    """Generates interior areas between ways."""
+def osm_structured_generate_areas_interways_phase1(pipeline, osm, root, logger):
+    """
+    Generates interior areas between ways.
+    This phase does not include ways that are overlaid / absorbed into their container areas (eg. paths over sidewalks).
+    NOTE: "way:overlay" may be better named "way:interways", as it is really used for that for now (way/area priority is also used for other resolutions, think path/cycle/road)
+    """
 
     logger.info("Generating union for interways.")
-    union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]'),
+    union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]'),
                         root.find("/Areas").select('["ddd:layer" ~ "0|-1a"]') ])
 
-    # Add buildings
+    # Add building lvel 0
     buildings = pipeline.data['buildings_level_0']
-    union.append(buildings)
+    #union.append(buildings)
 
     # Calculate union
     union = osm.areas2.generate_union_safe(union)
@@ -406,13 +511,22 @@ def osm_structured_generate_areas_interways(pipeline, osm, root, logger):
     logger.info("Generating interways from interiors.")
     interiors = osm.areas2.generate_areas_2d_ways_interiors(union)
     interiors = interiors.material(ddd.mats.pavement)
-    interiors.prop_set('ddd:area:type', 'sidewalk', children=True)
-    interiors.prop_set('ddd:kerb', True, children=True)
-    interiors.prop_set('ddd:height', 0.2, children=True)
-    interiors.prop_set('ddd:layer', "0", children=True)
+    interiors.set('ddd:area:type', 'sidewalk', children=True)
+    interiors.set('ddd:kerb', True, children=True)
+    interiors.set('ddd:height', 0.2, children=True)
+    interiors.set('ddd:layer', "0", children=True)
     #interiors = interiors.clean()
 
+    # Set a copy of itself as original area (so it can be cut and used for sidewalk kerb calculations)
+    for interior in interiors.children:
+        interior.set('ddd:area:area', interior.geom.area)
+        interior.set('ddd:area:original', interior.union())
+        # TODO: I think this should not be needed here, as buildings shall be removed from all areas later anyway?
+        interior.replace(interior.subtract(buildings).clean())
+
     root.find("/Areas").append(interiors.children)
+'''
+
 
 @dddtask()
 def osm_structured_generate_areas_ground_fill(pipeline, osm, root, logger):
@@ -421,12 +535,13 @@ def osm_structured_generate_areas_ground_fill(pipeline, osm, root, logger):
     Ground must come after every other area (interways, etc), as it is used to "fill" missing gaps.
     """
 
-    area_crop = osm.area_filter
-    logger.info("Generating terrain (bounds: %s)", area_crop.bounds)
+    # Fill terrain for a chunk as large as the area filter
+    area_fill = osm.area_filter
+
+    logger.info("Generating terrain (bounds: %s)", area_fill.bounds)
 
     union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "^(0|-1a)$"]'),
                         root.find("/Areas").select('["ddd:layer" ~ "^(0|-1a)$"]'),
-                        #root.find("/Water")
                         ])
     #union = union.clean_replace(eps=0.01)
     ##union = union.clean(eps=0.01)
@@ -438,7 +553,7 @@ def osm_structured_generate_areas_ground_fill(pipeline, osm, root, logger):
     union = osm.areas2.generate_union_safe(union)
     union = union.clean(eps=0.01)  # Removing this causes a core dump during 3D generation
 
-    terr = ddd.rect(area_crop.bounds, name="Ground")
+    terr = ddd.rect(area_fill.bounds, name="Ground")
     terr = terr.material(ddd.mats.terrain)
     terr.extra["ddd:layer"] = "0"
     terr.extra["ddd:height"] = 0
@@ -453,6 +568,9 @@ def osm_structured_generate_areas_ground_fill(pipeline, osm, root, logger):
     root.find("/Areas").append(terr)
 
 
+
+
+
 @dddtask(path="/Areas/*", select='["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]', recurse=True)
 def osm_groups_areas_assign_area_m2(root, osm, obj, logger):
     """
@@ -462,7 +580,6 @@ def osm_groups_areas_assign_area_m2(root, osm, obj, logger):
     have been selected earlier during groups_areas).
     """
 
-
     #obj.extra['ddd:area:area'] = obj.geom.area  # Removed as causes many troubles: stairs to be assigned as areas, repeated surfaces, but everything here should be buildable!
     #obj.set('ddd:area:weight', default=100)  # FIXME: weight should be positive (otherwise should call it priority)
     #obj.set('ddd:area:height', default=0)
@@ -471,20 +588,51 @@ def osm_groups_areas_assign_area_m2(root, osm, obj, logger):
     obj.extra['ddd:area:container'] = None
     obj.extra['ddd:area:contained'] = []
 
+'''
+@dddtask()
+def debug(root, osm, pipeline):
+    root.remove(root.find("/Features"))
+    pipeline.stop()
+'''
+
+
+@dddtask(path="/Areas/*")
+def osm_structured_areas_subtract_buildings(pipeline, osm, root, obj, logger):
+    buildings = pipeline.data['buildings_level_0']
+    obj = obj.subtract(buildings)
+    return obj
+
+@dddtask()
+def osm_structured_areas_calculate_areas_subtract(pipeline, osm, root, logger):
+    """"""
+    areas_2d = root.find("/Areas").select('["ddd:layer" = "%s"][!"ddd:area:interways"]' % 0)
+    areas_2d = areas_2d.union()
+    pipeline.data['areas_2d_level_0'] = areas_2d
+
+@dddtask(path="/Areas/*", select='["ddd:area:interways"]')
+def osm_structured_areas_subtract_areas_from_interways(pipeline, osm, root, obj, logger):
+    areas_2d = pipeline.data['areas_2d_level_0']
+    obj = obj.subtract(areas_2d)
+    return obj
+
 
 @dddtask()
 def osm_structured_areas_process(logger, osm, root):
     """
-    Resolves container / contained relationships between areas.
+    Resolves container / contained relationships between areas, and subtracts contained areas from containers.
     """
 
     layers = set([n.extra.get('ddd:layer', '0') for n in root.select(path="*", recurse=True).children])
+    logger.info("Layers found in areas: %s", (layers, ))
+
+    # Clean areas
+    #root.find("/Areas").replace(root.find("/Areas").clean())
 
     for layer in layers:
         logger.info("Processing areas for layer: %s", layer)
         areas_2d = root.find("/Areas").select('["ddd:layer" = "%s"]' % layer)
-        subtract = root.find("/Ways").select('["ddd:layer" = "%s"]' % layer)
 
+        subtract = root.find("/Ways").select('["ddd:layer" = "%s"]' % layer)
         subtract = osm.areas2.generate_union_safe(subtract)
 
         osm.areas2.generate_areas_2d_process(root.find("/Areas"), areas_2d, subtract)

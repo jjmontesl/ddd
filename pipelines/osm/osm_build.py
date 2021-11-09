@@ -21,7 +21,7 @@ import osm_base.s30_groups_items_ways
 import osm_base.s30_groups_items_areas
 import osm_base.s30_groups_export_2d
 
-import osm_base.s40_structured
+import osm_base.s40_structured_ways
 import osm_base.s40_structured_export_2d
 
 import osm_augment.s45_pitch

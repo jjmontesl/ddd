@@ -46,7 +46,7 @@ def osm_materials():
                                  texture_path=ddd.DATA_DIR + "/materials/road-lines/RoadLines_alb.png",
                                  texture_normal_path=ddd.DATA_DIR + "/materials/road-lines/RoadLines_normal.jpg",
                                  alpha_cutoff=0.05, metallic_factor=0.36, roughness_factor=0.30, bump_strength=0.25,
-                                 extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05, 'zoffset':-8.5,
+                                 extra={'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 0.05, 'zoffset': -8.5,
                                         'ddd:texture:resize': 1024})
     ddd.mats.roadline_red = ddd.material(name="Roadline Red", color='#f88888',
                                  texture_path=ddd.DATA_DIR + "/materials/road-lines/RoadLines_alb.png",
@@ -146,7 +146,7 @@ def osm_materials():
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/Ground039_2K-JPG/Ground039_2K_*.jpg",)
                                     # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Ground039_2K-JPG/Ground039_2K_Normal.jpg",
                                     # texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Ground039_2K-JPG/Ground039_2K_Displacement.jpg", )
-    ddd.mats.terrain_veg_dead_sparse = ddd.material(name="Ground Veg Dead Sparse", color='#a49f74', extra={'uv:scale': 0.25},  # 0.2
+    ddd.mats.terrain_veg_dead_sparse = ddd.material(name="Ground Veg Dead Sparse", color='#8c6d2a', extra={'uv:scale': 0.25},  # 0.2
                                     metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Ground36/Ground36_*.jpg",)
                                     # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Ground36/Ground36_nrm.jpg",
@@ -375,11 +375,11 @@ def osm_materials():
     ddd.mats.building_4 = ddd.mats.bricks
     ddd.mats.building_5 = ddd.mats.plaster_paint_white
 
-    ddd.mats.roof_tiles_round = ddd.material("RoofTilesRound", color='f25129', extra={'uv:scale': 1.0},  # 0.25  # color='#f19f70',
+    ddd.mats.roof_tiles_round = ddd.material("RoofTilesRound", color='f25129', extra={'uv:scale': 0.25},  # 0.25  # color='#f19f70',
                                        metallic_factor=0.0, roughness_factor=0.7, index_of_refraction=1.08, bump_strength=2.0,
                                        texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]RoofingTiles05/RoofingTiles05_*.jpg",)
                                        # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]RoofingTiles05/RoofingTiles05_nrm.jpg",)
-    ddd.mats.roof_tiles = ddd.material("RoofTiles", color='f25129', extra={'uv:scale': 1.0},  # 0.25  # color='#f19f70',
+    ddd.mats.roof_tiles = ddd.material("RoofTiles", color='f25129', extra={'uv:scale': 1 / 3},  # 0.25  # color='#f19f70',
                                        metallic_factor=0.0, roughness_factor=0.7, index_of_refraction=1.08, bump_strength=2.0,
                                        texture_path=ddd.DATA_DIR + "/osmmaterials/RoofingTiles007_2K-JPG/RoofingTiles007_2K_*.jpg",)
                                        # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/RoofingTiles007_2K-JPG/RoofingTiles007_2K_Normal.jpg",

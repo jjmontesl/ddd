@@ -56,6 +56,14 @@ def osm_positioning_select_amenity_drinking_water(obj, osm, root, logger):
     #obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
     obj.extra['ddd:positioning:ref'] = 'positioning_areas_ways_2d_outline'
 
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "bicycle_parking"]')
+def osm_positioning_select_amenity_bicycle_parking(obj, osm, root, logger):
+    obj.extra['ddd:positioning:type'] = 'snap-project'
+    #obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
+    obj.extra['ddd:positioning:ref'] = 'positioning_ways_2d_0'
+    obj.extra['ddd:positioning:penetrate'] = -0.7
+    #obj.extra['ddd:positioning:validate:ref'] = 'positioning_ways_2d_0_and_buildings'
+
 @dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "post_box"]')
 def osm_positioning_select_postbox (obj, osm, root, logger):
     obj.extra['ddd:positioning:type'] = 'snap-project'

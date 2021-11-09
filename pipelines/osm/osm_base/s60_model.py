@@ -34,7 +34,7 @@ Note: Currently this stage replaces some branches of the node tree, and/or renam
 def set_base_height(obj):
     container = obj.get('ddd:area:container', None)
     base_height = 0.0
-    if container:
+    if container and container != obj:
         set_base_height(container)
         base_height = container.get('ddd:height:base', 0)
         obj_height = container.get('ddd:height', 0)
@@ -396,7 +396,7 @@ def osm_model_texts_fonts(pipeline, root, logger):
     Test 2D text generation.
     """
     #pipeline.data['font'] = Font()
-    pipeline.data['font:atlas:opensansemoji64'] = ddd.material(name="FontOpenSansEmoji-64", color='#f88888',
+    pipeline.data['font:atlas:opensansemoji_64'] = ddd.material(name="FontOpenSansEmoji-64", color='#f88888',
                                                 texture_path=ddd.DATA_DIR + "/fontatlas/opensansemoji64.greyscale.png",
                                                 alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
                                                 extra={'ddd:material:type': 'font', 'ddd:collider': False, 'ddd:shadows': False,
@@ -425,10 +425,15 @@ def osm_model_texts_fonts(pipeline, root, logger):
 @dddtask(path="/*", select='["ddd:text"]')
 def osm_model_texts_generate(pipeline, osm, root, logger, obj):
 
-    fontkey = random.choice(pipeline.data['ddd:osm:fonts'])
+    text = obj.get('ddd:text')
+    fontkey = obj.get('ddd:text:font', None)
+    if fontkey:
+        fontkey = 'font:' + fontkey
+    if fontkey is None:
+        fontkey = random.choice(pipeline.data['ddd:osm:fonts'])
+
     text2d = pipeline.data[fontkey]
 
-    text = obj.get('ddd:text')
     #logger.info("Creating 2D text for: %s", text)
 
     width = obj.get('ddd:text:width') / len(text)

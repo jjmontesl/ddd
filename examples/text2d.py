@@ -21,14 +21,14 @@ def pipeline_start(pipeline, root, logger):
     Test 2D text generation.
     """
     #pipeline.data['font'] = Font()
-    pipeline.data['font:atlas:opensansemoji64'] = ddd.material(name="FontOpenSansEmoji-64", color='#f88888',
+    pipeline.data['font:atlas:opensansemoji64'] = ddd.material(name="Test-FontOpenSansEmoji-64", color='#f88888',
                                                 texture_path=ddd.DATA_DIR + "/fontatlas/opensansemoji64.greyscale.png",
                                                 #texture_normal_path=ddd.DATA_DIR + "/materials/road-marks-es/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
                                                 #atlas_path="/materials/road-marks-es/RoadMarkings2.plist",
                                                 alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
                                                 extra={'ddd:material:type': 'font', 'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096})
 
-    pipeline.data['font:atlas:dddfonts_01_64'] = ddd.material(name="DDDFonts-01-64", color='#f88888',
+    pipeline.data['font:atlas:dddfonts_01_64'] = ddd.material(name="Test-DDDFonts-01-64", color='#f88888',
                                                 texture_path=ddd.DATA_DIR + "/fontatlas/dddfonts_01_64.greyscale.png",
                                                 #texture_normal_path=ddd.DATA_DIR + "/materials/road-marks-es/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
                                                 #atlas_path="/materials/road-marks-es/RoadMarkings2.plist",
@@ -77,10 +77,10 @@ def pipeline_text_2d(pipeline, root):
     fontfaces = ['OpenSansEmoji-default-64', 'Oliciy-default-64', 'TechnaSans-default-64', 'Adolphus-default-64' ]
 
     for idx, fontface in enumerate(fontfaces):
-        text2d = Text2D(atlas, fontface=fontface)
+        text2d = Text2D(atlas, fontface=fontface, material=pipeline.data['font:atlas:dddfonts_01_64'])
         result = text2d.text(test_str)
 
-        result = result.material(pipeline.data['font:atlas:dddfonts_01_64'])
+        result = result.material(text2d.material)
         result = result.rotate(ddd.ROT_FLOOR_TO_FRONT)
         result = result.translate([0, 0, 2 * idx])
 

@@ -100,7 +100,7 @@ class AreaItemsOSMBuilder():
     def generate_item_3d_fountain(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         exterior = item_2d.subtract(item_2d.buffer(-0.3)).extrude(1.0).material(ddd.mats.stone)
-        exterior = ddd.uv.map_cylindrical(exterior)
+        exterior = ddd.uv.map_cubic(exterior)
 
         water =  item_2d.buffer(-0.20).triangulate().material(ddd.mats.water).translate([0, 0, 0.4])
         water = ddd.uv.map_cubic(water)  # map_2d_linear
@@ -116,7 +116,7 @@ class AreaItemsOSMBuilder():
     def generate_item_3d_pond(self, item_2d):
         # Todo: Use fountain shape if available, instead of centroid
         exterior = item_2d.subtract(item_2d.buffer(-0.4)).extrude(0.4).material(ddd.mats.dirt)
-        exterior = ddd.uv.map_cylindrical(exterior)
+        exterior = ddd.uv.map_cubic(exterior)
 
         water = item_2d.buffer(-0.2).triangulate().material(ddd.mats.water)
         water = ddd.uv.map_cubic(water)  # map_2d_linear

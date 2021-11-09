@@ -179,7 +179,7 @@ def football_goal_small():
 
 def football_goal(width=4.88, height=1.83, thick=0.20):
     line = ddd.point().line_to([0, height]).line_to([width, height]).line_to([width, 0]).translate([-width/2, 0])
-    line = line.buffer(thick * 0.5).extrude(-thick)
+    line = line.buffer(thick * 0.5, cap_style=ddd.CAP_FLAT).extrude(-thick)
     line = line.rotate(ddd.ROT_FLOOR_TO_FRONT).material(ddd.mats.steel)
     return line
 
@@ -378,6 +378,8 @@ def basketball_hoop():
 
 
 def enforce_aspect_ratio(length, width, ratio):
+    """
+    """
     current_ratio = length / width
     if current_ratio > ratio:
         length = length / (current_ratio / ratio)

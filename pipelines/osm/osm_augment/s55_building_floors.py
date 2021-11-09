@@ -24,7 +24,7 @@ def osm_augment_building_levels(root, osm, pipeline, logger):
     """
     pipeline.data['_lamps'] = root.select('["osm:highway" = "street_lamp"]')
 
-@dddtask(path="/Buildings/*", select='[ ! "osm:building:levels"][! "osm:building:height"]["osm:type" != "multipolygon"]')
+@dddtask(path="/Buildings/*", select='[ ! "osm:building:levels"][ ! "ddd:building:levels"][! "osm:building:height"]["osm:type" != "multipolygon"]')
 def osm_augment_building_levels_select(root, osm, pipeline, logger, obj):
     """
     """

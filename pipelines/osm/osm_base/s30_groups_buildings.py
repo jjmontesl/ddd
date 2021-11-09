@@ -116,6 +116,17 @@ def osm_generate_buildings_man_made_reservoir_covered(pipeline, osm, root, obj):
     obj = obj.material(ddd.mats.tiles_stones)
     return obj
 
+@dddtask(path="/Buildings/*", select='["osm:man_made" = "water_tower"]')
+def osm_generate_buildings_man_made_water_tower(pipeline, osm, root, obj):
+    obj.set('ddd:building:levels', default=1)
+
+    # Do not adjust floor 0 height so building can stay half-buried
+    # Should also look at "location=*" (surfacem, underground) here and in buildings to arrange floor 0
+    #obj.set('ddd:building:levels:0:elevation-height', default=False)
+    obj.set('ddd:building:material', default="concrete")
+    obj.set('ddd:building:roof:shape', default="none")
+    obj = obj.material(ddd.mats.concrete)
+    return obj
 
 @dddtask(path="/Buildings/*", select='["osm:building" = "roof"]["osm:amenity" = "fuel"]')
 def osm_buildings_building_roof_fuel(pipeline, osm, root, obj):

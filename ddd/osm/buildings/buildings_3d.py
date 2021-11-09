@@ -333,12 +333,31 @@ class Buildings3DOSMBuilder():
                 #entire_building_3d.append(bell)
                 building_3d.append(bell)
 
+        if part.get('osm:man_made', None) == 'water_tower':  # and dif_height > 6:
+            # TODO: Create this before, as a building part
+            logger.info("Creating water tower: %s", part)
+            tower_center = part.centroid()
+            tower_radius = tower_center.distance(part.outline())
+            tower_height = 32 + tower_radius * 2
+            tower_top_height = tower_radius * 1.4 - 1.5
+
+            tower_base = tower_center.buffer(tower_radius * 0.35, resolution=4, cap_style=ddd.CAP_ROUND)
+            tower_top = tower_center.buffer(tower_radius, resolution=4, cap_style=ddd.CAP_ROUND)
+            tower = tower_base.extrude_step(tower_base, tower_height - tower_top_height, base=False)
+            tower = tower.extrude_step(tower_top, tower_top_height - 1.5)
+            tower = tower.extrude_step(tower_top, 1.5)
+            tower = tower.material(material)
+            tower = ddd.uv.map_cubic(tower)
+
+            tower = tower.translate([0, 0, dif_height])
+            building_3d.append(tower)
+
         # Base
         if 'osm:building:part' not in part.extra:
             if random.uniform(0, 1) < 0.2:
                 base = part.buffer(0.3, cap_style=2, join_style=2).extrude(1.00)
                 base = base.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.building_4, ddd.mats.building_5]))
-                building_3d.children.append(base)
+                building_3d.append(base)
 
         building_3d = ddd.uv.map_cubic(building_3d)
 

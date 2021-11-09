@@ -7,7 +7,6 @@ from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 
 
-# Generate items (also see groups_items_nodes)
 @dddtask(order="30.20.10.10.+", path="/Features/*", select='[geom:type="Point"]', log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")
 def osm_generate_items_nodes_entry(root, osm, obj):
     """Entry point for items nodes generation (30.20.*)."""
@@ -20,6 +19,17 @@ def osm_generate_items_nodes_point(root, osm, obj):
     item = item.material(ddd.mats.red)
     if item.geom:
         root.find("/ItemsNodes").append(item)
+
+
+@dddtask(path="/ItemsNodes/*", select='["osm:amenity" = "bicycle_parking"]')
+def osm_select_items_nodes_amenity_bicycle_parking(root, osm, obj):
+    """Define item data."""
+    obj.name = "Bicycle Parking: %s" % obj.name
+    capacity = int(obj.get('osm:capacity', 2))
+    if capacity > 1:
+        obj.set('ddd:array:type', "line")
+        obj.set('ddd:array:length', capacity * 0.6)
+        obj.set('ddd:array:count', capacity)
 
 
 @dddtask(order="30.20.20.+", log=True)  #  , select='[geom:type="Point"]'  , parent="stage_30_generate_items_node")

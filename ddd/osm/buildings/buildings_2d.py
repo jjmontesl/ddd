@@ -427,6 +427,11 @@ class Buildings2DOSMBuilder():
 
 
     def process_buildings_link_items_to_buildings(self, buildings_2d, items_1d):
+        """
+        These are items that are linked to the building like signals and traffic lights,
+        but things like are part of the building (like business signs) should preferrably
+        be built as part of the building.
+        """
 
         logger.info("Linking items to buildings.")
         # TODO: Link to building parts, inspect facade, etc.

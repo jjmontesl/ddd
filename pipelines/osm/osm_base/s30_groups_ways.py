@@ -220,6 +220,7 @@ def osm_select_ways_footway(obj, root):
     #obj.extra['ddd:way:height'] = 0.2
     obj.extra['ddd:way:width'] = 1.5
     obj.extra['ddd:way:lanes'] = 0
+    obj.extra['ddd:way:overlay'] = True
     obj = obj.material(ddd.mats.pathwalk)  # TODO: Footways/paths are not always dirt
     root.find("/Ways").append(obj)
 
@@ -239,6 +240,7 @@ def osm_select_ways_pedestrian(obj, root):
     obj.extra['ddd:way:weight'] = 32
     obj.extra['ddd:way:height'] = 0.2
     obj.extra['ddd:way:width'] = 6.60
+    #obj.extra['ddd:way:overlay'] = True  # Calculate after generating areas/sidewalks/squares
     obj = obj.material(ddd.mats.pathwalk)
     obj.prop_set('ddd:way:lamps', default=True)
     root.find("/Ways").append(obj)
@@ -251,6 +253,7 @@ def osm_select_ways_path(obj, root):
     obj.extra['ddd:way:weight'] = 33
     #obj.extra['ddd:way:height'] = 0
     obj.extra['ddd:way:width'] = 1.5
+    obj.extra['ddd:way:overlay'] = True  # (different material, but we overlay over sidewalks too)
     obj = obj.material(ddd.mats.dirt)
 
     # TODO: Do later, after applying elevations, in a select ("add fences to elevated ways")... improve

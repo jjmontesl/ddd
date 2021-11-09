@@ -227,8 +227,13 @@ class ServerServeCommand(DDDCommand):
         if isinstance(node, DDDObject2):
             result = node.copy3()
             if node.geom:
+                tnode = node
+                if node.geom.type in ('Point', 'MultiPoint'):
+                    tnode = node.buffer(0.25)
+                elif node.geom.type in ('LineString', 'MultiLineString'):
+                    tnode = node.buffer(0.10)
                 try:
-                    triangulated = node.triangulate(ignore_children=True)
+                    triangulated = tnode.triangulate(ignore_children=True)
                     result.mesh = triangulated.mesh
                 except Exception as e:
                     logger.warn("Could not triangulate 2D object for 3D representation export (%s): %s", node, e)
@@ -264,6 +269,7 @@ class ServerServeCommand(DDDCommand):
             result_data = root.save(".glb")
         except Exception as e:
             logger.error("Could not produce result model (.glb): %s", e)
+            print(traceback.format_exc())
             result_data = None
 
         return result_data

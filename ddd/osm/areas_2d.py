@@ -21,14 +21,14 @@ class Areas2DOSMBuilder():
 
         self.osm = osmbuilder
 
-    def generate_areas_2d_process(self, areas_2d_group, areas_2d, subtract):
+    def generate_areas_2d_process(self, areas_2d_root, areas_2d, subtract):
         """
         Resolves area containment (ddd:area:container|contained).
         """
 
         # TODO: Assign area before, it's where it's used. Fail here if not set,
-        # Using all children from /Area causes problems, but should not, with repeated surfaces, errors in stairs processing
-        #areas = list(areas_2d.clean().children)
+        # Using all children from /Area causes problems (but should not) with repeated surfaces, errors in stairs processing
+        #areas = list(areas_2d.children)
         areas = areas_2d.select('["ddd:area:area"]').children
 
         logger.info("Sorting 2D areas (%d).", len(areas))
@@ -37,18 +37,19 @@ class Areas2DOSMBuilder():
 
         for idx in range(len(areas)):
             area = areas[idx]
-            area.extra['ddd:area:original'] = area
+            #area_smaller = area.buffer(-0.05)
+            #area.set('ddd:area:original', default=area)
             for larger in areas[idx + 1:]:
                 if larger.contains(area):
                     #logger.info("Area %s contains %s.", larger, area)
                     area.extra['ddd:area:container'] = larger
                     larger.extra['ddd:area:contained'].append(area)
-                    #break   # Using this break causes some area containments to be incorrectly assigned
+                    break   # Using this break causes some area containments to be incorrectly assigned
 
         # Union all roads in the plane to subtract
-        logger.info("Generating 2D areas subtract.")
+        #logger.info("Generating 2D areas subtract.")
         #union = ddd.group([self.osm.ways_2d['0'], self.osm.ways_2d['-1a']]).union()  # , areas_2d
-        union = subtract.union()
+        union = subtract  #.union()
 
         #union = union.clean()  # In (rare) cases the narea subtract below fails with TopologicalError
 
@@ -61,12 +62,14 @@ class Areas2DOSMBuilder():
             if area.geom.type == 'Point': continue
 
             original_area = area
-            area.extra['ddd:area:original'] = original_area  # Before subtracting any internal area
+            area.set('ddd:area:original', default=original_area)  # Before subtracting any internal area
 
-            # Subtract areas contained (use contained relationship)
-            narea = area.subtract(ddd.group2(area.extra['ddd:area:contained']))
+            # Subtract union and areas contained (use contained relationship)
+            contained = ddd.group2(area.extra['ddd:area:contained'])
             try:
-                narea = narea.subtract(union)
+                narea = area.subtract(union)
+                if contained:
+                    narea = narea.subtract(contained)
             except TopologicalError as e:
                 logger.warn("Could not generate 2D area %s (cleaning): %s", area, e)
                 narea = narea.clean(-0.01)
@@ -76,11 +79,11 @@ class Areas2DOSMBuilder():
 
             if narea and narea.geom:
                 logger.debug("Area: %s", narea)
-                #area = area.subtract(union)
 
-                areas_2d_group.remove(original_area)
-                areas_2d_group.append(narea)
+                areas_2d_root.remove(original_area)
+                areas_2d_root.append(narea.individualize(always=True).flatten().children)
                 #areas_2d.children.extend(area.individualize().children)
+                #ddd.group2([original_area, narea.material(ddd.MAT_HIGHLIGHT)]).show()
 
 
     def generate_union_safe(self, groups):
@@ -108,6 +111,9 @@ class Areas2DOSMBuilder():
         return union
 
     def generate_areas_2d_ways_interiors(self, union):
+        """
+        Generates interways areas.
+        """
 
         result = ddd.group2()
         if not union.geom: return result
@@ -119,7 +125,7 @@ class Areas2DOSMBuilder():
             if len(c.interiors) == 0:
                 continue
 
-            logger.debug("Generating %d interiors.", len(c.interiors))
+            logger.info("Generating %d interiors.", len(c.interiors))
             for interior in c.interiors:
                 area = ddd.polygon(interior.coords, name="Interways area")
                 if area:
@@ -127,6 +133,7 @@ class Areas2DOSMBuilder():
                     area = area.clean(eps=0.01)
                     #area = area.clean()
                     if area.geom:
+                        area.set('ddd:area:interways', True)
                         result.append(area)
                 else:
                     logger.warn("Invalid interways area.")
@@ -137,63 +144,84 @@ class Areas2DOSMBuilder():
         """
         """
 
-        #
+        '''
         areas_2d_original = ddd.group2()
         for a in areas_2d.children:
             if a.extra.get('ddd:area:original', None):
                 if a.extra.get('ddd:area:original') not in areas_2d_original.children:
                     areas_2d_original.append(a.extra.get('ddd:area:original'))
+        '''
+        areas_2d_original = areas_2d.select('["ddd:area:original"]')  # ;["ddd:area:interways"]')
 
         logger.info("Postprocessing areas and ways (%d areas_2d_original, %d ways).", len(areas_2d_original.children), len(ways_2d.children))
 
+        to_process = ways_2d.children
+
         # Remove paths from some areas (sidewalks), and reincorporate to them
         #to_remove = []
-        to_append = []
-        for way_2d in ways_2d.children:
+        while to_process:
+            to_process_copy = to_process
+            to_append = []
+            to_process = []
+            for way_2d in to_process_copy:
 
-            for area in areas_2d_original.children:  #self.osm.areas_2d.children:  # self.osm.areas_2d.children:
+                if way_2d.is_empty(): continue
 
                 #if way_2d.extra.get('osm:highway', None) not in ('footway', 'path', 'track', None): continue
                 if way_2d.extra.get('ddd:area:type', None) == 'water': continue
 
-                #area_original = area.extra.get('ddd:area:original', None)
-                #if area_original is None: continue
+                if way_2d.geom.type == "MultiPolygon":
+                    logger.warn("Skipping way postprocess (multipolygon not supported, should individualize ways2 earlier -introduces way intersection joint errors-?): %s", way_2d)
+                    continue
 
-                area_original = area
+                for area in areas_2d_original.children:  #self.osm.areas_2d.children:  # self.osm.areas_2d.children:
 
-                #if area.extra.get('ddd:area:type', None) != 'sidewalk': continue
+                    area_original = area.get('ddd:area:original', None)
+                    if area_original is None: continue
 
-                intersects = False
-                try:
-                    intersects = area_original.intersects(way_2d) and area_original.outline().intersects(way_2d)
-                except Exception as e:
-                    logger.error("Could not calculate intersections between way and area: %s %s", way_2d, area)
-                    raise DDDException("Could not calculate intersections between way and area: %s %s" % (way_2d, area))
+                    if area_original.is_empty(): continue
 
-                if intersects:
-                    logger.debug("Path %s intersects area: %s (subtracting and arranging)", way_2d, area)
-                    way_2d.extra['ddd:area:container'] = area_original
 
-                    #ddd.group2([way_2d, area_original]).show()
+                    #if area.extra.get('ddd:area:type', None) != 'sidewalk': continue
 
-                    remainder = way_2d.subtract(area_original)
+                    try:
+                        intersects = way_2d.buffer(-0.01).intersects(area_original)
+                        intersects_outline = way_2d.intersects(area_original.outline())
+                    except Exception as e:
+                        logger.error("Could not calculate intersections between way and area: %s %s", way_2d, area)
+                        raise DDDException("Could not calculate intersections between way and area: %s %s" % (way_2d, area))
 
-                    intersection = way_2d.intersection(area_original)
-                    #intersection.extra['ddd:area:container'].append(area)
+                    if intersects and not intersects_outline:
+                        way_2d.extra['ddd:area:container'] = area_original
+                        continue
 
-                    #remainder = remainder.material(ddd.mats.pavement)
-                    #area.extra['ddd:area:type'] = 'sidewalk'
-                    remainder.name = "Path to interways: %s" % way_2d.name
-                    remainder.clean(eps=0.001)
+                    if intersects and intersects_outline:
+                        logger.debug("Path %s intersects area: %s (subtracting and arranging)", way_2d, area)
 
-                    way_2d.replace(remainder)  # way_2d.subtract(intersection))
+                        #ddd.group2([way_2d, area_original]).show()
 
-                    #ways_2d.append(remainder)
-                    # Delay appending
-                    to_append.append(intersection)
+                        intersection = way_2d.intersection(area_original)
+                        #intersection.extra['ddd:area:container'].append(area)
+                        intersection.name = "Path %s in area %s" % (way_2d.name, area.name)
+                        intersection.extra['ddd:area:container'] = area_original
 
-        for a in to_append:
-            ways_2d.append(a)
+                        remainder = way_2d.subtract(area_original)
+                        #remainder = remainder.material(ddd.mats.pavement)
+                        #area.extra['ddd:area:type'] = 'sidewalk'
+                        remainder.name = "Path %s to area %s" % (way_2d.name, area_original.name)
+                        remainder = remainder.clean(eps=0.001)
+
+                        way_2d.replace(intersection)
+                        # Delay appending
+                        for c in remainder.individualize(always=True).children:
+                            to_append.append(c)
+                            to_process.append(c)
+
+                        #to_process.append(way_2d)
+
+            if to_append:
+                for a in to_append:
+                    ways_2d.append(a)
 
         #self.osm.areas_2d.children = [c for c in self.osm.areas_2d.children if c not in to_remove]
 

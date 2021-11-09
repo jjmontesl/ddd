@@ -205,6 +205,32 @@ def osm_groups_areas_surface_tartan_track(obj, root):
     return obj
 
 
+# Arrays / Cloning
+@dddtask(order="30.85")
+def osm_groups_array(root, osm):
+    pass
+
+@dddtask(path="/ItemsNodes/*", select='["ddd:array:type" = "line"]')
+def osm_groups_array_line(root, osm, obj):
+    """
+    """
+    length = obj.get('ddd:array:length')
+    count = obj.get('ddd:array:count')
+    group = ddd.group2().copy_from(obj)
+
+    projected_point = ddd.snap.project(obj, root.find("/Ways"))
+    #groupobj.extra['ddd:angle'] = projected_point.extra['ddd:angle']
+    line = ddd.line([(0, 0), (0, length)])
+    line = line.rotate(projected_point.extra['ddd:angle']).recenter()
+
+    for i in range(count):
+        objcopy = obj.copy()
+        group.append(objcopy)
+    group = ddd.align.along(group, line)
+
+    return group.children
+
+
 @dddtask(order="30.90")
 def osm_groups_finished(pipeline, osm, root, logger):
     pass

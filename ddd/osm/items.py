@@ -9,7 +9,8 @@ import random
 import numpy as np
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import plants, urban, landscape, industrial, sports
+from ddd.pack.sketchy import plants, urban, landscape, industrial, sports,\
+    common
 from ddd.geo import terrain
 import sys
 from ddd.pack.sketchy.urban import patio_table
@@ -86,8 +87,10 @@ class ItemsOSMBuilder():
         elif item_2d.extra.get('osm:amenity', None) == 'recycling':
             item_3d = self.generate_item_3d_generic_catalog("waste-container-dome-1", item_2d, urban.waste_container_dome, "Recycling")
 
-        #elif item_2d.extra.get('osm:amenity', None) == 'bicycle_parking':
-        #    item_3d = self.generate_item_3d_waste_disposal(item_2d)
+        elif item_2d.extra.get('osm:amenity', None) == 'bicycle_parking':
+            #item_3d = self.generate_item_3d_waste_disposal(item_2d)
+            item_2d.set('ddd:angle', item_2d.get('ddd:angle') + math.pi / 2)
+            item_3d = self.generate_item_3d_generic_catalog("bicycle-parking-bar-u", item_2d, common.bar_u, "Bicycle Parking Bar U")
 
         elif item_2d.extra.get('osm:emergency', None) == 'fire_hydrant':
             item_3d = self.generate_item_3d_generic(item_2d, urban.fire_hydrant, "Fire Hydrant")

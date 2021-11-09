@@ -403,6 +403,7 @@ class Ways1DOSMBuilder():
 
     def get_height_apply_func(self, way):
 
+        '''
         def height_apply_func(x, y, z, idx):
             # Find nearest point in path, and return its height
             coords = way.geom.coords if way.geom.type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
@@ -418,6 +419,21 @@ class Ways1DOSMBuilder():
                     closest_dist = pd
             # logger.debug("Closest in path: %s", closest_in_path)
             return (x, y, z + (closest_in_path[2] if way.extra.get('osm:natural', None) != "coastline" else 0.0))  #  if len(closest_in_path) > 2 else 0.0
+
+        return height_apply_func
+        '''
+        def height_apply_func(x, y, z, idx):
+            # Find nearest points in path, then interpolate z
+            coords = way.geom.coords if way.geom.type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
+
+            coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = way.closest_segment(ddd.point([x, y]))
+            dist_a = math.sqrt( (segment_coords_a[0] - coords_p[0]) ** 2 + (segment_coords_a[1] - coords_p[1]) ** 2 )
+            dist_b = math.sqrt( (segment_coords_b[0] - coords_p[0]) ** 2 + (segment_coords_b[1] - coords_p[1]) ** 2 )
+            factor_b = dist_a / (dist_a + dist_b)
+            factor_a = 1 - factor_b  # dist_b / (dist_a + dist_b)
+            interp_z = segment_coords_a[2] * factor_a + segment_coords_b[2] * factor_b
+
+            return (x, y, z + (interp_z if way.extra.get('osm:natural', None) != "coastline" else 0.0))
 
         return height_apply_func
 

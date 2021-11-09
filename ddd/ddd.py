@@ -1283,6 +1283,10 @@ class DDDObject2(DDDObject):
         return result
 
     def clean_replace(self, eps=None, remove_empty=True, validate=True):
+        """
+        TODO: This duplicity with .clean() is undesirable, also, implementation has diverged, at a minimum needs to
+        implement "fix_invalid" and behave like .clean()
+        """
         result = self
         if result.geom and eps is not None:
             #result = result.buffer(eps, 1, join_style=ddd.JOIN_MITRE).buffer(-eps, 1, join_style=ddd.JOIN_MITRE)
@@ -1896,10 +1900,10 @@ class DDDObject2(DDDObject):
                 coords_b = list(self.geom.coords)
                 mesh = extrusion.extrude_coords(coords_a, coords_b, abs(height))
 
-                mesh2 = extrusion.extrude_coords(list(reversed(coords_a)), list(reversed(coords_b)), abs(height))
-                offset = len(list(mesh.vertices))
-                mesh.vertices = list(mesh.vertices) + list(mesh2.vertices)
-                mesh.faces = list(mesh.faces) + [(f[0] + offset, f[1] + offset, f[2] + offset) for f in mesh2.faces]
+                #mesh2 = extrusion.extrude_coords(list(reversed(coords_a)), list(reversed(coords_b)), abs(height))
+                #offset = len(list(mesh.vertices))
+                #mesh.vertices = list(mesh.vertices) + list(mesh2.vertices)
+                #mesh.faces = list(mesh.faces) + [(f[0] + offset, f[1] + offset, f[2] + offset) for f in mesh2.faces]
 
                 result = DDDObject3(mesh=mesh)
                 if center:
@@ -2094,6 +2098,9 @@ class DDDObject2(DDDObject):
         """
         Interpolates a distance along a LineString, returning:
             coords_p, segment_idx, segment_coords_a, segment_coords_b
+
+        Returns:
+        - segment_idx: index of the previous point
 
         Note that returns coordinates, not DDD objects.
         """
@@ -2742,8 +2749,8 @@ class DDDObject3(DDDObject):
     def material(self, material, include_children=True):
         obj = self.copy()
         obj.mat = material
-        if obj.mesh and material is not None:
-            obj.mesh.visual.face_colors = material
+        #if obj.mesh and material is not None:
+        #    obj.mesh.visual.face_colors = material
 
         #visuals = mesh.visuatrimesh.visual.ColorVisuals(mesh=mesh, face_colors=[material])  # , material=material
         #mesh.visuals = visuals
@@ -3105,8 +3112,10 @@ class DDDObject3(DDDObject):
 
             # Apply material uv:scale from material metadata if available
             uvscale = self.mat.extra.get('uv:scale', None)
-            if uvscale:
-                uvs = [[v[0] * uvscale, v[1] * uvscale] for v in uvs]
+            if uvscale and uvs:
+                if not isinstance(uvscale, list):
+                    uvscale = (uvscale, uvscale)
+                uvs = [[v[0] * uvscale[0], v[1] * uvscale[1]] for v in uvs]
 
             # Material + UVs
             mat = self.mat._trimesh_material()

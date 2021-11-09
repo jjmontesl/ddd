@@ -155,6 +155,9 @@ class DDDPipeline():
         skip_tasks = None
         for task_idx, task in enumerate(tasks):
 
+            if self._stopped:
+                break
+
             if task.init:
                 continue
 
@@ -199,6 +202,7 @@ class DDDPipeline():
 
         time_start = datetime.datetime.now()
         #self.run_pipeline_doit()
+        self._stopped = False
         self.run_pipeline_internal()
         time_end = datetime.datetime.now()
 
@@ -209,6 +213,15 @@ class DDDPipeline():
         logger.info("Pipeline processing time: %d:%04.1f m" % (time_run_m, time_run_s))
 
         return self.root
+
+    def stop(self):
+        """
+        Allows pipelines to stop execution, by calling this method, early stopping pipeline processing.
+        This was implemented to be used for debugging purposes.
+        """
+        logger.warn("Early stopping pipeline execution due to call to pipeline.stop().")
+        self._stopped = True
+
 
 '''
 class DDDDoItTaskLoader(doit.cmd_base.TaskLoader2):

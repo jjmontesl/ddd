@@ -9,6 +9,7 @@ from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.pack.sketchy import plants, urban, sports
+import traceback
 
 
 # Get instance of logger for this module
@@ -240,32 +241,48 @@ class Areas3DOSMBuilder():
                     #area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
                     #area_3d = ddd.uv.map_cubic(area_3d)
 
-                    if True:
+                    add_kerb = True
+                    if add_kerb:
                         try:
-                            interior = area_2d.get('ddd:crop:original').buffer(-0.3).intersection(self.osm.area_crop2)
+                            interior_original = area_2d.get('ddd:area:original').buffer(-0.3)
+                            interior = area_2d.intersection(interior_original)
                             if not interior.is_empty():
-                                # TODO: Remove bases in a more generic way, without breaking meshes or UV mapping
-                                area_3d = interior.extrude(-0.5 - height).translate([0, 0, height])
-                                if area_3d.get('ddd:layer', '0') == '0': area_3d = ddd.meshops.remove_faces_pointing(area_3d, ddd.VECTOR_DOWN)  # TODO: Remove bases in generic way?
-                                area_3d = ddd.uv.map_cubic(area_3d)
-                                kerb_3d = area_2d.get('ddd:crop:original').subtract(interior).intersection(self.osm.area_crop2).extrude(-0.5 - height).translate([0, 0, height])
-                                if kerb_3d.get('ddd:layer', '0') == '0': kerb_3d = ddd.meshops.remove_faces_pointing(kerb_3d, ddd.VECTOR_DOWN)  # TODO: Remove bases in generic way?
-                                kerb_3d = ddd.uv.map_cubic(kerb_3d).material(ddd.mats.cement)
-                                #if area_3d.mesh:
-                                #    area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
-                                #    kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj).material(ddd.mats.cement)
-                                #area_3d.append(kerb_3d)
-                                #kerb_3d = terrain.terrain_geotiff_elevation_apply(kerb_3d, self.osm.ddd_proj)
-                                area_3d.append(kerb_3d)
+
+                                kerb_3d = None
+                                kerb_2d = area_2d.get('ddd:area:original').subtract(interior_original).intersection(area_2d).intersection(self.osm.area_crop2)
+                                kerb_2d = kerb_2d.clean(eps=-0.01)
+                                if not kerb_2d.is_empty():
+                                    kerb_3d = kerb_2d.extrude(-0.5 - height).translate([0, 0, height]).material(ddd.mats.cement)
+                                    kerb_3d = ddd.uv.map_cubic(kerb_3d)
+
+                                area_2d_no_kerb = area_2d.subtract(kerb_2d).clean(eps=-0.01)
+                                if not area_2d_no_kerb.is_empty():
+                                    area_3d = area_2d_no_kerb.extrude(-0.5 - height).translate([0, 0, height])
+                                    area_3d = ddd.uv.map_cubic(area_3d)
+                                else:
+                                    area_2d = area_2d.copy3()
+
+                                if area_3d:
+
+                                    area_3d.copy_from(area_2d)
+                                    if area_3d.get('ddd:layer', '0') == '0': area_3d = ddd.meshops.remove_faces_pointing(area_3d, ddd.VECTOR_DOWN)  # TODO: Remove bases in generic way?
+
+                                    if kerb_3d:
+                                        area_3d.append(kerb_3d)
+                                        #ddd.group2([area_2d.get('ddd:area:original'), area_2d.material(ddd.MAT_HIGHLIGHT), kerb_2d.material(ddd.mats.red)]).triangulate().show()
+
                             else:
                                 logger.info("Cannot create kerb (empty interior) for area: %s", area_2d)
                                 area_3d = None
                         except Exception as e:
                             logger.info("Error creating kerb for area %s: %s", area_2d, e)
+                            print(traceback.format_exc())
+                            #ddd.group2([area_2d.get('ddd:area:original'), area_2d.material(ddd.MAT_HIGHLIGHT)]).triangulate().show()
                             area_3d = None
 
                     # If no kerb or kerb could not be generated, just generate the area:
                     if area_3d is None:
+                        logger.debug("No kerb generated, generating simple area: %s", area_2d)
                         area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
                         # Remove base
                         if area_3d.get('ddd:layer', '0') == '0':
@@ -291,8 +308,16 @@ class Areas3DOSMBuilder():
                     logger.warn("Invalid area %s: %s", area_2d, e)
                     return None
 
+
                 try:
                     height = area_2d.extra.get('ddd:area:height', area_2d.extra.get('ddd:height', 0.2))
+                    if not height:
+                        height = 0
+
+                    # We extrude base_height to avoid sidewalks floating with no side triangles
+                    base_height = area_2d.get('ddd:height:base', 0)
+                    height = height + base_height
+
                     if height:
                         area_3d = area_2d.extrude(-0.5 - height).translate([0, 0, height])
 
@@ -351,7 +376,8 @@ class Areas3DOSMBuilder():
                     path = area_3d.extra['way_1d']
                     vertex_func = self.osm.ways1.get_height_apply_func(path)
                     area_3d = area_3d.vertex_func(vertex_func)
-                    apply_layer_height = False
+
+                    apply_layer_height = False  # ddd:height:base is also not applied, as it is applied during area creation (extruded, to avoid
 
                 area_3d = terrain.terrain_geotiff_elevation_apply(area_3d, self.osm.ddd_proj)
 
@@ -365,8 +391,14 @@ class Areas3DOSMBuilder():
 
         if apply_layer_height:
             layer = str(area_3d.extra.get('ddd:layer', area_3d.extra.get('osm:layer', 0)))
+            # TODO: This ddd:base_height conflicts with ddd:height:base?
             base_height = float(area_3d.extra.get('ddd:base_height', self.osm.ways1.layer_height(layer)))
             area_3d = area_3d.translate([0, 0, base_height])
+
+        # Commented as ways were using this but they are extruded to height
+        #base_height = area_2d.get('ddd:height:base', None)
+        #if base_height:
+        #    area_3d = area_3d.translate([0, 0, base_height])
 
         return area_3d
 
@@ -404,8 +436,8 @@ class Areas3DOSMBuilder():
             lines = ddd.group3()
 
         if lines:
-            lines = terrain.terrain_geotiff_elevation_apply(lines, self.osm.ddd_proj).translate([0, 0, 0.15])
-            height = area_2d.extra.get('ddd:height', 0.2)
+            lines = terrain.terrain_geotiff_elevation_apply(lines, self.osm.ddd_proj)#.translate([0, 0, 0.01])
+            height = area_2d.extra.get('ddd:height', 0.0)
             lines = lines.translate([0, 0, height])
 
             area_3d = ddd.group3([area_3d, lines])

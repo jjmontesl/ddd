@@ -25,9 +25,9 @@ def osm_metadata_condition(pipeline, osm, root, logger):
 
 
 @dddtask(order="70.10.+")
-def osm_metadata_generate_scene_metadata(root, pipeline, osm, logger):
+def osm_metadata_generate_output_descriptor(root, pipeline, osm, logger):
     """
-    Write accumulated metadata to a descriptor file.
+    Write metadata to a descriptor file.
     """
 
     # TODO: Unify metadata
@@ -37,10 +37,9 @@ def osm_metadata_generate_scene_metadata(root, pipeline, osm, logger):
     data = {
 
         'ddd:pipeline:current_date': datetime.datetime.now(),
-        'generation_start_date': None,
 
-        'attribution': "ODbL © OpenStreetMap Contributors + EEA",
-        'generator': "DDD123 - https://github.com/jjmontesl/ddd",
+        'attribution': "ODbL © OpenStreetMap Contributors + (Check About)",
+        'generator': "DDD-3DS - https://github.com/jjmontesl/ddd",
 
         #'_pipeline':   # For debugging purposes
     }
@@ -48,11 +47,12 @@ def osm_metadata_generate_scene_metadata(root, pipeline, osm, logger):
     data.update(pipeline.data)
     data['metadata'] = None
 
-    # Add metadata
+    # Add metadata from pipeline
     data.update(pipeline.data.get('metadata', {}))
 
+    # Remove some unneeded metadata
     data = {k: v for k, v in data.items() if not k[0] == '_' and not isinstance(v, DDDObject)}
-
+    data = {k: v for k, v in data.items() if not k.startswith('splatmap:')}
 
     filepath = pipeline.data['filenamebase'] + ".desc.json"
     logger.info("Writing JSON descriptor to: %s", filepath)

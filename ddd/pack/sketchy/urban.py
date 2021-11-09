@@ -433,6 +433,7 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=N
     '''
     A panel, like what commerces have either sideways or sitting on the facade. Also
     road panels.
+    TODO: Provide anchor points w/size to allow for "document" objects (to allow for styling, rotation...).
     '''
     panel = ddd.rect([-width / 2.0, -height / 2.0, width / 2.0, height / 2.0]).extrude(depth, center=True)
     panel = panel.rotate(ddd.ROT_FLOOR_TO_FRONT)
@@ -471,9 +472,13 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=N
 
 
 def busstop_small(height=2.50, panel_height=1.4, panel_width=0.45, text=None):
+    text = "🚍 %s" % text
     obj_post = post(height=height).material(ddd.mats.metal_paint_green)
     obj_panel = panel(height=panel_width, width=panel_height, depth=0.05, text=text, text_back=text, center=True)
     obj_panel = obj_panel.rotate([0, math.pi / 2, 0]).translate([panel_width / 2 + 0.075, 0, height - 0.20 - panel_height / 2])
+    for o in obj_panel.select('[ddd:text]', path="*").children:
+        o.set('ddd:text:font', 'opensansemoji')
+
     obj = ddd.group([obj_post, obj_panel])
     return obj
 
