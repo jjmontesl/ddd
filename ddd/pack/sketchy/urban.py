@@ -51,8 +51,9 @@ def cable(a, b, thick=0.20):
     #cable = path_section.extrude_path(path)
 
     length = np.linalg.norm(b - a)
-    cable = ddd.point(name="Cable").buffer(thick * 0.5, resolution=1, cap_style=ddd.CAP_ROUND).extrude(length + thick).translate([0, 0, -thick * 0.5])
-    cable = ddd.uv.map_cylindrical(cable)
+    cable = ddd.point(name="Cable").buffer(thick * 0.5, resolution=1).extrude(length + thick).translate([0, 0, -thick * 0.5])
+    cable = cable.merge_vertices().smooth(math.pi)
+    cable = ddd.uv.map_cylindrical(cable, split=False)
 
     vector_up = [0, 0, 1]
     vector_dir = (b - a) / length
@@ -116,11 +117,12 @@ def catenary_cable(a, b, thick=0.10, length_ratio=1.1):
 
 def post(height=2.00, r=0.075, top=None, side=None, mat_post=None):
     """
-    A round (or squared) post.
+    A squared / rectangular post.
     """
-    col = ddd.point([0, 0], name="Post").buffer(r, resolution=0, cap_style=ddd.CAP_SQUARE).extrude(height)
+    col = ddd.point([0, 0], name="Post").buffer(r, resolution=0, cap_style=ddd.CAP_SQUARE).extrude(height)  # , cap=False, base=False)
     if mat_post: col = col.material(mat_post)
-    col = ddd.uv.map_cylindrical(col)
+    #col = col.smooth(math.pi)
+    col = ddd.uv.map_cylindrical(col)  #, split=False)
     col = ddd.collision.aabox_from_aabb(col)
 
     col = ddd.group3([col])
@@ -132,6 +134,21 @@ def post(height=2.00, r=0.075, top=None, side=None, mat_post=None):
         col.append(side)
 
     return col
+
+
+def roundedpost(height=2.00, r=0.075, sides=6, mat_post=None):
+    """
+    A rounded post.
+    """
+    col = ddd.regularpolygon(sides, r, name="Post").extrude(height)  # , cap=False, base=False)
+    if mat_post: col = col.material(mat_post)
+    col = col.smooth(math.pi * 0.45)
+    col = ddd.uv.map_cylindrical(col, scale=[0.25, 0.25], split=False)
+    col = ddd.collision.aabox_from_aabb(col)
+    #col.mesh.face_normals = ((1, 0, 0) for n in col.mesh.face_normals]
+
+    return col
+
 
 def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=None, arm_side='left'):
     """
@@ -156,21 +173,15 @@ def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=
     post = ddd.group([post] + items)
     return post
 
-def lamppost(height=2.80, r=0.25, lamp=None, mat_post=None):
-    if lamp is None:
-        #lamp = ddd.sphere(r=r, subdivisions=1).scale([1.0, 1.0, 1.2]).material(self.osm.mat_lightbulb)
-        lamp = lamp_case(height=0.8, r=r)
-    col = post(height=height, top=lamp, mat_post=mat_post or ddd.mats.metal_paint_green)  # FIXME: materials shall be assigned by styling, not passing args
-    col.name = "Lamppost"
-    return col
 
-def lamp_case(height=0.5, r=0.25):
+def lamp_case(height=0.5, r=0.30):
     lamp_shape = ddd.point(name="Lamp Case").buffer(r - 0.10, resolution=1)
     lamp = lamp_shape.extrude_step(lamp_shape.buffer(0.10, cap_style=ddd.CAP_SQUARE, join_style=ddd.JOIN_BEVEL), height * 0.8)
     lamp = lamp.extrude_step(lamp_shape.buffer(-0.10), height * 0.2)
+    lamp = lamp.merge_vertices().smooth()
     lamp = lamp.material(ddd.mats.lightbulb)
     lamp = ddd.collision.aabox_from_aabb(lamp)
-    lamp = ddd.uv.map_cubic(lamp)
+    lamp = ddd.uv.map_spherical(lamp, split=True)
 
     # TODO: Possibly add this with styling too, although lights are first class citizens (used for render)
     light = PointLight([0, 0, height * 0.8], name="Lamp Light", color="#e4e520", radius=18, intensity=1.25, enabled=False)
@@ -181,13 +192,53 @@ def lamp_case(height=0.5, r=0.25):
 
 def lamp_ball(r=0.25):
     lamp = ddd.sphere(r=r, subdivisions=1)  # .scale([1.0, 1.0, 1.2])
+    lamp = lamp.material(ddd.mats.lightbulb)
     return lamp
 
-def lamppost_arm(length, lamp_pos='over'):
-    pass
+def post_arm_angled(height=6.0, length=5.0, lamp=None):
+    """
+    A lamppost arm, with a central anchor point lying _below_ the XY plane.
+    Lamp is copied to the lamp anchor position.
+    TODO: Support anchor points instead (should support assigment/cloning).
+    """
 
-def lamppost_with_arms(height, arms=2, degrees=360):
-    pass
+    r = 0.5  # Distance to inner point
+    width = 0.3
+    height_raise = 1.0
+
+    shape = ddd.polygon([(0, 0), (0, height - height_raise), (length, height), (r, height - height_raise - r)], name="Lamppost Arm Angled")
+    arm = shape.extrude(width).rotate(ddd.ROT_FLOOR_TO_FRONT)
+    arm = arm.material(ddd.mats.steel)
+    arm = ddd.uv.map_cubic(arm)
+    arm = arm.translate([0, width / 2, height_raise - height])
+
+    if lamp:
+        arm.append(lamp.copy().translate([length - 0.3, 0, height_raise - 0.3]))
+
+    return arm
+
+def lamppost(height=2.80, r=0.075, lamp=None, mat_post=None):
+    if lamp is None:
+        #lamp = ddd.sphere(r=r, subdivisions=1).scale([1.0, 1.0, 1.2]).material(self.osm.mat_lightbulb)
+        lamp = lamp_case(height=0.8, r=0.35)
+    col = post(height=height, r=r, top=lamp, mat_post=mat_post or ddd.mats.metal_paint_green)  # FIXME: materials shall be assigned by styling, not passing args
+    col.name = "Lamppost"
+    return col
+
+def lamppost_high_mast(height=22.5, arm_count=3, span=math.pi * 2):
+    """
+    """
+    bulb = lamp_ball(r=0.25).material(ddd.mats.lightbulb)
+    arm = post_arm_angled(lamp=bulb)
+    arms = ddd.align.matrix_polar(arm, arm_count, span=span)
+
+    item = roundedpost(height=height, r=0.25, mat_post=ddd.mats.steel)
+    item = ddd.group([item, arms.translate((0, 0, height))])
+
+    item = ddd.meshops.batch_by_material(item)
+    item = item.clean()
+
+    return item
 
 def trafficlights_head(height=0.8, depth=0.3):
 
@@ -327,8 +378,8 @@ def traffic_sign_code(signtype, thick=0.1):
         decal.extra['ddd:shadows'] = False
         decal.extra['ddd:collider'] = False
 
-        # TODO: correctly separate back (metal), side (color) and front, replace front with decal
         decal2 = decal.rotate(ddd.ROT_TOP_HALFTURN).material(ddd.mats.steel)
+        decal2 = ddd.uv.map_cubic(decal2, scale=(0.5, 0.5))
 
         # Combine
         head = ddd.group3([head, decal, decal2], name="Traffic Sign Textured")
@@ -504,7 +555,7 @@ def fire_hydrant(height=0.90, r=0.25):
     """
     Ref: https://upload.wikimedia.org/wikipedia/commons/5/5a/Downtown_Charlottesville_fire_hydrant.jpg
     """
-    circle = ddd.point([0, 0]).buffer(r, resolution=3, cap_style=ddd.CAP_ROUND)
+    circle = ddd.point([0, 0]).buffer(r, resolution=2, cap_style=ddd.CAP_ROUND)
     obj = circle.scale([0.85, 0.85, 1]).extrude_step(circle.scale([0.85, 0.85, 1]), 0.10)
     obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), 0.01)
     obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), height - 0.3)
@@ -518,16 +569,19 @@ def fire_hydrant(height=0.90, r=0.25):
     obj = obj.extrude_step(circle.scale([0.1, 0.1, 1]), 0.02)
 
     obj = obj.material(ddd.mats.metal_paint_red)
+    obj = obj.smooth()
     obj = ddd.uv.map_cylindrical(obj)
 
     barh = ddd.cylinder(height=r * 1.8, r=r * 0.6 * 0.5, center=True, name="Fire hydrant taps")
-    barh = barh .material(ddd.mats.metal_paint_red)
+    barh = barh.material(ddd.mats.metal_paint_red)
+    barh = barh.smooth()
     barh = ddd.uv.map_cylindrical(barh)
     barh = barh.rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CCW)
     barh = barh.translate([0, 0, height * 0.65])
 
     barf = ddd.cylinder(height=r * 0.8, r=r * 0.6 * 0.7, center=False, name="Fire hydrant front")
     barf = barf .material(ddd.mats.metal_paint_red)
+    barf = barf.smooth()
     barf = ddd.uv.map_cylindrical(barf)
     barf = barf.rotate(ddd.ROT_FLOOR_TO_FRONT)
     barf = barf.translate([0, 0, height * 0.5])
@@ -607,6 +661,8 @@ def sculpture_text(text, d=1.0, height=3.0, vertical=False):
 
     #item = ddd.group([pedestal, item], name="Urban sculpture: %s" % text)
     item.name = "Urban sculpture: %s" % text
+
+    item = item.combine()
 
     return item
 
@@ -747,6 +803,10 @@ def bench(length=1.40, height=1.00, width=0.8, seat_height=0.45,
     bench = bench.material(ddd.mats.stone)
     bench = ddd.uv.map_cubic(bench)
     bench.name = "Bench"
+    bench.mat = None  # to avoid batching issues
+
+    bench = ddd.meshops.batch_by_material(bench).clean()
+
     return bench
 
 def bank(length=1.40, height=1.00, seat_height=0.45,
@@ -763,6 +823,8 @@ def trash_bin(height=1.20, r=0.35):
     item = item.extrude_step(base.buffer(-0.05), 0.0)
     item = item.extrude_step(base.buffer(-0.05), -(height - 0.4))
     item = item.material(ddd.mats.steel)
+    item = item.smooth()
+    item = ddd.uv.map_cylindrical(item, split=True)
     return item
 
 def trash_bin_hung(height=0.70, r=0.25):
@@ -773,11 +835,13 @@ def trash_bin_hung(height=0.70, r=0.25):
     item = item.extrude_step(base, -(height - 0.2))
     item = item.translate([0, -r, -height + 0.05])
     item = item.material(ddd.mats.steel)
+    item = item.smooth()
+    item = ddd.uv.map_cylindrical(item, split=True)
     return item
 
 def trash_bin_post(height = 1.30):
     item = trash_bin_hung()
-    item_post = post(height=height, side=item, mat_post=ddd.mats.steel)
+    item_post = post(height=height, r=0.06, side=item, mat_post=ddd.mats.steel)
     return item_post
 
 
@@ -796,9 +860,12 @@ def patio_table(width=0.8, length=0.8, height=0.73):
         leg = ddd.uv.map_cylindrical(leg)
         table.append(leg)
 
+    table = table.combine()
+
     table = table.material(ddd.mats.steel)
     table = ddd.collision.aabox_from_aabb(table)
-    table.extra['ddd:mass'] = 5.0
+    table.set('ddd:mass', 5.0)
+
     return table
 
 def patio_chair(width=0.45, length=0.45, seat_height=0.40):
@@ -828,6 +895,9 @@ def patio_chair(width=0.45, length=0.45, seat_height=0.40):
 
     chair = ddd.group3([stool, back], name="Chair")
     chair.extra['ddd:mass'] = 2.5
+
+    chair = ddd.meshops.batch_by_material(chair).clean()
+
     return chair
 
 def patio_umbrella(side=2.5, height=2.5):
@@ -881,6 +951,9 @@ def childrens_playground_arc(length=3.25, width=1.0, sides=7, height=None):
         pbar = pbar.material(mats[idx % 2])
         item.append(pbar)
 
+    item = ddd.meshops.batch_by_material(item)
+    item = item.clean()
+
     return item
 
 def childrens_playground_slide(length=4.5, height=None, width=0.60):
@@ -927,6 +1000,9 @@ def childrens_playground_slide(length=4.5, height=None, width=0.60):
 
     item = item.translate([-4.5/2, 0, 0]).rotate(ddd.ROT_TOP_CCW)
 
+    item = ddd.meshops.batch_by_material(item)
+    item = item.clean()
+
     return item
 
 def childrens_playground_swingset(length=2.2, num=2, height=2.1, width=1.6):
@@ -947,7 +1023,7 @@ def childrens_playground_swingset(length=2.2, num=2, height=2.1, width=1.6):
     frameside2 = frameside.translate([length/2, 0, 0])
 
     topbar = ddd.point([(-length + frame_thick) / 2, 0], name="Swing top bar").line_to([(length - frame_thick) / 2, 0])
-    topbar = topbar.buffer(frame_thick / 2).extrude(frame_thick, center=True).translate([0, 0, height])
+    topbar = topbar.buffer(frame_thick / 2).extrude(frame_thick, center=True).translate([0, 0, height - frame_thick / 4])
     topbar = topbar.material(ddd.mats.steel)
     topbar = ddd.uv.map_cubic(topbar)
 
@@ -959,7 +1035,11 @@ def childrens_playground_swingset(length=2.2, num=2, height=2.1, width=1.6):
         swing = swing.translate([posx, 0, height])
         swingset.append(swing)
 
-    return swingset
+    item = swingset
+    item = ddd.meshops.batch_by_material(item)
+    item = item.clean()
+
+    return item
 
 def childrens_playground_swing(width=0.45, height=1.6, depth=0.2, width_top=None):
 

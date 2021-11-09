@@ -165,7 +165,7 @@ def palm_leaf(length=3, fallfactor=1):
     obj = obj.vertex_func(leafshape)
 
     obj = obj.scale([length, length, length])
-    obj = obj.clean()
+    obj = obj.merge_vertices().clean()
 
     #if 'uv' in obj.extra: del(obj.extra['uv'])
     obj = obj.twosided()

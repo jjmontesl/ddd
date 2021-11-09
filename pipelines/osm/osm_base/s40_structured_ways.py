@@ -647,7 +647,7 @@ def osm_structured_areas_postprocess_cut_outlines(root, osm):
 
 @dddtask()
 def osm_structured_areas_link_items_nodes(root, osm):
-    """Associate features (amenities, etc) to buildings."""
+    """Associate features (amenities, etc) to areas (both ways and areas)."""
     # TODO: There is some logic for specific items inside: use tagging for linkable items.
     items = root.find("/ItemsNodes")
 

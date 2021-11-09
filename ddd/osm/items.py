@@ -174,6 +174,8 @@ class ItemsOSMBuilder():
             # TODO: Tilt objects using a generic tilting mechanism (also, this one may be also based on terrain gradient)
             item_3d = self.generate_item_3d_generic(item_2d, sports.golf_flag, "Golf Flag")
 
+        elif item_2d.extra.get('osm:highway', None) == 'street_lamp' and item_2d.get('osm:lamp_mount', None) == 'high_mast':
+            item_3d = self.generate_item_3d_street_lamp_high_mast(item_2d)
         elif item_2d.extra.get('osm:highway', None) == 'street_lamp':
             item_3d = self.generate_item_3d_street_lamp(item_2d)
         elif item_2d.extra.get('osm:highway', None) == 'traffic_signals':
@@ -657,6 +659,21 @@ class ItemsOSMBuilder():
         item_3d.prop_set('yc:layer', 'DynamicObjects')  # TODO: Assign layers via styling
         item_3d = item_3d.translate([coords[0], coords[1], 0.0])
         item_3d.name = 'Lamppost: %s' % item_2d.name
+
+        return item_3d
+
+    def generate_item_3d_street_lamp_high_mast(self, item_2d):
+
+        key = "lamppost-highmast-1"
+        item_3d = self.osm.catalog.instance(key)
+        if not item_3d:
+            item_3d = urban.lamppost_high_mast()
+            item_3d = self.osm.catalog.add(key, item_3d)
+
+        coords = item_2d.geom.coords[0]
+        item_3d.extra.update(item_2d.extra)
+        item_3d = item_3d.translate([coords[0], coords[1], 0.0])
+        item_3d.name = 'Lamppost High Mast: %s' % item_2d.name
 
         return item_3d
 

@@ -15,16 +15,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from ddd.pack.sketchy import urban, landscape, industrial, interior, sports,\
-    vehicles, common, buildings
 from ddd.ddd import ddd
-import math
-import sys
-
-
+from ddd.pack.sketchy import urban, landscape, industrial, interior, sports, \
+    vehicles, common, buildings
 from ddd.pipeline.decorators import dddtask
+from ddd.pack.sketchy.urban import lamppost, lamp_ball, roundedpost,\
+    post_arm_angled
 
-@dddtask(order="10")
+
+@dddtask()
+def pipeline_test(pipeline, root):
+    pass
+
+
+@dddtask()
 def pipeline_start(pipeline, root):
 
     ddd.mats.traffic_signs = ddd.material(name="TrafficSigns", color="#ffffff", #color="#e01010",
@@ -35,16 +39,16 @@ def pipeline_start(pipeline, root):
     items = ddd.group3()
 
 
+    item = urban.lamppost_high_mast()
+    items.append(item)
 
     item = buildings.portal()
     items.append(item)
     #item.show()
 
-
     item = buildings.door()
     items.append(item)
     #item.show()
-
 
     item = buildings.window_with_border()
     items.append(item)

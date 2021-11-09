@@ -3022,15 +3022,19 @@ class DDDObject3(DDDObject):
         return result
 
 
-    def clean(self):
+    def clean(self, remove_empty=True, remove_degenerate=True):
         """
-        Note that this is merging vertices (currently without considering normals or UVs).
         """
         result = self.copy()
-        result.mesh.merge_vertices()
-        result.mesh.remove_degenerate_faces()
-        result.mesh.merge_vertices()
+        if result.mesh and remove_degenerate:
+            result.mesh.remove_degenerate_faces()
+
+        result.children = [c.clean(remove_empty, remove_degenerate) for c in result.children]
+        if remove_empty:
+            result.children = [c for c in result.children if not c.is_empty()]
+
         return result
+
 
     '''
     def triangulate(self, twosided=False):
@@ -3115,7 +3119,12 @@ class DDDObject3(DDDObject):
             if uvscale and uvs:
                 if not isinstance(uvscale, list):
                     uvscale = (uvscale, uvscale)
-                uvs = [[v[0] * uvscale[0], v[1] * uvscale[1]] for v in uvs]
+                try:
+                    uvscale_x, uvscale_y = uvscale
+                    uvs = [[v[0] * uvscale_x, v[1] * uvscale_y] for v in uvs]
+                except Exception as e:
+                    logger.error("Error computing UV coordinates for %s: %s", self, e)
+                    uvs = None
 
             # Material + UVs
             mat = self.mat._trimesh_material()

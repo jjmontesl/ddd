@@ -59,6 +59,7 @@ class Areas2DOSMBuilder():
             #feature = area.extra['osm:feature']
             if not area.geom:
                 logger.error("Area with no geometry: %s", area)
+                continue
             if area.geom.type == 'Point': continue
 
             original_area = area

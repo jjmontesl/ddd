@@ -293,13 +293,14 @@ def osm_materials():
     self.metal_paint_black = ddd.material("PaintBlack", color='#000a17')
 
 
-    # Lights
-    self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')
-    self.light_green = ddd.material(color='#00ff00')
-    self.light_orange = ddd.material(color='#ffff00')
-    self.light_red = ddd.material(color='#ff0000')
-
     '''
+    # Lights
+    ddd.mats.lightbulb = ddd.material("LightLampOff", color='e8e0e4',
+                                      metallic_factor=0.05, roughness_factor=0.90)
+    #self.light_green = ddd.material(color='#00ff00')
+    #self.light_orange = ddd.material(color='#ffff00')
+    #self.light_red = ddd.material(color='#ff0000')
+
 
     # Plastics
     #self.plastic_transparent = ddd.material(color='e8e0e4', extra={'ddd:transparent': True})  # name="PlasticTransparent",

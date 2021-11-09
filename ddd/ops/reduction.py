@@ -388,10 +388,14 @@ class DDDMeshOps():
         Walks a node tree grouping nodes using the provided "key_function" callback,
         then combines each group.
 
+        WARN: this has been seen to fail (leave repeated geometry) when the root object contains geometry, while this is not
+              fixed, client code is advised to create a group and to doublecheck for repeated/unbatched geometry.
+              This has seen to happen when the root node (even if with no geometry) has a material.
+
         Note that this modifies the node tree.
 
         This maybe could be better done with a custom recursive function, maintaining
-        strucure as much as possible (instead of flattening before combining as currently done).
+        structure as much as possible (instead of flattening before combining as currently done) ?
         """
 
         # Flatten all objects. If this is not done, some objects are batched with children
@@ -418,7 +422,7 @@ class DDDMeshOps():
 
             instances = objs.select(func=lambda o: isinstance(o, DDDInstance), recurse=False)
             if len(instances.children) > 0:
-                instances.name = "batched Inst: %s" % key
+                instances.name = "Batched Inst: %s" % key
                 objs.select_remove(func=lambda o: isinstance(o, DDDInstance))
                 root.append(instances)
                 added_objects.append(instances)
@@ -461,6 +465,8 @@ class DDDMeshOps():
         return root
 
     def batch_by_material(self, root):
+        """
+        """
         mat_layer_function = lambda o: (str(o.mat.name if o.mat else None))
         root = ddd.meshops.batch_group(root, key_func=mat_layer_function)
         return root

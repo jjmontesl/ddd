@@ -20,9 +20,9 @@ Assigns building floors where not available.
 @dddtask(order="55.70.+.+")
 def osm_augment_building_levels(root, osm, pipeline, logger):
     """
-    Assigns building floors where not available.
     """
-    pipeline.data['_lamps'] = root.select('["osm:highway" = "street_lamp"]')
+    #pipeline.data['_lamps'] = root.select('["osm:highway" = "street_lamp"]')
+    pass
 
 @dddtask(path="/Buildings/*", select='[ ! "osm:building:levels"][ ! "ddd:building:levels"][! "osm:building:height"]["osm:type" != "multipolygon"]')
 def osm_augment_building_levels_select(root, osm, pipeline, logger, obj):

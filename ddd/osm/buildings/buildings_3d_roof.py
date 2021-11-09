@@ -197,7 +197,8 @@ class BuildingsRoofs3DOSMBuilder():
             logger.warning("Unknown roof shape: %s", roof_shape)
 
         if roof:
-            roof = ddd.uv.map_cubic(roof)
+            roof = roof.smooth(math.pi / 12)
+            roof = ddd.uv.map_cubic(roof, split=True)
 
         return roof
 
