@@ -22,7 +22,7 @@ import base64
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-class DDD3DRenderer():
+class Offscreen3DRenderer():
     """
 
     """

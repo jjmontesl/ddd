@@ -285,7 +285,7 @@ def osm_structured_generate_areas_interways_phase1(pipeline, osm, root, logger):
     # Add building lvel 0
     buildings = pipeline.data['buildings_level_0']
     areas = root.find("/Areas").select('["ddd:layer" ~ "0|-1a"]')
-    subtract_union = osm.areas2.generate_union_safe(ddd.group2([buildings, areas]))
+    #subtract_union = osm.areas2.generate_union_safe(ddd.group2([buildings, areas]))
 
     logger.debug("Generating interways from interiors.")
     interiors = osm.areas2.generate_areas_2d_ways_interiors(union)
@@ -401,7 +401,12 @@ def osm_structured_generate_ways_2d_individualize(osm, root, logger):
     root.find("/Ways").replace(ways_2d)
 
 
+@dddtask()
+def osm_structured_structures_init(osm, root, pipeline):
+    structures = ddd.group2(name="Structures2")
+    root.append(structures)
 
+'''
 @dddtask()
 def osm_structured_surfaces(osm, root, pipeline):
     """
@@ -420,9 +425,6 @@ def osm_structured_surfaces(osm, root, pipeline):
     layer_1 = root.select(path="/Ways/", selector='["ddd:layer" = "0a"];["ddd:layer" = "1"]')
     groups = [layer_m1, layer_1]
 
-    structures = ddd.group2(name="Structures2")
-    root.append(structures)
-
     surfaces = ddd.group2(name="Surfaces")
     root.append(surfaces)
 
@@ -433,7 +435,7 @@ def osm_structured_surfaces(osm, root, pipeline):
         surfaces.children.extend(surfaces.children)
 
         # Currently unused
-
+'''
 
 @dddtask()
 def osm_structured_tunnel(osm, root, pipeline):
@@ -485,47 +487,6 @@ def osm_structured_areas_postprocess_water(root, osm):
     areas_2d = root.find("/Areas")
     ways_2d = root.find("/Ways")
     osm.areas2.generate_areas_2d_postprocess_water(areas_2d, ways_2d)
-
-
-'''
-@dddtask()
-def osm_structured_generate_areas_interways_phase1(pipeline, osm, root, logger):
-    """
-    Generates interior areas between ways.
-    This phase does not include ways that are overlaid / absorbed into their container areas (eg. paths over sidewalks).
-    NOTE: "way:overlay" may be better named "way:interways", as it is really used for that for now (way/area priority is also used for other resolutions, think path/cycle/road)
-    """
-
-    logger.info("Generating union for interways.")
-    union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]'),
-                        root.find("/Areas").select('["ddd:layer" ~ "0|-1a"]') ])
-
-    # Add building lvel 0
-    buildings = pipeline.data['buildings_level_0']
-    #union.append(buildings)
-
-    # Calculate union
-    union = osm.areas2.generate_union_safe(union)
-    #union = union.clean()
-
-    logger.info("Generating interways from interiors.")
-    interiors = osm.areas2.generate_areas_2d_ways_interiors(union)
-    interiors = interiors.material(ddd.mats.pavement)
-    interiors.set('ddd:area:type', 'sidewalk', children=True)
-    interiors.set('ddd:kerb', True, children=True)
-    interiors.set('ddd:height', 0.2, children=True)
-    interiors.set('ddd:layer', "0", children=True)
-    #interiors = interiors.clean()
-
-    # Set a copy of itself as original area (so it can be cut and used for sidewalk kerb calculations)
-    for interior in interiors.children:
-        interior.set('ddd:area:area', interior.geom.area)
-        interior.set('ddd:area:original', interior.union())
-        # TODO: I think this should not be needed here, as buildings shall be removed from all areas later anyway?
-        interior.replace(interior.subtract(buildings).clean())
-
-    root.find("/Areas").append(interiors.children)
-'''
 
 
 @dddtask()
@@ -645,6 +606,18 @@ def osm_structured_areas_postprocess_cut_outlines(root, osm):
     osm.areas2.generate_areas_2d_postprocess_cut_outlines(areas_2d, ways_2d)
 
 
+@dddtask(path="/Ways/*", select='["ddd:way:overlay" = true]')
+def osm_structured_areas_postprocess_overlay_absorb(root, osm, obj):
+
+    container = obj.get('ddd:area:container', None)
+    if container and container != obj and container.mat == ddd.mats.pavement:
+        obj.set('debug:overlay:absorbed', True)
+        obj = obj.material(container.mat)
+        obj.set('ddd:material:splatmap', container.get('ddd:material:splatmap', False))
+        # Note: Base height is being assigned (accumulated) in s60_model (maybe bring it here or as early as possible?)
+
+    return obj
+
 @dddtask()
 def osm_structured_areas_link_items_nodes(root, osm):
     """Associate features (amenities, etc) to areas (both ways and areas)."""
@@ -746,6 +719,14 @@ def osm_structured_ways_2d_generate_roadlines_way(root, osm, pipeline, obj):
     """
     osm.ways2.generate_roadlines(pipeline, obj)
     #props_2d(root.find("/Ways"), pipeline)  # Objects related to ways
+
+@dddtask()
+def debug_ways_roadlines(root, osm, pipeline):
+    ways = root.find("/Ways")
+    roadlines = root.find("/Roadlines2")
+
+    ddd.group([ways, roadlines]).show(label="Ways + Roadlines2")
+
 
 @dddtask(path="/Ways/*", select='["ddd:way:crosswalk" = True]')
 def osm_structured_ways_2d_generate_crosswalk_way(root, osm, pipeline, obj):

@@ -547,6 +547,8 @@ class Ways2DOSMBuilder():
 
 
     def generate_roadlines(self, pipeline, way_2d):
+
+        # Get the 1D line reference
         path = way_2d.extra['way_1d']
 
         # print(path.geom.type)
@@ -562,6 +564,9 @@ class Ways2DOSMBuilder():
             ddd.geomops.subdivide_to_size(path, int(pipeline.data.get('ddd:way:roadlines:subdivide')))
 
         length = path.geom.length
+
+        if way_2d.is_empty():
+            return
 
         # Generate lines
         if way_2d.extra.get('ddd:way:roadlines', False):
@@ -599,11 +604,17 @@ class Ways2DOSMBuilder():
                 line = pathline.buffer(0.15).material(ddd.mats.roadline)
                 line.extra['way_1d'] = pathline
 
+
                 # FIXME: Move cropping to generic site, use intermediate osm.something for storage
                 # Also, cropping shall interpolate UVs (and propagated heights?)
                 line = line.intersection(self.osm.area_crop2)
                 line = line.intersection(way_2d)
                 line = line.individualize()
+
+                if line.is_empty():
+                    continue
+
+                #ddd.group([way_2d, line]).show()
 
                 if line.geom and not line.geom.is_empty and line.geom.area > 0:
                     try:

@@ -201,8 +201,8 @@ class Areas2DOSMBuilder():
                     try:
                         # Margin is used to avoid same way chunk touching original area indefinitely.
                         # Note that this algorithm is weak and can potentially result in infinite loops (chunks are re-added for processing)
-                        intersects = way_2d.intersects(area_original)
-                        intersects_outline = way_2d.crosses(area_original.outline())
+                        intersects = way_2d.buffer(-0.05).intersects(area_original)  # FIDME: arbitrary 5cm margin
+                        intersects_outline = way_2d.intersects(area_original.outline())
                     except Exception as e:
                         logger.error("Could not calculate intersections between way and area: %s %s", way_2d, area_original)
                         raise DDDException("Could not calculate intersections between way and area: %s %s" % (way_2d, area_original))

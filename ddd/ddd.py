@@ -71,6 +71,7 @@ from shapely.geometry.multipolygon import MultiPolygon
 from ddd.formats.png3drender import DDDPNG3DRenderFormat
 from ddd.util.common import parse_bool
 from shapely.strtree import STRtree
+from ddd.formats.presentation.generic import Generic3DPresentation
 
 
 # Get instance of logger for this module
@@ -1056,6 +1057,24 @@ class DDDObject():
         """
         self.children = [c.remove(obj) for c in self.children if c and c != obj]
         return self
+
+    def show(self, label=None):
+        """
+        Shows the node and its descendants.
+        """
+        try:
+
+            if isinstance(self, DDDObject3):
+                self.show(label=label)
+
+            else:
+                # Present 2D object
+                showobj = Generic3DPresentation.present(self)
+                showobj.show(label=label)
+
+        except Exception as e:
+            logger.error("Could not show object %s: %s", self, e)
+            raise
 
 
 class DDDObject2(DDDObject):
@@ -2310,22 +2329,6 @@ class DDDObject2(DDDObject):
 
         with open(path, 'wb') as f:
             f.write(data)
-
-    def show(self):
-
-        # Show in 3D view
-        #self.extrude(0.2).show()
-        try:
-            self.triangulate().show()
-        except Exception as e:
-            logger.error("Could not show object %s: %s", self, e)
-            raise
-
-        # Show in browser
-        #logger.info("Showing 2D image via shell.")
-        #FIXME: save to a temporary/uniquefilename
-        #self.save("/tmp/tmp-MAKEUNIQUE.svg")
-        #webbrowser.open('file:///tmp/tmp-MAKEUNIQUE.svg', new=2)
 
 
 class DDDInstance(DDDObject):

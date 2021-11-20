@@ -23,6 +23,7 @@ from ddd.pipeline.pipeline import DDDPipeline
 import json
 import os
 import traceback
+from ddd.formats.presentation.generic import Generic3DPresentation
 
 
 # Get instance of logger for this module
@@ -165,6 +166,10 @@ class ServerServeCommand(DDDCommand):
         @self.sio.event
         async def result_get(sid, data):
             logger.info("Websocket result_get: %s %s", sid, data)
+
+            if self.running:
+                return
+
             await self.result_send(sid)
 
         @self.sio.event
@@ -230,43 +235,6 @@ class ServerServeCommand(DDDCommand):
 
         return status
 
-    def format_node(self, node):
-        """
-        Formats nodes for dddserver representation.
-
-        This includes transforming 2D to 3D nodes as needed.
-        """
-        if isinstance(node, DDDObject2):
-            result = node.copy3()
-            if node.geom:
-                tnode = node
-                if node.geom.type in ('Point', 'MultiPoint'):
-                    tnode = node.buffer(0.25)
-                elif node.geom.type in ('LineString', 'MultiLineString'):
-                    tnode = node.buffer(0.10)
-                try:
-                    triangulated = tnode.triangulate(ignore_children=True)
-                    result.mesh = triangulated.mesh
-                except Exception as e:
-                    logger.warn("Could not triangulate 2D object for 3D representation export (%s): %s", node, e)
-        else:
-            result = node.copy()
-
-        # Temporary hack to separate flat elements
-        increment = 0.025
-        accum = 0.0
-        newchildren = []
-        for c in node.children:
-            nc = self.format_node(c)
-            if isinstance(c, DDDObject2):
-                accum += increment
-                nc = nc.translate([0, 0, accum])
-            newchildren.append(nc)
-
-        result.children = newchildren
-
-        return result
-
     def result_get(self, result_index=0):
 
         if result_index:
@@ -281,7 +249,7 @@ class ServerServeCommand(DDDCommand):
 
         # Export
         try:
-            result_node = self.format_node(result['data'])
+            result_node = Generic3DPresentation.present(result['data'])
             result_data = result_node.save(".glb")
         except Exception as e:
             logger.error("Could not produce result model (.glb): %s", e)
@@ -295,8 +263,8 @@ class ServerServeCommand(DDDCommand):
 
         result = self.result_get(result_index)
         #return status
-        if result:
-            logger.info("Sending result: %s bytes", len(result['data']))
+        if result and result['data']:
+            logger.info("Sending result: %s bytes", len(result['data']) if result['data'] else None)
             await self.sio.emit('result', {"key": result_index, 'data': result['data'], "label": result['label']}, room=sid)
         else:
             logger.info("No result to send.")
