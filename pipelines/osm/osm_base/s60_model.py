@@ -93,7 +93,7 @@ def osm_model_generate_coastline(osm, root, obj, logger):
     if not coastlines_3d.geom:
         return
 
-    coastlines_3d = coastlines_3d.individualize().extrude(15.0).translate([0, 0, -15.0])
+    coastlines_3d = coastlines_3d.individualize().extrude(15.0).flip_faces().translate([0, 0, -15.0])
 
     # Subdivide
     if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
@@ -198,6 +198,8 @@ def osm_model_generate_structures(osm, root, pipeline, logger):
     if walls:
         walls_3d = walls.extrude(5.5).translate([0, 0, -6]).material(ddd.mats.cement)
         walls_3d = terrain.terrain_geotiff_elevation_apply(walls_3d, osm.ddd_proj)
+        if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
+            walls_3d = ddd.meshops.subdivide_to_grid(walls_3d, float(ddd.data.get('ddd:area:subdivide')))
         walls_3d = ddd.uv.map_cubic(walls_3d)
         structures.append(walls_3d)
 
@@ -205,6 +207,8 @@ def osm_model_generate_structures(osm, root, pipeline, logger):
     if ceilings:
         ceilings_3d = ceilings.extrude(0.5).translate([0, 0, -1.0]).material(ddd.mats.cement)
         ceilings_3d = terrain.terrain_geotiff_elevation_apply(ceilings_3d, osm.ddd_proj)
+        if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
+            ceilings_3d = ddd.meshops.subdivide_to_grid(ceilings_3d, float(ddd.data.get('ddd:area:subdivide')))
         ceilings_3d = ddd.uv.map_cubic(ceilings_3d)
         structures.append(ceilings_3d)
 

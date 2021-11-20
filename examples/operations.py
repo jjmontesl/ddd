@@ -22,9 +22,13 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
-    # Get instance of logger for this module
-    logger = logging.getLogger(__name__)
-
+    # Remember to use JOIN_ROUND so resolution is applied when buffering points
+    fig = ddd.point([0, 0]).buffer(1.0, resolution=2, join_style=ddd.JOIN_ROUND, cap_style=ddd.CAP_ROUND).triangulate()
+    items.append(fig)
+    fig = ddd.point([0, 0]).buffer(1.0, resolution=3, join_style=ddd.JOIN_ROUND, cap_style=ddd.CAP_ROUND).triangulate()
+    items.append(fig)
+    fig = ddd.point([0, 0]).buffer(1.0, resolution=4, join_style=ddd.JOIN_ROUND, cap_style=ddd.CAP_ROUND).triangulate()
+    items.append(fig)
 
     # Extrusion with optional caps
     fig = ddd.disc().extrude(5)
@@ -39,7 +43,7 @@ def pipeline_start(pipeline, root):
 
     # Extrude line (to faces, not volume)
     fig1 = ddd.line([[-2, 0], [0, 0], [2, 2]])
-    fig = fig1.extrude(2.0)
+    fig = fig1.extrude(2.0).twosided()
     items.append(fig)
 
     # Extrusion to line (explicit)

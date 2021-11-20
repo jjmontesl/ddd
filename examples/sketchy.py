@@ -43,6 +43,7 @@ def pipeline_start(pipeline, root):
     items.append(item)
 
     item = buildings.portal()
+    #item = ddd.meshops.batch_by_material(item)
     items.append(item)
     #item.show()
 

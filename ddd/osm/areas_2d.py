@@ -141,20 +141,29 @@ class Areas2DOSMBuilder():
 
         return result
 
+
     def generate_areas_2d_postprocess_cut_outlines(self, areas_2d, ways_2d):
         """
         """
 
-        '''
+        """
         areas_2d_original = ddd.group2()
         for a in areas_2d.children:
             if a.extra.get('ddd:area:original', None):
                 if a.extra.get('ddd:area:original') not in areas_2d_original.children:
                     areas_2d_original.append(a.extra.get('ddd:area:original'))
-        '''
+        """
         areas_2d_original = areas_2d.select('["ddd:area:original"]')  # ;["ddd:area:interways"]')
 
+        #areas = areas_2d.select('["ddd:area:area"]').children
+        #logger.info("Sorting 2D areas (%d).", len(areas))
+        areas_2d_original.children.sort(key=lambda a: a.get('ddd:area:original').get('ddd:area:area'), reverse=True)  # extra['ddd:area:area'])
+
         logger.info("Postprocessing areas and ways (%d areas_2d_original, %d ways).", len(areas_2d_original.children), len(ways_2d.children))
+
+        # Index all original areas
+        areas_2d_originals_idx = ddd.group2([area.get('ddd:area:original') for area in areas_2d_original.children])
+        areas_2d_originals_idx.index_create()
 
         to_process = ways_2d.children
 
@@ -175,9 +184,13 @@ class Areas2DOSMBuilder():
                     logger.warn("Skipping way postprocess (multipolygon not supported, should individualize ways2 earlier -introduces way intersection joint errors-?): %s", way_2d)
                     continue
 
-                for area in areas_2d_original.children:  #self.osm.areas_2d.children:  # self.osm.areas_2d.children:
+                # Find candidate intersections
+                cand_geoms = areas_2d_originals_idx._strtree.query(way_2d.geom)
+                cand_areas = ddd.group2([g._ddd_obj for g in cand_geoms])
 
-                    area_original = area.get('ddd:area:original', None)
+                #for area in areas_2d_original.children:  #self.osm.areas_2d.children:  # self.osm.areas_2d.children:
+                for area_original in cand_areas.children:
+
                     if area_original is None: continue
 
                     if area_original.is_empty(): continue
@@ -186,37 +199,45 @@ class Areas2DOSMBuilder():
                     #if area.extra.get('ddd:area:type', None) != 'sidewalk': continue
 
                     try:
-                        intersects = way_2d.buffer(-0.01).intersects(area_original)
-                        intersects_outline = way_2d.intersects(area_original.outline())
+                        # Margin is used to avoid same way chunk touching original area indefinitely.
+                        # Note that this algorithm is weak and can potentially result in infinite loops (chunks are re-added for processing)
+                        intersects = way_2d.intersects(area_original)
+                        intersects_outline = way_2d.crosses(area_original.outline())
                     except Exception as e:
-                        logger.error("Could not calculate intersections between way and area: %s %s", way_2d, area)
-                        raise DDDException("Could not calculate intersections between way and area: %s %s" % (way_2d, area))
+                        logger.error("Could not calculate intersections between way and area: %s %s", way_2d, area_original)
+                        raise DDDException("Could not calculate intersections between way and area: %s %s" % (way_2d, area_original))
 
                     if intersects and not intersects_outline:
                         way_2d.extra['ddd:area:container'] = area_original
                         continue
 
                     if intersects and intersects_outline:
-                        logger.debug("Path %s intersects area: %s (subtracting and arranging)", way_2d, area)
+                        logger.debug("Path %s intersects area: %s (subtracting and arranging)", way_2d, area_original)
 
                         #ddd.group2([way_2d, area_original]).show()
 
                         intersection = way_2d.intersection(area_original)
                         #intersection.extra['ddd:area:container'].append(area)
-                        intersection.name = "Path %s in area %s" % (way_2d.name, area.name)
+                        intersection.name = "Path %s in area %s" % (way_2d.name, area_original.name)
                         intersection.extra['ddd:area:container'] = area_original
 
                         remainder = way_2d.subtract(area_original)
                         #remainder = remainder.material(ddd.mats.pavement)
                         #area.extra['ddd:area:type'] = 'sidewalk'
                         remainder.name = "Path %s to area %s" % (way_2d.name, area_original.name)
-                        remainder = remainder.clean(eps=0.001)
+                        #remainder = remainder.clean(eps=0.001)
 
-                        way_2d.replace(intersection)
+                        intersection = intersection.clean() # eps=-0.01)
+                        if not intersection.is_empty():
+                            way_2d.replace(intersection)
+
                         # Delay appending
                         for c in remainder.individualize(always=True).children:
+                            c = c.clean()
+                            if c.clean().is_empty():
+                                continue
                             to_append.append(c)
-                            to_process.append(c)
+                            #to_process.append(c)
 
                         #to_process.append(way_2d)
 
@@ -225,6 +246,7 @@ class Areas2DOSMBuilder():
                     ways_2d.append(a)
 
         #self.osm.areas_2d.children = [c for c in self.osm.areas_2d.children if c not in to_remove]
+
 
     def generate_areas_2d_postprocess_water(self, areas_2d, ways_2d):
         logger.info("Postprocessing water areas and ways")

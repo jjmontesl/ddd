@@ -20,6 +20,13 @@ class DDDSnap():
         self._last_linearized = None
 
     def project(self, point, obj, penetrate=0.0):
+        """
+        Projects a point to another object outline, also calculating the normal angle for alignment.
+
+        Angle is stored in ddd:angle:calculated, and also in ddd:angle if it wasn't set previously.
+
+        See examples/snap.py for several examples of usage.
+        """
 
         # Cache last object
         if obj != self._last_obj:

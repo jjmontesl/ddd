@@ -66,7 +66,6 @@ def osm_generate_buildings_postprocess(pipeline, osm, root, logger):
 @dddtask(path="/Buildings/*", select='["osm:historic:civilization" = "ancient_roman"]')
 def osm_buildings_historic_civilization_ancient_roman(pipeline, osm, root, obj):
     """
-    Set defaults to parking_entrance.
     """
     obj.set('ddd:building:material', default="tiles_stones_veg_sparse")
     obj = obj.material(ddd.mats.tiles_stones_veg_sparse)
@@ -93,7 +92,7 @@ def osm_buildings_amenity_parking_entrance(pipeline, osm, root, obj):
     """
     obj.set('ddd:building:levels', default=1)
     obj.set('ddd:building:material', default="glass")
-    obj.set('ddd:roof:shape', default="flat")
+    obj.set('ddd:roof:shape', default="none")
     obj = obj.material(ddd.mats.glass)
     return obj
 

@@ -172,7 +172,7 @@ class DDDMeshOps():
             #print(obj.mesh.vertices.shape)
             obj.mesh.update_faces(face_mask)
             #print(obj.mesh.vertices.shape)
-            obj = obj.clean()
+            obj = obj.merge_vertices().clean()
             #obj.mesh.remove_degenerate_faces()
             #print(obj.mesh.vertices.shape)
 

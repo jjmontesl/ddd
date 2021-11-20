@@ -327,9 +327,12 @@ def osm_select_ways_raceway(obj, root):
 
     obj.set('ddd:way:roadlines', True)
 
-    if obj.get('osm:sport') == "motor":
+    sport = obj.get('osm:sport', None)
+    if sport == "motor":
         obj.set('ddd:way:width', 12.0)
-    if obj.get('osm:sport') == "karting":
+    elif sport == "karting":
+        obj.set('ddd:way:width', 6.0)
+    else:
         obj.set('ddd:way:width', 6.0)
 
     root.find("/Ways").append(obj)

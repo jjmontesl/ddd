@@ -506,9 +506,9 @@ class Buildings3DOSMBuilder():
         #lines = building_2d.individualize()  # geom.exterior
 
         # Project only to facade lines
-        building_2d_margin = building_2d.buffer(-1)
+        building_2d_margin = building_2d.union().buffer(-1)
         lines = []
-        for b in building_3d.children:
+        for b in [building_3d] + building_3d.children:
             for s in b.get('ddd:building:segments', []):
                 l = ddd.line([s.p1, s.p2], )
                 #l.set('ddd:building:segment') = s
@@ -517,6 +517,7 @@ class Buildings3DOSMBuilder():
 
         if len(lines) == 0:
             logger.error("No segments geometry to snap item %s to building %s.", item_3d, building_3d)
+            building_3d.dump()
             return None
 
         lines = ddd.group2(lines)
@@ -526,22 +527,40 @@ class Buildings3DOSMBuilder():
         dir_ver = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
         dir_ver_length = math.sqrt(dir_ver[0] ** 2 + dir_ver[1] ** 2)
         dir_ver = (dir_ver[0] / dir_ver_length, dir_ver[1] / dir_ver_length)
-        angle = math.atan2(dir_ver[1], dir_ver[0])
+        angle = math.atan2(dir_ver[1], dir_ver[0]) + math.pi
 
         # Reverse angle if point is inside
-        if building_2d.contains(item_1d.centroid()):
-            angle = angle + math.pi
-
-        #if not building_2d.geom.contains(amenity.geom):
-        #    angle = -angle
-
+        #if building_2d.contains(item_1d.centroid()):
         #if not building_2d.geom.exterior.is_ccw:
-        #    angle = -angle
         #logger.debug("Amenity: %s Closest point: %s Closest Segment: %s Angle: %s" % (amenity.geom.centroid, closest_point, closest_segment, angle))
+
+
+        target_point = closest_point
+
+        # Fit width in segment
+        # TODO: Move to "snap/align" and make reusable
+        bounds = item_3d.bounds()
+        width = abs(bounds[0][0] - bounds[1][0])
+        segment_d = math.sqrt((closest_point[0] - segment_coords_a[0]) ** 2 + (closest_point[1] - segment_coords_a[1]) ** 2)
+        #item_3d.set('debug:segment_d_before', segment_d, children=True)
+        min_d = width / 2
+        max_d = dir_ver_length - min_d
+        if max_d < min_d:
+            # If segment is smaller than width, align to center
+            min_d = dir_ver_length / 2
+            max_d = dir_ver_length / 2
+        if segment_d < min_d or segment_d > max_d:
+            segment_d = max(min_d, min(max_d, segment_d))
+            target_point = (segment_coords_a[0] + dir_ver[0] * segment_d, segment_coords_a[1] + dir_ver[1] * segment_d)
+        #item_3d.set('debug:segment_d_after', segment_d, children=True)
+        #item_3d.set('debug:width', width, children=True)
+        #item_3d.set('debug:min_d', min_d, children=True)
+        #item_3d.set('debug:max_d', max_d, children=True)
+        #item_3d.set('debug:dir_ver_length', dir_ver_length, children=True)
 
         # Align rotation
         item_3d = item_3d.rotate([0, 0, angle])  # + math.pi / 2.0
-        item_3d = item_3d.translate([closest_point[0], closest_point[1], 0])
+        item_3d = item_3d.translate([target_point[0], target_point[1], 0])
 
         # Raise to floor level, since currently items are not considered by floor
         point_elevation = terrain.terrain_geotiff_elevation_value(item_1d.centroid().geom.coords[0], self.osm.ddd_proj)
@@ -571,7 +590,7 @@ class Buildings3DOSMBuilder():
 
                     # Side sign
                     item = urban.sign_pharmacy_side(size=1.0)
-                    item.copy_from(item_1d)
+                    item.copy_from(item_1d, copy_metadata_to_children=True)
 
                     '''
                     # Plain sign (front view on facade)
@@ -592,7 +611,7 @@ class Buildings3DOSMBuilder():
                     #panel_text = amenity.extra['amenity'] if amenity.extra['amenity'] else None
                     panel_text = item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else (item_1d.extra['osm:amenity'].upper() if item_1d.extra['osm:amenity'] else None)
                     item = urban.panel(width=3.2, height=0.9, text=panel_text)
-                    item.copy_from(item_1d)
+                    item.copy_from(item_1d, copy_metadata_to_children=True)
                     item.extra['ddd:item'] = item_1d
                     item.name = "Panel: %s %s" % (item_1d.extra['osm:amenity'], item_1d.extra.get('osm:name', None))
                     item = self.snap_to_building(item, building_3d)
@@ -610,7 +629,7 @@ class Buildings3DOSMBuilder():
                     #coords = item_1d.geom.centroid.coords[0]
                     panel_text = (item_1d.extra['osm:name'] if item_1d.extra.get('osm:name', None) else item_1d.extra['osm:shop'])
                     item = urban.panel(width=2.5, height=0.8, text=panel_text)
-                    item.copy_from(item_1d)
+                    item.copy_from(item_1d, copy_metadata_to_children=True)
                     item.extra['ddd:item'] = item_1d
                     item.name = "Shop Panel: %s %s" % (item_1d.extra['osm:shop'], item_1d.extra.get('osm:name', None))
                     item = self.snap_to_building(item, building_3d)

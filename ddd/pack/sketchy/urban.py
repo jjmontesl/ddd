@@ -225,10 +225,10 @@ def lamppost(height=2.80, r=0.075, lamp=None, mat_post=None):
     col.name = "Lamppost"
     return col
 
-def lamppost_high_mast(height=22.5, arm_count=3, span=math.pi * 2):
+def lamppost_high_mast(height=20.5, arm_count=3, span=math.pi * 2):
     """
     """
-    bulb = lamp_ball(r=0.25).material(ddd.mats.lightbulb)
+    bulb = lamp_ball(r=0.45).material(ddd.mats.lightbulb)
     arm = post_arm_angled(lamp=bulb)
     arms = ddd.align.matrix_polar(arm, arm_count, span=span)
 
@@ -236,7 +236,7 @@ def lamppost_high_mast(height=22.5, arm_count=3, span=math.pi * 2):
     item = ddd.group([item, arms.translate((0, 0, height))])
 
     item = ddd.meshops.batch_by_material(item)
-    item = item.clean()
+    item = item.clean(remove_degenerate=False)
 
     return item
 
@@ -262,10 +262,10 @@ def trafficlights():
     return post
 
 
-def road_marking(marktype, size=2.0):
+def road_marking(marktype, size=2.0, enlarge=1.4):
     mark = TextureAtlasUtils().create_sprite_from_atlas(ddd.mats.roadmarks, marktype)
     mark = mark.triangulate()
-    mark = mark.scale([size, size, 1.0])
+    mark = mark.scale([size, size * enlarge, 1.0])
     return mark
 
 
@@ -555,7 +555,7 @@ def fire_hydrant(height=0.90, r=0.25):
     """
     Ref: https://upload.wikimedia.org/wikipedia/commons/5/5a/Downtown_Charlottesville_fire_hydrant.jpg
     """
-    circle = ddd.point([0, 0]).buffer(r, resolution=2, cap_style=ddd.CAP_ROUND)
+    circle = ddd.point([0, 0]).buffer(r, resolution=3, cap_style=ddd.CAP_ROUND, join_style=ddd.JOIN_ROUND)
     obj = circle.scale([0.85, 0.85, 1]).extrude_step(circle.scale([0.85, 0.85, 1]), 0.10)
     obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), 0.01)
     obj = obj.extrude_step(circle.scale([0.6, 0.6, 1]), height - 0.3)
@@ -805,7 +805,7 @@ def bench(length=1.40, height=1.00, width=0.8, seat_height=0.45,
     bench.name = "Bench"
     bench.mat = None  # to avoid batching issues
 
-    bench = ddd.meshops.batch_by_material(bench).clean()
+    bench = ddd.meshops.batch_by_material(bench).clean(remove_degenerate=False)
 
     return bench
 
@@ -896,7 +896,7 @@ def patio_chair(width=0.45, length=0.45, seat_height=0.40):
     chair = ddd.group3([stool, back], name="Chair")
     chair.extra['ddd:mass'] = 2.5
 
-    chair = ddd.meshops.batch_by_material(chair).clean()
+    chair = ddd.meshops.batch_by_material(chair).clean(remove_degenerate=False)
 
     return chair
 
@@ -951,8 +951,7 @@ def childrens_playground_arc(length=3.25, width=1.0, sides=7, height=None):
         pbar = pbar.material(mats[idx % 2])
         item.append(pbar)
 
-    item = ddd.meshops.batch_by_material(item)
-    item = item.clean()
+    item = ddd.meshops.batch_by_material(item).clean(remove_degenerate=False)
 
     return item
 
@@ -1000,8 +999,7 @@ def childrens_playground_slide(length=4.5, height=None, width=0.60):
 
     item = item.translate([-4.5/2, 0, 0]).rotate(ddd.ROT_TOP_CCW)
 
-    item = ddd.meshops.batch_by_material(item)
-    item = item.clean()
+    item = ddd.meshops.batch_by_material(item).clean(remove_degenerate=False)
 
     return item
 
@@ -1036,8 +1034,7 @@ def childrens_playground_swingset(length=2.2, num=2, height=2.1, width=1.6):
         swingset.append(swing)
 
     item = swingset
-    item = ddd.meshops.batch_by_material(item)
-    item = item.clean()
+    item = ddd.meshops.batch_by_material(item).clean(remove_degenerate=False)
 
     return item
 

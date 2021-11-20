@@ -64,7 +64,10 @@ class ItemsOSMBuilder():
         elif item_2d.extra.get('osm:amenity', None) == 'drinking_water':
             item_3d = self.generate_item_3d_generic(item_2d, urban.drinking_water, "Drinking water")
         elif item_2d.extra.get('osm:amenity', None) == 'post_box':
-            item_3d = self.generate_item_3d_post_box(item_2d)
+            #item_3d = self.generate_item_3d_post_box(item_2d)
+            operator = item_2d.extra['osm:feature'].get('operator', None)
+            item_3d = self.generate_item_3d_generic_catalog("post_box-default-1", item_2d, urban.post_box, "Postbox")
+            item_3d.name = 'Postbox (%s): %s' % (operator, item_2d.name)
 
         elif item_2d.extra.get('osm:amenity', None) == 'table':
             item_3d = self.generate_item_3d_generic(item_2d, urban.patio_table, "Table")
@@ -93,7 +96,7 @@ class ItemsOSMBuilder():
             item_3d = self.generate_item_3d_generic_catalog("bicycle-parking-bar-u", item_2d, common.bar_u, "Bicycle Parking Bar U")
 
         elif item_2d.extra.get('osm:emergency', None) == 'fire_hydrant':
-            item_3d = self.generate_item_3d_generic(item_2d, urban.fire_hydrant, "Fire Hydrant")
+            item_3d = self.generate_item_3d_generic_catalog("fire_hydrant-default-1", item_2d, urban.fire_hydrant, "Fire Hydrant")
 
         elif item_2d.extra.get('osm:natural', None) == 'tree':
             # TODO: Do decimations in the pipeline (if at all)
@@ -398,7 +401,7 @@ class ItemsOSMBuilder():
         item_3d.set('_height_mapping', default='terrain_geotiff_incline_elevation_apply')
         return item_3d
 
-
+    '''
     def generate_item_3d_post_box(self, item_2d):
 
         coords = item_2d.geom.coords[0]
@@ -407,6 +410,7 @@ class ItemsOSMBuilder():
         operator = item_2d.extra['osm:feature'].get('operator')
         item_3d.name = 'Postbox (%s): %s' % (operator, item_2d.name)
         return item_3d
+    '''
 
     def generate_item_3d_waste_basket(self, item_2d):
         coords = item_2d.geom.coords[0]

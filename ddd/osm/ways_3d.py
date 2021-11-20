@@ -148,7 +148,11 @@ class Ways3DOSMBuilder():
                 logger.error("Could not map railway UV coordinates: %s", e)
                 railroad_3d.extra['uv'] = None
 
-            result.append(ddd.group3([way_3d, railroad_3d]))
+            railroad_group = ddd.group3([way_3d, railroad_3d])
+            if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
+                railroad_group = ddd.meshops.subdivide_to_grid(railroad_group, float(ddd.data.get('ddd:area:subdivide')))
+
+            result.append(railroad_group)
 
         # Apply elevation
         result = self.osm.areas3.generate_area_3d_apply_elevation(way_2d, result)

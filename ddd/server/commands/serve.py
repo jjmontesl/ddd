@@ -107,6 +107,18 @@ class ServerServeCommand(DDDCommand):
         self.files_changed = False
         self.rollbackImporter = None
 
+        self._results = {}
+
+    def show(self, obj, label=None):
+        logger.info("Server processing generated result (show): label=%s %s", label, obj)
+        loop = self.loop
+
+        result_index = len(self._results) + 1
+        self._results[result_index] = {'data': obj.copy(),
+                                       'label': label}
+
+        loop.call_soon_threadsafe(asyncio.async, self.result_send(None, result_index))
+
     def run(self):
 
         logger.info("Starting DDD server tool API (ws://).")
@@ -115,7 +127,7 @@ class ServerServeCommand(DDDCommand):
 
         # Disable builtin rendering
         logger.info("Disabling builtin rendering.")
-        D1D2D3Bootstrap.renderer = "none"
+        D1D2D3Bootstrap.renderer = self.show
 
         self.loop = asyncio.get_event_loop()
 
@@ -255,32 +267,37 @@ class ServerServeCommand(DDDCommand):
 
         return result
 
-    def result_get(self):
-        root = self.pipeline.root
+    def result_get(self, result_index=0):
+
+        if result_index:
+            result = self._results[result_index]
+        else:
+            result = {'data': self.pipeline.root, 'label': 'DDDServer Root Node'}
 
         # Process result
         #if isinstance(root, DDDObject2):
         #    root = root.copy3(copy_children=True)
         #root = root.find("/Elements3")
-        root = self.format_node(root)
 
         # Export
         try:
-            result_data = root.save(".glb")
+            result_node = self.format_node(result['data'])
+            result_data = result_node.save(".glb")
         except Exception as e:
             logger.error("Could not produce result model (.glb): %s", e)
             print(traceback.format_exc())
             result_data = None
 
-        return result_data
+        return {'data': result_data,
+                'label': result['label']}
 
-    async def result_send(self, sid=None):
+    async def result_send(self, sid=None, result_index=0):
 
-        result = self.result_get()
+        result = self.result_get(result_index)
         #return status
         if result:
-            logger.info("Sending result: %s bytes", len(result))
-            await self.sio.emit('result', {'data': result}, room=sid)
+            logger.info("Sending result: %s bytes", len(result['data']))
+            await self.sio.emit('result', {"key": result_index, 'data': result['data'], "label": result['label']}, room=sid)
         else:
             logger.info("No result to send.")
 

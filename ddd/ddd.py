@@ -248,7 +248,7 @@ class D1D2D3():
         return cube
 
     @staticmethod
-    def cylinder(height, r, center=True, resolution=4, name=None):
+    def cylinder(height, r, center=True, resolution=3, name=None):
         obj = ddd.disc(r=r, resolution=resolution, name=name)
         obj = obj.extrude(height, center=center)
         return obj
@@ -1248,7 +1248,7 @@ class DDDObject2(DDDObject):
                 #item = item.individualize()
                 '''
                 polygons = []
-                geoms = [result.geom] if  result.geom.type != "MultiPolygon" else result.geom.geoms
+                geoms = [result.geom] if result.geom.type in ("MultiPolygon", "MultiLineString") else result.geom.geoms
                 for geom in geoms:
                     item_ext = LineString(geom.exterior.coords[:] + geom.exterior.coords[0:1])
                     #item_ext = Polygon(list(result.geom.exterior.coords)).interiors # coords)
@@ -1323,7 +1323,11 @@ class DDDObject2(DDDObject):
 
     def buffer(self, distance, resolution=8, cap_style=D1D2D3.CAP_SQUARE, join_style=D1D2D3.JOIN_MITRE, mitre_limit=5.0):
         '''
-        Resolution is:
+        Resolution is the number of points to approximate a quarter circle (as in Shapely).
+
+        Note that, when buffering points, resolution will be applied only if join_style=ddd.JOIN_ROUND
+
+        There are shortcuts to cap and join styles in ddd (eg. ddd.CAP_SQUARE and ddd.JOIN_ROUND).
 
         shapely.geometry.CAP_STYLE
             round    1
@@ -1337,8 +1341,7 @@ class DDDObject2(DDDObject):
         result = self.copy()
         if self.geom:
             result.geom = self.geom.buffer(distance, resolution=resolution,
-                                           cap_style=cap_style, join_style=join_style,
-                                           mitre_limit=5.0)
+                                           cap_style=cap_style, join_style=join_style, mitre_limit=mitre_limit)
         result.children = [c.buffer(distance, resolution, cap_style, join_style, mitre_limit) for c in self.children]
 
         return result
@@ -1764,7 +1767,7 @@ class DDDObject2(DDDObject):
         Returns a triangulated mesh (3D) from this 2D shape.
         """
         if (twosided):
-            logger.warn("Calling 'triagulate' with twosided=True has seen to give wrong normals (black materials) due to vertex merging.")
+            logger.warn("Calling 'triangulate' with twosided=True has seen to give wrong normals (black materials) due to vertex merging: %s", self)
         if self.geom:
             if self.geom.type == 'MultiPolygon' or self.geom.type == 'MultiLineString' or self.geom.type == 'GeometryCollection':
                 meshes = []
@@ -2945,6 +2948,15 @@ class DDDObject3(DDDObject):
 
         return result
 
+    def flip_faces(self):
+        result = self.copy()
+        if result.mesh:
+            flipped_faces = np.fliplr(result.mesh.faces)
+            result.mesh.faces = flipped_faces
+            #result.geom = result.geom.simplify(distance)  #, preserve_topology=True)
+        result.children = [c.flip_faces() for c in self.children]
+        return result
+
     def convex_hull(self):
         result = self.copy()
         if result.mesh:
@@ -3121,10 +3133,10 @@ class DDDObject3(DDDObject):
                     uvscale = (uvscale, uvscale)
                 try:
                     uvscale_x, uvscale_y = uvscale
-                    uvs = [[v[0] * uvscale_x, v[1] * uvscale_y] for v in uvs]
+                    nuvs = [[v[0] * uvscale_x, v[1] * uvscale_y] for v in uvs]
+                    uvs = nuvs
                 except Exception as e:
                     logger.error("Error computing UV coordinates for %s: %s", self, e)
-                    uvs = None
 
             # Material + UVs
             mat = self.mat._trimesh_material()
@@ -3264,7 +3276,7 @@ class DDDObject3(DDDObject):
                 cobjs.extend(c.recurse_objects())
         return cobjs
 
-    def show(self, instance_mesh=None, instance_marker=None):
+    def show(self, instance_mesh=None, instance_marker=None, label=None):
 
         logger.info("Showing: %s", self)
 
@@ -3307,6 +3319,10 @@ class DDDObject3(DDDObject):
         elif D1D2D3Bootstrap.renderer == 'none':
 
             logger.info("Skipping rendering (renderer=none).")
+
+        elif callable(D1D2D3Bootstrap.renderer):
+            logger.info("Generating result through show() callback: %s", self)
+            D1D2D3Bootstrap.renderer(self, label=label)
 
         else:
 
