@@ -286,39 +286,47 @@ def osm_bootstrap_skip_existing(root, pipeline, logger):
         sys.exit(0)
 
 @dddtask()
+def osm_bootstrap_configure_logging(root, pipeline, logger):
+
+    shortname = pipeline.data['ddd:osm:output:shortname']
+
+    #old_formatters = {hdlr: hdlr.formatter for hdlr in logging.getLogger().handlers}
+
+    if D1D2D3Bootstrap._instance.debug:
+        new_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(module)s [' + shortname + '] %(message)s')
+    else:
+        new_formatter = logging.Formatter('%(asctime)s [' + shortname + '] %(message)s')
+
+    # Apply formatter to existing loggers
+    for hdlr in logging.getLogger().handlers:
+        hdlr.setFormatter(new_formatter)
+
+    # Create a file handler for this process log
+    # TODO: Support this at pipeline level / ddd command (?)
+    build_log_file = False
+    if build_log_file:
+        fh = logging.FileHandler('/tmp/%s.log' % (shortname, ))
+        fh.setLevel(level=logging.DEBUG)
+        fh.setFormatter(new_formatter)
+        logging.getLogger().addHandler(fh)
+
+@dddtask()
 def osm_bootstrap_lock(root, pipeline, logger):
 
     shortname = pipeline.data['ddd:osm:output:shortname']
     filename = pipeline.data['ddd:osm:output:filename']
 
-    logger.warn("Restore (or reconsider) usage of lock file within the pipeline.")
+    lockfilename = filename + ".lock"
+    logger.info("Trying to get lock file for: %s", lockfilename)
 
     # Try to lock
-    lockfilename = filename + ".lock"
     try:
-        with open(lockfilename, "x") as _:
-
-            old_formatters = {hdlr: hdlr.formatter for hdlr in logging.getLogger().handlers}
-            if D1D2D3Bootstrap._instance.debug:
-                new_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(module)s [' + shortname + '] %(message)s')
-            else:
-                new_formatter = logging.Formatter('%(asctime)s [' + shortname + '] %(message)s')
-
-            # Apply formatter to existing loggers
-            for hdlr in logging.getLogger().handlers:
-                hdlr.setFormatter(new_formatter)
-
-            # Create a file handler for this process log
-            # TODO: Support this at pipeline level / ddd command (?)
-            build_log_file = False
-            if build_log_file:
-                fh = logging.FileHandler('/tmp/%s.log' % (shortname, ))
-                fh.setLevel(level=logging.DEBUG)
-                fh.setFormatter(new_formatter)
-                logging.getLogger().addHandler(fh)
+        #with open(lockfilename, "x") as _:
+        open(lockfilename, "x")
 
     except FileExistsError as e:
-        logger.info("Skipping: %s (lock file exists)", filename)
+        logger.info("Stopping execution: %s (lock file exists)", filename)
+        pipeline.stop()
 
 
 @dddtask()
@@ -362,21 +370,19 @@ def osm_bootstrap_generate(root, pipeline, logger):
     osmbuilder = osm.OSMBuilder(area_crop=area_crop, area_filter=area_filter, osm_proj=osm_proj, ddd_proj=ddd_proj)
     pipeline.data['osm'] = osmbuilder
 
-    '''
+
+@dddtask(order="9999.99")
+def osm_bootstrap_unlock(root, pipeline, logger):
+
+    filename = pipeline.data['ddd:osm:output:filename']
+    lockfilename = filename + ".lock"
+
+    # Ensure lock file is removed
     try:
-    finally:
+        os.unlink(lockfilename)
+    except Exception as e:
+        logger.warn("Could not delete pipeline lock: %s", lockfilename)
 
-        # Ensure lock file is removed
-        try:
-            os.unlink(lockfilename)
-        except Exception as e:
-            pass
+    #for hdlr in logging.getLogger().handlers:
+    #    hdlr.setFormatter(old_formatters[hdlr])
 
-    for hdlr in logging.getLogger().handlers:
-        hdlr.setFormatter(old_formatters[hdlr])
-
-    if existed > 0:
-        logger.info("Skipped %d files that already existed.", existed)
-    if skipped > 0:
-        logger.info("Skipped %d files not contained in greater filtering area.", skipped)
-    '''

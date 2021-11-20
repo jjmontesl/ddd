@@ -18,7 +18,7 @@ from ddd.util.common import parse_bool
 
 
 @dddtask(order="64.10.10", condition=True)
-def osm_model_combine_materials_condition(pipeline):
+def osm_model_metadata_clean_condition(pipeline):
     """
     Combine meshes by material condition (default is True).
     """
@@ -55,6 +55,9 @@ def osm_metadata_clean_ddd_verbose(pipeline, osm, root, obj):
         'ddd:building:segments',
         'ddd:building:convex',
         'ddd:building:convex:segments',
+
+        'extruded_shape',
+        'tags',
     ]
 
     obj.extra = { k: v for k, v in obj.extra.items() if k not in keys }

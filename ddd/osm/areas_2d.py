@@ -153,13 +153,13 @@ class Areas2DOSMBuilder():
                 if a.extra.get('ddd:area:original') not in areas_2d_original.children:
                     areas_2d_original.append(a.extra.get('ddd:area:original'))
         """
+        #areas = areas_2d.select('["ddd:area:area"]').children
         areas_2d_original = areas_2d.select('["ddd:area:original"]')  # ;["ddd:area:interways"]')
 
-        #areas = areas_2d.select('["ddd:area:area"]').children
-        #logger.info("Sorting 2D areas (%d).", len(areas))
-        areas_2d_original.children.sort(key=lambda a: a.get('ddd:area:original').get('ddd:area:area'), reverse=True)  # extra['ddd:area:area'])
-
         logger.info("Postprocessing areas and ways (%d areas_2d_original, %d ways).", len(areas_2d_original.children), len(ways_2d.children))
+
+        # Sort areas from larger to smaller, so ways are cut first by outer areas
+        areas_2d_original.children.sort(key=lambda a: a.get('ddd:area:original').get('ddd:area:area'), reverse=True)  # extra['ddd:area:area'])
 
         # Index all original areas
         areas_2d_originals_idx = ddd.group2([area.get('ddd:area:original') for area in areas_2d_original.children])
@@ -194,7 +194,6 @@ class Areas2DOSMBuilder():
                     if area_original is None: continue
 
                     if area_original.is_empty(): continue
-
 
                     #if area.extra.get('ddd:area:type', None) != 'sidewalk': continue
 
@@ -376,8 +375,6 @@ class Areas2DOSMBuilder():
 
         logger.info("Linking %d items to %d areas.", len(items_1d.children), len(areas_2d.children))
         # TODO: Link to building parts, inspect facade, etc.
-
-        #logger.debug("Sorting 2D areas (%d).", len(areas_2d))
 
         #items_1d_query = STRtree(items_1d.)
 

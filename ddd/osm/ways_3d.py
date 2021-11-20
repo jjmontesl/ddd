@@ -200,6 +200,11 @@ class Ways3DOSMBuilder():
         ceilings_3d = ddd.uv.map_cubic(ceilings_3d)
 
         subway = ddd.group([sidewalks_3d, walls_3d, floors_3d, ceilings_3d], empty=3).translate([0, 0, -0.2])
+
+        # Subdivide
+        if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
+            subway = ddd.meshops.subdivide_to_grid(subway, float(ddd.data.get('ddd:area:subdivide')))
+
         self.osm.other_3d.children.append(subway)
 
     def generate_ways_3d_elevated(self):
