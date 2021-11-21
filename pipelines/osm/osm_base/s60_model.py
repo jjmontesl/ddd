@@ -64,6 +64,26 @@ def osm_model_pre_propagate_base_height_items_nodes(root, obj):
     set_base_height(obj)
 
 
+@dddtask()
+def osm_model_generate_ways_roadlines(osm, root, pipeline):
+    # TODO: Generate lines in 3D at this stage, instead of during 2D stage
+    # Also separate 2D/3D for lines
+    roadlines = pipeline.data["Roadlines3"]
+    del(pipeline.data["Roadlines3"])
+    root.append(roadlines.clean())
+
+@dddtask(path="/Roadlines3/*", select='[!"ddd:height:base"]')
+def osm_model_pre_propagate_base_height_roadlines(root, obj):
+    """
+    Calculates and applies base height to roadlines, since they were not included before
+    """
+    set_base_height(obj)
+    # Translate, since lines 3d are being early generated (but shouldn't)
+    base_height = obj.get('ddd:height:base')
+    if base_height:
+        obj = obj.translate([0, 0, base_height])
+        return obj
+
 
 @dddtask(order="60.10.+", log=True)
 def osm_model_init(root, osm):
@@ -125,48 +145,12 @@ def osm_model_generate_ways_init(osm, root, pipeline):
         pipeline.data['_ways_areas_new'] = ddd.group3(name="Ways")
     root.append(pipeline.data['_ways_areas_new'])
 
-'''
-@dddtask()
-def osm_model_generate_ways_old(osm, root, pipeline):
-
-    # TODO: Added to avoid bug with no areas being generated above (review this broken transition between old/new ways/areas)
-    if not '_ways_areas_new' in pipeline.data:
-        pipeline.data['_ways_areas_new'] = ddd.group3()
-
-    ways_2d = root.find("/Ways")
-    ways_3d = osm.ways3.generate_ways_3d(ways_2d)
-
-    # While old and new ways are together
-    for o in pipeline.data['_ways_areas_new'].children: ways_3d.append(o)
-    del(pipeline.data['_ways_areas_new'])
-
-    root.remove(ways_2d)
-    root.append(ways_3d)
-'''
-
-'''
-# Note: Done as area:elevation=path now
-@dddtask(path="/Ways/", select='["ddd:layer_transition"]')  # ;["ddd:layer"="0a"]')
-def osm_model_generate_ways_height_apply(osm, root, pipeline, obj):
-    # logger.debug("3D layer transition: %s", way)
-    # if way.extra['ddd:layer_transition']:
-    way = obj
-    if ('way_1d' in way.extra):
-        path = way.extra['way_1d']
-        vertex_func = osm.ways1.get_height_apply_func(path)
-        way = way.vertex_func(vertex_func)
-    #else:
-    #    nway = way.translate([0, 0, osm.ways1.layer_height(way.get('ddd:layer', 0))])
-    return way
-'''
-
 @dddtask()
 def osm_model_generate_ways_roadlines_combine(osm, root, pipeline):
     # TODO: Generate lines in 3D at this stage, instead of during 2D stage
     # Also separate 2D/3D for lines
-    roadlines = pipeline.data["Roadlines3"]
-    del(pipeline.data["Roadlines3"])
-    root.append(roadlines.combine())
+    roadlines = root.find("/Roadlines3")
+    roadlines.replace(roadlines.combine())
 
 
 @dddtask(path="/Areas/*")  # , select='["ddd:area:type"]')
@@ -390,8 +374,8 @@ def osm_models_splatmap_materials(pipeline, osm, root, logger):
     """
     Mark materials for splatmap usage.
     """
-    root.find("/Areas").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)
-    root.find("/Ways").select('[ddd:layer="0"]').set('ddd:material:splatmap', True, children=True)
+    root.find("/Areas").select('[ddd:layer="0"]([!ddd:height];[ddd:height = 0])').set('ddd:material:splatmap', True, children=True)
+    root.find("/Ways").select('[ddd:layer="0"][ddd:area:type != "stairs"]').set('ddd:material:splatmap', True, children=True)
 
 
 @dddtask()

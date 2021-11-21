@@ -1257,23 +1257,17 @@ class DDDObject2(DDDObject):
         if result.geom and not result.geom.is_valid:  # Removing this check causes a core dump during 3D generation
 
             if fix_invalid:
-                # Handle self intersection
-                '''
-                item_ext = result.geom.exterior
-                item_mls = item_ext.intersection(item_ext)
-                polygons = polygonize(item_mls)
-                valid_item = MultiPolygon(polygons)
-                result.geom = valid_item #.convex_hull
-                #item = item.individualize()
-                '''
                 polygons = []
-                geoms = [result.geom] if result.geom.type in ("MultiPolygon", "MultiLineString") else result.geom.geoms
+                geoms = [result.geom] if result.geom.type not in ("MultiPolygon", "MultiLineString") else result.geom.geoms
                 for geom in geoms:
-                    item_ext = LineString(geom.exterior.coords[:] + geom.exterior.coords[0:1])
-                    #item_ext = Polygon(list(result.geom.exterior.coords)).interiors # coords)
-                    item_mls = unary_union(item_ext)
-                    geom_polygons = list(polygonize(item_mls))
-                    polygons.extend(geom_polygons)
+                    if geom.type == 'LineString':
+                        pass
+                    else:
+                        item_ext = LineString(geom.exterior.coords[:] + geom.exterior.coords[0:1])
+                        #item_ext = Polygon(list(result.geom.exterior.coords)).interiors # coords)
+                        item_mls = unary_union(item_ext)
+                        geom_polygons = list(polygonize(item_mls))
+                        polygons.extend(geom_polygons)
                 valid_item = MultiPolygon(polygons)
                 result.geom = valid_item  # .convex_hull
 
@@ -1475,10 +1469,15 @@ class DDDObject2(DDDObject):
         return list(self.coords_iterator(recurse=recurse))
 
     def vertex_count(self):
+        """
+        Currently this count does not include children vertex count.
+        """
         if not self.geom:
             return 0
         if self.geom.type == 'MultiPolygon':
             return sum([len(p.exterior.coords) for p in self.geom.geoms])
+        if self.geom.type == 'MultiLineString':
+            return sum([len(p.coords) for p in self.geom.geoms])
         if self.geom.type == 'Polygon':
             if self.geom.is_empty: return 0
             return len(self.geom.exterior.coords) + sum([len(i.coords) for i in self.geom.interiors])
@@ -1486,8 +1485,7 @@ class DDDObject2(DDDObject):
             try:
                 return len(self.geom.coords)
             except Exception as e:
-                #logger.debug("Invalid vertex count (multi-part geometry involved): %s", self)
-                pass
+                logger.warn("Error calculating vertex count %s: %s", self.geom, e)  # Cannot log self here, as this method is used in __repr__
         return None
 
     def remove_z(self):

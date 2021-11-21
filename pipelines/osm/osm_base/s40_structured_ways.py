@@ -270,21 +270,22 @@ def osm_structured_generate_areas_calculate_buildings_ground_footprint(pipeline,
 @dddtask()
 def osm_structured_generate_areas_interways_phase1(pipeline, osm, root, logger):
     """
-    Generates interior areas between ways.
+    Generates interior areas between ways (and areas)
     This does not include ways that are overlaid / absorbed into their container areas (eg. paths over sidewalks).
     NOTE: "way:overlay" may be better named "way:interways", as it is really used for that for now (way/area priority is also used for other resolutions, think path/cycle/road)
     """
 
     logger.info("Generating union for interways.")
     union = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]')
+    #union.append(root.find("/Areas").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]'))
 
     # Calculate union
     union = osm.areas2.generate_union_safe(union)
     #union = union.clean()
 
     # Add building lvel 0
-    buildings = pipeline.data['buildings_level_0']
-    areas = root.find("/Areas").select('["ddd:layer" ~ "0|-1a"]')
+    #buildings = pipeline.data['buildings_level_0']
+    #areas = root.find("/Areas").select('["ddd:layer" ~ "0|-1a"]')
     #subtract_union = osm.areas2.generate_union_safe(ddd.group2([buildings, areas]))
 
     logger.debug("Generating interways from interiors.")
@@ -305,9 +306,8 @@ def osm_structured_generate_areas_interways_phase1(pipeline, osm, root, logger):
 
         root.find("/Areas").append(interior)
 
-'''
 @dddtask()
-def osm_structured_generate_areas_interways_phase1_augment_ways(pipeline, osm, root, logger):
+def osm_structured_generate_areas_interways_phase1_ways_sidewalks(pipeline, osm, root, logger):
     """
     Experimenting with aumenting sidewalks / kerbs
     """
@@ -315,35 +315,43 @@ def osm_structured_generate_areas_interways_phase1_augment_ways(pipeline, osm, r
     # TODO: if done, this shall generate at different layers and according to way metadata
 
     logger.info("Generating sidewalks for ways.")
-    ways = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]')
-
-    # Add building lvel 0
-    #buildings = pipeline.data['buildings_level_0']
-    #union.append(buildings)
+    ways = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]["ddd:way:sidewalk:width"]')
 
     # Calculate union
-    #union = osm.areas2.generate_union_safe(union)
-    #union = union.clean()
+    union = ways.union()
+    union = union.append(pipeline.data['buildings_level_0'])
+    union = union.append(root.find("/Areas"))
+    union = osm.areas2.generate_union_safe(union)
+    union = union.clean()
 
-    logger.debug("Generating sidewalks from ways.")
+    # Buffer sidewalks
+    sidewalks = ddd.group2()
+    for sidewalk in ways.flatten().children:
+        sidewalk_width = sidewalk.get('ddd:way:sidewalk:width', None)
+        if not sidewalk_width: continue
+        sidewalk = sidewalk.buffer(sidewalk_width)
+        sidewalks.append(sidewalk)
 
-    for way in ways.children:
-        sidewalk = way.buffer(4.0).subtract(way).individualize(always=True).flatten().clean(eps=-0.01)
+    sidewalks = sidewalks.union().subtract(union).individualize(always=True).flatten().clean(eps=-0.01)
+
+    # Construct sidewalks 2D
+    for sidewalk in sidewalks.children:
+
+        if sidewalk.is_empty(): continue
+
+        sidewalk.name = "Way Sidewalk"
         sidewalk = sidewalk.material(ddd.mats.pavement)
         sidewalk.set('ddd:area:type', 'sidewalk', children=True)
         sidewalk.set('ddd:kerb', True, children=True)
         sidewalk.set('ddd:height', 0.2, children=True)
         sidewalk.set('ddd:layer', "0", children=True)
 
-        for sidewalk_item in sidewalk.children:
-            if sidewalk_item.is_empty(): continue
-            sidewalk_item.set('ddd:area:area', sidewalk_item.geom.area)
-            # Set a copy of itself as original area (so it can be cut and used for sidewalk kerb calculations)
-            sidewalk_item.set('ddd:area:original', sidewalk_item.copy())
-            # TODO: I think this should not be needed here, as buildings shall be removed from all areas later anyway?
-            #interior.replace(interior.subtract(buildings).clean())
-            root.find("/Areas").append(sidewalk_item)
-'''
+        sidewalk.set('ddd:area:area', sidewalk.geom.area)
+        # Set a copy of itself as original area (so it can be cut and used for sidewalk kerb calculations)
+        sidewalk.set('ddd:area:original', sidewalk.copy())
+        # TODO: I think this should not be needed here, as buildings shall be removed from all areas later anyway?
+        #interior.replace(interior.subtract(buildings).clean())
+        root.find("/Areas").append(sidewalk)
 
 @dddtask()
 def osm_structured_generate_ways_2d_intersections(osm, root):
@@ -612,9 +620,11 @@ def osm_structured_areas_postprocess_overlay_absorb(root, osm, obj):
     container = obj.get('ddd:area:container', None)
     if container and container != obj and container.mat == ddd.mats.pavement:
         obj.set('debug:overlay:absorbed', True)
-        obj = obj.material(container.mat)
-        obj.set('ddd:material:splatmap', container.get('ddd:material:splatmap', False))
-        # Note: Base height is being assigned (accumulated) in s60_model (maybe bring it here or as early as possible?)
+        # Apply material if we are an absobed path, not eg a cycleway
+        if obj.get('osm:highway', None) in ('footway', 'path'):
+            obj = obj.material(container.mat)
+            obj.set('ddd:material:splatmap', container.get('ddd:material:splatmap', False))
+            # Note: Base height is being assigned (accumulated) in s60_model (maybe bring it here or as early as possible?)
 
     return obj
 
@@ -720,12 +730,12 @@ def osm_structured_ways_2d_generate_roadlines_way(root, osm, pipeline, obj):
     osm.ways2.generate_roadlines(pipeline, obj)
     #props_2d(root.find("/Ways"), pipeline)  # Objects related to ways
 
+
 @dddtask()
 def debug_ways_roadlines(root, osm, pipeline):
     ways = root.find("/Ways")
     roadlines = root.find("/Roadlines2")
-
-    ddd.group([ways, roadlines]).show(label="Ways + Roadlines2")
+    #ddd.group([ways, roadlines]).show(label="Ways + Roadlines2")
 
 
 @dddtask(path="/Ways/*", select='["ddd:way:crosswalk" = True]')

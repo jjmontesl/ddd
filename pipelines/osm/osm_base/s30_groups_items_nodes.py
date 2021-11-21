@@ -26,9 +26,10 @@ def osm_select_items_nodes_amenity_bicycle_parking(root, osm, obj):
     """Define item data."""
     obj.name = "Bicycle Parking: %s" % obj.name
     capacity = int(obj.get('osm:capacity', 2))
+    spacing = 0.7
     if capacity > 1:
         obj.set('ddd:array:type', "line")
-        obj.set('ddd:array:length', capacity * 0.6)
+        obj.set('ddd:array:length', capacity * spacing)
         obj.set('ddd:array:count', capacity)
 
 

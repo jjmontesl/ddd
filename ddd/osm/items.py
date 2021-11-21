@@ -624,6 +624,11 @@ class ItemsOSMBuilder():
         item_3d = profile.extrude_step(profile.buffer(0.2), 0.4, method=ddd.EXTRUSION_METHOD_SUBTRACT)
         item_3d = item_3d.extrude_step(profile.buffer(0.2), height - 0.6, method=ddd.EXTRUSION_METHOD_SUBTRACT)
         item_3d = item_3d.extrude_step(profile, 0.2, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+
+        # Subdivide
+        if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:
+            item_3d = ddd.meshops.subdivide_to_grid(item_3d, float(ddd.data.get('ddd:area:subdivide')))
+
         item_3d = ddd.uv.map_cubic(item_3d)
         item_3d.extra['_height_mapping'] = 'terrain_geotiff_elevation_apply'
         item_3d.name = 'Hedge: %s' % item_2d.name

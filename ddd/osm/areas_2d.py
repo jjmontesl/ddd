@@ -197,11 +197,12 @@ class Areas2DOSMBuilder():
 
                     #if area.extra.get('ddd:area:type', None) != 'sidewalk': continue
 
+                    area_original_outline = area_original.outline()
                     try:
                         # Margin is used to avoid same way chunk touching original area indefinitely.
                         # Note that this algorithm is weak and can potentially result in infinite loops (chunks are re-added for processing)
                         intersects = way_2d.buffer(-0.05).intersects(area_original)  # FIDME: arbitrary 5cm margin
-                        intersects_outline = way_2d.intersects(area_original.outline())
+                        intersects_outline = way_2d.intersects(area_original_outline)
                     except Exception as e:
                         logger.error("Could not calculate intersections between way and area: %s %s", way_2d, area_original)
                         raise DDDException("Could not calculate intersections between way and area: %s %s" % (way_2d, area_original))
@@ -214,6 +215,12 @@ class Areas2DOSMBuilder():
                         logger.debug("Path %s intersects area: %s (subtracting and arranging)", way_2d, area_original)
 
                         #ddd.group2([way_2d, area_original]).show()
+                        cut_intersection_line = way_2d.intersection(area_original_outline)  # .clean(eps=-0.01) -removes lines too?
+                        cut_intersection_line_vc = cut_intersection_line.vertex_count()
+                        if cut_intersection_line_vc and cut_intersection_line_vc > 3:
+                            # Cut along: leave entire way inside area (area would be reduced (subtracted) later on)
+                            way_2d.extra['ddd:area:container'] = area_original
+                            continue
 
                         intersection = way_2d.intersection(area_original)
                         #intersection.extra['ddd:area:container'].append(area)

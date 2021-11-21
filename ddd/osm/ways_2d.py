@@ -632,13 +632,14 @@ class Ways2DOSMBuilder():
                     logger.warn("Could not generate roadline for way %s: %s", way_2d, e)
                     continue
 
-                line_3d = line_3d.translate([0, 0, 0.05])  # Temporary hack until fitting lines properly
+                line_3d = line_3d.translate([0, 0, 0.01])
                 vertex_func = self.osm.ways1.get_height_apply_func(path)
                 line_3d = line_3d.vertex_func(vertex_func)
                 line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)
                 line_3d.extra['ddd:collider'] = False
                 line_3d.extra['ddd:shadows'] = False
                 line_3d.extra['ddd:occluder'] = False
+                line_3d.extra['ddd:area:container'] = way_2d
                 # print(line)
                 # print(line.geom)
                 uvmapping.map_3d_from_2d(line_3d, line)

@@ -310,6 +310,7 @@ def osm_bootstrap_configure_logging(root, pipeline, logger):
         fh.setFormatter(new_formatter)
         logging.getLogger().addHandler(fh)
 
+'''
 @dddtask()
 def osm_bootstrap_lock(root, pipeline, logger):
 
@@ -327,7 +328,7 @@ def osm_bootstrap_lock(root, pipeline, logger):
     except FileExistsError as e:
         logger.info("Stopping execution: %s (lock file exists)", filename)
         pipeline.stop()
-
+'''
 
 @dddtask()
 def osm_bootstrap_check_elevation(root, pipeline, logger):
@@ -371,6 +372,7 @@ def osm_bootstrap_generate(root, pipeline, logger):
     pipeline.data['osm'] = osmbuilder
 
 
+'''
 @dddtask(order="9999.99")
 def osm_bootstrap_unlock(root, pipeline, logger):
 
@@ -385,4 +387,4 @@ def osm_bootstrap_unlock(root, pipeline, logger):
 
     #for hdlr in logging.getLogger().handlers:
     #    hdlr.setFormatter(old_formatters[hdlr])
-
+'''

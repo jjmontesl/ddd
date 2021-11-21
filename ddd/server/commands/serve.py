@@ -79,6 +79,10 @@ class FileChangedEventHandler(FileSystemEventHandler):
         if not ev.src_path.endswith(".py"):
             return
 
+        if self.dddserver.running:
+            logger.warn("Pipeline is already running (ignoring reload due to saved file)")
+            return
+
         logger.info("Reloading pipeline.")
         try:
             self.dddserver.pipeline_reload()

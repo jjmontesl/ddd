@@ -100,6 +100,7 @@ def osm_select_ways_primary(obj, root):
     obj.extra['ddd:way:lane_width_right'] = 1.0
     obj.extra['ddd:way:lane_width_left'] = 0.5
     obj.extra['ddd:way:roadlines'] = True
+    obj.extra['ddd:way:sidewalk:width'] = 4.0  # TODO: Only inside cities or in bridges
     obj.prop_set('ddd:way:lanes', default=2)
     root.find("/Ways").append(obj)
 
@@ -126,6 +127,7 @@ def osm_select_ways_secondary(obj, root):
     obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:traffic_signals'] = True
     obj.extra['ddd:way:traffic_signs'] = True
+    obj.extra['ddd:way:sidewalk:width'] = 4.0  # TODO: Only inside cities or in bridges
     obj.prop_set('ddd:way:lamps', default=True)
 
     lanes = 2 if obj.extra.get('osm:oneway', False) else 3
@@ -178,6 +180,7 @@ def osm_select_ways_residential(obj, root):
     obj.extra['ddd:way:traffic_signs'] = True
     obj.extra['ddd:way:traffic_signals'] = False
     obj.prop_set('ddd:way:lamps', default=True)
+    obj.extra['ddd:way:sidewalk:width'] = 4.0  # TODO: Only inside cities or in bridges
 
     lanes = 2 if obj.extra.get('osm:oneway', False) else 2
     obj.prop_set('ddd:way:lanes', default=lanes)
@@ -304,6 +307,7 @@ def osm_select_ways_cycleway(obj, root):
     obj.extra['ddd:way:weight'] = 51 # Cycleways are always interrupted if needed
     # obj.extra['ddd:way:height'] = 0.2
     obj.extra['ddd:way:roadlines'] = True
+    obj.extra['ddd:way:overlay'] = True
     obj = obj.material(ddd.mats.pitch_red)
     obj.prop_set('ddd:way:lamps', default=False)
     root.find("/Ways").append(obj)
