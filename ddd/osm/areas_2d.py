@@ -178,11 +178,14 @@ class Areas2DOSMBuilder():
                 if way_2d.is_empty(): continue
 
                 #if way_2d.extra.get('osm:highway', None) not in ('footway', 'path', 'track', None): continue
-                if way_2d.extra.get('ddd:area:type', None) == 'water': continue
+                if way_2d.get('ddd:area:type', None) == 'water': continue
 
                 if way_2d.geom.type == "MultiPolygon":
                     logger.warn("Skipping way postprocess (multipolygon not supported, should individualize ways2 earlier -introduces way intersection joint errors-?): %s", way_2d)
                     continue
+
+                if way_2d.get('ddd:area:cut:by', None) is None:
+                    way_2d.set('ddd:area:cut:by', [])
 
                 # Find candidate intersections
                 cand_geoms = areas_2d_originals_idx._strtree.query(way_2d.geom)
@@ -194,6 +197,9 @@ class Areas2DOSMBuilder():
                     if area_original is None: continue
 
                     if area_original.is_empty(): continue
+
+                    # Skip areas that have already cut
+                    if area_original in way_2d.extra["ddd:area:cut:by"]: continue
 
                     #if area.extra.get('ddd:area:type', None) != 'sidewalk': continue
 
@@ -215,7 +221,7 @@ class Areas2DOSMBuilder():
                         logger.debug("Path %s intersects area: %s (subtracting and arranging)", way_2d, area_original)
 
                         #ddd.group2([way_2d, area_original]).show()
-                        cut_intersection_line = way_2d.intersection(area_original_outline)  # .clean(eps=-0.01) -removes lines too?
+                        cut_intersection_line = way_2d.intersection(area_original_outline)  # .clean(eps=0.01) -removes lines too?
                         cut_intersection_line_vc = cut_intersection_line.vertex_count()
                         if cut_intersection_line_vc and cut_intersection_line_vc > 3:
                             # Cut along: leave entire way inside area (area would be reduced (subtracted) later on)
@@ -226,6 +232,7 @@ class Areas2DOSMBuilder():
                         #intersection.extra['ddd:area:container'].append(area)
                         intersection.name = "Path %s in area %s" % (way_2d.name, area_original.name)
                         intersection.extra['ddd:area:container'] = area_original
+                        intersection.extra["ddd:area:cut:by"].append(area_original)
 
                         remainder = way_2d.subtract(area_original)
                         #remainder = remainder.material(ddd.mats.pavement)
@@ -233,7 +240,7 @@ class Areas2DOSMBuilder():
                         remainder.name = "Path %s to area %s" % (way_2d.name, area_original.name)
                         #remainder = remainder.clean(eps=0.001)
 
-                        intersection = intersection.clean() # eps=-0.01)
+                        intersection = intersection.clean() # eps=0.01)
                         if not intersection.is_empty():
                             way_2d.replace(intersection)
 
@@ -243,7 +250,9 @@ class Areas2DOSMBuilder():
                             if c.clean().is_empty():
                                 continue
                             to_append.append(c)
-                            #to_process.append(c)
+
+                            c.extra["ddd:area:cut:by"].append(area_original)
+                            to_process.append(c)  # Expensive
 
                         #to_process.append(way_2d)
 

@@ -7,6 +7,7 @@ from ddd.ddd import ddd
 from ddd.pack.sketchy.urban import catenary_cable, post
 from ddd.pipeline.decorators import dddtask
 
+import numpy as np
 
 @dddtask(order="10",
          params={

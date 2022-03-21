@@ -45,7 +45,7 @@ class Generic3DPresentation():
             result = node.copy()
 
         # Temporary hack to separate flat elements
-        increment = 0.025
+        increment = 0.0  # 0.025
         accum = 0.0
         newchildren = []
         for c in node.children:

@@ -208,18 +208,6 @@ def osm_model_generate_structures(osm, root, pipeline, logger):
     root.append(structures)
 
 
-
-'''
-@dddtask()
-def osm_model_generate_areas_old(osm, root):
-    areas_2d = root.find("/Areas")
-    areas_3d = osm.areas3.generate_areas_3d(areas_2d)  # areas_2d.clean()
-
-    root.remove(areas_2d)
-    root.append(areas_3d)
-'''
-
-
 @dddtask(path="/Ways/*", select='["ddd:way:stairs"]')  # [!"intersection"]
 def osm_models_areas_stairs_combine(pipeline, osm, root, logger, obj):
     """
@@ -369,6 +357,8 @@ def osm_model_elevation_apply_terrain_max(obj, osm, root):
     return obj
 
 
+'''
+# Moved to 40
 @dddtask()
 def osm_models_splatmap_materials(pipeline, osm, root, logger):
     """
@@ -376,6 +366,7 @@ def osm_models_splatmap_materials(pipeline, osm, root, logger):
     """
     root.find("/Areas").select('[ddd:layer="0"]([!ddd:height];[ddd:height = 0])').set('ddd:material:splatmap', True, children=True)
     root.find("/Ways").select('[ddd:layer="0"][ddd:area:type != "stairs"]').set('ddd:material:splatmap', True, children=True)
+'''
 
 
 @dddtask()

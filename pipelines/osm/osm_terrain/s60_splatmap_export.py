@@ -88,9 +88,9 @@ def osm_terrain_export_splatmap_channels_all(root, pipeline, osm, logger):
         mat = pipeline.data['splatmap:channels_materials'][i]
         objs = ddd.group2()
         if mat:
-            sel = root.find("/Areas").select('["ddd:material" = "%s"]["ddd:layer" = "0"]' % mat.name)
+            sel = root.find("/Areas").select('["ddd:material" = "%s"]["ddd:layer" = "0"]["ddd:material:splatmap" = True]' % mat.name)
             objs.append(sel.children)
-            sel = root.find("/Ways").select('["ddd:material" = "%s"]["ddd:layer" = "0"]' % mat.name)
+            sel = root.find("/Ways").select('["ddd:material" = "%s"]["ddd:layer" = "0"]["ddd:material:splatmap" = True]' % mat.name)
             objs.append(sel.children)
         objs.name = 'Channel' + str(i)
         root.find("/Splatmap").append(objs)

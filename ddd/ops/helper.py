@@ -18,7 +18,6 @@ from trimesh.path import segments
 from trimesh.path.path import Path, Path3D
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.visual.material import SimpleMaterial
-from trimesh.scene.transforms import TransformForest
 import copy
 from trimesh.visual.texture import TextureVisuals
 from matplotlib import colors

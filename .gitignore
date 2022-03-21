@@ -38,6 +38,7 @@ develop-eggs
 
 /virtualenv
 /env
+/venv
 
 *.sqlite3
 *.model.json

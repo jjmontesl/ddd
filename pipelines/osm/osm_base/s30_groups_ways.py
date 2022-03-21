@@ -235,6 +235,14 @@ def osm_select_ways_footway_sidewalk(obj, root):
     obj = obj.material(ddd.mats.sidewalk)  # TODO: Footways/paths are not always dirt
     return obj
 
+# Note this uses "/Ways" as footways have been selected already
+@dddtask(path="/Ways/*", select='["geom:type"="LineString"]["osm:highway" = "footway"]["osm:footway" = "crossing"]')
+def osm_select_ways_footway_crossing(obj, root):
+    """Define road data."""
+    # TODO: Sidewalks (and maybe touching paths/etc require treatment to join them with generated sidewalks
+    obj.extra['ddd:way:crosswalk'] = True
+    return obj
+
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "pedestrian"]')
 def osm_select_ways_pedestrian(obj, root):
     """Define road data."""
@@ -350,6 +358,7 @@ def osm_select_ways_railway(obj, root):
     obj.extra['ddd:way:lanes'] = 0
     obj.extra['ddd:way:width'] = 3.6
     obj.extra['ddd:area:type'] = "railway"
+    obj.extra['ddd:way:overlay'] = True  # Railway is overlaid, may be on top of asfalt but also even on top of sidewalks, and doesn't create interways
     obj = obj.material(ddd.mats.railway)
     root.find("/Ways").append(obj)
 

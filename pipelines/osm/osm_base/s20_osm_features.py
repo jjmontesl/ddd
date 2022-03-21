@@ -33,13 +33,14 @@ def osm_features_filter_custom(pipeline, osm, root, logger):
         root.find("/Features").children = filtered.children
 
 
-@dddtask(path="/Features/*", log=True)  # and o.geom.type in ('Point', 'Polygon', 'MultiPolygon') .. and o.geom.type == 'Polygon' |  ... path="/Features", select=r'["geom:type"="Polygon"]'
-def osm_features_crop_extended_area(pipeline, osm, root, obj):
+@dddtask(path="/Features/*")  # and o.geom.type in ('Point', 'Polygon', 'MultiPolygon') .. and o.geom.type == 'Polygon' |  ... path="/Features", select=r'["geom:type"="Polygon"]'
+def osm_features_crop_extended_area(pipeline, osm, root, obj, logger):
     """Crops to extended area size to avoid working with huge areas."""
 
     # TODO: Crop centroids of buildings and lines and entire areas...
     #pipeline.data['osm'].preprocess_features()
     #osm.preprocess_features()
+    logger.info(obj)
     obj.extra['osm:original'] = obj.copy()
     obj = obj.intersection(osm.area_filter2)
     return obj

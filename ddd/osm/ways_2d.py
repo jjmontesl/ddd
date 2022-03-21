@@ -125,17 +125,7 @@ class Ways2DOSMBuilder():
         width = path.extra['ddd:way:width']
         way_2d = path.buffer(distance=width / 2.0, cap_style=ddd.CAP_FLAT, join_style=ddd.JOIN_MITRE)
 
-        # Avoid gaps and eliminate small polygons
-        # FIXME: this should be done by continuating path joins/intersections between roads of same type
-        # Currently this is done from intersections only (but may be incorrect)
-        '''
-        if width > 2.0:
-            way_2d = way_2d.buffer(distance=1.0, cap_style=2, join_style=2)
-            way_2d = way_2d.buffer(distance=-1.0, cap_style=2, join_style=2)
-            #way_2d = way_2d.buffer(distance=0.1, cap_style=2, join_style=2)
-            # way_2d = way_2d.simplify(0.5)
-        '''
-        way_2d = way_2d.clean(eps=-0.01)
+        #way_2d = way_2d.clean()  # eps=-0.01)
 
         # print(feature['properties'].get("name", None))
         # way_2d.extra['osm:feature'] = feature
@@ -146,10 +136,36 @@ class Ways2DOSMBuilder():
         return way_2d
 
     def generate_ways_2d_intersections(self, ways_2d):
+        """
+        Resolving intersections is one of the key steps during ways generation.
+
+        This method walks all way intersections (as calculated from 1D ways), and
+        resolves shape intersections between their corresponding (and previously generated) 2D shapes.
+
+        For each intersection, ways are _continued_ into each of the other intersection members
+        (this is required for way continuity as we have split ways into their minimum pieces before, and
+        shapes have gaps).
+
+        From this, intersection shapes are calculated (TODO: document "main ways" resolution, "overlay"...).
+
+        TODO: Improve this doc.
+
+        Finally, ways are _retracted_ to the closest perpendicular cut that doesn't include the intersection.
+        This separates the part of ways that joins an intersection and usually has different roadlines or force
+        traffic stop lines to appear before them.
+
+        Note that, after this step, intersections an still intersect among them (see further steps). Also,
+        ways can intersect each other or intersections if there were no node intersections or, more often,
+        when they run through corners or in parallel but with no shared nodes.
+
+        It must be noted that this is a delicate and fragile step that has a large impact on subsequent
+        ways, paths, layers and sidewalks generation (and to a certain extent, area and building generation too).
+        """
 
         logger.info("Generating ways intersections (%d ways).", len(ways_2d.children))
 
         # Generate intersections (crossroads)
+        # FIXME: intersections are stored in osm.intersections, but should be part of the pipeline data
         intersections_2d = []
         for intersection in self.osm.intersections:
 
@@ -185,9 +201,10 @@ class Ways2DOSMBuilder():
                 if len(highest_ways) == len(intersection):
                     votes_surf_list = sorted([(k, v) for k, v in votes_surf.items()], key=lambda o: len(o[1]))  # Sort by surfaces
                     highest_ways = votes_surf_list[-1][1]
-                    if len(highest_ways) == len(intersection):
-                        votes_name_list = sorted([(k, v) for k, v in votes_name.items()], key=lambda o: len(o[1]))  # Sort by surfaces
-                        highest_ways = votes_name_list[-1][1]
+                    #Removed votes by name, as some 3-way unnamed ways were being classified randomly
+                    #if len(highest_ways) == len(intersection):
+                    #    votes_name_list = sorted([(k, v) for k, v in votes_name.items()], key=lambda o: len(o[1]))  # Sort by surfaces
+                    #    highest_ways = votes_name_list[-1][1]
             else:
                 logger.warn("Intersection with no highest ways: %s", intersection)
                 highest_ways = [j.way for j in intersection]
@@ -199,8 +216,9 @@ class Ways2DOSMBuilder():
             #join_geoms = join_ways.geom_recursive()
             #join_points = []
             join_shapes = []
+            join_shapes_all = []
 
-            # First calculation of intersection points (consider all ways)
+            # First calculation of intersection points (consider all ways cartesian product)
             intersection_shape = ddd.group2()
             for i in range(len(join_ways.children)):
                 for j in range(i + 1, len(join_ways.children)):  #i + 1
@@ -212,7 +230,7 @@ class Ways2DOSMBuilder():
             intersection_shape = intersection_shape.union()
 
             # This converts invalid linearrings (without 3 coordinate tuples or with null area)
-            intersection_shape = intersection_shape.clean()
+            intersection_shape = intersection_shape.clean(eps=-0.01)  # this worked without eps=-0.01, but it should remove some outstanding lines
 
             if intersection_shape.is_empty():
                 #logger.debug("Intersection shape with no geometry (skipping): %s (%s)", intersection_shape, intersection)
@@ -221,11 +239,11 @@ class Ways2DOSMBuilder():
             # Point intersections should be from 1 to 1 continuous ways (eg. crosswalks), they are not constructed
             # as they don't have 2d representation.
             if intersection_shape.geom.type in ('Point', 'LineString'):
-                logger.debug("Intersection shape of 1D type (skipping): %s (%s)", intersection_shape, intersection)
+                #logger.debug("Intersection shape of 1D type (skipping): %s (%s)", intersection_shape, intersection)
                 continue
 
-            #if (any([('Nicaragua' in ii[0].name) for ii in intersection])):
-            #    ddd.group([ii[0].buffer(2.0) for ii in intersection] + [intersection_shape.material(ddd.MAT_HIGHLIGHT)]).show()
+            # Sort intersection ways so highest ways are merged first
+            join_ways.children.sort(key=lambda o: (-int(o.get('way_1d') in highest_ways), o.get('ddd:way:weight')))
 
             # Calculate way continuation and retract along it from intersection point
             for i in range(len(join_ways.children)):
@@ -236,26 +254,23 @@ class Ways2DOSMBuilder():
                     if (shape1 == shape2): continue
                     #if shape1.get('way_1d') not in highest_ways or shape2.get('way_1d') not in highest_ways: continue
 
-                    '''
-                    shape = shape1.intersection(shape2).clean(eps=0.01)
-                    join_shapes.append(shape)
-                    #points = shape1.outline().intersection(shape2.outline())
-                    #join_points.append(points)
-                    '''
-
                     width = min([shape1.get('ddd:way:width'), shape2.get('ddd:way:width')])
 
                     # Get continued line
-                    way1 = shape1.get('way_1d').remove_z()
-                    way2 = shape2.get('way_1d').remove_z()
+                    way1_noz = shape1.get('way_1d').remove_z()
+                    way2_noz = shape2.get('way_1d').remove_z()
                     #intersection_shape = shape1.intersection(shape2)
                     #intersection_shape = shape1.outline().intersection(shape2.outline())
-                    continued_way_1d = ddd.shape(linemerge([way1.geom, ops.snap(way2.geom, way1.geom, 0.05)]))
+                    continued_way_1d = ddd.shape(linemerge([way1_noz.geom, ops.snap(way2_noz.geom, way1_noz.geom, 0.05)]))
 
                     #ddd.group2([join_ways, intersection_shape.material(ddd.mats.highlight)]).show()
 
                     # TODO: Call 2d road generator if needed (to account for center, lanes, etc)
                     continued_way_2d = continued_way_1d.buffer(width * 0.5, cap_style=ddd.CAP_FLAT, join_style=ddd.JOIN_BEVEL)
+
+                    ## Experiment: Do not expand intersections into non highest ways (secondary ways are combined "under")
+                    #if (shape1.get('way_1d') not in highest_ways or shape2.get('way_1d') not in highest_ways):
+                    #    continue
 
                     # Retract ways
                     for shape in (shape1, shape2):
@@ -278,9 +293,10 @@ class Ways2DOSMBuilder():
                         try:
                             coords_list = list(intersection_shape.coords_iterator())
                         except Exception as e:
-                            logger.error("Intersection shape of invalid type %s (%s with %s): %s", intersection_shape, way1, way2, e)
+                            logger.error("Intersection shape of invalid type %s (%s with %s): %s", intersection_shape, way1_noz, way2_noz, e)
                             continue
 
+                        # Project all current intersection points to the way
                         for intersection_point in coords_list:
                         #for intersection_point in list(g.coords for g in intersection_shape.geom.geoms):
                             closest_seg = way_1d.closest_segment(ddd.point(intersection_point))
@@ -299,7 +315,7 @@ class Ways2DOSMBuilder():
                                 min_p = coords_p
 
                         if (min_o != max_o):
-                            logger.error("Invalid intersection cut point distances (%s with %s): %s", way1, way2, intersection_shape)
+                            logger.error("Invalid intersection cut point distances (%s with %s): %s", way1_noz, way2_noz, intersection_shape)
                             continue
 
                         way_sub = ddd.shape(ops.substring(max_o.geom, max_d, max_o.geom.length))
@@ -313,13 +329,36 @@ class Ways2DOSMBuilder():
 
                         continued_way_2d = continued_way_2d.subtract(way_sub).clean(eps=-0.05)
 
-                    #continued_way_2d.show()
-                    #ddd.group([join_ways, continued_way_2d.material(ddd.mats.highlight)]).show()
-                    join_shapes.append(continued_way_2d)
+                    # Experiment: Do not expand intersections into non highest ways (secondary ways are combined on top)
+                    if (shape1.get('way_1d') not in highest_ways or shape2.get('way_1d') not in highest_ways):
+                        '''
+                        if shape1.get('way_1d') in highest_ways:
+                            continued_way_2d.copy_from(shape2)
+                            shape2.set('intersection_cap', shape2.get('intersection_cap', [])).append(continued_way_2d)
+                        elif shape2.get('way_1d') in highest_ways:
+                            continued_way_2d.copy_from(shape1)
+                            shape1.set('intersection_cap', shape1.get('intersection_cap', [])).append(continued_way_2d)
+                        else:
+                            continued_way_2d.copy_from(shape2)
+                            shape2.set('intersection_cap', shape2.get('intersection_cap', [])).append(continued_way_2d)
+                        ways_2d.append(continued_way_2d)
+                        '''
+                        join_shapes_all.append(continued_way_2d)
+
+                    else:
+                        join_shapes.append(continued_way_2d)
+                        join_shapes_all.append(continued_way_2d)
 
             #intersection_shape = ddd.group2(join_points).union()
-            intersection_shape = ddd.group2(join_shapes).union()  #.convex_hull()
-            intersection_shape = intersection_shape.clean(eps=0.01)
+            intersection_shape = ddd.group2(join_shapes).union().clean(eps=-0.01)
+            intersection_shape_all = ddd.group2(join_shapes_all).union().clean(eps=-0.01)
+
+            intersection_shape_main = intersection_shape
+            intersection_shape = intersection_shape_all
+
+
+            ## FIXME: corrects many thin segments but makes intersections 0.01 thicker
+            #intersection_shape = intersection_shape.buffer(0.01)
 
             #if (any([('Nicaragua' in ii[0].name) for ii in intersection])):
             #    ddd.group([ii[0].buffer(2.0) for ii in intersection] + [intersection_shape.material(ddd.MAT_HIGHLIGHT)]).show()
@@ -339,6 +378,7 @@ class Ways2DOSMBuilder():
             #intersection_shape.show()
 
             # Retract intersection: perpendicularize intersection towards paths
+
             #logger.info("Intersection: %s", join_ways)
             #join_ways.show()
             join_splits = ddd.group2()
@@ -349,8 +389,8 @@ class Ways2DOSMBuilder():
                 if way_1d is None:
                     logger.warn("No way 1D found for join_way: %s", join_way)
 
-                # Do not retract way if it is not part of the main ways (highest count) of the intersection
-                if way_1d not in highest_ways: continue
+                ## Do not retract way if it is not part of the main ways (highest count) of the intersection
+                #if way_1d not in highest_ways: continue
 
                 # Project each intersection point to the line
                 #logger.info("Way 2D: %s", join_way)
@@ -387,24 +427,50 @@ class Ways2DOSMBuilder():
                         imargin = 0.05  # 0.05
                         if len(join_way_splits) == 0 or join_way_splits.empty:
                             logger.debug("Could not find split side for intersection extension (join_way_splits is empty): %s", join_way)
-                        elif join_way_splits[0].overlaps(intersection_shape.buffer(-imargin).geom):
+                        if len(join_way_splits) > 2 and join_way_splits[2].overlaps(intersection_shape.buffer(-imargin).geom):
+                            join_way_split = join_way_splits[2]
+                        if len(join_way_splits) > 1 and join_way_splits[1].overlaps(intersection_shape.buffer(-imargin).geom):
+                            join_way_split = join_way_splits[1]
+                        if len(join_way_splits) > 0 and join_way_splits[0].overlaps(intersection_shape.buffer(-imargin).geom):
                             join_way_split = join_way_splits[0]
-                        elif len(join_way_splits) > 1 and join_way_splits[1].overlaps(intersection_shape.buffer(-imargin).geom):
-                            join_way_split = join_way_splits[1]
-                        elif len(join_way_splits) > 2 and join_way_splits[2].overlaps(intersection_shape.buffer(-imargin).geom):
-                            join_way_split = join_way_splits[1]
-                        else:
-                            logger.debug("Could not find split side for intersection extension: %s", join_way)
-                            #raise AssertionError()
 
                         if join_way_split:
-                            join_splits.append(ddd.shape(join_way_split))
+                            logger.debug("Found split side for intersection extension: %s", join_way_split)
+                            join_way_split_ddd = ddd.shape(join_way_split)
+                            join_way_split_ddd.copy_from(join_way, copy_material=True)
+                            #join_way_split_ddd.mat = ddd.MAT_HIGHLIGHT
+
+                            #join_way.replace(join_way.subtract(join_way_split_ddd))
+                            #join_way.set('ddd:way:intersection:extension', True)
+                            icaps = way_1d.get('intersection_cap_2d', None)
+                            if icaps is None: icaps = []
+                            icaps.append(join_way_split_ddd)
+                            way_1d.set('intersection_cap_2d', icaps)
+
+                            join_way_split_ddd.set('ddd:way:intersection:extension', True)
+                            join_splits.append(join_way_split_ddd)
+                        else:
+                            #    logger.info("Could not find split side for intersection extension: %s", join_way)
+                            #    #raise AssertionError()
+                            pass
+
                     except DDDException as e:
                         logger.error("Could not calculate intersection cut for: %s (%s)", intersection, e)
 
-            #intersection_shape = intersection_shape.union(join_splits.union()).clean(eps=0.005)
-            intersection_shape = intersection_shape.union(join_splits.union()).individualize()
-            intersection_shape = intersection_shape.clean(eps=0.005)
+
+            intersection_shape = intersection_shape_main
+
+            old_behavior_join_retracted_splits_to_intersection = False
+
+            if old_behavior_join_retracted_splits_to_intersection:
+                #intersection_shape = intersection_shape.union(join_splits.union()).clean(eps=0.005)
+                intersection_shape = intersection_shape.union(join_splits.union()).individualize()
+                intersection_shape = intersection_shape.clean(eps=0.005)
+            else:
+                # Add retracted splits as separate ways
+                for retracted_split in join_splits.children:
+                    ways_2d.append(retracted_split)
+                    #pass
 
             #ddd.group2([join_ways, intersection_shape.material(ddd.mats.highlight)]).show()
 
@@ -476,6 +542,10 @@ class Ways2DOSMBuilder():
                 way = way.subtract(way.extra['way_1d'].extra['intersection_start_2d'])
             if 'intersection_end_2d' in way.extra['way_1d'].extra:
                 way = way.subtract(way.extra['way_1d'].extra['intersection_end_2d'])
+            if 'ddd:way:intersection:extension' not in way.extra:
+                for ic in way.extra['way_1d'].get('intersection_cap_2d', []):
+                    way = way.subtract(ic)
+
             '''
             connected = self.follow_way(way.extra['way_1d'], 1)
             connected.remove(way.extra['way_1d'])
@@ -483,9 +553,12 @@ class Ways2DOSMBuilder():
             wayminus = way.subtract(connected_2d).buffer(0.001)
             '''
 
-            # WARN: This buffer(0.001) is critical for the resolution of roads and intersections, but why? (20210502)
-            way = way.buffer(0.001)
-            #way = way.clean(eps=0.01)
+            # WARN: This clean() buffer(0.001) is critical for the resolution of roads and intersections, and remove small line fragments (but why? 20210502 - 20211123)
+            way = way.clean(eps=-0.05)
+            way = way.buffer(0.001)  # Removing this causes core dumps :?
+            if way.is_empty():
+                continue
+
 
             # Checks
             if True or (way.geom and way.geom.is_valid):
@@ -695,7 +768,7 @@ class Ways2DOSMBuilder():
             # except Exception as e:
             #    logger.error("Could not UV map Way 2D from path: %s %s %s: %s", line, line.geom, pathline.geom, e)
             #    continue
-            line_3d = line.triangulate().translate([0, 0, 0.05])  # Temporary hack until fitting lines properly
+            line_3d = line.triangulate().translate([0, 0, 0.01])  # Temporary hack until fitting lines properly
             vertex_func = self.osm.ways1.get_height_apply_func(path)
             line_3d = line_3d.vertex_func(vertex_func)
             line_3d = terrain.terrain_geotiff_elevation_apply(line_3d, self.osm.ddd_proj)

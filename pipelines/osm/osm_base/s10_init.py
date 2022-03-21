@@ -40,7 +40,7 @@ def osm_materials():
                                     texture_path=ddd.DATA_DIR + "/osmmaterials/RoadRailway/TexturesCom_Road_Railway_512_*.png",
                                     # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/RoadRailway/TexturesCom_Road_Railway_512_normal.png",
                                     # alpha_cutoff=0.05,
-                                    extra={})
+                                    extra={'uv:scale': 1.0})
 
     ddd.mats.roadline = ddd.material(name="Roadline", color='#e8e8e8',
                                  texture_path=ddd.DATA_DIR + "/materials/road-lines/RoadLines_alb.png",

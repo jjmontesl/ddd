@@ -43,7 +43,6 @@ from trimesh.path import segments
 from trimesh.path.entities import Line
 from trimesh.path.path import Path, Path3D, Path2D
 from trimesh.scene.scene import Scene, append_scenes
-from trimesh.scene.transforms import TransformForest
 from trimesh.transformations import quaternion_from_euler
 from trimesh.visual.color import ColorVisuals
 from trimesh.visual.material import SimpleMaterial, PBRMaterial
@@ -563,7 +562,7 @@ class DDDMaterial():
                                       metallicRoughnessTexture=im_metallicroughness,
                                       metallicFactor=self.metallic_factor, roughnessFactor=self.roughness_factor,
                                       alphaMode=alpha_mode, alphaCutoff=self.alpha_cutoff,
-                                      emissiveFactor=np.array([self.emissive_factor, self.emissive_factor, self.emissive_factor, 1.0]), emissiveTexture=im_emissive)  # , ambient, specular, glossiness)
+                                      emissiveFactor=np.array([self.emissive_factor, self.emissive_factor, self.emissive_factor, 1.0][:3]), emissiveTexture=im_emissive)  # , ambient, specular, glossiness)
                 else:
                     #mat = SimpleMaterial(name=self.name, image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
                     alpha_mode = self.alpha_mode if self.alpha_mode else ('MASK' if self.alpha_cutoff else 'OPAQUE')
@@ -1598,7 +1597,7 @@ class DDDObject2(DDDObject):
         if result.geom and other.geom:
             result.geom = result.geom.intersection(other.geom)
         result.children = [c.intersection(other) for c in self.children]
-        result.children = [c for c in result.children if c.children or (c.geom and not c.geom.is_empty)]
+        result.children = [c for c in result.children if not c.is_empty()]
 
         return result
 
@@ -3289,6 +3288,8 @@ class DDDObject3(DDDObject):
             instance_mesh = D1D2D3Bootstrap.export_mesh
 
         if D1D2D3Bootstrap.renderer == 'pyglet':
+
+            from trimesh import viewer
 
             # OpenGL
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
