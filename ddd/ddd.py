@@ -102,6 +102,8 @@ class D1D2D3():
     DEG_TO_RAD = (math.pi / 180.0)
     RAD_TO_DEG = (180.0 / math.pi)
 
+    PI = math.pi
+
     VECTOR_UP = np.array([0.0, 0.0, 1.0])
     VECTOR_DOWN = np.array([0.0, 0.0, -1.0])
     VECTOR_BACKWARD = np.array([0.0, 1.0, 0.0])
@@ -1189,9 +1191,22 @@ class DDDObject2(DDDObject):
 
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
         result = self.copy()
+
+        #if math.isnan(coords[0]) or math.isnan(coords[1]):
+        #    logger.warn("Invalid translate coords (%s) for object: %s", coords, self)
+        #    return result
+        '''
+        def _trfun(x, y, z=0.0):
+            print(coords)
+            print(x, y, z)
+            return (x + coords[0], y + coords[1], z + coords[2])
+        '''
+
         if self.geom:
+            #trans_func = _trfun
             trans_func = lambda x, y, z=0.0: (x + coords[0], y + coords[1], z + coords[2])
             result.geom = ops.transform(trans_func, self.geom)
+
         result.children = [c.translate(coords) for c in self.children]
         return result
 
@@ -1219,7 +1234,7 @@ class DDDObject2(DDDObject):
         return result
 
     def bounds(self):
-        xmin, ymin, xmax, ymax = (float("-inf"), float("-inf"), float("inf"), float("inf"))
+        xmin, ymin, xmax, ymax = (float("inf"), float("inf"), float("-inf"), float("-inf"))
         if self.geom:
             xmin, ymin, xmax, ymax = self.geom.bounds
         for c in self.children:

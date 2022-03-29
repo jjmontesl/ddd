@@ -112,12 +112,7 @@ class DDDSVG():
         if ignore: return '<g />'
 
         data = ""
-
-        if obj.children:
-            data = data + '<g>'
-            for idx, c in enumerate(obj.children):
-                data = data + DDDSVG.svg_obj(c, path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx), instance_mesh=instance_mesh, instance_marker=instance_marker)
-            data = data + '</g>'
+        ignore_children = False
 
         if obj.extra.get('svg:image:data'):
             geom = obj.centroid().geom
@@ -126,9 +121,21 @@ class DDDSVG():
             height = obj.extra.get("svg:image:height", 1)
             data = data + DDDSVG.svg_image(geom, data=metadata, bindata=bindata, width=width, height=height)
 
+        elif obj.get('svg:text', None):
+            geom = obj.centroid().geom
+            data = data + DDDSVG.svg_text(geom, data=metadata, text=obj.get('svg:text'), color=color)
+            ignore_children = True
+
         elif obj.geom:
             geom = geometry.GeometryCollection([obj.geom])
             data = data + DDDSVG.svg_geom(geom, data=metadata, color=color, fill_opacity=fill_opacity, stroke_width=stroke_width)
+
+        # Children should be drawn after parents (children appear on front)
+        if obj.children and not ignore_children:
+            data = data + '<g>'
+            for idx, c in enumerate(obj.children):
+                data = data + DDDSVG.svg_obj(c, path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx), instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = data + '</g>'
 
         '''
         # FIXME: This code is duplicated from DDDInstance: normalize export / generation
@@ -244,6 +251,29 @@ class DDDSVG():
                   ).format(width, height, x, y, base64data, -width/2, -height/2)  #, opacity)
         return result
 
+    @staticmethod
+    def svg_text(geom, data, text, **kwargs):
+
+        x = geom.x
+        y = geom.y
+        font_size = 3
+        fill_color = kwargs.get('color')
+
+        text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        text_lines = text.split("\n")
+        text_content = ""
+
+        #if len(text_lines) > 1:
+        for i, line in enumerate(text_lines):
+            text_content += '<tspan x="{0}" dy="{1}">{2}</tspan>'.format(x, "1.1em", line)
+        #else:
+        #    text_content = text
+
+        result = '<text x="{0}" y="{1}" transform="scale(1, -1)" font-size="{2}" fill="{4}">{3}</text>'.format(x, -y, font_size, text_content, fill_color)
+
+        return result
+
+
     '''
     def svg(self, scale_factor=1., fill_color=None):
         """Returns SVG circle element for the Point geometry.
@@ -269,7 +299,6 @@ class DDDSVG():
         if geom.is_empty:
             return '<g />'
         return '<g>' + \
-            ''.join(DDDSVG.svg_geom(p, data, **kwargs) for p in geom) + \
+            ''.join(DDDSVG.svg_geom(p, data, **kwargs) for p in geom.geoms) + \
             '</g>'
-
 

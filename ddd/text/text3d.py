@@ -25,11 +25,16 @@ class Text3D():
         chars = []
 
         origin_x = 0.0
+        origin_y = 0.0
+        spacing_y = 1.0
 
         for idx, c in enumerate(text):
             spacing = 0.85
             if c == " ":
                 origin_x += spacing
+            elif c == "\n":
+                origin_x = 0.0
+                origin_y -= spacing_y
             else:
 
                 char_2d, face = self.char(c)
@@ -47,7 +52,7 @@ class Text3D():
                 #vertBearingY = glyph.metrics.vertBearingY / self.char_size # vertical writing
                 #vertAdvance  = glyph.metrics.vertAdvance / self.char_size # vertical writing
 
-                char_2d = char_2d.translate([origin_x + horiBearingX, 1 + horiBearingY, 0])
+                char_2d = char_2d.translate([origin_x + horiBearingX, origin_y + 1 + horiBearingY, 0])
                 chars.append(char_2d)
 
                 origin_x += horiAdvance
