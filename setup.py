@@ -59,7 +59,7 @@ setup(
         "python-socketio >= 5.4.0",
         #"pyrender >= 0.1.45",  # optional, doesn't install on containers
         "scipy < 1.6.0",
-        "Shapely >= 1.6.4.post2",
+        "Shapely >= 1.8.1.post1",
         "trimesh[all] >= 3.5.0",  # -e git+https://github.com/mikedh/trimesh.git@8c5633028984b4abb1b7911208f7652119a3c96d#egg=trimesh
         "triangle >= 20190115.3",
 

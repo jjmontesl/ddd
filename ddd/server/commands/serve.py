@@ -122,7 +122,7 @@ class ServerServeCommand(DDDCommand):
         self._results[result_index] = {'data': obj.copy(),
                                        'label': label}
 
-        loop.call_soon_threadsafe(asyncio.async, self.result_send(None, result_index))
+        asyncio.run_coroutine_threadsafe(self.result_send(None, result_index), self.loop)
 
     def run(self):
 
