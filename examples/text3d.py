@@ -39,5 +39,5 @@ def pipeline_text_3d(pipeline, root):
     root.append(result)
     root.append(ddd.helper.all(size=20.0, center=[2, 2, 0]))
 
-
+    root.show()
 

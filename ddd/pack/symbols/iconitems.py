@@ -82,6 +82,7 @@ def iconitem(path, size=(1, 1), depth=0.2, bisel=None):
 def iconitem_auto(text, size=(1, 1), depth=0.2, bisel=None):
     path = iconitem_catalog_search(text)
     if not path:
+        logger.info("No icon found for: %s", text)
         return None
     item = iconitem(path, size, depth, bisel)
     if not item:
@@ -124,6 +125,8 @@ def dictionary_load(path):
     f = gzip.open(path,'rb')
     file_content = f.read().decode()
 
+    logger.info("Loading dictionary: %s", path)
+
     dictdata = file_content.split("\n")
     dictindex = {term: line for line, term in enumerate(dictdata)}
 
@@ -132,6 +135,7 @@ def dictionary_load(path):
 
 def translate(term, dictionary_path):
     # dict -d fd-spa-eng cruz
+    #logger.debug("Translating: %s", term)
     result = []
     term = term.lower()
     dictdata, dictindex = dictionary_load(dictionary_path)
@@ -161,7 +165,7 @@ def iconitem_catalog_search(text):
     #try_terms_fr = [translate(term, "fra", "eng") for term in temrs]
 
     allterms = [t for t in terms + try_terms_es if t is not None]
-    #logger.info("Item text: %s  Terms: %s", text, allterms)
+    #logger.debug("Item text: %s  Terms: %s", text, allterms)
 
     for term in allterms:
         term = term.lower()

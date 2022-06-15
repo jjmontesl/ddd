@@ -88,5 +88,5 @@ def pipeline_text_2d(pipeline, root):
 
     root.append(ddd.helper.all(size=20.0, center=[2, 2, 0]))
 
-    #root.show()
+    root.show()
 
