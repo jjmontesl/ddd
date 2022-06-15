@@ -165,6 +165,8 @@ class DDDMeshOps():
         """
         Removes faces pointing in a given direction.
 
+        Threshold of 1.0 means a dot product up to 180 degrees.
+
         This method modifies the object, and is applied to children recursively.
         """
         if obj.mesh:
@@ -249,13 +251,15 @@ class DDDMeshOps():
                 vnp = None
 
                 # Project onto the XY plane (for shape operations) on a triplanar fashion
-                if abs(vn[0]) > abs(vn[1]) and abs(vn[0]) > abs(vn[2]):
+                PROJECT_NORM_THRESHOLD = 0.00001
+
+                if abs(vn[0]) > (abs(vn[1]) - PROJECT_NORM_THRESHOLD) and abs(vn[0]) > (abs(vn[2]) - PROJECT_NORM_THRESHOLD):
                     # Normal along X, project onto YZ (YZ onto XY)
                     v1 = v1[[1, 2, 0]]
                     v2 = v2[[1, 2, 0]]
                     v3 = v3[[1, 2, 0]]
                     vnp = vn[[1, 2, 0]]
-                elif abs(vn[1]) > abs(vn[0]) and abs(vn[1]) > abs(vn[2]):
+                elif abs(vn[1]) > (abs(vn[0]) - PROJECT_NORM_THRESHOLD) and abs(vn[1]) > (abs(vn[2]) - PROJECT_NORM_THRESHOLD):
                     # Normal along Y, project onto XZ (XZ onto XY)
                     v1 = v1[[2, 0, 1]]
                     v2 = v2[[2, 0, 1]]
@@ -293,7 +297,7 @@ class DDDMeshOps():
                           grid_size * (int(bounds[2] / grid_size) + 1), grid_size * (int(bounds[3] / grid_size) + 1)]
                 grid2 = ddd.grid2(bounds, detail=grid_size, name=None)
 
-                for geom in grid2.geom:
+                for geom in grid2.geom.geoms:
                     #flip = ((idi % 2) + (idj % 2)) % 2
                     geom = geom.intersection(triangle.geom)
                     if geom.type == 'Point' or geom.type == 'LineString' or geom.is_empty:
@@ -321,9 +325,9 @@ class DDDMeshOps():
                         if len(gfs) == 0: continue
 
                         # Reproject to the original plane
-                        if abs(vn[0]) > abs(vn[1]) and abs(vn[0]) > abs(vn[2]):
+                        if abs(vn[0]) > (abs(vn[1]) - PROJECT_NORM_THRESHOLD) and abs(vn[0]) > (abs(vn[2]) - PROJECT_NORM_THRESHOLD):
                             gvs = [[zfunc(v[0], v[1]), v[0], v[1]] for v in gvs]
-                        elif abs(vn[1]) > abs(vn[0]) and abs(vn[1]) > abs(vn[2]):
+                        elif abs(vn[1]) > (abs(vn[0]) - PROJECT_NORM_THRESHOLD) and abs(vn[1]) > (abs(vn[2]) - PROJECT_NORM_THRESHOLD):
                             gvs = [[v[1], zfunc(v[0], v[1]), v[0]] for v in gvs]
                         else:
                             gvs = [[v[0], v[1], zfunc(v[0], v[1])] for v in gvs]

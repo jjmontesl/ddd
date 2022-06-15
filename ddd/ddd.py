@@ -41,7 +41,6 @@ import trimesh
 from trimesh.base import Trimesh
 from trimesh.path import segments
 from trimesh.path.entities import Line
-from trimesh.path.path import Path, Path3D, Path2D
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.transformations import quaternion_from_euler
 from trimesh.visual.color import ColorVisuals
@@ -50,6 +49,7 @@ from trimesh.visual.texture import TextureVisuals
 
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
+from ddd.formats.fbx import DDDFBXFormat
 from ddd.materials.atlas import TextureAtlas
 from ddd.ops import extrusion
 
@@ -256,6 +256,13 @@ class D1D2D3():
         return obj
 
     @staticmethod
+    def torus(r, ri, resolution=4, name=None):
+        circle = ddd.regularpolygon(sides=resolution * 4, r=ri, name=name)
+        circle = circle.translate([r, 0])
+        obj = circle.revolve()
+        return obj
+
+    @staticmethod
     def trimesh(mesh=None, name=None):
         """
         """
@@ -267,6 +274,25 @@ class D1D2D3():
         """
         """
         return D1D2D3.trimesh(mesh=mesh, name=name)
+
+    @staticmethod
+    def path3(mesh_or_coords=None, name=None):
+        if isinstance(mesh_or_coords, DDDObject2):
+            if mesh_or_coords.geom.type != 'LineString':
+                raise ValueError('Expected a LineString geometry: %s', mesh_or_coords)
+            coords = mesh_or_coords.geom.coords
+        else:
+            coords = mesh_or_coords
+
+        if coords:
+            if len(coords[0]) < 3:
+                coords = [(c[0], c[1], c[2] if len(c) > 2 else 0.0) for c in coords]
+            path3 = trimesh.load_path(coords)
+        else:
+            path3 = None
+
+        from ddd.nodes.path3 import DDDPath3
+        return DDDPath3(name=name, path3=path3)
 
     @staticmethod
     def marker(pos=None, name=None, extra=None):
@@ -314,7 +340,7 @@ class D1D2D3():
         faces = []
         idi = 0
         idj = 0
-        for geom in grid2.geom:
+        for geom in grid2.geom.geoms:
             flip = ((idi % 2) + (idj % 2)) % 2
             gvs, gfs = creation.triangulate_polygon(geom)
             if flip:
@@ -415,6 +441,7 @@ class D1D2D3():
 
         if (name.endswith(".glb")):
             return load_glb(name)
+
         if (name.endswith(".svg")):
             from ddd.formats.loader.svgloader import DDDSVGLoader
             return DDDSVGLoader.load_svg(name)
@@ -1161,16 +1188,19 @@ class DDDObject2(DDDObject):
         # Calculate arc coordinates from center
         linecoords = list(self.geom.coords)
         angle_start = math.atan2(linecoords[-1][1] - center[1], linecoords[-1][0] - center[0])
+        h_start = linecoords[-1][2]
         angle_end = math.atan2(coords[1] - center[1], coords[0] - center[0])
+        h_end = coords[2]
         angle_diff = angle_end - angle_start
         radius_vec = (coords[0] - center[0], coords[1] - center[1])
         radius_l = math.sqrt(radius_vec[0] * radius_vec[0] + radius_vec[1] * radius_vec[1])
         if ccw: angle_diff = (math.pi * 2) - angle_diff
 
         numpoints = math.ceil(abs(angle_diff) * (resolution / (math.pi / 2)))
-        angles = np.linspace(angle_start, angle_end, numpoints)
+        angles = np.linspace(angle_start, angle_end, numpoints + 1, endpoint=True)
         for a in angles[1:]:
-            linecoords.append([center[0] + math.cos(a) * radius_l, center[1] + math.sin(a) * radius_l, coords[2]])
+            interp_factor = (a - angle_start) / (angle_end - angle_start)
+            linecoords.append([center[0] + math.cos(a) * radius_l, center[1] + math.sin(a) * radius_l, h_start + (h_end - h_start) * interp_factor])
 
         result = self.copy()
         result.geom = geometry.LineString(linecoords)
@@ -1375,7 +1405,7 @@ class DDDObject2(DDDObject):
 
     def subtract(self, other):
         """
-        Subtracts `other` object from this. If `other` has children, alk of them are subtracted.
+        Subtracts `other` object from this. If `other` has children, all of them are subtracted.
         Children of this object are conserved.
 
         Returns a copy of the object.
@@ -1861,6 +1891,13 @@ class DDDObject2(DDDObject):
 
         return result
 
+    def revolve(self):
+        # Coords are reversed so 'creation.revolve' creates outwards-facing meshes for ddd.polygon()
+        coords = list(reversed(list(self.remove_z().coords_iterator())))
+        tmesh = creation.revolve(coords)
+        obj = ddd.mesh(tmesh, name=self.name)
+        return obj
+
     def extrude(self, height, center=False, cap=True, base=True):
         """
         If height is negative, the object is aligned with is top face on the XY plane.
@@ -2133,6 +2170,8 @@ class DDDObject2(DDDObject):
         Interpolates a distance along a LineString, returning:
             coords_p, segment_idx, segment_coords_a, segment_coords_b
 
+        Z coordinate will also be interpolated if available (as Shapely .interpolate() does).
+
         Returns:
         - segment_idx: index of the previous point
 
@@ -2159,6 +2198,8 @@ class DDDObject2(DDDObject):
         """
         Closest segment in a LineString to other geometry.
         Does not support children in "other" geometry.
+
+        If Z coordinates are available, coords_p will be interpolated in the Z dimension too (as interpolate_segment() and Shapely .interpolate() do).
 
         Returns: coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d
         """
@@ -2847,7 +2888,7 @@ class DDDObject3(DDDObject):
 
         mesh = Trimesh(v, f)
         mesh.fix_normals()
-        mesh.merge_vertices()
+        mesh.merge_vertices(merge_norm=True)
 
         obj = DDDObject3(mesh=mesh, children=self.children, material=self.mat)
         return obj
@@ -3020,7 +3061,7 @@ class DDDObject3(DDDObject):
             c.merge_vertices(keep_normals=keep_normals)
 
         if self.mesh:
-            self.mesh.merge_vertices(use_norm=keep_normals)  # use_tex=True, use_norm=True)
+            self.mesh.merge_vertices(merge_norm=not keep_normals)  # , digits_vertex=5, digits_norm=5)  # merge_tex=True, digits_text
 
         return self
 
@@ -3028,23 +3069,24 @@ class DDDObject3(DDDObject):
         """
         Smoothes normals. Returns a copy of the object.
 
-        Eg. Using PI/2 (90 degrees) makes square corners, using < PI/2 smooths square corners.
+        Eg. Using PI/2 (90 degrees) or above produces smoothed square corners, using < PI/3 keeps square corners.
 
         Note that this requires vertices that need smoothed to be merged already, but this operation may split
         vertices if needed (and vertex count will change).
 
-        It smoothes vertices of each children recursively (but keeps structure, does not merge between objects).
+        It smoothes vertices of each children recursively (but keeps structure, does not smooth between objects).
 
         @see Also see trimesh.smoothed and trimesh.merge_vertices.
         """
         result = self.copy()
 
-        result.children = [c.smooth() for c in result.children]
+        result.children = [c.smooth(angle=angle) for c in result.children]
 
         if self.mesh:
-            result.mesh = self.mesh.smoothed(angle=angle, facet_minarea=None)  # facet_minarea)
+            #self.mesh.fix_normals()
+            result.mesh = self.mesh.smoothed(angle=angle)  # , facet_minarea=None)  # facet_minarea)
 
-        #result.mesh.merge_vertices(use_tex=True, use_norm=True)
+        #result.mesh.merge_vertices(use_tex=True, merge_norm=False)
 
         return result
 
@@ -3382,7 +3424,8 @@ class DDDObject3(DDDObject):
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
             #scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata)
-            data = trimesh.exchange.fbx.export_fbx(trimesh_scene)
+            #data = trimesh.exchange.fbx.export_fbx(trimesh_scene)
+            data = DDDFBXFormat.export_fbx(self, path)
 
         elif path.endswith('.glb'):
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
@@ -3428,8 +3471,9 @@ class DDDObject3(DDDObject):
             return data
 
         #scene.export(path)
-        with open(path, 'wb') as f:
-            f.write(data)
+        if data is not False:
+            with open(path, 'wb') as f:
+                f.write(data)
 
 
 

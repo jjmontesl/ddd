@@ -64,7 +64,7 @@ setup(
         "triangle >= 20190115.3",
 
         "importlib-metadata < 4",  # required by ipython required by open3D
-        "open3d >= 0.11.2",
+        #"open3d >= 0.11.2",
 
         'matplotlib < 3.4',
         'svgpath2mpl >= 1.0.0',

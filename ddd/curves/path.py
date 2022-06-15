@@ -58,7 +58,7 @@ class ParabollaCurve(Curve):
         return self.a * x * x + self.b * x + self.c
 
 
-class Path(DDDObject2):
+class Path2(DDDObject2):
 
     def __init__(self, name=None, children=None, extra=None, material=None):
         super().__init__(name, children, extra, material)
@@ -73,13 +73,13 @@ class Path(DDDObject2):
             raise DDDException("Cannot create parabolla from geometry with other than 3 vertices: %s" % obj)
         if obj.children:
             raise DDDException("Cannot create parabolla from geometry with children nodes: %s" % obj)
-        path = Path.parabolla_from_points(points[0], points[2], points[1])
+        path = Path2.parabolla_from_points(points[0], points[2], points[1])
         path.copy_from(obj, copy_material=True, copy_children=True)
         return path
 
     @staticmethod
     def parabolla_from_points(start, end, other, name=None):
-        path = Path(name=name)
+        path = Path2(name=name)
         path.curve = ParabollaCurve.from_points(start, end, other)
         path.start = start
         path.end = end
@@ -99,5 +99,5 @@ class Path(DDDObject2):
         return obj
 
 
-ddd.path = Path
+ddd.path = Path2
 

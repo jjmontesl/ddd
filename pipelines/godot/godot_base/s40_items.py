@@ -3,13 +3,14 @@
 # Jose Juan Montes 2020
 
 from ddd.ddd import ddd, DDDObject2
+from ddd.math.curves import path
 from ddd.pipeline.decorators import dddtask
 from ddd.core.exception import DDDException
 import random
 import sys
 import math
 from shapely.ops import linemerge
-from ddd.ops import filters, uvmapping, path
+from ddd.ops import filters, uvmapping
 import numpy
 
 

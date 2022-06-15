@@ -252,7 +252,7 @@ def show(root, logger):
     """
     """
     root.find("/Elements3").save("/tmp/periodictable.glb")
-    #root.find("/Elements3").show()
+    root.find("/Elements3").show()
     logger.warn("This pipeline uses stage caching! use --cache-clear to force a full rebuild.")
 
 

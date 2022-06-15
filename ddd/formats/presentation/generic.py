@@ -26,37 +26,37 @@ class Generic3DPresentation():
 
         This includes transforming 2D to 3D nodes as needed.
         """
-        from ddd.ddd import DDDObject2
+        from ddd.ddd import DDDObject2, D1D2D3
 
         if isinstance(node, DDDObject2):
-            result = node.copy3()
             if node.geom:
-                tnode = node
-                if node.geom.type in ('Point', 'MultiPoint'):
-                    tnode = node.buffer(0.25)
-                elif node.geom.type in ('LineString', 'MultiLineString'):
-                    tnode = node.buffer(0.10)
-                try:
-                    triangulated = tnode.triangulate(ignore_children=True)
-                    result.mesh = triangulated.mesh
-                except Exception as e:
-                    logger.warn("Could not triangulate 2D object for 3D representation export (%s): %s", node, e)
+                if node.geom.type == 'LineString':
+                    result = D1D2D3.path3(node.geom.coords)
+                    result = result.copy_from(node)
+                else:
+                    result = node.copy3()
+                    tnode = node
+                    if node.geom.type in ('Point', 'MultiPoint'):
+                        tnode = node.buffer(0.25)
+                    elif node.geom.type in ('LineString', 'MultiLineString'):
+                        tnode = node.buffer(0.10)
+                        #tnode = node.buffer(0.10)
+                    try:
+                        triangulated = tnode.triangulate(ignore_children=True)
+                        result.mesh = triangulated.mesh
+                    except Exception as e:
+                        logger.warn("Could not triangulate 2D object for 3D representation export (%s): %s", node, e)
+            else:
+                result = node.copy3()
+
         else:
             result = node.copy()
 
-        # Temporary hack to separate flat elements
-        increment = 0.0  # 0.025
-        accum = 0.0
         newchildren = []
         for c in node.children:
             nc = Generic3DPresentation.present(c)
-            if isinstance(c, DDDObject2):
-                accum += increment
-                nc = nc.translate([0, 0, accum])
             newchildren.append(nc)
 
         result.children = newchildren
 
         return result
-
-
