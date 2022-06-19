@@ -15,394 +15,228 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class DDDNode():
+import logging
+import numpy as np
+from ddd.core.exception import DDDException
+from ddd.ddd import DDDObject3
+from ddd.math.transform import DDDTransform
+from trimesh import transformations
 
-    def __init__(self, name=None, children=None, extra=None):
 
-        self._uid = None
+# Get instance of logger for this module
+logger = logging.getLogger(__name__)
 
-        self.name = name
-        self.children = children if children is not None else []
-        self.extra = extra if extra is not None else {}
+class DDDNode(DDDObject3):
 
+    def __init__(self, name=None, children=None, extra=None, material=None):
         self.transform = DDDTransform()
 
-        #self.geom = None
-        #self.mesh = None
-
-        for c in self.children:
-            if not isinstance(c, self.__class__) and not (isinstance(c, Node) and isinstance(self, DDDObject3)):
-                raise DDDException("Invalid children type on %s (not %s): %s" % (self, self.__class__, c), ddd_obj=self)
+        # Temporary while we extend DDDObject3
+        super().__init__(name, children, None, extra, material)
 
     def __repr__(self):
-        return "DDDObject(name=%r, children=%d)" % (self.name, len(self.children) if self.children else 0)
+        return "%s(%s, ref=%s)" % (self.__class__.__name__, self.uniquename(), self.ref)
 
-    def hash(self):
-        h = hashlib.new('sha256')
-        h.update(self.__class__.__name__.encode("utf8"))
-        if self.name:
-            h.update(self.name.encode("utf8"))
-        for k, v in self.extra.items():
-            h.update(k.encode("utf8"))
-            if not v or isinstance(v, (str, int, float)):
-                h.update(str(v).encode("utf8"))
-        #h.update(str(hash(frozenset(self.extra.items()))).encode("utf8"))
-        for c in self.children:
-            h.update(c.hash().digest())
-        return h
-        #print(self.__class__.__name__, self.name, hash((self.__class__.__name__, self.name)))
-        #return abs(hash((self.__class__.__name__, self.name)))  #, ((k, self.extra[k]) for k in sorted(self.extra.keys())))))
+    def copy(self):
+        obj = DDDNode(ref=self.ref, name=self.name, extra=dict(self.extra))
+        obj.transform = self.transform.copy()
+        return obj
 
-    def copy_from(self, obj, copy_material=False, copy_children=False, copy_metadata_to_children=False):
+    def is_empty(self):
         """
-        Copies metadata (without replacing), and optionally material and children from another object.
-
-        Modifies this object in place, and returns itself.
+        Instances are never considered empty, as they are assumed to contain something.
         """
-        if obj.name:
-            self.name = obj.name
+        return False
 
-        # Copy item_2d attributes
-        for k, v in obj.extra.items():
-            self.set(k, default=v, children=copy_metadata_to_children)
-        self.extra.update(obj.extra)
+    def vertex_iterator(self):
+        rotation_matrix = transformations.quaternion_matrix(self.transform.rotation)
+        node_transform = self.transform.to_matrix()
+        for v in self.ref.vertex_iterator():
+            vtransformed = np.dot(rotation_matrix, v)
+            vtransformed = [vtransformed[0] + self.transform.position[0], vtransformed[1] + self.transform.position[1], vtransformed[2] + self.transform.position[2], v[3]]
+            # FIXME: TODO: apply full transform via numpy
+            yield vtransformed
 
-        if copy_children:
-            self.children = list(obj.children)
-        if copy_material and obj.material:
-            self.material = obj.material
+    def translate(self, v):
+        obj = self.copy()
+        obj.transform.position = [obj.transform.position[0] + v[0], obj.transform.position[1] + v[1], obj.transform.position[2] + v[2]]
+        return obj
 
-        return self
+    def rotate(self, v, origin=None):
 
-    def uniquename(self):
-        # Hashing
-        #node_name = "%s_%s" % (self.name if self.name else 'Node', self.hash().hexdigest()[:8])
+        obj = self.copy()
+        rot = transformations.quaternion_from_euler(v[0], v[1], v[2], "sxyz")
+        rotation_matrix = transformations.quaternion_matrix(rot)
 
-        # Random number
-        if self._uid is None:
-            D1D2D3._uid_last += 1
-            self._uid = D1D2D3._uid_last  # random.randint(0, 2 ** 32)
+        '''
+        center_coords = None
+        if origin == 'local':
+            center_coords = None
+        elif origin == 'bounds_center':  # group_centroid, use for children
+            ((xmin, ymin, zmin), (xmax, ymax, zmax)) = self.bounds()
+            center_coords = [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]
+        elif origin:
+            center_coords = origin
 
-        node_name = "%s_%s" % (self.name if self.name else 'Node', self._uid)
+        obj = self.copy()
+        if obj.mesh:
+            rot = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
+            if center_coords:
+                translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
+                translate_after = transformations.translation_matrix(np.array(center_coords))
+                #transf = translate_before * rot # * rot * translate_after  # doesn't work, these matrifes are 4x3, not 4x4 HTM
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_before)
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_after)
+            else:
+                #transf = rot
+                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
+        '''
 
-        return node_name
+        obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]  # Hack: use matrices
+        obj.transform.rotation = transformations.quaternion_multiply(rot, obj.transform.rotation)  # order matters!
+        return obj
 
-    def replace(self, obj):
-        """
-        Replaces self data with data from other object. Serves to "replace"
-        instances in lists.
-        """
-        # TODO: Study if the system shall modify instances and let user handle cloning, this method would be unnecessary
-        self.name = obj.name
-        self.extra = obj.extra
-        self.mat = obj.mat
-        self.children = obj.children
-        return self
+    def scale(self, v):
+        obj = self.copy()
+        obj.transform.position = np.array(v) * obj.transform.position
+        return obj
 
-    def metadata(self, path_prefix, name_suffix):
-
-        node_name = self.uniquename() + name_suffix
-
-        ignore_keys = ('uv', 'osm:feature')  #, 'ddd:connections')
-        metadata = dict(self.extra)
-        metadata['ddd:path'] = path_prefix + node_name
-        if hasattr(self, "geom"):
-            metadata['geom:type'] = self.geom.type if self.geom else None
-        if self.mat and self.mat.name:
-            metadata['ddd:material'] = self.mat.name
-        if self.mat and self.mat.color:
-            metadata['ddd:material:color'] = self.mat.color  # hex
-        if self.mat and self.mat.extra:
-            # TODO: Resolve material and extra properties earlier, as this is copied in every place it's used.
-            # If material has extra metadata, add it but do not replace (it's restored later)
-            metadata.update({k:v for k, v in self.mat.extra.items()})  # if k not in metadata or metadata[k] is None})
-
-        metadata['ddd:object'] = self
-
-        # FIXME: This is suboptimal
-        metadata = {k: v for k, v in metadata.items() if k not in ignore_keys}  # and v is not None
-        #metadata = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
-
-        return metadata
-
-    def dump(self, indent_level=0, data=False):
-        strdata = ""
-        if data:
-            strdata = strdata + " " + str(self.extra)
-        print("  " * indent_level + str(self) + strdata)
-        for c in self.children:
-            c.dump(indent_level=indent_level + 1, data=data)
-
-    def count(self):
-        # TODO: Is this semantically correct? what about hte root node and children?
-        # This is used for select() set results, so maybe that should be a separate type
-        return len(self.children)
-
-    def one(self):
-        if len(self.children) != 1:
-            raise DDDException("Expected 1 object but found %s." % len(self.children))
-        return self.children[0]
-
-    #def find_or_none(self, path=None):
-
-    def find(self, path=None):
-        """
-        Note: recently changed to return None instead of an exception if no objects are found.
-        """
-
-        # Shortcuts for performance
-        # TODO: Path filtering shall be improved in select() method
-        if path.startswith("/") and '*' not in path and (path.count('/') == 1 or (path.count('/') == 2 and path.endswith("/"))):
-            parts = path[1:].split("/")
-            result = [o for o in self.children if o.name == parts[0]]
-            result = self.grouptyped(result)
-        else:
-            result = self.select(path=path, recurse=False)
-
-        #if len(result.children) > 1:
-        #    raise DDDException("Find '%s' expected 1 object but found %s." % (path, len(result.children)), ddd_obj=self)
-        if len(result.children) == 0:
-            return None
-
-        return result.one()
-
-    def select(self, selector=None, path=None, func=None, recurse=True, apply_func=None, _rec_path=None):
-        """
-
-        Note: Recurse is True in this function, but False for selectors in DDDTasks.
-        TODO: Make recurse default to False (this will require extensive testing)
-        """
-
-        if hasattr(self, '_remove_object'): delattr(self, '_remove_object')
-        if hasattr(self, '_add_object'): delattr(self, '_add_object')
-
-        if selector and not isinstance(selector, DDDSelector):
-            selector = DDDSelector(selector)
-
-        #if _rec_path is None:
-        #    logger.debug("Select: func=%s selector=%s path=%s recurse=%s _rec_path=%s", func, selector, path, recurse, _rec_path)
-
-        # TODO: Recurse should be false by default
-
-        result = []
-
-        if _rec_path is None:
-            _rec_path = "/"
-        elif _rec_path == "/":
-            _rec_path = _rec_path + str(self.name)
-        else:
-            _rec_path = _rec_path + "/" + str(self.name)
-
-        selected = True
-
-        if path:
-            # TODO: Implement path pattern matching (hint: gitpattern lib)
-            path = path.replace("*", "")  # Temporary hack to allow *
-            pathmatches = _rec_path.startswith(path)
-            selected = selected and pathmatches
-
-        if func:
-            selected = selected and func(self)
-        if selector:
-            selected = selected and selector.evaluate(self)
-
-        remove_object = False
-        add_object = False
-
-        o = self
-        if selected:
-            result.append(self)
-            if apply_func:
-                o = apply_func(self)
-                if o is False or (o and o is not self):  # new object or delete
-                    add_object = o
-                    remove_object = True
-            if o is None:
-                o = self
-
-        # If a list was returned, children are not evaluated
-        if o and (not isinstance(o, list)) and (not selected or recurse):
-            to_remove = []
-            to_add = []
-            for c in list(o.children):
-                cr = c.select(func=func, selector=selector, path=path, recurse=recurse, apply_func=apply_func, _rec_path=_rec_path)
-                if hasattr(cr, '_remove_object') and cr._remove_object:
-                    to_remove.append(c)
-                if hasattr(cr, '_add_object') and cr._add_object:
-                    if isinstance(cr._add_object, list):
-                        to_add.extend(cr._add_object)
-                    else:
-                        to_add.append(cr._add_object)
-                        #to_add.extend(cr.children)
-                delattr(cr, '_remove_object')
-                delattr(cr, '_add_object')
-                result.extend(cr.children)
-            o.children = [coc for coc in o.children if coc not in to_remove]
-            o.children.extend(to_add)
-
-        #if (isinstance(o, list)):
-        #    o.children.extend()
-
-        #self.children = [c for c in self.children if c not in result]
-
-        res = self.grouptyped(result)
-        res._remove_object = remove_object
-        res._add_object = add_object
-        return res
-
-    def filter(self, func):
-        """
-        @deprecated Use `select`
-        """
-        return self.select(func=func)
-
-    def select_remove(self, selector=None, path=None, func=None):
-        def task_select_apply_remove(o):
-            return False
-        return self.select(selector=selector, path=path, func=func, apply_func=task_select_apply_remove)
+    def bounds(self):
+        if self.ref:
+            return self.ref.bounds()
+        return None
 
     '''
-    def apply(self, func):
-        for obj in self.select().children:
-            func(obj)
+    def marker(self, world_space=True):
+        ref = D1D2D3.marker(name=self.name, extra=dict(self.extra))
+        if world_space:
+            ref = ref.scale(self.transform.scale)
+            ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+            ref = ref.translate(self.transform.position)
+        if self.ref:
+            ref.extra.update(self.ref.extra)
+        ref.extra.update(self.extra)
+        return ref
     '''
 
-    def apply_components(self, methodname, *args, **kwargs):
+    def combine(self, name=None):
         """
-        Applies a method with arguments to all applicable components in this object
-        (eg. apply transformation to colliders).
+        Combine geometry of this instance.
 
-        Does not act on children.
+        This is done by combining the actual geometry of each mesh referenced by the instance·
+
+        This allows instances to be combined or expanded in batches, at the expense of multiplying their geometry.
+
+        TODO: Maybe this method should not exist, and client code should either replace instances before combining (there's curerntly no method for that),
+              or remove them if they are to be managed separately.
         """
+        return DDDObject3(name=name)
+        if self.ref:
+            meshes = self.ref._recurse_meshes(True, False)
+            obj = ddd.group3(name=name)
+            for m in meshes:
+                mo = DDDObject3(mesh=m)
+                obj.append(mo)
+            return obj.combine(name=name)
+        else:
+            return DDDObject3(name=name)
 
-        for k in ('ddd:collider:primitive',):
-            if k in self.extra:
-                comp = self.extra[k]
-                if isinstance(comp, DDDObject):
-                    try:
-                        method_to_call = getattr(comp, methodname)
-                        self.extra[k] = method_to_call(*args, **kwargs)
-                    except Exception as e:
-                        print(method_to_call.__code__)
-                        raise DDDException("Cannot apply method to components of %s component %s: %s" % (self, comp, e))
+    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None):
 
-    def get(self, keys, default=(None, ), extra=None, type=None):
-        """
-        Returns a property from dictionary and settings.
+        #node_name = self.uniquename() + name_suffix
+        node_name = self.uniquename()
 
-        Keys can be a string or an array of strings which will be tried in order.
-        """
-        if isinstance(keys, str):
-            keys = [keys]
+        # Add metadata to name
+        metadata = self.metadata(path_prefix, name_suffix)
 
-        dicts = [self.extra]
-        if extra is not None:
-            if not isinstance(extra, (list, set, tuple)): extra = [extra]
-            dicts.extend(extra)
-        if D1D2D3.data is not None: dicts.append(D1D2D3.data)
+        #if True:
+        #    serialized_metadata = base64.b64encode(json.dumps(metadata, default=D1D2D3.json_serialize).encode("utf-8")).decode("ascii")
+        #    encoded_node_name = node_name + "_" + str(serialized_metadata)
 
-        #logger.debug("Resolving %s in %s (def=%s)", keys, dicts, default)
+        metadata_serializable = None
+        if include_metadata:
+            metadata_serializable = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
 
-        result = None
-        key = None
-        for k in keys:
-            if key: break
-            for d in dicts:
-                if k in d:
-                    key = k
-                    result = d[k]
-                    # logger.info("Found key in dictionary: %s", result)
-                    break
+        #scene_node_name = node_name.replace(" ", "_")
+        scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
 
-        if key is None:
-            if default is not self.get.__defaults__[0]:
-                result = default
+
+        # TODO: Call transform to_matrix
+        node_transform = transformations.concatenate_matrices(
+            transformations.translation_matrix(self.transform.position),
+            transformations.quaternion_matrix(self.transform.rotation)
+            )
+
+        if instance_mesh:
+            if self.ref:
+
+                if self.transform.scale != [1, 1, 1]:
+                    raise DDDException("Invalid scale for an instance object (%s): %s", self.transform.scale, self)
+
+                # TODO: Use a unique buffer! (same geom name for trimesh?)
+                #ref = self.ref.copy()
+                ref = self.ref.copy()  #.copy()
+
+                ##ref = ref.scale(self.transform.scale)
+                #ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+                #ref = ref.translate(self.transform.position)
+
+                #refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker)
+                #scene = append_scenes([scene] + [refscene])
+
+                # Empty node with transform
+                #print("Instancing %s on %s" % (scene_node_name, scene_parent_node_name))
+                #scene.add_geometry(geometry=D1D2D3.marker().mesh, node_name=scene_node_name, geom_name="Geom %s" % scene_node_name, parent_node_name=scene_parent_node_name, transform=node_transform)
+                scene.graph.update(frame_to=scene_node_name, frame_from=scene_parent_node_name, matrix=node_transform, geometry_flags={'visible': True}, extras=metadata_serializable)
+
+                # Child
+                ref._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#ref",
+                                        instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata,
+                                        scene=scene, scene_parent_node_name=scene_node_name)
+
             else:
-                raise DDDException("Cannot resolve property %r in object '%s' (own: %s)" % (keys, self, self.extra))
+                if type(self) == type(DDDInstance):
+                    raise DDDException("Instance should reference another object: %s" % (self, ))
 
-        # Resolve lambda
-        if callable(result):
-            result = result()
-            self.extra[key] = result
+        if instance_marker:
+            # Marker
 
-        if type is not None:
-            if type == "bool":
-                result = parse_bool(result)
-
-        return result
-
-    def set(self, key, value=None, children=False, default=(None, )):
-        """
-        """
-        if children:
-            # Apply to select_all
-            for o in self.select().children:
-                o.set(key, value, False, default)
-        else:
-            if default is self.set.__defaults__[2]:
-                self.extra[key] = value
+            instance_marker_cube = False
+            if instance_marker_cube:
+                ref = self.marker(world_space=False)
+                scene.add_geometry(geometry=ref.mesh, node_name=scene_node_name + "_marker", geom_name="Marker %s" % scene_node_name,
+                                   parent_node_name=scene_parent_node_name, transform=node_transform, extras=metadata_serializable)
             else:
-                if key not in self.extra or self.extra[key] is None:
-                    self.extra[key] = default
-        return self
+                scene.graph.update(frame_to=scene_node_name, frame_from=scene_parent_node_name, matrix=node_transform, geometry_flags={'visible': True}, extras=metadata_serializable)
 
-    def prop_set(self, key, *args, **kwargs):
-        return self.set(key, *args, **kwargs)
+        return scene
 
-    def counter(self, key, add=1):
-        """
-        Increments current value of a property by a given value. Sets the property if it did not exist.
-        """
-        value = add + int(self.get(key, 0))
-        self.set(key, value)
-        return value
+    def _recurse_meshes(self, instance_mesh, instance_marker):
 
-    def grouptyped(self, children=None, name=None):
-        result = None
-        if isinstance(self, DDDObject2):
-            result = ddd.group(children, empty=2)
-        elif isinstance(self, DDDObject3) or isinstance(self, DDDInstance):
-            result = ddd.group(children, empty=3)
-        else:
-            result = ddd.group(children)
-        if name:
-            result.name = name
-        return result
+        cmeshes = []
 
-    def flatten(self):
+        if instance_mesh:
+            if self.ref:
+                ref = self.ref.copy()
+                ref = ref.scale(self.transform.scale)
+                ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+                ref = ref.translate(self.transform.position)
 
-        result = self.copy()
-        result.children = []
-        result.geom = None
+                cmeshes.extend(ref._recurse_meshes(instance_mesh, instance_marker))
 
-        res = self.copy()
-        children = res.children
-        res.children = []
+        if instance_marker:
+            # Marker
+            ref = self.marker()
+            cmeshes.extend(ref._recurse_meshes(instance_mesh, instance_marker))
 
-        result.append(res)
-        for c in children:
-            result.children.extend(c.flatten().children)
-
-        return result
-
-    def append(self, obj):
-        """
-        Adds an object as a children to this node.
-        If a list is passed, each element is added.
-        """
-        if isinstance(obj, Iterable):
-            for i in obj:
-                self.children.append(i)
-        elif isinstance(obj, DDDObject):
-            self.children.append(obj)
-        else:
-            raise DDDException("Cannot append object to DDDObject children (wrong type): %s" % obj)
-        return self
-
-    def remove(self, obj):
-        """
-        Removes an object from this node children recursively. Modifies objects in-place.
-        """
-        self.children = [c.remove(obj) for c in self.children if c and c != obj]
-        return self
-
+        '''
+        if hasattr(ref, 'mesh'):
+            if ref.mesh:
+                mesh = ref._process_mesh()
+                cmeshes = [mesh]
+            if ref.children:
+                for c in ref.children:
+                    cmeshes.extend(c.recurse_meshes())
+        '''
+        return cmeshes

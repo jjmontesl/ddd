@@ -103,6 +103,12 @@ class D1D2D3():
     RAD_TO_DEG = (180.0 / math.pi)
 
     PI = math.pi
+    TWO_PI = math.pi * 2.0
+    TAU = math.pi * 2.0
+    PI_OVER_2 = math.pi / 2.0
+    PI_OVER_4 = math.pi / 4.0
+    PI_OVER_8 = math.pi / 8.0
+    PI_OVER_3 = math.pi / 3.0
 
     VECTOR_UP = np.array([0.0, 0.0, 1.0])
     VECTOR_DOWN = np.array([0.0, 0.0, -1.0])
@@ -743,8 +749,8 @@ class DDDObject():
 
         if copy_children:
             self.children = list(obj.children)
-        if copy_material and obj.material:
-            self.material = obj.material
+        if copy_material and obj.mat:
+            self.mat = obj.mat
 
         return self
 
@@ -2283,8 +2289,8 @@ class DDDObject2(DDDObject):
         except  ZeroDivisionError as e:
             raise DDDException("Error calculating perpendicular geometry to: %s" % self, ddd_obj=self)
 
-        left = (coords_p[0] + perpendicular_vec[0] * length, coords_p[1] + perpendicular_vec[1] * length)
-        right = (coords_p[0] - perpendicular_vec[0] * length, coords_p[1] - perpendicular_vec[1] * length)
+        left = (coords_p[0] + perpendicular_vec[0] * length, coords_p[1] + perpendicular_vec[1] * length, coords_p[2])
+        right = (coords_p[0] - perpendicular_vec[0] * length, coords_p[1] - perpendicular_vec[1] * length, coords_p[2])
 
         #self.copy(children=None)
         if not double:
@@ -3483,13 +3489,14 @@ Node = DDDObject
 Geometry2D = DDDObject2
 Mesh = DDDObject3
 
-from ddd.math.math import DDDMathUtils
+from ddd.math.math import DDDMath
 from ddd.ops.collision import DDDCollision
 from ddd.ops.geometry import DDDGeometry
 from ddd.ops.reduction import DDDMeshOps
 from ddd.ops.helper import DDDHelper
 from ddd.ops.snap import DDDSnap
 from ddd.ops.uvmapping import DDDUVMapping
+from ddd.ops.paths import DDDPathOps
 from ddd.ops.align import DDDAlign
 from ddd.pack.mats.defaultmats import DefaultMaterials
 from ddd.materials.materials import MaterialsCollection
@@ -3500,7 +3507,7 @@ ddd.mats.highlight = D1D2D3.material(color='#ff00ff')
 ddd.MAT_HIGHLIGHT = ddd.mats.highlight
 ddd.mats.load_from(DefaultMaterials())
 
-ddd.math = DDDMathUtils()
+ddd.math = DDDMath()
 
 ddd.geomops = DDDGeometry()
 
@@ -3517,6 +3524,8 @@ ddd.uv = DDDUVMapping()
 ddd.helper = DDDHelper()
 
 ddd.random = DDDRandom()
+
+ddd.paths = DDDPathOps()
 
 
 '''

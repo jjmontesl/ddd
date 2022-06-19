@@ -15,7 +15,7 @@ from ddd.ddd import ddd, DDDObject2, Node
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-class Curve():
+class DDDCurve():
     """
     Curves are mathematically defined and can be evaluated at any point inside their domain.
 
@@ -24,7 +24,7 @@ class Curve():
     pass
 
 
-class ParabollaCurve(Curve):
+class ParabollaCurve(DDDCurve):
     """
     A parabolla on the the XY plane.
     """
@@ -56,6 +56,9 @@ class ParabollaCurve(Curve):
 
     def evaluate_y(self, x):
         return self.a * x * x + self.b * x + self.c
+
+    #def evaluate(self, t):
+    #    return self.a * x * x + self.b * x + self.c
 
 
 class Path2(DDDObject2):

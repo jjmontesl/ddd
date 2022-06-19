@@ -21,27 +21,34 @@ import logging
 
 import trimesh
 from trimesh import creation, primitives, boolean, transformations, remesh
+from trimesh.path import entities
 from ddd.ddd import D1D2D3, DDDObject3
+from ddd.nodes.node3 import DDDNode3
+
+
 
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
 
-class DDDPath3(DDDObject3):
+class DDDPath3(DDDNode3):
     """
     3D path (backed by Trimesh Path3)
     """
 
 
     def __init__(self, name=None, children=None, path3=None, extra=None, material=None):
-        super().__init__(name, children, None, extra, material)
+        super().__init__(name, children, extra, material)
         self.path3 = path3
 
     def __repr__(self):
-        return "%s(%s, verts=%d, children=%d)" % (self.__class__.__name__, self.uniquename(), len(self.path3.vertices) if self.path3 else 0, len(self.children) if self.children else 0)
+        return "%s (%s %dv %de %dc)" % (self.uniquename(), self.__class__.__name__, len(self.path3.vertices) if self.path3 else 0, len(self.path3.entities) if self.path3 else 0, len(self.children) if self.children else 0)
 
     def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None):
+
+        if len(self.path3.entities) < 0:
+            return scene
 
         #node_name = self.uniquename() + name_suffix
         node_name = self.uniquename()
@@ -60,18 +67,24 @@ class DDDPath3(DDDObject3):
         #scene_node_name = node_name.replace(" ", "_")
         scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
 
-
-        # TODO: Call transform to_matrix
-        #node_transform = transformations.concatenate_matrices(
-        #    transformations.translation_matrix(self.transform.position),
-        #    transformations.quaternion_matrix(self.transform.rotation)
-        #)
-        node_transform = transformations.translation_matrix([0, 0, 0])
+        # Get node transform
+        node_transform = self.transform.to_matrix()
 
         # Material + UVs
-        if self.mat:
-            self.path3.colors = [self.mat.color_rgba]
-            #mat = self.mat._trimesh_material()
+
+
+        if self.mat and len(self.path3.entities) > 0:
+
+            self.path3.colors = [self.mat.color_rgba] * len(self.path3.entities)
+
+            '''
+            # Test: different colors for sections
+            # TODO: support colors for sections
+            mats = [D1D2D3.mats.red, D1D2D3.mats.blue, D1D2D3.mats.green]
+            colors = [mats[i % len(mats)].color_rgba for i in range(len(self.path3.entities))]
+            self.path3.colors = colors
+            '''
+
 
         scene.add_geometry(geometry=self.path3, node_name=scene_node_name, geom_name=scene_node_name,
                             parent_node_name=scene_parent_node_name, transform=node_transform, extras=metadata_serializable)
@@ -81,6 +94,53 @@ class DDDPath3(DDDObject3):
 
     def copy(self, name=None):
         if name is None: name = self.name
-        obj = DDDPath3(name=name, children=list(self.children), material=self.mat, extra=dict(self.extra))
-        obj.path3 = copy.deepcopy(self.path3)
+        path3_copy = copy.deepcopy(self.path3)
+        obj = DDDPath3(name=name, children=list(self.children), path3=path3_copy, extra=dict(self.extra), material=self.mat)
+        obj.transform = self.transform.copy()
         return obj
+
+    def discretize(self, distance=1.0):
+
+        coords = []
+        for entity in self.path3.entities:
+            if not coords:
+                last_p = self.path3.vertices[entity.points[0]]
+                coords.append(last_p)
+            if isinstance(entity, entities.Line):
+                for p in entity.points[1:]:
+                    last_p = self.path3.vertices[p]
+                    coords.append(last_p)
+            elif isinstance(entity, entities.Arc):
+                point_num = max(2, int(entity.length(self.path3.vertices) / distance) + 1)
+                for p in list(entity.discrete(self.path3.vertices, point_num))[1:]:
+                    last_p = p
+                    coords.append(last_p)
+            elif isinstance(entity, entities.Bezier):
+                point_num = max(2, int(entity.length(self.path3.vertices) / distance) + 1)
+                for p in list(entity.discrete(self.path3.vertices, 1.0, point_num))[1:]:
+                    last_p = p
+                    coords.append(last_p)
+            elif isinstance(entity, entities.BSpline):
+                point_num = max(2, int(entity.length(self.path3.vertices) / distance) + 1)
+                for p in list(entity.discrete(self.path3.vertices, point_num))[1:]:
+                    last_p = p
+                    coords.append(last_p)
+            else:
+                raise NotImplementedError(entity)
+
+        result = self.copy()
+        result.path3 = trimesh.path.path.Path3D([
+            entities.Line(range(len(coords))),
+        ], coords)
+
+        return result
+
+    def to_line(self):
+        """
+        This assumes that the path is a single Line entity (eg. as returned by `discretize()`).
+
+        Note: this currently ignores children.
+        """
+        result = D1D2D3.line([self.path3.vertices[i] for i in self.path3.entities[0].points])
+        result.copy_from(self, copy_material=True)
+        return result

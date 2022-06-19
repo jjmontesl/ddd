@@ -32,7 +32,7 @@ class Generic3DPresentation():
             if node.geom:
                 if node.geom.type == 'LineString':
                     result = D1D2D3.path3(node.geom.coords)
-                    result = result.copy_from(node)
+                    result = result.copy_from(node, copy_material=True)
                 else:
                     result = node.copy3()
                     tnode = node
