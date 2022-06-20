@@ -57,15 +57,16 @@ class Vector3(tuple):
     def __mul__(self, other):
         if isinstance(other, (int, float)):
             return Vector3((self[0] * other, self[1] * other, self[2] * other))
-        return Vector3((self[0] * other, self[1] * other, self[2] * other))
+        return Vector3((self[0] * other[0], self[1] * other[1], self[2] * other[2]))
 
     def __truediv__(self, other):
         if isinstance(other, (int, float)):
             return Vector3((self[0] / other, self[1] / other, self[2] / other))
-        return Vector3((self[0] / other, self[1] / other, self[2] / other))
+        return Vector3((self[0] / other[0], self[1] / other[1], self[2] / other[2]))
 
     def distance_to(self, b):
         return math.sqrt( ((b[0] - self[0]) ** 2) + ((b[1] - self[1]) ** 2) + ((b[2] - self[2]) ** 2) )
 
     def dot(self, other):
-        return self[0] * other[0] + self[1] * other[1] + (self[2] * other[2] if len(self) >= len(other) >= 3 else 0)
+        return self[0] * other[0] + self[1] * other[1] + self[2] * other[2]
+        #return self[0] * other[0] + self[1] * other[1] + (self[2] * other[2] if len(self) >= len(other) >= 3 else 0)

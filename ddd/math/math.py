@@ -21,3 +21,13 @@ class DDDMath():
         x = DDDMath.clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
         return x * x * (3.0 - 2.0 * x)
 
+    @staticmethod
+    def smoothstep_pulse(x, edgei0, edgei1, edgeo0, edgeo1):
+        if x < edgeo0:
+            return DDDMath.smoothstep(edgei0, edgei1, x)
+        else:
+            return 1.0 - DDDMath.smoothstep(edgeo0, edgeo1, x)
+
+    @staticmethod
+    def sign(v):
+        return math.copysign(1, v)

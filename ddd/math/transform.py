@@ -35,6 +35,9 @@ class DDDTransform():
         self.rotation = transformations.quaternion_from_euler(0, 0, 0, "sxyz")
         self.scale = [1, 1, 1]
 
+    def __str__(self):
+        return "DDDTransform(pos=%s, rot=%s, s=%s)" % (self.position, self.rotation, self.scale)
+
     def copy(self):
         result = DDDTransform()
         result.position = list(self.position)

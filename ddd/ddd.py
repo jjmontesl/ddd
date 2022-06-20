@@ -51,6 +51,7 @@ from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
 from ddd.formats.fbx import DDDFBXFormat
 from ddd.materials.atlas import TextureAtlas
+from ddd.math.vector3 import Vector3
 from ddd.ops import extrusion
 
 import numpy as np
@@ -418,6 +419,10 @@ class D1D2D3():
         return result
 
     @staticmethod
+    def node(name=None, children=None, extra=None):
+        return D1D2D3.group(children=children, name=name, extra=extra, empty=2)
+
+    @staticmethod
     def instance(obj, name=None):
         obj = DDDInstance(obj, name)
         return obj
@@ -712,7 +717,8 @@ class DDDObject():
 
         for c in self.children:
             if not isinstance(c, self.__class__) and not (isinstance(c, DDDInstance) and isinstance(self, DDDObject3)):
-                raise DDDException("Invalid children type on %s (not %s): %s" % (self, self.__class__, c), ddd_obj=self)
+                #raise DDDException("Invalid children type on %s (not %s): %s" % (self, self.__class__, c), ddd_obj=self)
+                pass
 
     def __repr__(self):
         return "DDDObject(name=%r, children=%d)" % (self.name, len(self.children) if self.children else 0)
@@ -732,6 +738,11 @@ class DDDObject():
         return h
         #print(self.__class__.__name__, self.name, hash((self.__class__.__name__, self.name)))
         #return abs(hash((self.__class__.__name__, self.name)))  #, ((k, self.extra[k]) for k in sorted(self.extra.keys())))))
+
+    def setname(self, name):
+        name = name.replace('{}', self.name)
+        self.name = name
+        return self
 
     def copy_from(self, obj, copy_material=False, copy_children=False, copy_metadata_to_children=False):
         """
@@ -1119,7 +1130,7 @@ class DDDObject2(DDDObject):
         self._strtree = None
 
     def __repr__(self):
-        return "%s(%s, name=%s, geom=%s (%s verts), children=%d)" % (self.__class__.__name__, id(self), self.name, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
+        return "%s (%s %s %sv %dc)" % (self.name, self.__class__.__name__, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
     def copy(self, name=None, copy_children=True):
         """
@@ -1885,15 +1896,15 @@ class DDDObject2(DDDObject):
         else:
             result = DDDObject3()
 
-        if not ignore_children:
-            result.children.extend([c.triangulate(twosided) for c in self.children])
+        if self.mat is not None:
+            result = result.material(self.mat)
 
         # Copy extra information from original object
         #result.name = self.name if result.name is None else result.name
         result.extra['extruded_shape'] = self
 
-        if self.mat is not None:
-            result = result.material(self.mat)
+        if not ignore_children:
+            result.children.extend([c.triangulate(twosided) for c in self.children])
 
         return result
 
@@ -2302,6 +2313,32 @@ class DDDObject2(DDDObject):
 
         return result
 
+    def vertex_bisector(self, vertex_index, length=1.0):
+        """
+        Returns the bisector at a vertex in a line segment (this is the "perpendicular" at the vertex)
+        """
+
+        if vertex_index == 0:
+            return self.perpendicular(distance=0.0, length=length, double=True)
+        if vertex_index >= len(self.geom.coords) - 1:
+            return self.perpendicular(distance=self.length(), length=length, double=True)
+
+        vm1 = Vector3(self.geom.coords[vertex_index - 1])
+        v0 = Vector3(self.geom.coords[vertex_index])
+        v1 = Vector3(self.geom.coords[(vertex_index + 1) % len(self.geom.coords)])
+
+        d = v1 - v0
+        dm1 = v0 - vm1
+
+        bs0 = (dm1.normalized() + d.normalized()).normalized()
+        bs0 = Vector3([-bs0.y, bs0.x, 0])
+
+        p1 = v0 + bs0 * length
+        p2 = v0 - bs0 * length
+
+        perpendicular = ddd.line([p1, p2])
+        return perpendicular
+
     def line_substring(self, start_dist, end_dist, normalized=False):
         """
         Returns a line between the specified distances.
@@ -2340,6 +2377,65 @@ class DDDObject2(DDDObject):
                 cgems = c.geom_recursive()
                 geoms.extend(cgems)
         return geoms
+
+    # DDDObject2 didn't have this, and Presentations are used instead: normalize with DDDNode. Added to support render to pyrender (?)
+    def _recurse_meshes(self, instance_mesh, instance_marker):
+        cmeshes = []
+        if self.children:
+            for c in self.children:
+                cmeshes.extend(c._recurse_meshes(instance_mesh, instance_marker))
+        return cmeshes
+
+    # DDDObject2 didn't have this, and Presentations are used instead: normalize with DDDNode
+    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None):
+
+        node_name = self.uniquename()
+
+        # Add metadata to name
+        metadata = self.metadata(path_prefix, name_suffix)
+
+        if False:  # serialize metadata in name
+            #print(json.dumps(metadata))
+            serialized_metadata = base64.b64encode(json.dumps(metadata, default=D1D2D3.json_serialize).encode("utf-8")).decode("ascii")
+            encoded_node_name = node_name + "_" + str(serialized_metadata)
+
+        metadata_serializable = None
+        if include_metadata:
+            metadata_serializable = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
+        #scene.metadata['extras'] = test_metadata
+
+        # Do not export nodes indicated 'ddd:export-as-marker' if not exporting markers
+        if metadata.get('ddd:export-as-marker', False) and not instance_marker:
+            return scene
+        if metadata.get('ddd:marker', False) and not instance_marker:
+            return scene
+
+        scene_node_name = node_name.replace(" ", "_")
+        scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
+
+        node_transform = transformations.identity_matrix()
+
+        #if scene is None:
+        #    scene = Scene(base_frame=scene_node_name)
+        #    # Add node metadata to scene metadata (first node metadata seems not available at least in blender)
+        #    scene.metadata['extras'] = metadata_serializable
+
+        #if mesh is None: mesh = ddd.marker().mesh
+        #print("Adding: %s to %s" % (scene_node_name, scene_parent_node_name))
+        scene.graph.update(frame_to=scene_node_name, frame_from=scene_parent_node_name, matrix=node_transform, geometry_flags={'visible': True}, extras=metadata_serializable)
+
+        if self.children:
+            for idx, c in enumerate(self.children):
+                c._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx),
+                                      instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata,
+                                      scene=scene, scene_parent_node_name=scene_node_name)
+
+        # Serialize metadata as dict
+        #if False:
+        #    #serializable_metadata_dict = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
+        #    #scene.metadata['extras'] = serializable_metadata_dict
+
+        return scene
 
     def save(self, path, instance_marker=None, instance_mesh=None, scale=1.0):
         """
@@ -3376,7 +3472,7 @@ class DDDObject3(DDDObject):
             meshes = self._recurse_meshes(instance_mesh=instance_mesh, instance_marker=instance_marker)  # rotated
             pr_scene = pyrender.Scene()
             for m in meshes:
-                prm = pyrender.Mesh.from_trimesh(m, smooth=False) #, wireframe=True)
+                prm = pyrender.Mesh.from_trimesh(m)  #, smooth=False) #, wireframe=True)
                 pr_scene.add(prm)
             pyrender.Viewer(pr_scene, lighting="direct")  #, viewport_size=resolution)
             #pyrender.Viewer(scene, lighting="direct")  #, viewport_size=resolution)

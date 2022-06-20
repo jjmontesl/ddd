@@ -68,6 +68,7 @@ class DDDPath3(DDDNode3):
         scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
 
         # Get node transform
+        #node_transform = transformations.identity_matrix()
         node_transform = self.transform.to_matrix()
 
         # Material + UVs
