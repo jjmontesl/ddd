@@ -321,7 +321,13 @@ class D1D2D3():
     @staticmethod
     def grid2(bounds, detail=1.0, name=None):
         rects = []
+
         cmin, cmax = bounds[:2], bounds[2:]
+
+        # FIXME: This needs normalizing so all bounds have same format, and/or use DDDBounds
+        if len(bounds) == 2:
+            cmin, cmax = bounds
+
         if isinstance(detail, int): detail= float(detail)
         if isinstance(detail, float): detail = [detail, detail]
         pointsx = list(np.linspace(cmin[0], cmax[0], 1 + int((cmax[0] - cmin[0]) / detail[0])))
@@ -340,6 +346,9 @@ class D1D2D3():
 
     @staticmethod
     def grid3(bounds2, detail=1.0, name=None):
+        """
+        FIXME: Try using ops.grid now that it's available? (note that currently that one does not alternate diagonals)
+        """
         grid2 = D1D2D3.grid2(bounds2, detail, name=name)
         cmin, cmax = bounds2[:2], bounds2[2:]
         #grid2 = D1D2D3.rect(cmin, cmax)
@@ -749,6 +758,8 @@ class DDDObject():
         Copies metadata (without replacing), and optionally material and children from another object.
 
         Modifies this object in place, and returns itself.
+
+        TODO: copy_material shall possibly be True by default
         """
         if obj.name:
             self.name = obj.name
@@ -2494,7 +2505,7 @@ class DDDInstance(DDDObject):
         self.transform = DDDTransform()
 
     def __repr__(self):
-        return "%s(%s, ref=%s)" % (self.__class__.__name__, self.uniquename(), self.ref)
+        return "%s (%s ref: %s)" % (self.uniquename(), self.__class__.__name__, self.ref)
 
     def copy(self):
         obj = DDDInstance(ref=self.ref, name=self.name, extra=dict(self.extra))
@@ -2776,7 +2787,9 @@ class DDDObject3(DDDObject):
         super().__init__(name, children, extra, material)
 
     def __repr__(self):
-        return "%s(%s, faces=%d, children=%d)" % (self.__class__.__name__, self.uniquename(), len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
+        #return "%s(%s, faces=%d, children=%d)" % (self.__class__.__name__, self.uniquename(), len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
+        return "%s (%s %df %dc)" % (self.uniquename(), self.__class__.__name__, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
+        #return "%s (%s %s %sv %dc)" % (self.name, self.__class__.__name__, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
     def copy(self, name=None):
         if name is None: name = self.name
@@ -2900,7 +2913,10 @@ class DDDObject3(DDDObject):
         return obj
 
     def invert(self):
-        """Inverts mesh triangles (which inverts triangle face normals)."""
+        """
+        Inverts mesh triangles (which inverts triangle face normals).
+        FIXME: What is the difference with flip_faces(), should both exist? document differences
+        """
         obj = self.copy()
         if self.mesh:
             obj.mesh.invert()
@@ -3107,6 +3123,9 @@ class DDDObject3(DDDObject):
         return result
 
     def flip_faces(self):
+        """
+        FIXME: What is the difference with invert(), should both exist? document differences
+        """
         result = self.copy()
         if result.mesh:
             flipped_faces = np.fliplr(result.mesh.faces)

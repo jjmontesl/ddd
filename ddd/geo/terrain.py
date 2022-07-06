@@ -18,30 +18,6 @@ from ddd.geo.elevation import ElevationModel
 #dem_file = '/home/jjmontes/git/ddd/data/dem/srtm/srtm_40_19.tif'  # Cape Town, from: https://dwtkns.com/srtm/
 
 
-# TODO: Move to non-geoterrain (or pack?) utils outside "geo"
-def terrain_grid(bounds, detail=1.0, height=1.0, scale=0.025):
-    '''
-    If bounds is a single number, it's used as L1 distance.
-    '''
-
-    if isinstance(bounds, float):
-        distance = bounds
-        bounds = [-distance, -distance, distance, distance]
-
-    mesh = ddd.grid3(bounds, detail=detail, name="Terrain grid")
-
-    #func = lambda x, y: 2.0 * noise.pnoise2(x, y, octaves=3, persistence=0.5, lacunarity=2.0, repeatx=1024, repeaty=1024)
-    def func(x, y):
-        val = height * noise.pnoise2(x * scale, y * scale, octaves=2, persistence=0.5, lacunarity=2.0, repeatx=1024, repeaty=1024, base=0)
-        #print("%s, %s = %s" % (x, y, val))
-        return val
-    #func = lambda x, y: random.uniform(0, 2)
-    mesh = mesh.elevation_func(func)
-
-    return mesh
-
-
-
 transformer = None  # remove globals, move into classes
 
 def transformer_ddd_to_geo(ddd_proj):

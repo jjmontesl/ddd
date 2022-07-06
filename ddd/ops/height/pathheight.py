@@ -86,11 +86,14 @@ class NodeBisectPathHeightFunction(PathHeightFunction):
 
         perp0side = perp0norm.dot((Vector3(point.geom.coords[0]) - Vector3(closest.geom.coords[0])).normalized())
 
-
         interp_z = 0  # closest.geom.coords[0][2]
         try:
-            if (perp0side < 0):
-                interp_z = (d0 / (dm1 + d0)) * perpm1.geom.coords[0][2] + (dm1 / (dm1 + d0)) * perp0.geom.coords[0][2]
+            if perp0side < 0:
+
+                if dm1 + d0 > 0:
+                    interp_z = (d0 / (dm1 + d0)) * perpm1.geom.coords[0][2] + (dm1 / (dm1 + d0)) * perp0.geom.coords[0][2]
+                else:
+                    interp_z = perp0.geom.coords[0][2]
 
                 # Debug
                 if (self._debug_root and random.uniform(0, 1) < 0.02):
@@ -103,9 +106,13 @@ class NodeBisectPathHeightFunction(PathHeightFunction):
                     if (marker.path3.length > 0): self._debug_root.append(marker)
 
             else:
-                interp_z = (d0 / (d1 + d0)) * perp1.geom.coords[0][2] + (d1 / (d1 + d0)) * perp0.geom.coords[0][2]
+                if d1 + d0 > 0:
+                    interp_z = (d0 / (d1 + d0)) * perp1.geom.coords[0][2] + (d1 / (d1 + d0)) * perp0.geom.coords[0][2]
+                else:
+                    interp_z = perp0.geom.coords[0][2]
+
         except Exception as e:
-            logger.error("Error interpolating height using path perpendicular strategy: %s", e)
+            logger.error("Error interpolating height using NodeBisectPathHeightFunction: %s", e)
 
         #dist_a = math.sqrt( (segment_coords_a[0] - coords_p[0]) ** 2 + (segment_coords_a[1] - coords_p[1]) ** 2 )
         #dist_b = math.sqrt( (segment_coords_b[0] - coords_p[0]) ** 2 + (segment_coords_b[1] - coords_p[1]) ** 2 )
@@ -222,7 +229,11 @@ class BankingPathProfileHeightFunction(PathProfileHeightFunction):
             if (perp0side < 0):
                 pm1 = points.children[max(index - 1, 0)]
                 p0 = points.children[index]
-                path_d = (d0 / (dm1 + d0)) * pm1.get('path_d') + (dm1 / (dm1 + d0)) * p0.get('path_d')
+
+                if dm1 + d0 > 0:
+                    path_d = (d0 / (dm1 + d0)) * pm1.get('path_d') + (dm1 / (dm1 + d0)) * p0.get('path_d')
+                else:
+                    path_d = p0.get('path_d')
 
                 center = perpm1.intersection(perp0)
                 d = point.distance(center)
@@ -232,7 +243,11 @@ class BankingPathProfileHeightFunction(PathProfileHeightFunction):
             else:
                 p1 = points.children[min(index + 1, len(points.children) - 1)]
                 p0 = points.children[index]
-                path_d = (d0 / (d1 + d0)) * p1.get('path_d') + (d1 / (d1 + d0)) * p0.get('path_d')
+
+                if d1 + d0 > 0:
+                    path_d = (d0 / (d1 + d0)) * p1.get('path_d') + (d1 / (d1 + d0)) * p0.get('path_d')
+                else:
+                    path_d = p0.get('path_d')
 
                 center = perp1.intersection(perp0)
                 d = point.distance(center)
@@ -241,7 +256,7 @@ class BankingPathProfileHeightFunction(PathProfileHeightFunction):
                 r = (r1 + r0) / 2
 
         except Exception as e:
-            logger.error("Error interpolating height using path perpendicular strategy: %s", e)
+            logger.error("Error interpolating height using BankingPathProfileHeightFunction: %s", e)
             return (x, y, z)
 
         signed_d = d - r
