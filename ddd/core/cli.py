@@ -102,13 +102,14 @@ class D1D2D3Bootstrap():
 
         parser.add_argument("--renderer", default="pyglet", nargs="?", choices=('pyrender', 'pyglet', 'none'), help="renderer backend (default: %(default)s)")
 
+        parser.add_argument("--naming", default="name", nargs="?", choices=('path', 'name_numbered', 'name_unique'), help="node naming for export (default: %(default)s)")
+
         parser.add_argument("--catalog-overwrite", action="store_true", default=False, help="overwrite catalog items")
         parser.add_argument("--catalog-ignore", action="store_true", default=False, help="do not use catalog (read, write or store)")
 
         # Cache should be part of a more general pipeline build approach
         parser.add_argument("--cache-ro", action="store_true", default=False, help="disables pipeline cache writing")
         parser.add_argument("--cache-clear", action="store", nargs="?", default=None, const=(1, ), help="clear pipeline cache (from task order 1 or argument if set)")
-
 
         parser.add_argument("command", help="script or command to run", nargs="?")
 

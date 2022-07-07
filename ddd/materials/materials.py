@@ -3,7 +3,8 @@
 # Jose Juan Montes 2020
 
 import logging
-from ddd.ddd import DDDMaterial
+
+from ddd.materials.material import DDDMaterial
 
 
 # Get instance of logger for this module

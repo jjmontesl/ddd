@@ -108,13 +108,15 @@ class DDDUVMapping():
                     else:
                         result.extra['uv'][idx] = uv
 
-                if abs(v[0]) > abs(v[1]) and abs(v[0]) > abs(v[2]):
+                NORM_THRESHOLD = 0.00001
+
+                if abs(v[0]) > (abs(v[1]) - NORM_THRESHOLD) and abs(v[0]) > (abs(v[2]) - NORM_THRESHOLD):
                     # Normal along X, project onto YZ
                     p0, p1, p2 = result.mesh.vertices[face[0]], result.mesh.vertices[face[1]], result.mesh.vertices[face[2]]
                     setuv(face, face[0], (p0[1], p0[2]))
                     setuv(face, face[1], (p1[1], p1[2]))
                     setuv(face, face[2], (p2[1], p2[2]))
-                elif abs(v[1]) > abs(v[0]) and abs(v[1]) > abs(v[2]):
+                elif abs(v[1]) > (abs(v[0]) - NORM_THRESHOLD) and abs(v[1]) > (abs(v[2]) - NORM_THRESHOLD):
                     p0, p1, p2 = result.mesh.vertices[face[0]], result.mesh.vertices[face[1]], result.mesh.vertices[face[2]]
                     setuv(face, face[0], (p0[0], p0[2]))
                     setuv(face, face[1], (p1[0], p1[2]))

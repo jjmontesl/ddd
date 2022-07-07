@@ -213,8 +213,6 @@ class DDDTask(object):
             except Exception as e:
                 logger.error("Error running task %s on %s: %s", self, o, e)
                 raise DDDException("Error running task %s on %s: %s" % (self, o, e), ddd_obj=o)
-
-            #interactive.showbg(pipeline.root)
         '''
 
 

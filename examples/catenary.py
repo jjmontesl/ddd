@@ -9,8 +9,7 @@ from ddd.pipeline.decorators import dddtask
 
 import numpy as np
 
-@dddtask(order="10",
-         params={
+@dddtask(params={
              'ddd:example:catenary:length_ratio_factor': 0.025
         })
 def pipeline_start(pipeline, root):
@@ -19,7 +18,6 @@ def pipeline_start(pipeline, root):
     """
 
     items = ddd.group3(name="Catenary test")
-
 
     length_ratio_factor = pipeline.data.get('ddd:example:catenary:length_ratio_factor', 0.025)
     pipeline.data['ddd:example:catenary:length_ratio_factor'] = length_ratio_factor
@@ -47,7 +45,7 @@ def pipeline_start(pipeline, root):
     # All items
     #items = ddd.align.grid(items, space=10.0)
     items.append(ddd.helper.all())
-    items.show()
 
     root.append(items)
+    root.show()
 

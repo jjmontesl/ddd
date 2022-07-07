@@ -42,11 +42,18 @@ class RunCommand(DDDCommand):
         #program_name = os.path.basename(sys.argv[0])
         parser = argparse.ArgumentParser()  # description='', usage = ''
 
+        parser.add_argument("--show", action="store_true", default=False, help="show root node at the end")
+        parser.add_argument("--save", action="store", nargs="?", default=None, type=str, help="save root node at the end")
+
         parser.add_argument("script", type=str, help="Script to run")
 
         args = parser.parse_args(args)
 
         self.script = args.script
+
+        self.save = args.save
+        self.show = args.show
+
 
     def run(self):
 
@@ -56,3 +63,11 @@ class RunCommand(DDDCommand):
 
         # Run pipeline
         pipeline.run()
+
+        if self.show:
+            logger.info("Showing root node")
+            pipeline.root.show()
+
+        if self.save:
+            logger.info("Saving root node to: %s", self.save)
+            pipeline.root.save(self.save)

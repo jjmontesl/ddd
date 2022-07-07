@@ -119,13 +119,13 @@ def post(height=2.00, r=0.075, top=None, side=None, mat_post=None):
     """
     A squared / rectangular post.
     """
-    col = ddd.point([0, 0], name="Post").buffer(r, resolution=0, cap_style=ddd.CAP_SQUARE).extrude(height)  # , cap=False, base=False)
+    col = ddd.point([0, 0], name="Post Pole").buffer(r, resolution=0, cap_style=ddd.CAP_SQUARE).extrude(height)  # , cap=False, base=False)
     if mat_post: col = col.material(mat_post)
     #col = col.smooth(math.pi)
     col = ddd.uv.map_cylindrical(col)  #, split=False)
     col = ddd.collision.aabox_from_aabb(col)
 
-    col = ddd.group3([col])
+    col = ddd.group3([col], name="Post")
     if top:
         top = top.translate([0, 0, height])
         col.append(top)
