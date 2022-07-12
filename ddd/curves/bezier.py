@@ -3,14 +3,10 @@
 # Jose Juan Montes 2020
 
 import logging
-import math
-import shapely
+
 import numpy as np
 
-from ddd.core.exception import DDDException
 from ddd.curves.path import DDDCurve
-from ddd.math.vector2 import Vector2
-from ddd.ddd import ddd, DDDObject2, Node
 from trimesh.path.curve import binomial
 
 

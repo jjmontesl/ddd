@@ -4,13 +4,12 @@
 
 import logging
 import math
-import shapely
-from shapely.geometry.polygon import orient, Polygon, LinearRing
 
-from ddd.core.exception import DDDException
-from ddd.ddd import ddd, DDDObject2
 import numpy as np
-
+import shapely
+from ddd.core.exception import DDDException
+from ddd.ddd import ddd
+from shapely.geometry.polygon import LinearRing, Polygon, orient
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -120,7 +119,9 @@ class DDDGeometry():
         Modifies the object in place.
         """
         resized = obj  # ddd.align.anchor(obj, ddd.ANCHOR_CENTER)
-        xmin, ymin, xmax, ymax = resized.bounds()
+        bounds = resized.bounds()
+        xmin, ymin, _ = bounds[0]
+        xmax, ymax, _ = bounds[1]
 
         width = xmax - xmin
         height = ymax - ymin

@@ -20,23 +20,18 @@ import json
 import logging
 
 import trimesh
-from trimesh import creation, primitives, boolean, transformations, remesh
 from trimesh.path import entities
-from ddd.ddd import D1D2D3, DDDObject3
-from ddd.nodes.node3 import DDDNode3
-
-
-
+from ddd.nodes.node import DDDNode
+from ddd.ddd import ddd
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
 
-class DDDPath3(DDDNode3):
+class DDDPath3(DDDNode):
     """
     3D path (backed by Trimesh Path3)
     """
-
 
     def __init__(self, name=None, children=None, path3=None, extra=None, material=None):
         super().__init__(name, children, extra, material)
@@ -45,13 +40,16 @@ class DDDPath3(DDDNode3):
     def __repr__(self):
         return "%s (%s %dv %de %dc)" % (self.uniquename(), self.__class__.__name__, len(self.path3.vertices) if self.path3 else 0, len(self.path3.entities) if self.path3 else 0, len(self.children) if self.children else 0)
 
-    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None):
+    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None, usednames=None):
 
         if len(self.path3.entities) < 0:
             return scene
 
         #node_name = self.uniquename() + name_suffix
-        node_name = self.uniquename()
+        #node_name = self.uniquename()
+        if usednames is None: usednames = set()
+        node_name = self.uniquename(usednames)
+        usednames.add(node_name)
 
         # Add metadata to name
         metadata = self.metadata(path_prefix, name_suffix)
@@ -62,7 +60,7 @@ class DDDPath3(DDDNode3):
 
         metadata_serializable = None
         if include_metadata:
-            metadata_serializable = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
+            metadata_serializable = json.loads(json.dumps(metadata, default=ddd.json_serialize))
 
         #scene_node_name = node_name.replace(" ", "_")
         scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
@@ -72,7 +70,6 @@ class DDDPath3(DDDNode3):
         node_transform = self.transform.to_matrix()
 
         # Material + UVs
-
 
         if self.mat and len(self.path3.entities) > 0:
 
@@ -142,6 +139,6 @@ class DDDPath3(DDDNode3):
 
         Note: this currently ignores children.
         """
-        result = D1D2D3.line([self.path3.vertices[i] for i in self.path3.entities[0].points])
+        result = ddd.line([self.path3.vertices[i] for i in self.path3.entities[0].points])
         result.copy_from(self, copy_material=True)
         return result

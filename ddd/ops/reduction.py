@@ -2,14 +2,15 @@
 # Library for simple scene modelling.
 # Jose Juan Montes 2020
 
-import numpy as np
 import logging
-from ddd.ddd import ddd, DDDInstance, DDDObject2
-import math
-from trimesh.base import Trimesh
-from trimesh import creation, intersections
-from scipy import interpolate
+
+import numpy as np
+from ddd.ddd import ddd
 from shapely.geometry import Polygon, polygon
+from trimesh import creation, intersections
+
+from ddd.nodes.node2 import DDDObject2
+from ddd.nodes.instance import DDDInstance
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -293,8 +294,8 @@ class DDDMeshOps():
 
                 # Generate grid squares
                 #bounds = [min(bounds[0], bounds[2]), min(bounds[1], bounds[3]), max(bounds[0], bounds[2]), max(bounds[1], bounds[3])]
-                bounds = [grid_size * (int(bounds[0] / grid_size) - 1), grid_size * (int(bounds[1] / grid_size) - 1),
-                          grid_size * (int(bounds[2] / grid_size) + 1), grid_size * (int(bounds[3] / grid_size) + 1)]
+                bounds = [[grid_size * (int(bounds[0][0] / grid_size) - 1), grid_size * (int(bounds[0][1] / grid_size) - 1), 0],
+                          [grid_size * (int(bounds[1][0] / grid_size) + 1), grid_size * (int(bounds[1][1] / grid_size) + 1), 0]]
                 grid2 = ddd.grid2(bounds, detail=grid_size, name=None)
 
                 for geom in grid2.geom.geoms:
@@ -310,6 +311,7 @@ class DDDMeshOps():
                         ogeom.validate()
                         geom = ogeom.geom
                     except Exception as e:
+                        logger.info("Invlaid geometry produced while subdividing to grid: %s", obj)
                         continue
 
                     if geom is None:
@@ -362,7 +364,8 @@ class DDDMeshOps():
                 if uvs:
                     result.set('uv', newuvs)
 
-                #result.mesh.merge_vertices()
+                result.mesh.merge_vertices()  # This may need to be optional, by I think it's a sane default
+
                 #result.mesh.fix_normals()
             else:
                 result.mesh = None

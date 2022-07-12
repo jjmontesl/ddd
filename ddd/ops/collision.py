@@ -8,21 +8,23 @@ import sys
 
 from shapely.geometry.polygon import LinearRing
 
-from ddd.ddd import ddd, DDDObject3, DDDObject
+#from ddd.ddd import ddd, DDDObject3, DDDObject
 import numpy as np
 from trimesh.transformations import quaternion_from_euler
 from trimesh import transformations
+
+from ddd.nodes.node3 import DDDNode3
 
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
 
-class AABox(DDDObject):
+class AABox(DDDNode3):
     """
     Axis-aligned box.
 
-    TODO: Move to primitives (check Trimesh primitives)
+    TODO: Separate from Node3 (should be only "trimesh mesh" if anything, or a primitive) Move to primitives (check Trimesh primitives)
     """
 
     @staticmethod

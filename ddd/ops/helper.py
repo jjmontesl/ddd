@@ -3,29 +3,10 @@
 # Jose Juan Montes 2020
 
 import logging
-import math
-import random
 
-from csg import geom as csggeom
-from csg.core import CSG
-import numpy as np
-from shapely import geometry, affinity, ops
+from ddd.ddd import ddd
 from shapely.geometry import shape
-from trimesh import creation, primitives, boolean, transformations
-import trimesh
-from trimesh.base import Trimesh
-from trimesh.path import segments
-from trimesh.path.path import Path, Path3D
-from trimesh.scene.scene import Scene, append_scenes
-from trimesh.visual.material import SimpleMaterial
-import copy
-from trimesh.visual.texture import TextureVisuals
-from matplotlib import colors
-import json
-import base64
 from shapely.geometry.polygon import orient
-from ddd.ddd import ddd, DDDObject3
-
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -36,14 +17,16 @@ class DDDHelper():
 
         objs = ddd.group3(name="Helper grid")
 
-        if plane_xy:
-            objs.append(self.plane_xy(size))
         if grid_yz:
             objs.append(self.grid_yz(size, grid_space))
         if grid_xz:
             objs.append(self.grid_xz(size, grid_space))
 
         objs = objs.combine()
+
+        # Avoid combining as it has a different texture
+        if plane_xy:
+            objs.append(self.plane_xy(size))
 
         if center is None:
             center = [0, 0, 0]
@@ -56,6 +39,7 @@ class DDDHelper():
 
     def plane_xy(self, size=10.0):
         obj = ddd.rect([0, 0, size, size], name="Helper plane XY").triangulate()
+        obj = obj.material(ddd.MAT_TEST)
         return obj
 
     def grid_yz(self, size=10.0, grid_space=1.0):

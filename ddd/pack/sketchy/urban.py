@@ -358,8 +358,8 @@ def traffic_sign_code(signtype, thick=0.1):
         # Cut decal (original extruded shape shall be centered at 0)
         shape_aligned = head.extra['extruded_shape']
         shape_bounds = shape_aligned.bounds()
-        shape_aligned = shape_aligned.translate([shape_bounds[0] * -1, shape_bounds[1] * -1])
-        shape_aligned = shape_aligned.scale([1 / (shape_bounds[2] - shape_bounds[0]), 1 / (shape_bounds[3] - shape_bounds[1])])
+        shape_aligned = shape_aligned.translate([shape_bounds[0][0] * -1, shape_bounds[0][1] * -1])
+        shape_aligned = shape_aligned.scale([1 / (shape_bounds[1][0] - shape_bounds[0][0]), 1 / (shape_bounds[1][1] - shape_bounds[0][1])])
         decal_shape = decal.intersection(shape_aligned)
         decal = decal_shape.triangulate().material(ddd.mats.traffic_signs)
         decal = ddd.uv.map_cubic(decal)

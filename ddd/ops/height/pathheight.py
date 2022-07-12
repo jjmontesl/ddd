@@ -22,7 +22,7 @@ import math
 import random
 import numpy as np
 
-from ddd.ddd import D1D2D3, DDDObject2, DDDObject3
+from ddd.ddd import ddd
 from ddd.math.vector3 import Vector3
 from ddd.math.math import DDDMath
 from ddd.ops.height.height import HeightFunction
@@ -35,11 +35,11 @@ logger = logging.getLogger(__name__)
 class PathHeightFunction(HeightFunction):
 
     def __init__(self, path):
-        assert(isinstance(path, DDDObject2))
+        assert(isinstance(path, ddd.DDDObject2))
         self.path = path
 
     def vertex_function(self, x, y, z, idx):
-        coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = self.path.closest_segment(D1D2D3.point([x, y]))
+        coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = self.path.closest_segment(ddd.point([x, y]))
         interp_z = coords_p[2]
         return (x, y, z + interp_z)  # FIXME: z should not be added here, or not by default, as Z coordinates are already local in the path
 
@@ -56,11 +56,11 @@ class NodeBisectPathHeightFunction(PathHeightFunction):
         path = self.path
 
         # Find the closest point in the path
-        point = D1D2D3.point([x, y, z])
+        point = ddd.point([x, y, z])
 
-        points = D1D2D3.group2()
+        points = ddd.group2()
         for i, c in enumerate(path.coords_iterator()):
-            points.append(D1D2D3.point(c).set('index', i))
+            points.append(ddd.point(c).set('index', i))
 
         closest, closest_d = points.closest(point)
 
@@ -98,11 +98,11 @@ class NodeBisectPathHeightFunction(PathHeightFunction):
                 # Debug
                 if (self._debug_root and random.uniform(0, 1) < 0.02):
                     #print(dm1, d0, d1, perp0side, perp0.geom.coords[0])
-                    coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = perp0.closest_segment(D1D2D3.point([x, y, z]))
-                    marker = D1D2D3.path3(D1D2D3.line([[x, y, interp_z], coords_p]))
-                    if (marker.path3.length > 0): self._debug_root.append(marker.material(D1D2D3.MAT_HIGHLIGHT))
-                    coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = perpm1.closest_segment(D1D2D3.point([x, y, z]))
-                    marker = D1D2D3.path3(D1D2D3.line([[x, y, interp_z], coords_p]))
+                    coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = perp0.closest_segment(ddd.point([x, y, z]))
+                    marker = ddd.path3(ddd.line([[x, y, interp_z], coords_p]))
+                    if (marker.path3.length > 0): self._debug_root.append(marker.material(ddd.MAT_HIGHLIGHT))
+                    coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = perpm1.closest_segment(ddd.point([x, y, z]))
+                    marker = ddd.path3(ddd.line([[x, y, interp_z], coords_p]))
                     if (marker.path3.length > 0): self._debug_root.append(marker)
 
             else:
@@ -181,13 +181,13 @@ class BankingPathProfileHeightFunction(PathProfileHeightFunction):
         path = self.path
 
         # Find the closest point in the path
-        point = D1D2D3.point([x, y, z])
+        point = ddd.point([x, y, z])
 
-        points = D1D2D3.group2()
+        points = ddd.group2()
         pathd = 0
         prev = None
         for i, c in enumerate(path.coords_iterator()):
-            p = D1D2D3.point(c)
+            p = ddd.point(c)
 
             if prev:
                 pathd += prev.distance(p)
@@ -264,7 +264,7 @@ class BankingPathProfileHeightFunction(PathProfileHeightFunction):
         # For straight segments, path_d and d are calculated projecting to the segment
         # TODO: improve this case
         if r == 0 or r > 10.0:
-            coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = self.path.closest_segment(D1D2D3.point([x, y]))
+            coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = self.path.closest_segment(ddd.point([x, y]))
             d = ((Vector3([x, y, z]) - Vector3(coords_p)) * Vector3([1, 1, 0]))  # make Z 0 in order to get the correct length
             #print(d)
             d = d.length()

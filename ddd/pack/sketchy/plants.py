@@ -149,7 +149,7 @@ def palm_leaf(length=3, fallfactor=1):
     """
 
     # Create grid, top down palm shape, bend across (V shape), bend along with gravity, make two sided
-    obj = ddd.grid3([0, -1, 1, 1], [0.2, 0.5], name="Palm leaf")
+    obj = ddd.grid3([[0, -1], [1, 1]], [0.2, 0.5], name="Palm leaf")
 
     f1 = lambda x: math.sin(x * math.pi)
     f2 = lambda x: f1(x * f1(x)) * 0.1

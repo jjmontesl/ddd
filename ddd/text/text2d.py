@@ -2,7 +2,7 @@
 # Library for simple scene modelling.
 # Jose Juan Montes and Contributors 2019-2021
 
-from ddd.ddd import ddd, DDDObject2
+from ddd.ddd import ddd
 import logging
 
 # Get instance of logger for this module

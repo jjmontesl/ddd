@@ -11,6 +11,7 @@ from trimesh import transformations
 
 from ddd.core.exception import DDDException
 from ddd.core.cli import D1D2D3Bootstrap
+from ddd.ddd import ddd
 
 
 # Get instance of logger for this module
@@ -23,7 +24,7 @@ class DDDJSONFormat():
 
         from ddd.ddd import D1D2D3
         data = DDDJSONFormat.export_data(obj, path_prefix, "", instance_mesh, instance_marker)
-        encoded = json.dumps(data, indent=2, default=lambda x: D1D2D3.json_serialize(x))
+        encoded = json.dumps(data, indent=2, default=lambda x: ddd.json_serialize(x))
 
         return encoded
 
@@ -49,7 +50,7 @@ class DDDJSONFormat():
             data[cpath] = cdata
 
         # FIXME: This code is duplicated from DDDInstance: normalize export / generation
-        from ddd.ddd import DDDInstance
+        from ddd.nodes.instance import DDDInstance
         if isinstance(obj, DDDInstance):
 
             data['_transform'] = obj.transform

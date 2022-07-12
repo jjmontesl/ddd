@@ -67,7 +67,7 @@ class DDDSVGLoader():
         #result.show()
 
         result = result.union().scale([1, -1]).clean(0)
-        xmin, ymin, xmax, ymax = result.bounds()
+        (xmin, ymin, _), (xmax, ymax, _) = result.bounds()
         result = result.translate([0, - (ymin + ymax)])
         #result = ddd.align.anchor(result, ddd.ANCHOR_CENTER)
 

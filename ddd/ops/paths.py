@@ -15,17 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import copy
-import json
 import logging
-import math
 import numpy as np
 
 import trimesh
-from trimesh import creation, primitives, boolean, transformations, remesh
 from ddd.curves.arc import DDDArcCurve
 from ddd.curves.bezier import DDDBezierCurve
-from ddd.ddd import D1D2D3, DDDObject3
 from ddd.math.vector3 import Vector3
 from ddd.nodes.node3 import DDDNode3
 from ddd.nodes.path3 import DDDPath3

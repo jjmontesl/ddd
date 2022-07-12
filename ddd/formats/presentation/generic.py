@@ -7,6 +7,7 @@ import logging
 
 from trimesh import transformations
 import trimesh
+from ddd.ddd import ddd
 
 
 # Get instance of logger for this module
@@ -26,12 +27,11 @@ class Generic3DPresentation():
 
         This includes transforming 2D to 3D nodes as needed.
         """
-        from ddd.ddd import DDDObject2, D1D2D3
 
-        if isinstance(node, DDDObject2):
+        if isinstance(node, ddd.DDDObject2):
             if node.geom:
                 if node.geom.type == 'LineString':
-                    result = D1D2D3.path3(node.geom.coords)
+                    result = ddd.path3(node.geom.coords)
                     result = result.copy_from(node, copy_material=True)
                 else:
                     result = node.copy3()

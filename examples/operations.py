@@ -238,9 +238,13 @@ def pipeline_start(pipeline, root):
     # All items
     items = ddd.align.grid(items, space=10.0)
     #items.append(ddd.helper.all())
-    items.show()
+
+    items = ddd.uv.map_cubic(items)
+    items = items.material(ddd.MAT_TEST)
+
 
     root.append(items)
     #pipeline.root = items
 
+    root.show()
 

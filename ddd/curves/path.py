@@ -9,7 +9,8 @@ import numpy
 
 from ddd.core.exception import DDDException
 from ddd.math.vector2 import Vector2
-from ddd.ddd import ddd, DDDObject2, Node
+from ddd.ddd import ddd
+from ddd.nodes.node2 import DDDNode2
 
 
 # Get instance of logger for this module
@@ -61,7 +62,7 @@ class ParabollaCurve(DDDCurve):
     #    return self.a * x * x + self.b * x + self.c
 
 
-class Path2(DDDObject2):
+class Path2(DDDNode2):
 
     def __init__(self, name=None, children=None, extra=None, material=None):
         super().__init__(name, children, extra, material)

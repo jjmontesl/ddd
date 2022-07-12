@@ -8,6 +8,7 @@ import pyproj
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd
 from ddd.geo.elevation import ElevationModel
+from ddd.ops.grid import terrain_grid
 
 
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'  # Galicia, Salamanca

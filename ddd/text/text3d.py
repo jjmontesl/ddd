@@ -8,7 +8,7 @@ from svgpath2mpl import parse_path
 
 from svgpathtools import wsvg, Line, QuadraticBezier, Path
 
-from ddd.ddd import ddd, DDDObject2
+from ddd.ddd import ddd
 from svgpathtools.path import CubicBezier
 
 

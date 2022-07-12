@@ -180,6 +180,7 @@ class DDDSelector(object):
         #print(tree.pretty())
         #logger.info("Evaluate: %s", tree)
 
+        # Calls the resolver function on the root object
         selected = tree.children[0](obj)
 
         '''

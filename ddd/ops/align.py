@@ -5,9 +5,8 @@
 import logging
 import math
 
-from shapely import geometry, affinity, ops
-from ddd.ddd import ddd, DDDObject3
 import numpy as np
+from ddd.ddd import ddd
 
 
 # Get instance of logger for this module
@@ -44,7 +43,7 @@ class DDDAlign():
             posx, posy = math.cos(angle) * d, math.sin(angle) * d
             newc = c.copy()
             if rotate:
-                if isinstance(newc, DDDObject3):
+                if isinstance(newc, ddd.DDDObject3):
                     newc = newc.rotate([0, 0, angle + (math.pi / 2)])
                 else:
                     newc = newc.rotate(angle)
@@ -81,7 +80,7 @@ class DDDAlign():
         Recenters an object around a given anchor.
         Anchor is a normalized vector relative to the object's bounding box.
         """
-        xmin, ymin, xmax, ymax = obj.bounds()
+        (xmin, ymin, _), (xmax, ymax, _) = obj.bounds()
         center = ((xmax - xmin) * anchor[0], (ymax - ymin) * anchor[1])
         result = obj.translate([-center[0], -center[1], 0])
         return result

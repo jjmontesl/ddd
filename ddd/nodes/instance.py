@@ -14,72 +14,30 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from _collections_abc import Iterable
-import base64
-import copy
-import hashlib
 import json
 import logging
-import math
-import random
-import sys
-import webbrowser
-from lark import Lark
-
-import PIL
-from PIL import Image
-import cairosvg
-from csg import geom as csggeom
-from csg.core import CSG
-from matplotlib import colors
-from shapely import geometry, affinity, ops
-from shapely.geometry import shape, polygon
-from shapely.geometry.linestring import LineString
-from shapely.geometry.polygon import orient, Polygon
-from trimesh import creation, primitives, boolean, transformations, remesh
-import trimesh
-from trimesh.base import Trimesh
-from trimesh.path import segments
-from trimesh.path.entities import Line
-from trimesh.path.path import Path, Path3D, Path2D
-from trimesh.scene.scene import Scene, append_scenes
-from trimesh.scene.transforms import TransformForest
-from trimesh.transformations import quaternion_from_euler
-from trimesh.visual.color import ColorVisuals
-from trimesh.visual.material import SimpleMaterial, PBRMaterial
-from trimesh.visual.texture import TextureVisuals
-
-from ddd.core.cli import D1D2D3Bootstrap
-from ddd.core.exception import DDDException
-from ddd.ddd import DDDObject
-from ddd.materials.atlas import TextureAtlas
-from ddd.math.transform import DDDTransform
-from ddd.ops import extrusion
 
 import numpy as np
-from trimesh.util import concatenate
-from shapely.ops import unary_union, polygonize
-from geojson.feature import FeatureCollection
-from lark.visitors import Transformer
-from ddd.core.selectors.selector_ebnf import selector_ebnf
-from ddd.core.selectors.selector import DDDSelector
-from ddd.formats.json import DDDJSONFormat
-from ddd.formats.svg import DDDSVG
-from trimesh.convex import convex_hull
-import os
-from ddd.core import settings
+from ddd.core.exception import DDDException
 from ddd.formats.geojson import DDDGeoJSONFormat
-from shapely.geometry.multipolygon import MultiPolygon
+from ddd.formats.json import DDDJSONFormat
 from ddd.formats.png3drender import DDDPNG3DRenderFormat
+from ddd.formats.svg import DDDSVG
+from ddd.materials.atlas import TextureAtlas
+from ddd.math.transform import DDDTransform
+from ddd.nodes.node import DDDNode
+from ddd.ops import extrusion
 from ddd.util.common import parse_bool
-from shapely.strtree import STRtree
-
+from trimesh import boolean, creation, primitives, remesh, transformations
+from trimesh.convex import convex_hull
+from trimesh.transformations import quaternion_from_euler
+from ddd.ddd import ddd
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
 
-class DDDInstance(DDDObject):
+class DDDInstance(DDDNode):
 
     def __init__(self, ref, name=None, extra=None):
         super().__init__(name, None, extra)
@@ -87,7 +45,7 @@ class DDDInstance(DDDObject):
         self.transform = DDDTransform()
 
     def __repr__(self):
-        return "%s(%s, ref=%s)" % (self.__class__.__name__, self.uniquename(), self.ref)
+        return "%s (%s ref: %s)" % (self.name, self.__class__.__name__, self.ref)
 
     def copy(self):
         obj = DDDInstance(ref=self.ref, name=self.name, extra=dict(self.extra))
@@ -111,6 +69,7 @@ class DDDInstance(DDDObject):
     def translate(self, v):
         obj = self.copy()
         obj.transform.position = [obj.transform.position[0] + v[0], obj.transform.position[1] + v[1], obj.transform.position[2] + v[2]]
+        #obj.transform.translate()
         return obj
 
     def rotate(self, v, origin=None):
@@ -159,7 +118,7 @@ class DDDInstance(DDDObject):
         return None
 
     def marker(self, world_space=True):
-        ref = D1D2D3.marker(name=self.name, extra=dict(self.extra))
+        ref = ddd.marker(name=self.name, extra=dict(self.extra))
         if world_space:
             ref = ref.scale(self.transform.scale)
             ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
@@ -195,10 +154,14 @@ class DDDInstance(DDDObject):
         else:
             return DDDObject3(name=name)
 
-    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None):
+    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None, usednames=None):
 
-        #node_name = self.uniquename() + name_suffix
-        node_name = self.uniquename()
+        #node_name = self.uniquename()
+        #node_name = self.name
+        if usednames is None: usednames = set()
+        node_name = self.uniquename(usednames)
+        usednames.add(node_name)
+
 
         # Add metadata to name
         metadata = self.metadata(path_prefix, name_suffix)
@@ -209,7 +172,7 @@ class DDDInstance(DDDObject):
 
         metadata_serializable = None
         if include_metadata:
-            metadata_serializable = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
+            metadata_serializable = json.loads(json.dumps(metadata, default=ddd.json_serialize))
 
         #scene_node_name = node_name.replace(" ", "_")
         scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
@@ -293,3 +256,4 @@ class DDDInstance(DDDObject):
                     cmeshes.extend(c.recurse_meshes())
         '''
         return cmeshes
+

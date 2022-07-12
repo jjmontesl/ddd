@@ -6,7 +6,7 @@ from collections import namedtuple
 import logging
 import math
 
-from ddd.ddd import D1D2D3
+from ddd.ddd import ddd
 from ddd.math.vector3 import Vector3
 
 # Get instance of logger for this module
@@ -27,7 +27,7 @@ class DDDBounds(tuple):
         return self[1]
 
     def diagonal(self):
-        return D1D2D3.line([self[0], self[1]])
+        return ddd.line([self[0], self[1]])
 
     def center(self):
         return Vector3((self[0] + self[1]) * 0.5)

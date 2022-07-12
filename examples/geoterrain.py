@@ -11,7 +11,7 @@ from ddd.geo import terrain
 from ddd.pipeline.decorators import dddtask
 
 
-@dddtask(order="10")
+@dddtask()
 def pipeline_start(pipeline, root):
     """
     Generate a terrain mesh from a DEM.
@@ -29,10 +29,11 @@ def pipeline_start(pipeline, root):
                            towgs84="0,0,0,0,0,0,0",
                            no_defs=True)
 
-    item = terrain.terrain_geotiff([-200, -200, 200, 200], ddd_proj, detail=15.0)
-    item = item.material(ddd.mats.terrain)
+    item = terrain.terrain_geotiff([[-200, -200, 0], [200, 200, 0]], ddd_proj, detail=15.0)
+    #item = item.material(ddd.mats.terrain)
+    item = item.material(ddd.MAT_TEST)
     item = item.smooth(angle=math.pi/12)
-    item = ddd.uv.map_cubic(item)
+    item = ddd.uv.map_cubic(item, scale=[1 / 10, 1 / 10])
     item.show()
 
     root.append(item)

@@ -26,7 +26,7 @@ class DDDPipeline():
         self.name = name
         self.tasks = None
 
-        self.root = ddd.group2()
+        self.root = ddd.node(name="Root")
 
         self.data = dict(D1D2D3Bootstrap.data)
 

@@ -20,7 +20,7 @@ import pyproj
 
 
 from svgpathtools import wsvg, Line, QuadraticBezier, Path
-from ddd.ddd import ddd, DDDObject2
+from ddd.ddd import ddd
 import json
 
 
