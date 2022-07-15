@@ -58,7 +58,7 @@ def recursivetree(height=2.25, r=0.30, fork_height_ratio=1.0, fork_angle=30.0, f
 
             branches = [section] + branches
 
-    return ddd.group(branches)
+    return ddd.group3(branches)
 
 
 def recursivetree_new(height, spawn=1, levels=1, #fork_height_ratio=2/3,

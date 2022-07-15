@@ -3377,6 +3377,13 @@ class DDDObject3(DDDObject):
             meshes = self.recurse_meshes()
             data = trimesh.exchange.dae.export_collada(meshes)
 
+        elif path.endswith('.fbx'):
+
+            rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            #scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata)
+            data = trimesh.exchange.fbx.export_fbx(trimesh_scene)
+
         elif path.endswith('.glb'):
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
             #scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
