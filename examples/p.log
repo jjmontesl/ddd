@@ -1,0 +1,25 @@
+Loading config from: /root/.ddd.conf
+2022-04-06 17:35:26,457  DDD logging initialized.
+2022-04-06 17:35:26,457  Running ddd.core.commands.run.RunCommand
+2022-04-06 17:35:26,457  Properties: {}
+/root/earthplusplus/ddd/venv/lib/python3.9/site-packages/pkg_resources/__init__.py:123: PkgResourcesDeprecationWarning: 0.6.5-devel is an invalid version and will not be supported in a future release
+  warnings.warn(
+2022-04-06 17:35:27,693  Loaded 66 materials.
+2022-04-06 17:35:27,874  Running DDD123 script.
+2022-04-06 17:35:27,874  Appending to path: 
+2022-04-06 17:35:27,875  Running pipeline: Pipeline(name='DDD Server Build Pipeline') (14 configured tasks)
+2022-04-06 17:35:27,875  Running DDDTask(14-cache) (obj=None)
+2022-04-06 17:35:27,875  Continuing from cached state: /tmp/ddd.cache
+2022-04-06 17:35:27,875  Loading DDD Pipeline cache data from: /tmp/ddd.cache
+2022-04-06 17:35:27,935  Running DDDTask(15-type_metal) (obj=7)
+2022-04-06 17:35:27,938  Running DDDTask(16-type_noble_gas) (obj=7)
+2022-04-06 17:35:27,940  Running DDDTask(17-type_halogen) (obj=4)
+2022-04-06 17:35:27,942  Running DDDTask(18-create_base) (obj=90)
+2022-04-06 17:35:30,162  Running DDDTask(19-fonts) (obj=None)
+2022-04-06 17:35:30,163  Running DDDTask(20-font) (obj=90)
+2022-04-06 17:35:30,722  Running DDDTask(21-texts_front) (obj=90)
+2022-04-06 17:35:32,229  Running DDDTask(22-position) (obj=90)
+2022-04-06 17:35:32,266  Running DDDTask(23-show) (obj=None)
+2022-04-06 17:35:32,266  Saving to: /tmp/periodictable.glb (DDDObject3(Elements3_1163, faces=0, children=90))
+2022-04-06 17:35:36,392  This pipeline uses stage caching! use --cache-clear to force a full rebuild.
+2022-04-06 17:35:36,392  Pipeline processing time: 0:08.5 m

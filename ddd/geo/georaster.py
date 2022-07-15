@@ -15,6 +15,8 @@ from scipy.interpolate.interpolate import interp2d
 from ddd.core import settings
 from ddd.core.exception import DDDException
 import numpy as np
+import sys
+import traceback
 
 
 # Get instance of logger for this module
@@ -122,12 +124,12 @@ class GeoRasterTile:
             return self.value_simple(point)
 
         # Correct EUDEM11 <10000 values
-        try:
-            height_matrix = np.maximum(height_matrix, 0)
-        except TypeError as e:
-            # Fix None values (empty / missing)
-            # TODO: Except on sea, this should possibly get the average from surrounding values
-            return 0
+        # try:
+        #     height_matrix = np.maximum(height_matrix, 0)
+        # except TypeError as e:
+        #     # Fix None values (empty / missing)
+        #     # TODO: Except on sea, this should possibly get the average from surrounding values
+        #     return 0
 
         if k == 1:
             interpolated = interp2d([0, 1], [0, 1], height_matrix, 'linear')  # , copy=False
@@ -150,7 +152,10 @@ class GeoRasterLayer:
         self.tiles_config = tiles_config
 
         self._last_tile = None
+        self._last_landmask_tile = None
         self._last_tile_config = None
+        self._last_landmask_config = None
+        self._last_waterlayer_tile = None
 
         # Cache of transformers for different georaster tile CRS
         self._transformers = {}
@@ -191,6 +196,14 @@ class GeoRasterLayer:
             #    point[1] >= cc['bounds_wgs84_xy'][1] and point[1] < cc['bounds_wgs84_xy'][3]):
             if (projected_point[0] >= cc['bounds'][0] and projected_point[0] < cc['bounds'][2] and
                 projected_point[1] >= cc['bounds'][1] and projected_point[1] < cc['bounds'][3]):
+                # TODO: the config must be ordered
+                if 'is_water_mask' in cc and cc['is_water_mask'] == True:
+                    self._last_landmask_config = cc
+                    self._last_landmask_tile = GeoRasterTile.load(cc['path'], cc['crs'])
+                    continue
+                if 'is_water_layer' in cc and cc['is_water_layer'] == True:
+                    self._last_waterlayer_tile = GeoRasterTile.load(cc['path'], cc['crs'])
+                    continue
                 self._last_tile_config = cc
                 self._last_tile = GeoRasterTile.load(cc['path'], cc['crs'])
                 return self._last_tile
@@ -201,7 +214,11 @@ class GeoRasterLayer:
         tile = self.tile_from_point(point)
         if tile is None:
             raise DDDException("No raster tile found for point: %s" % (point, ))
-        return tile.value(point, interpolate)
+        landmask_value=self._last_landmask_tile.value(point, interpolate)
+        if self._last_landmask_config['water_value'] == landmask_value:
+            return self._last_waterlayer_tile.value(point, interpolate)
+        else:
+            return tile.value(point, interpolate)
 
     def area(self, bounds):
         """
