@@ -191,34 +191,42 @@ class GeoRasterLayer:
         for cc in self.tiles_config:
 
             projected_point = self._transform_wgs84_to(point, cc['crs'])
+            # print(cc)
 
             #if (point[0] >= cc['bounds_wgs84_xy'][0] and point[0] < cc['bounds_wgs84_xy'][2] and
             #    point[1] >= cc['bounds_wgs84_xy'][1] and point[1] < cc['bounds_wgs84_xy'][3]):
             if (projected_point[0] >= cc['bounds'][0] and projected_point[0] < cc['bounds'][2] and
                 projected_point[1] >= cc['bounds'][1] and projected_point[1] < cc['bounds'][3]):
                 # TODO: the config must be ordered
-                if 'is_water_mask' in cc and cc['is_water_mask'] == True:
+                if self._last_landmask_tile is None and 'is_water_mask' in cc and cc['is_water_mask'] == True:
                     self._last_landmask_config = cc
                     self._last_landmask_tile = GeoRasterTile.load(cc['path'], cc['crs'])
+                    # print(self._last_landmask_tile)
+                    # print(f"is_water_mask: {cc}")
                     continue
-                if 'is_water_layer' in cc and cc['is_water_layer'] == True:
+                if self._last_waterlayer_tile is None and 'is_water_layer' in cc and cc['is_water_layer'] == True:
                     self._last_waterlayer_tile = GeoRasterTile.load(cc['path'], cc['crs'])
+                    # print(f"is_water_layer: {cc}")
+                    # print(self._last_waterlayer_tile)
                     continue
                 self._last_tile_config = cc
                 self._last_tile = GeoRasterTile.load(cc['path'], cc['crs'])
                 return self._last_tile
 
-        return None
+        return None # self._last_waterlayer_tile # TODO
 
     def value(self, point, interpolate=True):
         tile = self.tile_from_point(point)
+
+        if self._last_landmask_tile is not None:
+            landmask_value=self._last_landmask_tile.value(point, interpolate)
+            
+            if self._last_landmask_config is not None and self._last_landmask_config['water_value'] == landmask_value:
+                return self._last_waterlayer_tile.value(point, interpolate)
+
         if tile is None:
             raise DDDException("No raster tile found for point: %s" % (point, ))
-        landmask_value=self._last_landmask_tile.value(point, interpolate)
-        if self._last_landmask_config['water_value'] == landmask_value:
-            return self._last_waterlayer_tile.value(point, interpolate)
-        else:
-            return tile.value(point, interpolate)
+        return tile.value(point, interpolate)
 
     def area(self, bounds):
         """
