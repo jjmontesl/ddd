@@ -197,11 +197,12 @@ class GeoRasterLayer:
             if is_water:
                 landmask_value = GeoRasterLayer.landmaskMapCache[key]
                 if self._last_landmask_tile_config['water_value'] == landmask_value:
-                    return (self._last_waterlayer_tile, self._last_waterlayer_tile_config)
+                    return self._last_waterlayer_tile
 
-            if not 'is_water_mask' in self._last_tile_config and (projected_point[0] >= self._last_tile_config['bounds'][0] and projected_point[0] < self._last_tile_config['bounds'][2] and
+            if self._last_tile_config and not 'is_water_mask' in self._last_tile_config and (projected_point[0] >= self._last_tile_config['bounds'][0] and projected_point[0] < self._last_tile_config['bounds'][2] and
                 projected_point[1] >= self._last_tile_config['bounds'][1] and projected_point[1] < self._last_tile_config['bounds'][3]):
-                return (self._last_tile, self._last_tile_config)
+                return self._last_tile
+                # return (self._last_tile, self._last_tile_config)
             
         for cc in self.tiles_config:
             projected_point = self._transform_wgs84_to(point, cc['crs'])
@@ -227,7 +228,8 @@ class GeoRasterLayer:
                     GeoRasterLayer.landmaskMapCache[key] = landmask_value
 
                     if self._last_landmask_tile_config['water_value'] == landmask_value:
-                        return (self._last_waterlayer_tile, self._last_waterlayer_tile_config)
+                        return self._last_waterlayer_tile
+                        # return (self._last_waterlayer_tile, self._last_waterlayer_tile_config)
 
                 # if configs for watermask/landmask is already set, the last condition from above was already not met and we are still on those configs we must skip
                 if self._last_landmask_tile is not None and 'is_water_mask' in cc or self._last_waterlayer_tile is not None and 'is_water_layer' in cc:
@@ -238,16 +240,17 @@ class GeoRasterLayer:
 
                 self._last_tile_config = cc
                 self._last_tile = GeoRasterTile.load(cc['path'], cc['crs'])
-                return (self._last_tile, self._last_tile_config)
+                return self._last_tile
+                # return (self._last_tile, self._last_tile_config)
 
-        return (None, None) # self._last_waterlayer_tile # TODO
+        return None
 
     def value(self, point, interpolate=True):
-        tile, config = self.tile_from_point(point, interpolate)
-        path=config['path'] if config else 'None'
+        tile = self.tile_from_point(point, interpolate)
 
         if tile is None:
-            raise DDDException(f"[{path}] No raster tile found for point: {point}")
+            # {tile.layer.GetDescription()}
+            raise DDDException(f"No raster tile found for point: {point}")
         return tile.value(point, interpolate)
 
     def area(self, bounds):
