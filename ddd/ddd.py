@@ -85,6 +85,8 @@ class D1D2D3():
     EXTRUSION_METHOD_WRAP = extrusion.EXTRUSION_METHOD_WRAP
     EXTRUSION_METHOD_SUBTRACT = extrusion.EXTRUSION_METHOD_SUBTRACT # For internal/external/vertical extrusions
 
+    METADATA_IGNORE_KEYS = ('uv', 'osm:feature')  #, 'ddd:connections')
+
     _uid_last = 0
 
     data = {}
@@ -157,21 +159,30 @@ class D1D2D3():
         @deprecate in favour of shape
         """
         geom = shape(geometry)
-        return DDDObject2(geom=geom)
+        return ddd.DDDObject2(geom=geom)
 
     #@staticmethod
     def rect(self,  bounds=None, name=None):
         """
-        Returns a 2D rectangular polygon for the given bounds [xmin, ymin, xmax, ymax].
+        Returns a 2D rectangular polygon for the given bounds [[xmin, ymin, 0], [xmax, ymax, 0]].
 
-        If bounds contains only 2 elements, they are used as x and y size, starting at the origin.
+        If bounds contains only 2 numbers, they are used as x and y size, starting at the origin.
 
         If no bounds are provided, returns a unitary square with corner at 0, 0 along the positive axis.
         """
 
-        if bounds is None: bounds = [0, 0, 1, 1]
-        if len(bounds) == 2: bounds = [0, 0, bounds[0], bounds[1]]
-        cmin, cmax = ((bounds[0], bounds[1]), (bounds[2], bounds[3]))
+        if bounds is None: bounds = [[0, 0], [1, 1]]
+        if len(bounds) == 4: bounds = [[bounds[0], bounds[1]], [bounds[2], bounds[3]]]
+        if len(bounds) == 2:
+            try:
+                assert(float(bounds[0]) is not None)
+                assert(float(bounds[1]) is not None)
+                bounds = [[0, 0], [bounds[0], bounds[1]]]
+            except TypeError as e:
+                # Treat as bounds [cmin, cmax]
+                pass
+
+        cmin, cmax = bounds #((bounds[0], bounds[1]), (bounds[2], bounds[3]))
         geom = geometry.Polygon([(cmin[0], cmin[1], 0.0), (cmax[0], cmin[1], 0.0),
                                  (cmax[0], cmax[1], 0.0), (cmin[0], cmax[1], 0.0)])
         geom = polygon.orient(geom, -1)
@@ -188,6 +199,7 @@ class D1D2D3():
     #@staticmethod
     def sphere(self, center=None, r=None, subdivisions=2, name=None):
         if center is None: center = ddd.point([0, 0, 0])
+        if isinstance(center, Iterable): center = ddd.point(center)
         if r is None: r = 1.0
         mesh = primitives.Sphere(center=center.geom.coords[0], radius=r, subdivisions=subdivisions)
         mesh = Trimesh([[v[0], v[1], v[2]] for v in mesh.vertices], list(mesh.faces))
@@ -256,8 +268,15 @@ class D1D2D3():
         from ddd.nodes.path3 import DDDPath3
         return DDDPath3(name=name, path3=path3)
 
-    def marker(self, pos=None, name=None, extra=None):
-        marker = self.box(name=name)
+    def marker(self, pos=None, name=None, extra=None, use_normal_box=False):
+
+        if use_normal_box:
+            marker = ddd.helper.marker_axis(name="Marker: " + name)
+            # FIXME: Path3 scale doesn't work (scaled in marker_axis)
+        else:
+            marker = self.box(name="Marker: " + name).highlight()
+            #marker = marker.scale([0.15, 0.15, 0.15])  # normal_boxes may be used for importing, we should not scale them
+
         if pos: marker = marker.translate(pos)
         if extra:
             marker.extra = extra
@@ -270,8 +289,11 @@ class D1D2D3():
     def ddd3(self, *args, **kwargs):
         return self.DDDObject3(*args, **kwargs)
 
-    def grid2(self, bounds, detail=1.0, name=None):
-        rects = []
+    def grid2(self, bounds, detail=1.0, name=None, adjust=False):
+
+        if adjust:
+            bounds = [[(math.floor(b / detail) * detail) for b in bounds[0]],
+                      [(math.ceil(b / detail) * detail) for b in bounds[1]]]
 
         cmin, cmax = bounds[0], bounds[1]
 
@@ -284,6 +306,7 @@ class D1D2D3():
         pointsx = list(np.linspace(cmin[0], cmax[0], 1 + int((cmax[0] - cmin[0]) / detail[0])))
         pointsy = list(np.linspace(cmin[1], cmax[1], 1 + int((cmax[1] - cmin[1]) / detail[1])))
 
+        rects = []
         for (idi, (i, ni)) in enumerate(zip(pointsx[:-1], pointsx[1:])):
             for (idj, (j, nj)) in enumerate(zip(pointsy[:-1], pointsy[1:])):
                 rect = ddd.rect([i, j, ni, nj])
@@ -299,7 +322,7 @@ class D1D2D3():
         """
         FIXME: Try using ops.grid now that it's available? (note that currently that one does not alternate diagonals)
         """
-        grid2 = ddd.grid2(bounds, detail, name=name)
+        grid2 = ddd.grid2(bounds, detail, name=name).remove_z()
         cmin, cmax = bounds[0], bounds[1]
         #grid2 = D1D2D3.rect(cmin, cmax)
         vertices = []
@@ -352,20 +375,31 @@ class D1D2D3():
 
         if not children:
             if empty is None:
-                raise ValueError("Tried to add empty collection to children group and no empty value is set.")
+                #raise ValueError("Tried to add empty collection to children group and no empty value is set.")
+                result = self.DDDNode(name=name)
             elif empty in (2, "2", "2d"):
-                result = self.DDDObject2(name=name)
+                result = self.DDDNode2(name=name)
             elif empty in (3, "3", "3d"):
-                result = self.DDDObject3(name=name)
+                result = self.DDDNode3(name=name)
             else:
                 raise ValueError("Tried to add empty collection to children group and passed invalid empty parameter: %s", empty)
 
             #logger.debug("Tried to create empty group.")
             #return None
         elif isinstance(children[0], self.DDDObject2):
-            result = self.DDDObject2(children=children, name=name)
+            result = self.DDDNode2(children=children, name=name)
         elif isinstance(children[0], ddd.DDDObject3) or isinstance(children[0], self.DDDInstance):
-            result = self.DDDObject3(children=children, name=name)
+            result = self.DDDNode3(children=children, name=name)
+        elif isinstance(children[0], self.DDDNode):
+
+            if empty in (2, "2", "2d"):
+                result = self.DDDNode2(children=children, name=name)
+            elif empty in (3, "3", "3d"):
+                result = self.DDDNode3(children=children, name=name)
+            else:
+                result = self.DDDNode(children=children, name=name)
+
+
         else:
             raise ValueError("Invalid object for ddd.group(): %s" % children[0])
 
@@ -378,7 +412,7 @@ class D1D2D3():
         return result
 
     def node(self, name=None, children=None, extra=None):
-        return self.group(children=children, name=name, extra=extra, empty=2)
+        return self.group(children=children, name=name, extra=extra)
 
     def instance(self, obj, name=None):
         obj = self.DDDInstance(obj, name)
@@ -390,6 +424,8 @@ class D1D2D3():
             data = obj.export()
         elif isinstance(obj, Image.Image):
             data = "Image (%s %dx%d)" % (obj.mode, obj.size[0], obj.size[1], )
+        elif isinstance(obj, ddd.DDDNode):
+            data = obj.name
         else:
             data = repr(obj)
             #data = None
@@ -423,16 +459,20 @@ class D1D2D3():
 
         ddd = self
 
-        from ddd.nodes.instance import DDDInstance
+        from ddd.nodes.node import DDDNode
         from ddd.nodes.node2 import DDDNode2
         from ddd.nodes.node3 import DDDNode3
+        from ddd.nodes.path3 import DDDPath3
+        from ddd.nodes.instance import DDDInstance
 
+        ddd.DDDNode = DDDNode
         ddd.DDDInstance = DDDInstance
         ddd.DDDNode2 = DDDNode2
         ddd.DDDNode3 = DDDNode3
 
         ddd.DDDObject2 = DDDNode2
         ddd.DDDObject3 = DDDNode3
+        ddd.DDDPath3 = DDDPath3
 
         from ddd.materials.materials import MaterialsCollection
         from ddd.math.math import DDDMath

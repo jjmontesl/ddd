@@ -19,11 +19,6 @@ class OSMBuilderOps():
     def __init__(self, osm):
         self.osm = osm
 
-    def extend_way(self, obj):
-        # Should use joins and intersections
-        #return ddd.geomops.extend_line(obj, 2, 2)
-        pass
-
     def position_along_way(self, obj, way_1d, penetrate=-0.5, offset=0):
         """
         Positions an item in a way, according to item and way direction,

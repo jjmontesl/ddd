@@ -3,7 +3,7 @@
 # Jose Juan Montes 2020
 
 
-from ddd.ddd import ddd, DDDObject
+from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
 from ddd.geo import terrain
 from ddd.core.exception import DDDException
@@ -51,7 +51,7 @@ def osm_metadata_generate_output_descriptor(root, pipeline, osm, logger):
     data.update(pipeline.data.get('metadata', {}))
 
     # Remove some unneeded metadata
-    data = {k: v for k, v in data.items() if not k[0] == '_' and not isinstance(v, DDDObject)}
+    data = {k: v for k, v in data.items() if not k[0] == '_' and not isinstance(v, ddd.DDDNode)}
     data = {k: v for k, v in data.items() if not k.startswith('splatmap:')}
 
     filepath = pipeline.data['filenamebase'] + ".desc.json"
@@ -59,7 +59,7 @@ def osm_metadata_generate_output_descriptor(root, pipeline, osm, logger):
 
     # Avoid writing DDDObjects or entire Pillow images to descriptor
     def metadata_serialize_default(data):
-        if (isinstance(data, DDDObject) or isinstance(data, Image)):
+        if (isinstance(data, ddd.DDDNode) or isinstance(data, Image)):
             return data.__class__.__name__
         else:
             return str(data)

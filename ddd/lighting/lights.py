@@ -25,12 +25,14 @@ class PointLight(Light):
     """
     """
 
-    def __init__(self, pos=None, name="Light", color="#ffffff", radius=10, intensity=1.05, enabled=True):
+    def __init__(self, pos=None, name="Light", color="#ffffff", radius=5, intensity=1.05, enabled=True):
 
         super(PointLight, self).__init__(None, name=name)
 
-        if pos: self.translate(pos)
+        if pos:
+            self.transform.position = pos
 
+        self.extra['ddd:light'] = True
         self.extra['ddd:light:color'] = color
         self.extra['ddd:light:radius'] = radius
         self.extra['ddd:light:intensity'] = intensity

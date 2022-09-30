@@ -30,11 +30,14 @@ logger = logging.getLogger(__name__)
 
 class DDDPath3(DDDNode):
     """
-    3D path (backed by Trimesh Path3)
+    3D path (backed by Trimesh Path3).
+
+    References:
+    - https://pomax.github.io/bezierinfo/#tracing (A premier on Bezier curves)
     """
 
-    def __init__(self, name=None, children=None, path3=None, extra=None, material=None):
-        super().__init__(name, children, extra, material)
+    def __init__(self, name=None, children=None, path3=None, extra=None, material=None, transform=None):
+        super().__init__(name, children, extra, material, transform)
         self.path3 = path3
 
     def __repr__(self):
@@ -90,12 +93,18 @@ class DDDPath3(DDDNode):
 
         return scene
 
+    def _recurse_meshes(self, instance_mesh, instance_marker):
+        return self.copy3()._recurse_meshes(instance_mesh, instance_marker)
+
     def copy(self, name=None):
         if name is None: name = self.name
         path3_copy = copy.deepcopy(self.path3)
-        obj = DDDPath3(name=name, children=list(self.children), path3=path3_copy, extra=dict(self.extra), material=self.mat)
-        obj.transform = self.transform.copy()
+        # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
+        obj = DDDPath3(name=name, children=list(self.children), path3=path3_copy, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
         return obj
+
+    def show3(self):
+        return self.copy()
 
     def discretize(self, distance=1.0):
 

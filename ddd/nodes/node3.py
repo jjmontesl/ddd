@@ -36,9 +36,10 @@ from trimesh import creation, primitives, boolean, transformations, remesh
 import trimesh
 from trimesh.base import Trimesh
 from trimesh.path import segments
+from trimesh import repair
 from trimesh.path.entities import Line
 from trimesh.scene.scene import Scene, append_scenes
-from trimesh.transformations import quaternion_from_euler
+from trimesh.transformations import quaternion_from_euler, quaternion_inverse
 from trimesh.visual.color import ColorVisuals
 from trimesh.visual.material import SimpleMaterial, PBRMaterial
 from trimesh.visual.texture import TextureVisuals
@@ -48,6 +49,7 @@ from ddd.core.exception import DDDException
 from ddd.formats.fbx import DDDFBXFormat
 from ddd.materials.atlas import TextureAtlas
 from ddd.materials.material import DDDMaterial
+from ddd.math.transform import DDDTransform
 from ddd.math.vector3 import Vector3
 from ddd.nodes.node import DDDNode
 from ddd.ops import extrusion
@@ -79,19 +81,35 @@ logger = logging.getLogger(__name__)
 
 class DDDNode3(DDDNode):
 
-    def __init__(self, name=None, children=None, mesh=None, extra=None, material=None):
+    def __init__(self, name=None, children=None, mesh=None, extra=None, material=None, transform=None):
         self.mesh = mesh
-        super().__init__(name, children, extra, material)
+        super().__init__(name, children, extra, material, transform)
+
+    @staticmethod
+    def from_node(node, name=None):
+        """
+        Creates a DDDNode3 from a base DDDNode.
+        """
+        #if node.__class__ is not DDDNode:
+        #   raise DDDException("Cannot use DDDNode3.from_node() on a non-base DDDNode instance: %s", node)
+
+        if name is None: name = node.name
+        obj = DDDNode3(name=name, children=list(node.children), mesh=None, material=node.mat, extra=dict(node.extra))
+        obj.transform = node.transform.copy()
+        return obj
 
     def __repr__(self):
         #return "%s(%s, faces=%d, children=%d)" % (self.__class__.__name__, self.uniquename(), len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
         return "%s (%s %df %dc)" % (self.name, self.__class__.__name__, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
         #return "%s (%s %s %sv %dc)" % (self.name, self.__class__.__name__, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
-    def copy(self, name=None):
+    def copy(self, name=None, copy_children=True):
         if name is None: name = self.name
-        obj = DDDNode3(name=name, children=list(self.children), mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
-        obj.transform = self.transform.copy()
+        children = []
+        if copy_children:
+            children = [c.copy() for c in self.children]
+            # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
+        obj = DDDNode3(name=name, children=children, mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra), transform=self.transform.copy())
         #obj = DDDObject3(name=name, children=[c.copy() for c in self.children], mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
 
         return obj
@@ -159,45 +177,70 @@ class DDDNode3(DDDNode):
         obj.children = [c.translate(v) for c in self.children]
         return obj
 
+    def center_aabb(self):
+        ((xmin, ymin, zmin), (xmax, ymax, zmax)) = self.bounds()
+        center_coords = [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]
+        return center_coords
+
     def rotate(self, v, origin='local'):
         """
         If origin is 'local' or None, object is rotated around its local origin.
-        If origin is 'centroid', the centroid of the group is used (the same center is used for all children).
+        If origin is 'bounds_center', the center of AABB is used (the same center is used for all children).
         """
         center_coords = None
         if origin == 'local':
             center_coords = None
-        elif origin == 'bounds_center':  # group_centroid, use for children
-            ((xmin, ymin, zmin), (xmax, ymax, zmax)) = self.bounds()
-            center_coords = [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]
+        elif origin == 'bounds_center' or origin == 'centroid':  # group_centroid, use for children
+            center_coords = self.center_aabb()
         elif origin:
             center_coords = origin
 
+        rotation_matrix = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
+
         obj = self.copy()
         if obj.mesh:
-            rot = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
             if center_coords:
                 translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
                 translate_after = transformations.translation_matrix(np.array(center_coords))
                 #transf = translate_before * rot # * rot * translate_after  # doesn't work, these matrifes are 4x3, not 4x4 HTM
-                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_before)
-                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
-                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_after)
-            else:
-                #transf = rot
-                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
+                rotation_matrix = transformations.concatenate_matrices(translate_before, rotation_matrix, translate_after)
+                #obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_before)
+                #obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rotation_matrix)
+                #obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_after)
+
+            #transf = rot
+            obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rotation_matrix)
+
+        # Update the transform
+
+        obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]
+
+        rotation_quat = quaternion_from_euler(v[0], v[1], v[2], "sxyz")
+        rotation_quat_inv = quaternion_inverse(rotation_quat)
+        obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)
+        obj.transform.rotation = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_inv)
 
         obj.apply_components("rotate", v, origin=center_coords)
-        obj.children = [c.rotate(v, origin=center_coords if origin != 'local' else 'local') for c in obj.children]
+        obj.children = [c.rotate(v, origin=center_coords if origin != 'local' else 'local') for c in obj.children if not isinstance(c, ddd.DDDNode2)]
+
+
         return obj
 
     def rotate_quaternion(self, quaternion):
         obj = self.copy()
+
+        rotation_matrix = transformations.quaternion_matrix(quaternion)
+
         if obj.mesh:
-            rot = transformations.quaternion_matrix(quaternion)
-            obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
+            obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rotation_matrix)
+
         obj.apply_components("rotate_quaternion", quaternion)
         obj.children = [c.rotate_quaternion(quaternion) for c in obj.children]
+
+        # Rotate the transform position (but not rotation, which is already propagated)
+        obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]
+        #obj.transform.rotation = transformations.quaternion_multiply(rot, obj.transform.rotation)  # order matters!
+
         return obj
 
     def scale(self, v):
@@ -231,14 +274,15 @@ class DDDNode3(DDDNode):
         obj.children = [c.elevation_func(func) for c in obj.children]
         return obj
 
-    def vertex_func(self, func):
+    def vertex_func(self, func, mask=None):
         obj = self.copy()
         if obj.mesh:
             for iv, v in enumerate(obj.mesh.vertices):
-                res = func(v[0], v[1], v[2], iv)
-                v[0] = res[0]
-                v[1] = res[1]
-                v[2] = res[2]
+                if mask is None or mask(v[0], v[1], v[2], iv):
+                    res = func(v[0], v[1], v[2], iv)
+                    v[0] = res[0]
+                    v[1] = res[1]
+                    v[2] = res[2]
         obj.children = [c.vertex_func(func) for c in self.children]
         return obj
 
@@ -297,11 +341,54 @@ class DDDNode3(DDDNode):
         obj = DDDObject3(mesh=mesh, children=self.children, material=self.mat)
         return obj
 
+    def _csg_trimesh(self, other, operation):
+        if not other or not other.mesh:
+            return self.copy()
+
+        if not self.mesh and operation == 'union':
+            return other.copy()
+
+        obj = self.copy()
+        if operation == 'subtract':
+            obj.mesh = boolean.difference([self.mesh, other.mesh], engine="blender")
+        elif operation == 'union':
+            obj.mesh = boolean.union([self.mesh, other.mesh], engine="blender")
+        elif operation == 'intersection':
+            obj.mesh = boolean.intersection([self.mesh, other.mesh], engine="blender")
+        else:
+            raise AssertionError()
+
+        return obj
+
+
     def subtract(self, other):
-        return self._csg(other, operation='subtract')
+
+        #result = self._csg(other, operation='subtract')
+        result = self._csg_trimesh(other, operation='subtract')
+
+        for c in other.children:
+            result = result.subtract(c)
+        if self.children:
+            raise DDDException("CSG source with children not supported.")
+        return result
 
     def union(self, other):
-        return self._csg(other, operation='union')
+        #result = self._csg(other, operation='union')
+        result = self._csg_trimesh(other, operation='union')
+        for c in other.children:
+            result = result.union(c)
+        if self.children:
+            raise DDDException("CSG source with children not supported.")
+        return result
+
+    def intersection(self, other):
+        #result = self._csg(other, operation='union')
+        result = self._csg_trimesh(other, operation='intersection')
+        for c in other.children:
+            result = result.intersection(c)
+        if self.children:
+            raise DDDException("CSG source with children not supported.")
+        return result
 
     def combine(self, name=None, indexes=False):
         """
@@ -507,6 +594,21 @@ class DDDNode3(DDDNode):
 
         return result
 
+    def fix_normals(self):
+        """
+        This helps after, eg. some extrusion operations.
+
+        Note: this modifies the object
+        """
+        #self.mesh.fix_normals(multibody=True)
+        #repair.fix_inversion(self.mesh, multibody=True)
+        #repair.fix_winding(self.mesh)
+        #repair.fill_holes(self.mesh)
+        repair.fix_normals(self.mesh, multibody=True)
+
+        for c in self.children:
+            c.fix_normals()
+        return self
 
     def clean(self, remove_empty=True, remove_degenerate=True):
         """
@@ -689,6 +791,10 @@ class DDDNode3(DDDNode):
             # Add node metadata to scene metadata (first node metadata seems not available at least in blender)
             scene.metadata['extras'] = metadata_serializable
 
+            if (self.transform.position[0] != 0 or self.transform.position[1] != 0 or self.transform.position[2] != 0 or
+                any([self.transform.rotation[i] != DDDTransform._quaternion_identity[i] for i in range(3)])):
+                logger.warn("Scene root cannot have non-identity transforms, they are not applied, on export / view: %s", self.transform)
+
         #if mesh is None: mesh = ddd.marker().mesh
         #print("Adding: %s to %s" % (scene_node_name, scene_parent_node_name))
         if mesh is None:
@@ -702,6 +808,13 @@ class DDDNode3(DDDNode):
                                       instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata,
                                       scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames)
 
+        # Export markers for empty nodes (for visualization only)
+        if mesh is None and not self.children and instance_marker:
+            marker = self.marker(world_space=False, use_normal_box=instance_marker)
+            marker._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#marker",
+                                      instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata,
+                                      scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames)
+
         # Serialize metadata as dict
         #if False:
         #    #serializable_metadata_dict = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
@@ -709,7 +822,7 @@ class DDDNode3(DDDNode):
 
         return scene
 
-
+    '''
     def __rezero(self):
         # From Trimesh as graph example
         """
@@ -732,8 +845,15 @@ class DDDNode3(DDDNode):
                           frame_to=self.graph.base_frame,
                           matrix=matrix)
         self.graph.base_frame = new_base
+    '''
 
     def _recurse_meshes(self, instance_mesh, instance_marker):
+        """
+        Used for .show3() with pyrender as backend.
+
+        FIXME: Currently _recurse_meshes ignores transforms.
+        """
+
         cmeshes = []
         if self.mesh:
             mesh = self._process_mesh()
@@ -755,6 +875,15 @@ class DDDNode3(DDDNode):
                 cobjs.extend(c.recurse_objects())
         return cobjs
 
+    def marker(self, world_space=True, use_normal_box=False):
+        ref = ddd.marker(name=self.name + " (Marker)", extra=dict(self.extra), use_normal_box=use_normal_box)
+        if world_space:
+            ref = ref.scale(self.transform.scale)  # Scale is not implemented (at least in DDDPath3 and DDDInstance?)
+            ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
+            ref = ref.translate(self.transform.position)
+        ref.extra.update(self.extra)
+        return ref
+
     def show3(self, instance_mesh=None, instance_marker=None, label=None):
 
         logger.info("Showing: %s", self)
@@ -766,13 +895,23 @@ class DDDNode3(DDDNode):
         if instance_mesh is None:
             instance_mesh = D1D2D3Bootstrap.export_mesh
 
+        # For visualization
+        if not instance_marker and not instance_mesh:
+            instance_marker = True
+
         if D1D2D3Bootstrap.renderer == 'pyglet':
 
             from trimesh import viewer
 
             # OpenGL
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
-            rotated = ddd.group([self]).rotate([-math.pi / 2.0, 0, 0])
+            #rotated = ddd.group([self.copy()]).rotate([-math.pi / 2.0, 0, 0])
+
+            #rotated = ddd.group([self.copy()])
+            #rotated.transform = DDDTransform()
+            #rotated.children[0].transform.rotation = transformations.quaternion_from_euler(-ddd.PI_OVER_2, 0, 0, "sxyz")
+
+            rotated = self.copy()
 
             #scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=True)
@@ -850,8 +989,15 @@ class DDDNode3(DDDNode):
             data = DDDFBXFormat.export_fbx(self, path)
 
         elif path.endswith('.glb'):
+            #rotated = self
+
             rotated = self.rotate([-math.pi / 2.0, 0, 0])
-            #scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            #rotated = self.copy()
+            #rotated = ddd.group([self.copy()])
+            #rotated.children[0].transform.rotation = transformations.quaternion_from_euler(-ddd.PI_OVER_2, 0, 0, "sxyz")
+            #rotated.transform.rotation = transformations.quaternion_from_euler(-ddd.PI_OVER_2, 0, 0, "sxyz")
+            #rotated = rotated.transform_apply()
+
             trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata)
             data = trimesh.exchange.gltf.export_glb(trimesh_scene, include_normals=D1D2D3Bootstrap.export_normals)
 

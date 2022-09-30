@@ -2,47 +2,49 @@
 # Library for simple scene modelling.
 
 
-import math
-
-from ddd.ddd import ddd
-from ddd.pack.sketchy import urban, landscape, plants
 from ddd.catalog.catalog import PrefabCatalog
+from ddd.ddd import ddd
+from ddd.pack.sketchy import urban
+from ddd.pipeline.decorators import dddtask
 
 
-items = ddd.group3()
+@dddtask()
+def example_catalog(pipeline, root):
 
-catalog = PrefabCatalog()
+    catalog = PrefabCatalog()
 
-catalog.loadall()
+    catalog.loadall()
 
-item = catalog.instance('prefab1')  # Preload
-if not item:
-    item = urban.lamppost()
-    #item = plants.plant(height=10)
-    #item = urban.trafficlights()
-    catalog.add('prefab1', item)
+    item = catalog.instance('prefab1')  # Preload
+    if not item:
+        item = urban.lamppost()
+        catalog.add('prefab1', item)
 
-item = catalog.instance('prefab2')  # Preload
-if not item:
-    item = urban.trafficlights()
-    #item = plants.plant(fork_iters=3, height=7)
-    catalog.add('prefab2', item)
+    item = catalog.instance('prefab2')  # Preload
+    if not item:
+        item = urban.trafficlights()
+        catalog.add('prefab2', item)
 
-items = ddd.group3()
+    items = ddd.DDDNode3(name="Items")
 
-for i in range(6):
-    item = catalog.instance('prefab1')
-    items.append(item)
-for i in range(6):
-    item = catalog.instance('prefab2')
-    item = item.rotate([0, 0, (math.pi / 4) - math.pi / 2])
-    items.append(item)
+    for i in range(6):
+        item = catalog.instance('prefab1')
+        items.append(item)
+    for i in range(6):
+        item = catalog.instance('prefab2')
+        items.append(item)
 
-# All items
-items = ddd.align.grid(items, space=10.0)
-items.append(ddd.helper.all())
-items.save("/tmp/catalog.json")
-items.save("/tmp/catalog.glb")
-items.show()
+    # All items
+    items = ddd.align.grid(items, space=10.0)
+    root.append(items)
+
+    root.append(ddd.helper.all())
+
+    root.save("/tmp/catalog.json")
+    root.save("/tmp/catalog.glb")
+    root.save("/tmp/catalog.gltf")
+
+    root.dump()
+    root.show()
 
 

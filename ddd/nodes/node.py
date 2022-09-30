@@ -16,6 +16,8 @@
 
 
 import logging
+import sys
+import time
 from typing import Iterable
 import numpy as np
 from ddd.core.exception import DDDException
@@ -30,17 +32,15 @@ logger = logging.getLogger(__name__)
 
 
 
-
-
 class DDDNode():
 
-    def __init__(self, name=None, children=None, extra=None, material=None):
+    def __init__(self, name=None, children=None, extra=None, material=None, transform=None):
         self.name = name
         self.children = children if children is not None else []
         self.extra = extra if extra is not None else {}
 
         self.mat = material
-        self.transform = DDDTransform()
+        self.transform = transform if transform is not None else DDDTransform()
 
         self._uid = None
 
@@ -55,7 +55,8 @@ class DDDNode():
         '''
 
     def __repr__(self):
-        return "DDDObject(name=%r, children=%d)" % (self.name, len(self.children) if self.children else 0)
+        #return "DDDObject(name=%r, children=%d)" % (self.name, len(self.children) if self.children else 0)
+        return "%s (%s %dc)" % (self.name, self.__class__.__name__, len(self.children) if self.children else 0)
 
     def hash(self):
         h = hashlib.new('sha256')
@@ -74,37 +75,91 @@ class DDDNode():
         #return abs(hash((self.__class__.__name__, self.name)))  #, ((k, self.extra[k]) for k in sorted(self.extra.keys())))))
 
     def setname(self, name):
-        name = name.replace('{}', self.name)
+        name = name.replace('{}', str(self.name))
         self.name = name
         return self
 
-    def copy(self):
-        raise NotImplementedError()
+    def rename_unique(self):
+        """
+        Walks hierarchy ensuring each node has a unique name.
+        This process is also done by recurse_scene, since Trimesh doens't support repeated names, but we need to do it
+        before in order to be able to also save other formats JSON with consistent naming.
+        """
+        usednames = {}  # name + count pairs
+        def _rename_unique(obj, usednames):
+            if str(obj.name) in usednames:
+                usednames[str(obj.name)] += 1
+                obj.name = str(obj.name) + "#" + str(usednames[str(obj.name)])
+            else:
+                usednames[str(obj.name)] = 1
 
-    def copy_from(self, obj, copy_material=False, copy_children=False, copy_metadata_to_children=False):
+            for c in obj.children:
+                _rename_unique(c, usednames)
+
+        _rename_unique(self, usednames)
+        return self
+
+    def copy(self, name=None, copy_children=True):
+        if name is None: name = self.name
+        children = []
+        # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
+        if copy_children:
+            children = [c.copy(copy_children=True) for c in self.children]
+        obj = DDDNode(name=name, children=children, material=self.mat, extra=dict(self.extra))
+        obj.transform = self.transform.copy()
+        return obj
+
+    def copy2(self, name=None, copy_children=True):
+        if name is None: name = self.name
+        children = []
+        # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
+        if copy_children:
+            children = [c.copy(copy_children=True) for c in self.children]
+        obj = ddd.DDDNode2(name=name, children=children, material=self.mat, extra=dict(self.extra))
+        obj.transform = self.transform.copy()
+        return obj
+
+    def copy3(self, name=None, copy_children=False):
+        """
+        Copies this DDDObject2 into a DDDObject3, maintaining metadata but NOT children or geometry.
+        """
+        # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
+        if copy_children:
+            obj = ddd.DDDObject3(name=name if name else self.name, children=[(c.copy3(copy_children=True) if hasattr(c, 'copy3') else c.copy()) for c in self.children], mesh=None, extra=dict(self.extra), material=self.mat)
+        else:
+            obj = ddd.DDDObject3(name=name if name else self.name, children=[], mesh=None, extra=dict(self.extra), material=self.mat)
+        obj.transform = self.transform.copy()
+        return obj
+
+
+    def copy_from(self, obj, copy_material=False, copy_children=False, copy_metadata_to_children=False, copy_transform=False):
         """
         Copies metadata (without replacing), and optionally material and children from another object.
 
-        Modifies this object in place, and returns itself.
+        Modifies this object in place, and returns itself. This does not copy geometry or meshes or other non-node data.
 
         TODO: copy_material shall possibly be True by default
         """
         if obj.name:
             self.name = obj.name
 
-        self.transform = obj.transform.copy()
+        if copy_transform:
+            self.transform = obj.transform.copy()
 
-        # Copy item_2d attributes
+        # Copy attributes
         for k, v in obj.extra.items():
             self.set(k, default=v, children=copy_metadata_to_children)
         self.extra.update(obj.extra)
 
         if copy_children:
-            self.children = list(obj.children)
+            self.children = [c.copy(copy_children=True) for c in obj.children]
         if copy_material and obj.mat:
             self.mat = obj.mat
 
         return self
+
+    def highlight(self):
+        return self.material(ddd.MAT_HIGHLIGHT)
 
     def reprname(self):
         node_name = self.name if self.name else self.__class__.__name__
@@ -149,6 +204,7 @@ class DDDNode():
         self.extra = obj.extra
         self.mat = obj.mat
         self.children = obj.children
+        self.transform = obj.transform
         return self
 
     def metadata(self, path_prefix, name_suffix):
@@ -158,7 +214,6 @@ class DDDNode():
 
         node_name = self.reprname() + name_suffix
 
-        ignore_keys = ('uv', 'osm:feature')  #, 'ddd:connections')
         metadata = dict(self.extra)
         metadata['ddd:path'] = path_prefix + node_name
         if hasattr(self, "geom"):
@@ -174,7 +229,7 @@ class DDDNode():
 
         metadata['ddd:object'] = self
 
-        metadata = {k: v for k, v in metadata.items() if k not in ignore_keys}  # and v is not None
+        metadata = {k: v for k, v in metadata.items() if k not in ddd.METADATA_IGNORE_KEYS}  # and v is not None
         #metadata = json.loads(json.dumps(metadata, default=D1D2D3.json_serialize))
 
         return metadata
@@ -182,8 +237,14 @@ class DDDNode():
     def dump(self, indent_level=0, data=False):
         strdata = ""
         if data:
-            strdata = strdata + " " + str(self.extra)
+            #metadata = self.extra
+            #metadata = self.metadata("", "")
+            metadata = {k: v for k, v in self.extra.items() if not (k.startswith("_") or k in ddd.METADATA_IGNORE_KEYS)}
+            if data != 'ddd':
+                metadata = {k: v for k, v in metadata.items() if not k.startswith("ddd:")}
+            strdata = strdata + " " + str(self.transform.position) + " " + str(metadata)
         print("  " * indent_level + str(self) + strdata)
+
         for c in self.children:
             c.dump(indent_level=indent_level + 1, data=data)
 
@@ -220,12 +281,18 @@ class DDDNode():
 
         return result.one()
 
-    def select(self, selector=None, path=None, func=None, recurse=True, apply_func=None, _rec_path=None):
+    def select(self, selector=None, path=None, func=None, recurse=True, apply_func=None, _rec_path=None, empty=None):
         """
 
         Note: Recurse is True in this function, but False for selectors in DDDTasks.
         TODO: Make recurse default to False (this will require extensive testing)
         """
+
+        if empty is None:
+            if isinstance(self, ddd.DDDNode2):
+                empty = 2
+            elif isinstance(self, ddd.DDDNode3):
+                empty = 3
 
         if hasattr(self, '_remove_object'): delattr(self, '_remove_object')
         if hasattr(self, '_add_object'): delattr(self, '_add_object')
@@ -250,7 +317,7 @@ class DDDNode():
         selected = True
 
         if path:
-            # TODO: Implement path pattern matching (hint: gitpattern lib)
+            # TODO: Implement path pattern matching (ie. css selectors, path selectors... ?)
             path = path.replace("*", "")  # Temporary hack to allow *
             pathmatches = _rec_path.startswith(path)
             selected = selected and pathmatches
@@ -278,28 +345,37 @@ class DDDNode():
         if o and (not isinstance(o, list)) and (not selected or recurse):
             to_remove = []
             to_add = []
-            for c in list(o.children):
-                cr = c.select(func=func, selector=selector, path=path, recurse=recurse, apply_func=apply_func, _rec_path=_rec_path)
+            for idx, c in enumerate(list(o.children)):
+                cr = c.select(func=func, selector=selector, path=path, recurse=recurse, apply_func=apply_func, _rec_path=_rec_path, empty=empty)
                 if hasattr(cr, '_remove_object') and cr._remove_object:
                     to_remove.append(c)
                 if hasattr(cr, '_add_object') and cr._add_object:
                     if isinstance(cr._add_object, list):
-                        to_add.extend(cr._add_object)
+                        to_add.append((idx, cr._add_object))
                     else:
-                        to_add.append(cr._add_object)
+                        to_add.append((idx, [cr._add_object]))
                         #to_add.extend(cr.children)
                 delattr(cr, '_remove_object')
                 delattr(cr, '_add_object')
                 result.extend(cr.children)
-            o.children = [coc for coc in o.children if coc not in to_remove]
-            o.children.extend(to_add)
+
+            # Operate coherently (maintain order)
+            newchildren = list(o.children)
+            for ta in reversed(to_add):
+                newchildren = newchildren[:ta[0]] + ta[1] + newchildren[ta[0] + 1:]
+            newchildren = [coc for coc in newchildren if coc not in to_remove]
+            o.children = newchildren
+
+            # Deprecated: Old method (added all new items at the end)
+            #o.children = [coc for coc in o.children if coc not in to_remove]
+            #for ta in to_add: o.children.extend(ta[1])
 
         #if (isinstance(o, list)):
         #    o.children.extend()
 
         #self.children = [c for c in self.children if c not in result]
 
-        res = self.grouptyped(result)
+        res = self.grouptyped(result, empty=empty)
         res._remove_object = remove_object
         res._add_object = add_object
         return res
@@ -386,9 +462,28 @@ class DDDNode():
 
         return result
 
+    def unset(self, key, children=False):
+        if key in self.extra:
+            del(self.extra[key])
+
+        if children:
+            # Apply to select_all
+            for o in self.children:
+                o.unset(key, children=children)
+
+        return self
+
     def set(self, key, value=None, children=False, default=(None, )):
         """
+        If the key is a dictionary, all its keys/values are set.
         """
+
+        # If the key is a dictionary, all its keys/values are set
+        if isinstance(key, dict):
+            for k, v in key.items():
+                self.set(k, v, children=children, default=default)
+            return self
+
         if children:
             # Apply to select_all
             for o in self.select().children:
@@ -412,14 +507,14 @@ class DDDNode():
         self.set(key, value)
         return value
 
-    def grouptyped(self, children=None, name=None):
+    def grouptyped(self, children=None, name=None, empty=None):
         result = None
         if isinstance(self, ddd.DDDObject2):
             result = ddd.group(children, empty=2)
         elif isinstance(self, ddd.DDDObject3) or isinstance(self, ddd.DDDInstance):
             result = ddd.group(children, empty=3)
         else:
-            result = ddd.group(children)
+            result = ddd.group(children, empty=empty)
         if name:
             result.name = name
         return result
@@ -467,19 +562,29 @@ class DDDNode():
         self.children = [c.remove(obj) for c in self.children if c and c != obj]
         return self
 
+    def save(self, path, instance_marker=None, instance_mesh=None, include_metadata=True, size=None):
+        # FIXME: Review: for base DDDNode, we are converting to DDDNode2/3 in order to save with a weak criteria
+        if path.endswith(".svg"):
+            obj = ddd.DDDNode2()
+            obj.copy_from(self, copy_children=True)
+        else:
+            obj = ddd.DDDNode3.from_node(self)
+
+        obj.save(path)
+
     def show(self, label=None):
         """
         Shows the node and its descendants.
         """
-        try:
+        #try:
 
-            # Present 2D objects as 3D (recursively)
-            showobj = Generic3DPresentation.present(self)
-            showobj.show3(label=label)
+        # Present 2D objects as 3D (recursively)
+        showobj = Generic3DPresentation.present(self)
+        showobj.show3(label=label)
 
-        except Exception as e:
-            logger.error("Could not show object %s: %s", self, e)
-            raise
+        #except Exception as e:
+        #    logger.error("Could not show object %s: %s", self, e)
+        #    raise
 
     def translate(self, v):
         obj = self.copy()
@@ -489,8 +594,15 @@ class DDDNode():
     def rotate(self, v, origin=None):
 
         obj = self.copy()
+
+        rot = transformations.quaternion_from_euler(v[0], v[1], v[2], "sxyz")
+        obj.transform.rotation = transformations.quaternion_multiply(rot, obj.transform.rotation) # [0]
+
+        '''
+        obj = self.copy()
         rot = transformations.quaternion_from_euler(v[0], v[1], v[2], "sxyz")
         rotation_matrix = transformations.quaternion_matrix(rot)
+        '''
 
         '''
         center_coords = None
@@ -517,14 +629,23 @@ class DDDNode():
                 obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
         '''
 
+        '''
         obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]  # Hack: use matrices
         obj.transform.rotation = transformations.quaternion_multiply(rot, obj.transform.rotation)  # order matters!
+        '''
+
         return obj
 
     def scale(self, v):
         obj = self.copy()
         obj.transform.position = np.array(v) * obj.transform.position
         return obj
+
+    def iterate_objects(self):
+        """Preorder."""
+        yield self
+        for o in self.children:
+            yield from o.iterate_objects()
 
     def material(self, material, include_children=True):
         obj = self.copy()

@@ -45,7 +45,7 @@ class DDDJSONFormat():
 
         for idx, c in enumerate(obj.children):
 
-            cdata = DDDJSONFormat.export_data(c, path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx), instance_mesh=instance_mesh, instance_marker=instance_marker)
+            cdata = DDDJSONFormat.export_data(c, path_prefix=path_prefix + node_name + "/", instance_mesh=instance_mesh, instance_marker=instance_marker)  # , name_suffix="#%d" % (idx)
             cpath = cdata['_extra']['ddd:path']
             data[cpath] = cdata
 

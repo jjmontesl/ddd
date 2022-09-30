@@ -319,6 +319,7 @@ class DDDMeshOps():
                         continue
 
                     try:
+                        geom = ddd.shape(geom).remove_z().geom
                         geom = polygon.orient(geom, 1)  # orient polygon
 
                         #print(geom)

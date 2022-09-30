@@ -6,6 +6,7 @@ import functools
 import inspect
 import logging
 import os
+import random
 
 from lark.lark import Lark
 
@@ -127,10 +128,9 @@ class DDDTask(object):
 
         else:
 
-            #if self.log:
             self.runlog()
-            #else:
-            #    logger.debug("Running task: %s", self)
+
+            pipeline.random_seed(self.name)
 
             func = self._funcargs[0]
             sig = inspect.signature(func)
@@ -172,14 +172,15 @@ class DDDTask(object):
         logger.debug("Select: func=%s selector=%s path=%s recurse=%s ", self.filter, self.selector, self.path, self.recurse)
         objs = pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=self.recurse)
 
-        #if self.log:
         self.runlog(objs.count())
-        #else:
-        #    logger.debug("Running task %ws for %d objects.", self, objs.count())
 
         self._run_selected = 0
+
         def task_select_apply(o):
+
             self._run_selected += 1
+            pipeline.random_seed(f'{self.name}_{o.name}_{self._run_selected}')
+
             try:
                 if 'o' in kwargs: kwargs['o'] = o
                 if 'obj' in kwargs: kwargs['obj'] = o
@@ -188,8 +189,8 @@ class DDDTask(object):
                     return result
                 else:
                     if result or result is False:
-                        logger.error("Task function returned a replacement object or a delete (None), but task replace is set to False.")
-                        raise DDDException("Task function returned a replacement object or a delete (None), but task replace is set to False.")
+                        logger.error("Task function returned a replacement object or a delete (False), but task replace is set to False.")
+                        raise DDDException("Task function returned a replacement object or a delete (False), but task replace is set to False.")
                     return o
 
             except Exception as e:

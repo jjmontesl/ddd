@@ -5,6 +5,7 @@
 import noise
 import numpy as np
 import pyproj
+from ddd import math
 
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd
@@ -40,8 +41,9 @@ def polygon_from_bounds(bounds_or_obj, sides=4):
     #surroundings = surroundings.translate([0, 0, -2])
 
 
-def shape_to_grid(obj, interval=2.0, name="Shaped Grid"):
-    grid = ddd.grid2(obj.bounds(), interval, name=name)
+def shape_to_grid(obj, interval=2.0, name="Shaped Grid", adjust=False):
+    bounds = obj.bounds()
+    grid = ddd.grid2(obj.bounds(), interval, name=name, adjust=adjust)
     grid = grid.individualize().intersection(obj)
     return grid
 

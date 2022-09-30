@@ -42,7 +42,6 @@ class DDDInstance(DDDNode):
     def __init__(self, ref, name=None, extra=None):
         super().__init__(name, None, extra)
         self.ref = ref
-        self.transform = DDDTransform()
 
     def __repr__(self):
         return "%s (%s ref: %s)" % (self.name, self.__class__.__name__, self.ref)
@@ -73,38 +72,20 @@ class DDDInstance(DDDNode):
         return obj
 
     def rotate(self, v, origin=None):
-
+        """
+        In an instance this rotates the transform, relative to the local origin.
+        """
         obj = self.copy()
-        rot = quaternion_from_euler(v[0], v[1], v[2], "sxyz")
-        rotation_matrix = transformations.quaternion_matrix(rot)
 
-        '''
-        center_coords = None
-        if origin == 'local':
-            center_coords = None
-        elif origin == 'bounds_center':  # group_centroid, use for children
-            ((xmin, ymin, zmin), (xmax, ymax, zmax)) = self.bounds()
-            center_coords = [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]
-        elif origin:
-            center_coords = origin
+        # Update the transform
+        rotation_matrix = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
+        obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]
 
-        obj = self.copy()
-        if obj.mesh:
-            rot = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
-            if center_coords:
-                translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
-                translate_after = transformations.translation_matrix(np.array(center_coords))
-                #transf = translate_before * rot # * rot * translate_after  # doesn't work, these matrifes are 4x3, not 4x4 HTM
-                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_before)
-                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
-                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, translate_after)
-            else:
-                #transf = rot
-                obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rot)
-        '''
+        rotation_quat = transformations.quaternion_from_euler(v[0], v[1], v[2], "sxyz")
+        rotation_quat_inv = transformations.quaternion_inverse(rotation_quat)
+        obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)
+        obj.transform.rotation = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_inv)
 
-        obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]  # Hack: use matrices
-        obj.transform.rotation = transformations.quaternion_multiply(rot, obj.transform.rotation)  # order matters!
         return obj
 
     def scale(self, v):
@@ -117,8 +98,8 @@ class DDDInstance(DDDNode):
             return self.ref.bounds()
         return None
 
-    def marker(self, world_space=True):
-        ref = ddd.marker(name=self.name, extra=dict(self.extra))
+    def marker(self, world_space=True, use_normal_box=False):
+        ref = ddd.marker(name=self.name, extra=dict(self.extra), use_normal_box=use_normal_box)
         if world_space:
             ref = ref.scale(self.transform.scale)
             ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
@@ -132,6 +113,16 @@ class DDDInstance(DDDNode):
         logger.warning("Ignoring material set to DDDInstance: %s", self)
         return self
 
+    def vertex_func(self, func):
+        """
+        Applies a vertex function as a transform to the instance.
+        """
+        obj = self.copy()
+        obj.transform.position = func(obj.transform.position[0], obj.transform.position[1], obj.transform.position[2], None)
+        return obj
+
+
+    '''
     def combine(self, name=None):
         """
         Combine geometry of this instance.
@@ -144,15 +135,18 @@ class DDDInstance(DDDNode):
               or remove them if they are to be managed separately.
         """
         return DDDObject3(name=name)
+
+        # This was all commented out before the entire combine function was
         if self.ref:
             meshes = self.ref._recurse_meshes(True, False)
             obj = ddd.group3(name=name)
             for m in meshes:
-                mo = DDDObject3(mesh=m)
+                mo = ddd.DDDNode3(mesh=m)
                 obj.append(mo)
             return obj.combine(name=name)
         else:
-            return DDDObject3(name=name)
+            return ddd.DDDNode3(name=name)
+    '''
 
     def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None, usednames=None):
 
@@ -161,7 +155,6 @@ class DDDInstance(DDDNode):
         if usednames is None: usednames = set()
         node_name = self.uniquename(usednames)
         usednames.add(node_name)
-
 
         # Add metadata to name
         metadata = self.metadata(path_prefix, name_suffix)
@@ -174,15 +167,16 @@ class DDDInstance(DDDNode):
         if include_metadata:
             metadata_serializable = json.loads(json.dumps(metadata, default=ddd.json_serialize))
 
-        #scene_node_name = node_name.replace(" ", "_")
-        scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
-
-
-        # TODO: Call transform to_matrix
+        node_transform = self.transform.to_matrix()
+        '''
         node_transform = transformations.concatenate_matrices(
             transformations.translation_matrix(self.transform.position),
             transformations.quaternion_matrix(self.transform.rotation)
             )
+        '''
+
+        scene_node_name = node_name # .replace(" ", "_")
+        #scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
 
         if instance_mesh:
             if self.ref:
@@ -193,6 +187,8 @@ class DDDInstance(DDDNode):
                 # TODO: Use a unique buffer! (same geom name for trimesh?)
                 #ref = self.ref.copy()
                 ref = self.ref.copy()  #.copy()
+
+                ref = ref.rotate([-ddd.PI_OVER_2, 0, 0])
 
                 ##ref = ref.scale(self.transform.scale)
                 #ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
@@ -209,26 +205,36 @@ class DDDInstance(DDDNode):
                 # Child
                 ref._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#ref",
                                         instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata,
-                                        scene=scene, scene_parent_node_name=scene_node_name)
+                                        scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames)
 
             else:
                 if type(self) == type(DDDInstance):
                     raise DDDException("Instance should reference another object: %s" % (self, ))
 
-        if instance_marker:
-            # Marker
 
+        if not instance_marker and not instance_mesh:
+            # Node for export
             instance_marker_cube = False
             if instance_marker_cube:
-                ref = self.marker(world_space=False)
+                ref = self.marker(world_space=False, use_normal_box=True)
                 scene.add_geometry(geometry=ref.mesh, node_name=scene_node_name + "_marker", geom_name="Marker %s" % scene_node_name,
                                    parent_node_name=scene_parent_node_name, transform=node_transform, extras=metadata_serializable)
             else:
                 scene.graph.update(frame_to=scene_node_name, frame_from=scene_parent_node_name, matrix=node_transform, geometry_flags={'visible': True}, extras=metadata_serializable)
 
+        '''
+        # Instance markers for visualization
+        if instance_marker and not self.children:
+            marker = self.marker(world_space=False)
+            marker._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#marker",
+                                    instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata,
+                                    scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames)
+        '''
+
         return scene
 
     def _recurse_meshes(self, instance_mesh, instance_marker):
+        #raise
 
         cmeshes = []
 

@@ -25,6 +25,7 @@ from ddd.math.vector3 import Vector3
 from ddd.nodes.node3 import DDDNode3
 from ddd.nodes.path3 import DDDPath3
 from ddd.math.math import DDDMath
+from ddd.ddd import ddd
 
 
 # Get instance of logger for this module
@@ -190,3 +191,66 @@ class DDDPathOps():
         return arcs
 
 
+    def round_corners(self, line, distance=1.0, angle_min=0):
+        """
+        Generates a DDDPath3 object from the given LineString (which can have Z coordinates),
+        rounding corners
+
+        The heuristics are:
+        - Straight segments (longer than `distance` are kept as Line segments)
+        - Shorter segments are aproximated with a Bezier
+        """
+        result = DDDPath3()
+
+        entities = []
+        vertices = []
+
+        vertices.append(line.geom.coords[0])
+
+        for i in range(1, len(line.geom.coords) - 1):
+            v0 = Vector3(line.geom.coords[i - 1])
+            v1 = Vector3(line.geom.coords[i])
+            v2 = Vector3(line.geom.coords[i + 1])
+
+            s0 = v1 - v0
+            s1 = v2 - v1
+
+            angle = s0.angle(s1)
+
+            #print (d.length(), distance)
+            if angle < angle_min:
+                vertices.append(v1)
+                entities.append(trimesh.path.entities.Line((len(vertices) - 2, len(vertices) - 1)))
+            else:
+
+                l0 = s0.length()
+                l1 = s1.length()
+
+                d0 = s0.normalized()
+                d1 = s1.normalized()
+
+                # Redude distance if it's longer
+                distance0 = min(distance, l0 / 2)
+                distance1 = min(distance, l1 / 2)
+
+                p0 = v1 - d0 * distance0
+                p1 = v1 + d1 * distance1
+
+                c0 = p0 + d0 * distance0 * (0.55228 * 0.70710678118)
+                c1 = p1 - d1 * distance1 * (0.55228 * 0.70710678118)
+
+                vertices.append(p0)
+                entities.append(trimesh.path.entities.Line((len(vertices) - 2, len(vertices) - 1)))
+
+                vertices.append(c0)
+                vertices.append(c1)
+                vertices.append(p1)
+                entities.append(trimesh.path.entities.Bezier((len(vertices) - 4, len(vertices) - 3, len(vertices) - 2, len(vertices) - 1)))
+
+        # Final line segment
+        vertices.append(line.geom.coords[-1])
+        entities.append(trimesh.path.entities.Line((len(vertices) - 2, len(vertices) - 1)))
+
+        result.path3 = trimesh.path.path.Path3D(entities, vertices)
+
+        return result

@@ -133,6 +133,16 @@ def pipeline_start(pipeline, root):
     #path3 = ddd.path3(line)
     #root.append(path3)
 
+    os += 2
+    line = ddd.line([[0, os, 0], [4, os, 0], [4, os, 4], [8, os, 4]])
+    path = ddd.paths.round_corners(line, distance=1.0)
+    root.append(path)
+
+    os += 2
+    line = ddd.line([[0, os, 0], [4, os, 0], [4, os, 4], [8, os, 4]])
+    path = ddd.paths.round_corners(line, distance=3.0)
+    root.append(path)
+
 
     root.append(ddd.helper.all())
 

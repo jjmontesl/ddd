@@ -258,6 +258,7 @@ def osm_structured_generate_areas_calculate_buildings_ground_footprint(pipeline,
     buildings = root.select(path="/Buildings/*", func=lambda o:
         (o.get('ddd:building:parent', None) or not o.get('ddd:building:parts', None)) and
         o.get("osm:building:min_level", None) is None)
+    buildings = buildings.copy2()
     buildings = buildings.union()
     pipeline.data['buildings_level_0'] = buildings
 
@@ -453,8 +454,8 @@ def osm_structured_tunnel(osm, root, pipeline):
     #layer_1 = root.select(path="/Ways/", selector='["ddd:layer" = "0a"];["ddd:layer" = "1"]')
     #groups = [layer_m1, layer_1]
 
-    layer_m1 = root.select(path="/Ways/", selector='["ddd:layer" = "-1"]')
-    layer_m1a = root.select(path="/Ways/", selector='["ddd:layer" = "-1a"]')
+    layer_m1 = root.select(path="/Ways/", selector='["ddd:layer" = "-1"]', empty=2)
+    layer_m1a = root.select(path="/Ways/", selector='["ddd:layer" = "-1a"]', empty=2)
 
     ways = layer_m1.children + layer_m1a.children
 

@@ -176,7 +176,7 @@ class DDDMaterial():
                                       metallicRoughnessTexture=im_metallicroughness,
                                       metallicFactor=self.metallic_factor, roughnessFactor=self.roughness_factor,
                                       alphaMode=alpha_mode, alphaCutoff=self.alpha_cutoff,
-                                      emissiveFactor=np.array([self.emissive_factor, self.emissive_factor, self.emissive_factor, 1.0][:3]), emissiveTexture=im_emissive)  # , ambient, specular, glossiness)
+                                      emissiveFactor=np.array([self.emissive_factor, self.emissive_factor, self.emissive_factor, 1.0][:3]) if self.emissive_factor else [0, 0, 0], emissiveTexture=im_emissive)  # , ambient, specular, glossiness)
                 else:
                     #mat = SimpleMaterial(name=self.name, image=im, diffuse=self.color_rgba)  # , ambient, specular, glossiness)
                     alpha_mode = self.alpha_mode if self.alpha_mode else ('MASK' if self.alpha_cutoff else 'OPAQUE')

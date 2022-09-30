@@ -29,7 +29,7 @@ def osm_augment_ways_2d_lamps(root, osm, pipeline, logger, obj):
     """
     """
     #lamps = root.select('["osm:highway" = "street_lamp"]')
-    if not obj.extra['osm:feature_2d'].buffer(35.0, cap_style=ddd.CAP_ROUND).intersects(pipeline.data['_lamps']):
+    if not obj.extra['osm:feature_2d'].copy2().buffer(35.0, cap_style=ddd.CAP_ROUND).intersects(pipeline.data['_lamps'].copy2()):
         osm.ways2.generate_lamps(pipeline, obj)
 
 @dddtask(path="/Ways/*", select='["ddd:way:traffic_signals"]')

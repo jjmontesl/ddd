@@ -29,7 +29,7 @@ class CatalogExportCommand(DDDCommand):
 
         # Save
         #catalog.export("/tmp/catalog.glb")
-        catalog.export()
+        catalog.export("catalog.fbx")
 
         # Show items
         #items = ddd.group3([catalog.instance(c) for c in catalog._cache.values()])

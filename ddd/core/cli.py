@@ -28,7 +28,7 @@ class D1D2D3Bootstrap():
 
     # TODO: make classes that provide help, leave "run" for user scripts
     commands = OrderedDict({
-        "catalog-show": ("ddd.catalog.commands.show", "Show catalog"),
+        "catalog-show": ("ddd.catalog.commands.show.CatalogShowCommand", "Show catalog"),
         "catalog-export": ("ddd.catalog.commands.export.CatalogExportCommand", "Export catalog to file"),
         "catalog-clear": ("ddd.catalog.commands.clear", "Clear catalog"),
         "font-generate": ("ddd.text.commands.fontatlasgen.FontAtlasGenerateCommand", "Generate a font atlas"),
@@ -161,8 +161,8 @@ class D1D2D3Bootstrap():
 
         D1D2D3Bootstrap.export_marker = args.export_markers
         D1D2D3Bootstrap.export_mesh = args.export_meshes
-        if not D1D2D3Bootstrap.export_mesh and not D1D2D3Bootstrap.export_marker:
-            D1D2D3Bootstrap.export_marker = True
+        #if not D1D2D3Bootstrap.export_mesh and not D1D2D3Bootstrap.export_marker:
+        #    D1D2D3Bootstrap.export_marker = True
 
         D1D2D3Bootstrap.export_normals = args.export_normals
         D1D2D3Bootstrap.export_textures = args.export_textures

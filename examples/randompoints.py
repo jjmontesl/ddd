@@ -5,6 +5,8 @@ import math
 import random
 import noise
 
+random.seed(7)
+
 # Irregular object
 fig = ddd.group2()
 coords = [[10, 10], [5, 9], [3, 12], [1, 5], [-8, 0], [10, 0]]

@@ -14,7 +14,6 @@ from shapely.geometry.linestring import LineString
 from shapely.ops import linemerge
 
 from ddd.core.exception import DDDException
-from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.ops import uvmapping

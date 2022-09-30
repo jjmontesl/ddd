@@ -7,7 +7,6 @@ import math
 import random
 import sys
 
-from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.pack.sketchy import plants, urban
 from ddd.geo import terrain

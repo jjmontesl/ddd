@@ -28,3 +28,9 @@ class MaterialsCollection():
                 self.__dict__[name] = value
 
         logger.info("Loaded %d materials.", count)
+
+    def find(self, key):
+        """
+        Returns a material by its attribute name (not its Material name, so 'wood_planks' instead of 'Wood Planks'.
+        """
+        return getattr(self, key)

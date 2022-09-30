@@ -8,6 +8,8 @@ from ddd.ddd import ddd
 from shapely.geometry import shape
 from shapely.geometry.polygon import orient
 
+from ddd.math.vector3 import Vector3
+
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,27 @@ class DDDHelper():
     def plane_xy(self, size=10.0):
         obj = ddd.rect([0, 0, size, size], name="Helper plane XY").triangulate()
         obj = obj.material(ddd.MAT_TEST)
+        obj = ddd.uv.map_cubic(obj)
         return obj
+
+    def grid_xy(self, size=10.0, grid_space=1.0):
+        gw = 0.05
+        grid = ddd.group3(name="Helper grid XZ")
+        for i in range(int(size / grid_space) + 1):
+            line1 = ddd.line([[i * grid_space, 0, 0], [i * grid_space, size, 0]])
+            grid.append(line1)
+        for j in range(int(size / grid_space) + 1):
+            line2 = ddd.line([[0, j * grid_space, 0], [size, j * grid_space, 0]])
+            grid.append(line2)
+        return grid
+
+    '''
+    def grid_xy(self, size=10.0, grid_space=1.0):
+        grid = self.grid_xz(size, grid_space)
+        grid = grid.rotate((ddd.PI_OVER_2, 0, 0)).translate([0, size, 0])
+        grid.name = "Helper grid XY"
+        return grid
+    '''
 
     def grid_yz(self, size=10.0, grid_space=1.0):
         gw = 0.05
@@ -66,8 +88,27 @@ class DDDHelper():
         grid = grid.combine()
         return grid
 
+    def colorize_objects(self, obj, palette=None):
 
+        if palette is None:
+            palette = [ddd.mats.blue, ddd.mats.green, ddd.mats.orange, ddd.mats.brown, ddd.mats.pink, ddd.mats.yellow, ddd.mats.cyan]
 
+        result = obj.copy()
 
+        idx = 0
+        for (i, o) in enumerate(result.iterate_objects()):
+            if o.is_empty(): continue
+            o.replace(o.material(palette[idx], include_children=False))
+            idx = (idx + 1) % len(palette)
 
+        return result
 
+    def marker_axis(self, name=None):
+        if name is None: name ="Marker Axis"
+        marker = ddd.group3(name=name)
+        size = 0.15
+        line_x = ddd.path3([[-size, 0, 0], [size, 0, 0]]).material(ddd.mats.red)
+        line_y = ddd.path3([[0, -size, 0], [0, size, 0]]).material(ddd.mats.green)
+        line_z = ddd.path3([[0, 0, -size], [0, 0, size]]).material(ddd.mats.blue)
+        marker.append([line_x, line_y, line_z])
+        return marker

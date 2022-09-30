@@ -56,7 +56,7 @@ def osm_metadata_clean_ddd_verbose(pipeline, osm, root, obj):
         'ddd:building:convex',
         'ddd:building:convex:segments',
 
-        'extruded_shape',
+        #'_extruded_shape',
         'tags',
     ]
 

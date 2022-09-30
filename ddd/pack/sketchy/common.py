@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 def bar_u(height=0.8, width=0.4, r=0.15, thick=0.1):
     """
     A U-shaped figure, like that used for handles, bycicle stands...
+
+    Oriented with arc up, like a bike parking.
     """
     vertical_height = height - r
 
@@ -45,3 +47,17 @@ def bar_u(height=0.8, width=0.4, r=0.15, thick=0.1):
     item = ddd.uv.map_cubic(item)
     return item
 
+
+def planks_crossed(width, height, beam_thick=0.05, beam_width = 0.075):
+
+    beams = ddd.group2()
+
+    face = ddd.rect([0, 0, width, height])
+
+    beams.append(ddd.rect([beam_width / 2, beam_width / 2, width - beam_width / 2, height - beam_width / 2]).outline())
+    beams.append(ddd.line([[beam_width / 2, beam_width / 2], [width - beam_width / 2, height - beam_width / 2]]))
+    beams.append(ddd.line([[beam_width / 2, height - beam_width / 2], [width - beam_width / 2, beam_width / 2]]))
+    beams = beams.buffer(beam_width).union().intersection(face)
+    beams = beams.extrude(beam_thick)
+
+    return beams

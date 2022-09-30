@@ -10,7 +10,6 @@ import random
 import numpy
 from shapely.geometry.linestring import LineString
 
-from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.ops import uvmapping
@@ -229,7 +228,7 @@ class Ways3DOSMBuilder():
             if 'intersection' in way.extra: continue
 
             way_with_sidewalk_2d = way.buffer(sidewalk_width, cap_style=2, join_style=2)
-            #way_with_sidewalk_2d_extended = osmops.extend_way(way).buffer(sidewalk_width, cap_style=2, join_style=2)
+            #way_with_sidewalk_2d_extended = node2/geomops/already_implemented? -> extend_way(way).buffer(sidewalk_width, cap_style=2, join_style=2)
             sidewalk_2d = way_with_sidewalk_2d.subtract(way).material(ddd.mats.sidewalk)
             wall_2d = way_with_sidewalk_2d.buffer(0.25, cap_style=2, join_style=2).subtract(way_with_sidewalk_2d).buffer(0.001, cap_style=2, join_style=2).material(ddd.mats.cement)
             floor_2d = way_with_sidewalk_2d.buffer(0.3, cap_style=2, join_style=2).buffer(0.001, cap_style=2, join_style=2).material(ddd.mats.cement)

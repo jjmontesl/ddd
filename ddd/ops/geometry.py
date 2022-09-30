@@ -9,7 +9,9 @@ import numpy as np
 import shapely
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd
-from shapely.geometry.polygon import LinearRing, Polygon, orient
+from ddd.math.vector2 import Vector2
+from ddd.math.vector3 import Vector3
+from shapely.geometry.polygon import LineString, LinearRing, Polygon, orient
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -39,11 +41,13 @@ class DDDGeometry():
 
     def oriented_axis(self, obj):
         """
+        Calculates the oriented axis to box the object (based on the minimum rotated rectangle)
+
         Returns (major, minor, rotation)
         """
 
-        rectangle = obj.geom.minimum_rotated_rectangle
-        logger.debug("Calculting oriented axis for: %s min_rotated: %s", obj, rectangle)
+        rectangle = obj.union().geom.minimum_rotated_rectangle
+        logger.debug("Calculating oriented axis for: %s min_rotated: %s", obj, rectangle)
 
         coords = rectangle.exterior.coords[:-1]
 
@@ -151,24 +155,46 @@ class DDDGeometry():
         Modifies the object in place. Subdivides children recursively.
         """
 
+        if obj.geom.type == 'Polygon':
+            return self._subdivide_to_size_polygon(obj, max_edge)
+
         if obj.geom.type != 'LineString':
-            raise DDDException("Cannot subdivide geometry of type: %s", obj)
+            raise DDDException("Cannot subdivide geometry of type: %s" % obj)
 
         sqr_max_edge = max_edge ** 2
         newcoords = [obj.geom.coords[0]]
 
         for (pa, pb) in zip(obj.geom.coords[:-1], obj.geom.coords[1:]):
-            sqrdist = ((pb[0] - pa[0]) ** 2) + ((pb[1] - pa[1]) ** 2) + ((pb[2] - pa[2]) ** 2)
+            use_z = (len(pb) > 2 and len(pa) > 2)
+            sqrdist = ((pb[0] - pa[0]) ** 2) + ((pb[1] - pa[1]) ** 2) + (((pb[2] - pa[2]) ** 2) if use_z else 0)
             if (sqrdist > sqr_max_edge):
                 numpoints = int(math.sqrt(sqrdist) / max_edge)
                 pointsx = list(np.linspace(pa[0], pb[0], numpoints + 2, endpoint=True))[1:-1]
                 pointsy = list(np.linspace(pa[1], pb[1], numpoints + 2, endpoint=True))[1:-1]
-                pointsz = list(np.linspace(pa[2], pb[2], numpoints + 2, endpoint=True))[1:-1]
+
+                if use_z:
+                    pointsz = list(np.linspace(pa[2], pb[2], numpoints + 2, endpoint=True))[1:-1]
+                else:
+                    pointsz = None
+
                 for i in range(numpoints):
-                    newcoords.append((pointsx[i], pointsy[i], pointsz[i]))
+                    newcoords.append((pointsx[i], pointsy[i], pointsz[i] if use_z else 0))
             newcoords.append(pb)
 
         obj.geom.coords = newcoords
+
+        obj.children = [self.subdivide_to_size(c, max_edge) for c in obj.children]
+
+        return obj
+
+    def _subdivide_to_size_polygon(self, obj, max_edge):
+
+        # Subdivide exterior ring
+        polygon_edge = obj.outline()
+        polygon_edge = self.subdivide_to_size(polygon_edge, max_edge)
+
+        # FIXME: We are ignoring holes
+        obj.geom = Polygon(polygon_edge.geom.coords)
 
         obj.children = [self.subdivide_to_size(c, max_edge) for c in obj.children]
 
@@ -215,3 +241,31 @@ class DDDGeometry():
         geom_b.exterior.coords = LinearRing(coords_b)
         obj.geom = Polygon(coords_b, obj.geom.interiors)
         return obj
+
+    def line_extend(self, obj, start_l=1.0, end_l=1.0):
+        """
+        Extends a line continuing start and/or end.
+
+        Start and end points are changed.
+
+        If a length is negative, it tries to blindly move that point backwards.
+
+        TODO: Add flag to add new segments instead of altering?
+
+        Returns a new object.
+        """
+        if obj.geom.type != 'LineString':
+            raise DDDException("Cannot line_extend %s (not a LineString)" % self)
+
+        dir_start = (Vector3(obj.geom.coords[1]) - Vector3(obj.geom.coords[0])).normalized()
+        dir_end = (Vector3(obj.geom.coords[-2]) - Vector3(obj.geom.coords[-1])).normalized()
+
+        p_start = Vector3(obj.geom.coords[0]) - ((dir_start * start_l) if start_l > 0 else obj.geom.coords[0])
+        p_end = Vector3(obj.geom.coords[-1]) - ((dir_end * end_l) if end_l > 0 else obj.geom.coords[1])
+
+        coords = [p_start] + obj.geom.coords[1:-1] + [p_end]
+
+        result = obj.copy()
+        result.geom = LineString(coords)
+
+        return result

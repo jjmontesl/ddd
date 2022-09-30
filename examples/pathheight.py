@@ -130,6 +130,8 @@ def track(pipeline, root):
     '''
 
     #track = track.smooth()
+    track = track.material(ddd.MAT_TEST)
+    track = ddd.uv.map_cubic(track, split=False)
     root.append(track)
 
 @dddtask()
@@ -172,6 +174,8 @@ def track(pipeline, root):
     #track = track.vertex_func(lambda x, y, z, idx: height_func_path_perp(x, y, z, idx, line))
 
     #track = track.smooth()
+    track = track.material(ddd.MAT_TEST)
+    track = ddd.uv.map_cubic(track, split=False)
     root.append(track)
 
     '''

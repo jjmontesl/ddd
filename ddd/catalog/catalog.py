@@ -59,7 +59,7 @@ class PrefabCatalog():
 
         return obj
 
-    def instance(self, key):
+    def instance(self, key, name=None):
         key = key.replace("_", "-").replace(":", "-").replace(".", "-")
         obj = self._cache.get(key, None)
 
@@ -67,8 +67,11 @@ class PrefabCatalog():
             obj = self.load(key)
 
         if obj:
+            if not name:
+                name = obj.name # + " Instance"
             obj = ddd.instance(obj)
             obj.extra['ddd:instance:key'] = key
+            obj.name = name
 
         return obj
 
@@ -98,13 +101,13 @@ class PrefabCatalog():
 
         key = key.replace("_", "-").replace(":", "-").replace(".", "-")
         obj = None
-        filename = self.path + "/" + key + ".ddd"
+        filename = os.path.normpath(os.path.join(self.path, key + ".ddd"))
 
         def _clean_loaded(obj):
             obj._trimesh_material_cached = None
 
         if os.path.exists(filename):
-            logger.info("Loading catalog object %s from: %s", key, filename)
+            logger.info("Loading catalog object '%s' from: %s", key, filename)
             with open(filename, "rb") as f:
                 data = pickle.load(f)
                 data.extra['ddd:catalog:key'] = key  # Replace, in case file was copied in filesystem
@@ -118,6 +121,7 @@ class PrefabCatalog():
 
     def loadall(self):
         if self.catalog_overwrite: return
+        logger.info("Loading catalog from: %s", self.path)
         for p in os.listdir(self.path):
             if p.endswith(".ddd"):
                 key = p[:-4]

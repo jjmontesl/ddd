@@ -8,6 +8,8 @@ import numpy as np
 from trimesh import transformations
 import trimesh
 
+from ddd.math.vector3 import Vector3
+
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
@@ -20,9 +22,11 @@ class DDDTransform():
     These can be used to form an homogeneous transformation matrix (HTM).
     """
 
+    _quaternion_identity = transformations.quaternion_from_euler(0, 0, 0, "sxyz")
+
     def __init__(self):
         self.position = [0, 0, 0]
-        self.rotation = transformations.quaternion_from_euler(0, 0, 0, "sxyz")
+        self.rotation = DDDTransform._quaternion_identity
         self.scale = [1, 1, 1]
 
     def __str__(self):
@@ -50,6 +54,9 @@ class DDDTransform():
             transformations.quaternion_matrix(self.rotation)
         )
         return trimesh.transform_points(vertices, node_transform)
+
+    def forward(self):
+        return Vector3(np.dot(self.to_matrix(), [0, 1, 0, 1])[:3])  # Hack: use matrices
 
     def to_matrix(self):
         """
@@ -85,7 +92,33 @@ class DDDTransform():
     '''
 
     def translate(self, v):
-        self.position = [self.position[0] + v[0], self.position[1] + v[1], self.position[2] + v[2]]
+        self.position = [self.position[0] + v[0], self.position[1] + v[1], self.position[2] + v[2] if len(v) > 2 else self.position[2]]
+
+    '''
+    def rotate(self, v, origin=None):
+
+        center_coords = None
+        if origin == 'local':
+            center_coords = None
+        elif origin:
+            center_coords = origin
+
+        rot = transformations.quaternion_from_euler(v[0], v[1], v[2], "sxyz")
+        """
+        rotation_matrix = transformations.quaternion_matrix(rot)
+
+        if center_coords:
+            translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
+            translate_after = transformations.translation_matrix(np.array(center_coords))
+            self.position = np.dot(translate_before, self.position + [1])[:3]
+            self.position = np.dot(rotation_matrix, self.position + [1])[:3]
+            self.position = np.dot(translate_after, self.position + [1])[:3]
+        else:
+            self.position = np.dot(rotation_matrix, self.position + [1])[:3]
+        """
+
+        self.rotation = transformations.quaternion_multiply(rot, self.rotation)  # order matters!
+    '''
 
 
 '''

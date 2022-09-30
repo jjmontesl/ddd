@@ -5,7 +5,6 @@
 import logging
 
 from ddd.core.exception import DDDException
-from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.pack.sketchy import plants, urban, sports
@@ -292,7 +291,7 @@ class Areas3DOSMBuilder():
 
                 except Exception as e:
                     logger.error("Could not generate area: %s (%s)", e, area_2d)
-                    area_3d = DDDObject3()
+                    area_3d = ddd.DDDObject3()
 
             elif area_2d.extra.get('ddd:area:type', None) == 'void':
                 area_3d = area_2d.copy3("Void area: %s" % area_2d.name)
@@ -330,12 +329,12 @@ class Areas3DOSMBuilder():
                     area_3d = ddd.uv.map_cubic(area_3d)
                 except Exception as e:
                     logger.error("Could not generate area: %s (%s)", e, area_2d)
-                    area_3d = DDDObject3()
+                    area_3d = ddd.DDDObject3()
 
         else:
             if len(area_2d.children) == 0:
                 logger.warning("Null area geometry (children?): %s", area_2d)
-            area_3d = DDDObject3()
+            area_3d = ddd.DDDObject3()
 
         # Subdivide
         if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:

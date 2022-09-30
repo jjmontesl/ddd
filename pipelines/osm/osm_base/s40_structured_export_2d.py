@@ -39,16 +39,18 @@ def osm_structured_export_2d_tile(root, osm, pipeline):
     tile = ddd.group2([
         ddd.shape(osm.area_crop).material(ddd.material(color='#ffffff')),  # White background (?)
         #self.ground_2d,
-        root.select(path="/Water", recurse=False),
-        root.select(path="/Areas", recurse=False),
-        root.select(path="/Ways", recurse=False),  #, select="")  self.ways_2d['-1a'], self.ways_2d['0'], self.ways_2d['0a'], self.ways_2d['1'],
-        root.select(path="/Roadlines2", recurse=False),
-        root.select(path="/Buildings", recurse=False),
-        root.select(path="/ItemsAreas", recurse=False),  #self.items_2d,
-        root.select(path="/ItemsWays", recurse=False),  #self.items_2d,
-        root.select(path="/ItemsNodes", recurse=False).buffer(0.5).material(ddd.mats.red),
+        root.select(path="/Water", recurse=False, empty=2),
+        root.select(path="/Areas", recurse=False, empty=2),
+        root.select(path="/Ways", recurse=False, empty=2),  #, select="")  self.ways_2d['-1a'], self.ways_2d['0'], self.ways_2d['0a'], self.ways_2d['1'],
+        root.select(path="/Roadlines2", recurse=False, empty=2),
+        root.select(path="/Buildings", recurse=False, empty=2),
+        root.select(path="/ItemsAreas", recurse=False, empty=2),  #self.items_2d,
+        root.select(path="/ItemsWays", recurse=False, empty=2),  #self.items_2d,
+        root.select(path="/ItemsNodes", recurse=False, empty=2).buffer(0.5).material(ddd.mats.red),
 
     ]).flatten().select(func=lambda o: o.extra.get('ddd:area:type') != 'underwater')
+
+    tile.dump()
 
     tile = tile.intersection(ddd.shape(osm.area_crop))
     tile = tile.clean()

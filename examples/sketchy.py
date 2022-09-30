@@ -38,6 +38,8 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
+    item = industrial.crate()
+    items.append(item)
 
     item = urban.lamppost_high_mast()
     items.append(item)

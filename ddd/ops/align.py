@@ -81,7 +81,7 @@ class DDDAlign():
         Anchor is a normalized vector relative to the object's bounding box.
         """
         (xmin, ymin, _), (xmax, ymax, _) = obj.bounds()
-        center = ((xmax - xmin) * anchor[0], (ymax - ymin) * anchor[1])
+        center = (xmin + (xmax - xmin) * anchor[0], ymin + (ymax - ymin) * anchor[1])
         result = obj.translate([-center[0], -center[1], 0])
         return result
 

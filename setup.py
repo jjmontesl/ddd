@@ -36,6 +36,7 @@ setup(
         "aiohttp >= 3.7.4.post0",
         "chardet < 4.0",
         "CairoSVG >= 2.4.2",
+        "centerline >= 0.6.4",
         "freetype-py >= 2.1.0.post1",
         "GDAL == 3.0.4",  # Ubuntu 20.04
         "geographiclib >= 1.50",
@@ -50,6 +51,7 @@ setup(
         "portion >= 2.2.0",
         "pycatenary >= 0.4.0",
         "pycsg >= 0.3.3",
+        "pyembree >= 0.2.11",
         "pyGeoTile >= 1.0.6",
         "pyglet < 2",
         "PyOpenGL == 3.1.0",

@@ -3,9 +3,11 @@
 # Jose Juan Montes and Contributors 2019-2021
 
 import datetime
+import hashlib
 import importlib
 import logging
 import os
+import random
 import sys
 
 from ddd.core.cli import D1D2D3Bootstrap
@@ -36,6 +38,16 @@ class DDDPipeline():
 
     def __repr__(self):
         return "Pipeline(name=%r)" % (self.name)
+
+    def random_seed(self, key):
+        seed = self.data.get('ddd:random:seed', None)
+        if seed:
+            seed_key = f'{seed}_{key}'
+            #hasher = hashlib.new('sha256')
+            #hasher.update(seed_key.encode('utf8'))
+            #hashed_key = hasher.digest()
+            #print("Seeding: %s" % hashed_key)
+            random.seed(seed_key)
 
     def load(self, configfile):
 

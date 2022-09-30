@@ -7,6 +7,7 @@ import random
 import numpy as np
 
 from ddd.ddd import ddd
+from ddd.pack.sketchy.common import planks_crossed
 from ddd.pack.sketchy.urban import post, lamp_ball, cable
 import math
 from trimesh import transformations
@@ -158,4 +159,31 @@ def crane_vertical():
     return item
 
 
+def crate(height=1.0, width=1.0, length=1.0):
+    """
+    Crate
+    """
+
+    beam_thick = 0.05
+
+    face_base = ddd.rect([beam_thick, beam_thick, width - beam_thick, length - beam_thick])
+    crate = face_base #.recenter()
+    crate = crate.extrude(height - beam_thick)
+    crate = crate.material(ddd.mats.wood_planks)
+    crate = ddd.uv.map_cubic(crate)
+
+    planks_f = planks_crossed(width, height - beam_thick, beam_thick).rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, beam_thick, 0])
+    planks_fm = planks_f.translate([0, length - beam_thick, 0]) # .translate([0, beam_thick, 0])
+    planks_s = planks_crossed(length - 2 * beam_thick, height - beam_thick, beam_thick).rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CCW).translate([0, beam_thick, 0])
+    planks_sm = planks_s.translate([width - beam_thick, 0, 0])
+    planks_t = planks_crossed(width, height, beam_thick).translate([0, 0, height - beam_thick])
+    planks = ddd.group([planks_f, planks_fm, planks_s, planks_sm, planks_t])
+    planks = planks.combine()
+    planks = planks.material(ddd.mats.wood)
+    planks = ddd.uv.map_cubic(planks)
+
+    crate = ddd.group([crate, planks], name="Crate")
+    #crate = crate.recenter(onplane=True)
+
+    return crate
 

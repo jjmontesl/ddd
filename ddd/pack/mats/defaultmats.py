@@ -1,6 +1,6 @@
-# ddd - D1D2D3
+# ddd - DDD123
 # Library for simple scene modelling.
-# Jose Juan Montes 2020
+# Jose Juan Montes 2020-2022
 
 import logging
 from ddd.ddd import ddd
@@ -11,8 +11,13 @@ from ddd.materials.materials import MaterialsCollection
 logger = logging.getLogger(__name__)
 
 
-
 class DefaultMaterials(MaterialsCollection):
+    """
+    A list of materials that is used by some packs to assign default materials to objects.
+
+    This object is available through 'ddd.mats', and it can be overriden or members added dynamically
+    (also see: MaterialsCollection).
+    """
 
     def __init__(self):
 
@@ -36,8 +41,11 @@ class DefaultMaterials(MaterialsCollection):
         self.garden = ddd.material(name="Garden", color='#2f614b')
         self.grass = ddd.material(name="Grass", color='#2dd355')
         self.park = ddd.material(name="Park", color='#1db345')
-        self.rock = ddd.material(name="Rock", color='#5f5f4d')
+
+        self.rock_black = ddd.material(name="Rock Black", color='#5f5f4d')  # formerly named simply "Rock"
         self.rock_lightbrown = ddd.material(name="Rock Orange", color='#bd8658')
+        self.rock = self.rock_black
+
         self.sand = ddd.material(name="Sand", color='#fff694')
         self.terrain = ddd.material(name="Ground", color='#e6821e')
         self.wetland = ddd.material(name="Wetland", color='#54610c')
@@ -59,11 +67,15 @@ class DefaultMaterials(MaterialsCollection):
         self.metal = ddd.material(name="Steel", color='#68738c')
 
         self.stone = ddd.material(name="Stone", color='#9c9378')
-        self.cement = ddd.material(name="Concrete", color='#b8b8a0')
+        self.cement = ddd.material(name="Cement", color='#b8b8a0')
+        self.concrete = ddd.material(name="Concrete", color='#a9b7ba')
+        self.concrete_planks = ddd.material(name="Concrete Planks", color='#8e999c')
         self.bricks = ddd.material(name="Bricks", color='#d49156')
+        self.bricks_raw = ddd.material(name="Bricks Raw", color='#d49156')
         self.marble_white = ddd.material(name="Marble White", color='#c0c3c8', metallic_factor=0.4, roughness_factor=0.05)
 
         self.wood = ddd.material(name="Wood", color='#efae85')
+        self.wood_planks = ddd.material(name="Wood Planks", color='#b57857')
 
         # Painted materials
         self.metal_paint_red = ddd.material("PaintRed", color='#d01010')
@@ -90,6 +102,7 @@ class DefaultMaterials(MaterialsCollection):
         self.light_green = ddd.material("LightGreen", color='#00ff00')
         self.light_orange = ddd.material("LightOrange", color='#ffff00')
         self.light_red = ddd.material("LightRed", color='#ff0000')
+        self.light_yellow = ddd.material("LightYellow", color='#ffff00')
 
         # Trees
         self.bark = ddd.material(name="Bark", color='#df9e75')
@@ -110,6 +123,9 @@ class DefaultMaterials(MaterialsCollection):
         self.building_3 = ddd.material(color='#c49156')
         self.roof_tiles = ddd.material("RoofTiles", color='#f25129')
 
+        # Transparents
+        #self.transparent_green = ddd.material("Transparent Green", color='#00ff00', extra={'ddd:transparent': True})
+
         # Colors
         self.red = ddd.material("Color Red", color='#ff0000')
         self.green = ddd.material("Color Green", color='#00ff00')
@@ -117,7 +133,11 @@ class DefaultMaterials(MaterialsCollection):
         self.white = ddd.material("Color White", color='#ffffff')
         self.black = ddd.material("Color Black", color='#000000')
 
-        self.orange = ddd.material("Color Orange", color='#ff8000')
+        self.brown = ddd.material("Color Brown", color='#a52a2a')
+        self.cyan = ddd.material("Color Cyan", color='#00ffff')
+        self.gray = ddd.material("Color Gray", color='#808080')
+        self.orange = ddd.material("Color Orange", color='#ffa500')
         self.yellow = ddd.material("Color Yellow", color='#ffff00')
-
+        self.pink = ddd.material("Color Pink", color='#ffc0cb')
+        self.violet = ddd.material("Color Violet", color='#ee82ee')
 

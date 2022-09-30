@@ -21,7 +21,6 @@ import random
 import sys
 
 from ddd.core.exception import DDDException
-from ddd.ddd import DDDObject2, DDDObject3
 from ddd.ddd import ddd
 from ddd.geo import terrain
 from ddd.osm.buildings.buildings_3d_roof import BuildingsRoofs3DOSMBuilder

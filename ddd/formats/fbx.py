@@ -36,7 +36,11 @@ import sys
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath="{tmpglbfile}")
-bpy.ops.export_scene.fbx(filepath="{targetfbxfile}")
+
+# GLTF is correctly exported. This also makes FBX exports valid (in Unity, using "bake rotation" is required to avoid root transform rotations)
+bpy.ops.export_scene.fbx(filepath="{targetfbxfile}", global_scale=1.0, axis_forward="Y", axis_up="Z")
+#bpy.ops.export_scene.fbx(filepath="{targetfbxfile}", global_scale=1.0, axis_forward="Y", axis_up="Z")   # , apply_unit_scale=True, apply_scale_options='FBX_SCALE_ALL', use_space_transform=True, bake_space_transform=True   No textures
+#bpy.ops.export_scene.fbx(filepath="{targetfbxfile}", path_mode="COPY", embed_textures=True)  # Textures (doesn't work, maybe because they are embedded in the GLB?)
 
 #time.sleep(2)
 #bpy.ops.wm.quit_blender()
