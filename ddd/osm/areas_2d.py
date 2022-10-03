@@ -119,7 +119,7 @@ class Areas2DOSMBuilder():
         result = ddd.group2()
         if not union.geom: return result
 
-        for c in ([union.geom] if union.geom.type == "Polygon" else union.geom):
+        for c in ([union.geom] if union.geom.type == "Polygon" else union.geom.geoms):
             if c.type == "LineString":
                 logger.warning("Interways areas union resulted in LineString geometry. Skipping.")
                 continue

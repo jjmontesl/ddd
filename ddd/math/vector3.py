@@ -85,8 +85,10 @@ class Vector3(tuple):
         a = math.acos(dp)
         return a
 
+
 Vector3.zero = Vector3((0, 0, 0))
 Vector3.one = Vector3((1, 1, 1))
+
 Vector3.right = Vector3((1, 0, 0))
 Vector3.forward = Vector3((0, 1, 0))
-Vector3.up = Vector3((0, 1, 0))
+Vector3.up = Vector3((0, 0, 1))

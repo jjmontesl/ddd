@@ -82,11 +82,12 @@ def door(width=1.4, height=2.2, depth=0.06):
     obj = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Door")
     obj = obj.extrude(depth) # .translate([0, 0, depth])
     obj = obj.material(ddd.mats.wood)
-    obj = ddd.uv.map_cubic(obj)
+    obj = obj.smooth()
+    obj = ddd.uv.map_cubic(obj, split=True)
     obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
 
     handle = door_handle_bar()
-    handle = handle.translate([-width * 0.4, -depth, 1.07])
+    handle.transform.translate([-width * 0.4, -depth, 1.07])
     obj.append(handle)
 
     #handle = door_handle()

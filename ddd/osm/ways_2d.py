@@ -424,14 +424,14 @@ class Ways2DOSMBuilder():
 
                         # TODO: Use ddd's overlap
                         imargin = 0.05  # 0.05
-                        if len(join_way_splits) == 0 or join_way_splits.empty:
+                        if join_way_splits.empty or len(join_way_splits.geoms) == 0:
                             logger.debug("Could not find split side for intersection extension (join_way_splits is empty): %s", join_way)
-                        if len(join_way_splits) > 2 and join_way_splits[2].overlaps(intersection_shape.buffer(-imargin).geom):
-                            join_way_split = join_way_splits[2]
-                        if len(join_way_splits) > 1 and join_way_splits[1].overlaps(intersection_shape.buffer(-imargin).geom):
-                            join_way_split = join_way_splits[1]
-                        if len(join_way_splits) > 0 and join_way_splits[0].overlaps(intersection_shape.buffer(-imargin).geom):
-                            join_way_split = join_way_splits[0]
+                        if len(join_way_splits.geoms) > 2 and join_way_splits.geoms[2].overlaps(intersection_shape.buffer(-imargin).geom):
+                            join_way_split = join_way_splits.geoms[2]
+                        if len(join_way_splits.geoms) > 1 and join_way_splits.geoms[1].overlaps(intersection_shape.buffer(-imargin).geom):
+                            join_way_split = join_way_splits.geoms[1]
+                        if len(join_way_splits.geoms) > 0 and join_way_splits.geoms[0].overlaps(intersection_shape.buffer(-imargin).geom):
+                            join_way_split = join_way_splits.geoms[0]
 
                         if join_way_split:
                             logger.debug("Found split side for intersection extension: %s", join_way_split)

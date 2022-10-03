@@ -425,12 +425,13 @@ class Ways1DOSMBuilder():
             # Find nearest points in path, then interpolate z
             coords = way.geom.coords if way.geom.type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
 
+            way.dump(data='ddd')
             coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = way.closest_segment(ddd.point([x, y]))
             dist_a = math.sqrt( (segment_coords_a[0] - coords_p[0]) ** 2 + (segment_coords_a[1] - coords_p[1]) ** 2 )
             dist_b = math.sqrt( (segment_coords_b[0] - coords_p[0]) ** 2 + (segment_coords_b[1] - coords_p[1]) ** 2 )
             factor_b = dist_a / (dist_a + dist_b)
             factor_a = 1 - factor_b  # dist_b / (dist_a + dist_b)
-            interp_z = segment_coords_a[2] * factor_a + segment_coords_b[2] * factor_b
+            interp_z = (segment_coords_a[2] * factor_a + segment_coords_b[2] * factor_b) if len(segment_coords_a) > 2 else 0
 
             return (x, y, z + (interp_z if way.extra.get('osm:natural', None) != "coastline" else 0.0))
 

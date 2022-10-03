@@ -57,7 +57,7 @@ def lamp_block_based(length=0.8, width=0.15, height=0.10, color="#ffffff"):
     lightpanel = lightpanel.material(ddd.mats.light_yellow)
     lightpanel = ddd.uv.map_cubic(lightpanel)
 
-    lightpos = [length / 2, width / 2, height + width]  # light is positioned 2 * width above top
+    lightpos = [length / 2, width / 2, height - margin / 2]
     light = PointLight(lightpos, name="Lamp Floor Light", color=color, radius=length * 4, intensity=1.25, enabled=True)
 
     lamp = ddd.group3([obj, lightpanel, light], name="Lamp Floor")

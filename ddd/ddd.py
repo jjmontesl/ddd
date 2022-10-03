@@ -201,7 +201,7 @@ class D1D2D3():
         if center is None: center = ddd.point([0, 0, 0])
         if isinstance(center, Iterable): center = ddd.point(center)
         if r is None: r = 1.0
-        mesh = primitives.Sphere(center=center.geom.coords[0], radius=r, subdivisions=subdivisions)
+        mesh = primitives.Sphere(center=center.point_coords(), radius=r, subdivisions=subdivisions)
         mesh = Trimesh([[v[0], v[1], v[2]] for v in mesh.vertices], list(mesh.faces))
         return self.DDDObject3(mesh=mesh, name=name)
 

@@ -14,6 +14,10 @@ class Vector2(tuple):
     """
     """
 
+    @staticmethod
+    def array(array):
+        return Vector2((array[0], array[1]))
+
     @property
     def x(self):
         return self[0]
@@ -45,6 +49,11 @@ class Vector2(tuple):
             return Vector2((self[0] + other, self[1] + other))
         return Vector2((self[0] + other[0], self[1] + other[1]))
 
+    def __sub__(self, other):
+        if isinstance(other, (int, float)):
+            return Vector2((self[0] - other, self[1] - other))
+        return Vector2((self[0] - other[0], self[1] - other[1]))
+
     def __mul__(self, other):
         if isinstance(other, (int, float)):
             return Vector2((self[0] * other, self[1] * other))
@@ -72,6 +81,9 @@ class Vector2(tuple):
         c = math.cos(angle)
         s = math.sin(angle)
         return Vector2((self[0] * c - self[1] * s, self[0] * s + self[1] * c))
+
+    def angle(self):
+        return math.atan2(self[1], self[0])
 
 
 Vector2.zero = Vector2((0, 0))

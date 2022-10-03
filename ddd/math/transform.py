@@ -92,9 +92,9 @@ class DDDTransform():
     '''
 
     def translate(self, v):
+        """Modifies the transform in place."""
         self.position = [self.position[0] + v[0], self.position[1] + v[1], self.position[2] + v[2] if len(v) > 2 else self.position[2]]
 
-    '''
     def rotate(self, v, origin=None):
 
         center_coords = None
@@ -104,10 +104,12 @@ class DDDTransform():
             center_coords = origin
 
         rot = transformations.quaternion_from_euler(v[0], v[1], v[2], "sxyz")
-        """
-        rotation_matrix = transformations.quaternion_matrix(rot)
+
+        #rotation_matrix = transformations.quaternion_matrix(rot)
 
         if center_coords:
+            raise NotImplementedError()
+        '''
             translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
             translate_after = transformations.translation_matrix(np.array(center_coords))
             self.position = np.dot(translate_before, self.position + [1])[:3]
@@ -115,10 +117,9 @@ class DDDTransform():
             self.position = np.dot(translate_after, self.position + [1])[:3]
         else:
             self.position = np.dot(rotation_matrix, self.position + [1])[:3]
-        """
+        '''
 
         self.rotation = transformations.quaternion_multiply(rot, self.rotation)  # order matters!
-    '''
 
 
 '''

@@ -67,6 +67,7 @@ class DDDNode2(DDDNode):
         """
         children = []
         if copy_children:
+            # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
             children = [c.copy() for c in self.children]
         # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
         #obj = DDDObject2(name=name if name else self.name, children=children, geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
@@ -163,6 +164,24 @@ class DDDNode2(DDDNode):
         result = ddd.point(geom.centroid.coords)
         result.copy_from(self, copy_material=True)
         return result
+
+    def point_coords(self):
+        """Return the coordinates of the geometry, asuming it is a single point (e.g. as returned by `centroid()`)."""
+        if self.geom and self.geom.type == 'Point':
+            coords = self.geom.coords[0]
+            return Vector3.array(coords)
+        else:
+            raise DDDException("Cannot get point coordinates of a geometry with none or more than one coordinate: %s" % self)
+
+    def line_angle(self):
+        """Returns the angle to +X, asuming it is a LineString with 2 vertices. Z coordinates, if present, are ignored."""
+        if self.geom and self.geom.type == 'LineString' and len(self.geom.coords) == 2:
+            p0 = Vector2.array(self.geom.coords[0])
+            p1 = Vector2.array(self.geom.coords[1])
+            segment = p1 - p0
+            return segment.angle()
+        else:
+            raise DDDException("Cannot get line angle of a geometry other than a 2-vertex LineString: %s" % self)
 
     def translate(self, coords):
 
@@ -975,7 +994,7 @@ class DDDNode2(DDDNode):
         else:
             result = DDDObject3()
 
-        result.children.extend([c.extrude(height) for c in self.children])
+        result.children.extend([c.extrude(height, cap=cap, base=base) for c in self.children])
 
         # Copy extra information from original object
         result.name = self.name if result.name is None else result.name
@@ -1300,8 +1319,8 @@ class DDDNode2(DDDNode):
         except  ZeroDivisionError as e:
             raise DDDException("Error calculating perpendicular geometry to: %s" % self, ddd_obj=self)
 
-        left = (coords_p[0] + perpendicular_vec[0] * length, coords_p[1] + perpendicular_vec[1] * length, coords_p[2])
-        right = (coords_p[0] - perpendicular_vec[0] * length, coords_p[1] - perpendicular_vec[1] * length, coords_p[2])
+        left = (coords_p[0] + perpendicular_vec[0] * length, coords_p[1] + perpendicular_vec[1] * length, coords_p[2] if len(coords_p) > 2 else 0)
+        right = (coords_p[0] - perpendicular_vec[0] * length, coords_p[1] - perpendicular_vec[1] * length, coords_p[2] if len(coords_p) > 2 else 0)
 
         #self.copy(children=None)
         if not double:
