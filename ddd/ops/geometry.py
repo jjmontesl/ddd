@@ -150,7 +150,7 @@ class DDDGeometry():
         """
         Subdivide a 1D geometry so segments have a maximum size.
 
-        Currently works for LineStrings only.
+        Currently works for LineStrings and Polygons.
 
         Modifies the object in place. Subdivides children recursively.
         """
@@ -181,7 +181,7 @@ class DDDGeometry():
                     newcoords.append((pointsx[i], pointsy[i], pointsz[i] if use_z else 0))
             newcoords.append(pb)
 
-        obj.geom.coords = newcoords
+        obj.geom = LineString(newcoords)
 
         obj.children = [self.subdivide_to_size(c, max_edge) for c in obj.children]
 
@@ -203,7 +203,7 @@ class DDDGeometry():
     def vertex_order_align_snap(self, obj, ref):  #, offset, base_height):
         """
         Reindex an object (linear ring) coordinates so it has the same winding and
-        starts in the same index as the reference.
+        starts in the same point (or closest possible) as the reference.
         """
 
         geom_a = ref.geom
@@ -255,7 +255,7 @@ class DDDGeometry():
         Returns a new object.
         """
         if obj.geom.type != 'LineString':
-            raise DDDException("Cannot line_extend %s (not a LineString)" % self)
+            raise DDDException("Cannot line_extend %s (not a LineString)" % obj)
 
         dir_start = (Vector3(obj.geom.coords[1]) - Vector3(obj.geom.coords[0])).normalized()
         dir_end = (Vector3(obj.geom.coords[-2]) - Vector3(obj.geom.coords[-1])).normalized()

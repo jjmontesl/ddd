@@ -41,6 +41,7 @@ from shapely.geometry import polygon, shape
 from shapely.geometry.linestring import LineString
 from shapely.geometry.multipolygon import MultiPolygon
 from shapely.geometry.polygon import Polygon, orient
+from shapely.geometry.point import Point
 from shapely.ops import polygonize, unary_union
 from shapely.strtree import STRtree
 from trimesh import boolean, creation, primitives, remesh, transformations
@@ -101,9 +102,13 @@ class DDDNode2(DDDNode):
     def index_clear(self):
         self._strtree = None
 
+    def start(self):
+        coords = self.geom.coords[0]
+        return ddd.point(coords)
+
     def end(self):
         coords = self.geom.coords[-1]
-        return D1D2D3.point(coords)
+        return ddd.point(coords)
 
     def line_rel(self, coords):
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
@@ -184,12 +189,16 @@ class DDDNode2(DDDNode):
             raise DDDException("Cannot get line angle of a geometry other than a 2-vertex LineString: %s" % self)
 
     def translate(self, coords):
+        """
+        This method modifies the object (since v0.7 2022-10).
+        """
 
         if hasattr(coords, 'geom'):
             coords = coords.geom.coords[0]
 
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
-        result = self.copy()
+        #result = self.copy()
+        result = self
 
         #if math.isnan(coords[0]) or math.isnan(coords[1]):
         #    logger.warn("Invalid translate coords (%s) for object: %s", coords, self)
@@ -206,18 +215,27 @@ class DDDNode2(DDDNode):
             trans_func = lambda x, y, z=0.0: (x + coords[0], y + coords[1], z + coords[2])
             result.geom = ops.transform(trans_func, self.geom)
 
-        result.children = [c.translate(coords) for c in self.children]
+        #result.children = [c.translate(coords) for c in self.children]
+        for c in self.children:
+            c.translate(coords)
+
         return result
 
     def rotate(self, angle, origin=None):  # center (bb center), centroid, point
         """
         Angle is in radians.
+
+        This method modifies the object (since v0.7 2022-10).
         """
         if origin is None: origin = (0, 0)
-        result = self.copy()
+        #result = self.copy()
+        result = self
         if self.geom:
             result.geom = affinity.rotate(self.geom, angle, origin=origin, use_radians=True)
-        result.children = [c.rotate(angle, origin) for c in self.children]
+
+        #result.children = [c.rotate(angle, origin) for c in self.children]
+        for c in self.children:
+            c.rotate(angle, origin)
         return result
 
     def scale(self, coords, origin=None): # None=(0,0), centroid
@@ -448,11 +466,21 @@ class DDDNode2(DDDNode):
                 yield coord
         elif self.geom and self.geom.type == 'GeometryCollection':
             for g in self.geom.geoms:
-                for coord in D1D2D3.shape(g).coords_iterator():
+                for coord in ddd.shape(g).coords_iterator():
                     yield coord
         elif self.geom and self.geom.type == 'LineString':
             for coord in self.geom.coords:
                 yield coord
+        elif self.geom and self.geom.type == 'Point':
+            for coord in self.geom.coords:
+                yield coord
+        elif self.geom and self.geom.type == 'MultiPoint':
+            for g in self.geom.geoms:
+                yield g.coords[0]
+        elif self.geom and self.geom.type == 'MultiLineString':
+            for g in self.geom.geoms:
+                for coord in g.coords:
+                    yield coord
         elif self.geom:
             raise NotImplementedError("Not implemented coords_iterator for geom: %s" % self.geom.type)
 
@@ -477,7 +505,7 @@ class DDDNode2(DDDNode):
         obj = self.copy()
         if obj.geom:
             if obj.geom.type == 'MultiPolygon':
-                logger.warn("Unknown geometry for 2D vertex func")
+                logger.warn("Vertex Func applied to MultiPolygon is currently invalid (only applies to exteriors and uses deprecated Shapely coords assignation)")
                 for g in obj.geom.geoms:
                     g.exterior.coords = self._vertex_func_coords(func, g.exterior.coords, mask=mask)
             elif obj.geom.type == 'Polygon':
@@ -500,11 +528,13 @@ class DDDNode2(DDDNode):
         """
         if not self.geom:
             return 0
-        if self.geom.type == 'MultiPolygon':
+        elif self.geom.type == 'MultiPolygon':
             return sum([len(p.exterior.coords) for p in self.geom.geoms])
-        if self.geom.type == 'MultiLineString':
+        elif self.geom.type == 'MultiLineString':
             return sum([len(p.coords) for p in self.geom.geoms])
-        if self.geom.type == 'Polygon':
+        elif self.geom.type == 'MultiPoint':
+            return sum([len(p.coords) for p in self.geom.geoms])
+        elif self.geom.type == 'Polygon':
             if self.geom.is_empty: return 0
             return len(self.geom.exterior.coords) + sum([len(i.coords) for i in self.geom.interiors])
         else:
@@ -584,7 +614,12 @@ class DDDNode2(DDDNode):
         '''
 
         if not result.is_empty():
-            result = result.individualize()
+            if len(result.children) == 1:
+                # Individualize(always=true) was added to solve "single children multipolygon".union() returning empty,
+                # but seems to fail if applied to every object, so the workaround above was applied
+                result = result.individualize(always=True)
+            else:
+                result = result.individualize()
 
         objs = result.children
         result.children = []
@@ -603,7 +638,7 @@ class DDDNode2(DDDNode):
                 result.geom = objs[0].geom
 
         if other:
-            union = other.union().clean(eps=0)
+            union = other.union()  # .clean(eps=0)  # NOTE: Until 2022-10 this involved 'clean(eps=0), but this destroys degenerate intersections
             if result.geom and union.geom:
                 try:
                     #result.geom = result.geom.union(union.geom)
@@ -612,9 +647,6 @@ class DDDNode2(DDDNode):
                     logger.error("Cannot perform union (1st try) between %s and %s: %s", result, other, e)
                     try:
                         result.geom = ops.unary_union([result.geom, union.geom])
-                        #result = result.clean(eps=0.001).simplify(0.001)
-                        #other = other.clean(eps=0.001).simplify(0.001)
-                        #result.geom = result.geom.union(union.geom)
                         result = result.clean(eps=0)
                     except Exception as e:
                         logger.error("Cannot perform union (2nd try) between %s and %s: %s", result, other, e)
@@ -718,6 +750,20 @@ class DDDNode2(DDDNode):
     def length(self):
         return self.geom.length
 
+    def snap_vertices_to(self, other, tolerance=ddd.EPSILON * 10):
+        """
+        """
+        result = self.copy()
+        if other.is_empty():
+            raise DDDException("Cannot snap geometry %s to empty geometry %s." % (self, other))
+        if other.children:
+            raise DDDException("Cannot snap geometry %s to geometry with children: %s." % (self, other))
+
+        result.geom = ops.snap(result.geom, other.geom, tolerance)
+        result.children = [c.snap(other, tolerance) for c in self.children]
+
+        return result
+
     def area(self):
         """
         Returns the area of this shape.
@@ -804,6 +850,13 @@ class DDDNode2(DDDNode):
                 newobj.geom = partialgeom
                 newchildren.append(newobj)
 
+        elif self.geom and self.geom.type == 'MultiPoint':
+            result.geom = None
+            for partialgeom in self.geom.geoms:
+                newobj = self.copy(copy_children=False)
+                newobj.geom = Point(partialgeom.coords[0])
+                newchildren.append(newobj)
+
         elif self.geom and self.geom.type == 'Polygon' and remove_interiors and self.geom.interiors:
             result.geom = None
             newobj = self.copy(copy_children=False)
@@ -811,7 +864,7 @@ class DDDNode2(DDDNode):
             newchildren.append(newobj)
 
         elif always:
-            # Move as a children for consistency
+            # Move as a child for consistency
             result.geom = None
             newobj = self.copy(copy_children=False)
             newobj.geom = self.geom
@@ -1052,9 +1105,21 @@ class DDDNode2(DDDNode):
 
         if self.geom:
             splits = ops.split(self.geom, splitter.geom)
-            result.append(ddd.shape(splits[0]))
-            #result.append(ddd.shape(splits[1]))
+            result.geom = None
+            for s in splits.geoms:
+                shape = ddd.shape(s)
+                shape.copy_from(self, copy_children=False)
+                result.append(shape)
+            #result.append(ddd.shape(splits[1]))qq
+            #self.geom = splits[1]
 
+        return result
+
+    def orient(self, ccw=True):
+        result = self.copy()
+        if result.geom:
+            result.geom = polygon.orient(result.geom, 1 if ccw else -1)
+        result.children = [c.orient(ccw) for c in self.children]
         return result
 
     def orient_from(self, other):
@@ -1069,6 +1134,9 @@ class DDDNode2(DDDNode):
         return result
 
     def simplify(self, distance):
+        """
+        Keywords: decimate, collapse
+        """
         result = self.copy()
         if self.geom:
             result.geom = result.geom.simplify(distance, preserve_topology=True)
@@ -1221,12 +1289,12 @@ class DDDNode2(DDDNode):
         except Exception as e:
             raise DDDException("Could not interpolate distance on segment %s: %s" % (self, e))
 
-        #length = self.geom.length
+        length = self.geom.length
         for idx in range(len(coords) - 1):
             p, pn = coords[idx:idx+2]
             pl = math.sqrt((pn[0] - p[0]) ** 2 + (pn[1] - p[1]) ** 2)
             l += pl
-            if l >= d:
+            if l >= ((d * length) if normalized else d):
                 return (self.geom.interpolate(d, normalized).coords[0], idx, p, pn)
         return (self.geom.interpolate(d, normalized).coords[0], idx, p, pn)
 

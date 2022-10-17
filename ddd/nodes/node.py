@@ -194,6 +194,11 @@ class DDDNode():
 
         return node_name
 
+    def transform_translate(self, coords):
+        result = self.copy()
+        result.transform.translate(coords)
+        return result
+
     def replace(self, obj):
         """
         Replaces self data with data from other object. Serves to "replace"
@@ -215,7 +220,9 @@ class DDDNode():
         node_name = self.reprname() + name_suffix
 
         metadata = dict(self.extra)
+        metadata['ddd:name'] = node_name
         metadata['ddd:path'] = path_prefix + node_name
+        metadata['ddd:str'] = str(self)
         if hasattr(self, "geom"):
             metadata['geom:type'] = self.geom.type if self.geom else None
         if self.mat and self.mat.name:
@@ -234,7 +241,11 @@ class DDDNode():
 
         return metadata
 
-    def dump(self, indent_level=0, data=False):
+    def dump(self, data=False, indent_level=0):
+        if indent_level == 0:
+            total_children_len = sum(1 for _ in self.iterate_objects())
+            logger.info("Dumping: %s (%d objects)", self, total_children_len)
+
         strdata = ""
         if data:
             #metadata = self.extra
@@ -246,7 +257,7 @@ class DDDNode():
         print("  " * indent_level + str(self) + strdata)
 
         for c in self.children:
-            c.dump(indent_level=indent_level + 1, data=data)
+            c.dump(data=data, indent_level=indent_level + 1)
 
     def count(self):
         # TODO: Is this semantically correct? what about hte root node and children?
@@ -541,6 +552,9 @@ class DDDNode():
 
         return result
 
+    def children_len(self):
+        return len(self.children)
+
     def append(self, obj):
         """
         Adds an object as a children to this node.
@@ -555,12 +569,24 @@ class DDDNode():
             raise DDDException("Cannot append object to DDDObject children (wrong type): %s" % obj)
         return self
 
-    def remove(self, obj):
+    def remove(self, obj, by_name=False):
         """
         Removes an object from this node children recursively. Modifies objects in-place.
+
+        TODO: since copy() was changed to copy children recursively, this can no longer be used to remove results from a copied object :?
         """
-        self.children = [c.remove(obj) for c in self.children if c and c != obj]
+        self.children = [c.remove(obj, by_name) for c in self.children if c and (c != obj and (not by_name or c.name != obj.name))]
         return self
+
+    def is_empty(self):
+        """
+        Tells whether this object has no geometry, or geometry is empty, and
+        all children are also empty.
+        """
+        for c in self.children:
+            if not c.is_empty():
+                return False
+        return True
 
     def save(self, path, instance_marker=None, instance_mesh=None, include_metadata=True, size=None):
         # FIXME: Review: for base DDDNode, we are converting to DDDNode2/3 in order to save with a weak criteria

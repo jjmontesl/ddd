@@ -128,13 +128,18 @@ class DefaultMaterials(MaterialsCollection):
 
         # Colors
         self.red = ddd.material("Color Red", color='#ff0000')
-        self.green = ddd.material("Color Green", color='#00ff00')
+        self.green = ddd.material("Color Green", color='#00ff00')  # Should be 008000
         self.blue = ddd.material("Color Blue", color='#0000ff')
         self.white = ddd.material("Color White", color='#ffffff')
         self.black = ddd.material("Color Black", color='#000000')
 
         self.brown = ddd.material("Color Brown", color='#a52a2a')
+        self.crimson = ddd.material("Color Crimson", color='#dc143c')
+        self.coral = ddd.material("Color Crimson", color='#ff7f50')
         self.cyan = ddd.material("Color Cyan", color='#00ffff')
+        self.darkblue = ddd.material("Color DarkBlue", color='#00008b')
+        self.darkslategrey = ddd.material("Color DarkSlateGrey", color='#2f4f4f')
+        self.darkturquoise = ddd.material("Color DarkTurquoise", color='#00ced1')
         self.gray = ddd.material("Color Gray", color='#808080')
         self.orange = ddd.material("Color Orange", color='#ffa500')
         self.yellow = ddd.material("Color Yellow", color='#ffff00')

@@ -29,7 +29,7 @@ from ddd.ops.extrusion import extrude_step_multi, extrude_dome
 logger = logging.getLogger(__name__)
 
 
-def lamp_block_based(length=0.8, width=0.15, height=0.10, color="#ffffff"):
+def lamp_block_based(length=0.8, width=0.15, height=0.10, color="#ffffff", empty=False):
     """
     A light on a floor with an angled beam. Length along X, centered on XY, lying on Z.
     """
@@ -53,24 +53,27 @@ def lamp_block_based(length=0.8, width=0.15, height=0.10, color="#ffffff"):
     obj = obj.material(ddd.mats.metal)
     obj = ddd.uv.map_cubic(obj)
 
-    lightpanel = hole.triangulate().translate([0, 0, height - margin * 0.95])
-    lightpanel = lightpanel.material(ddd.mats.light_yellow)
-    lightpanel = ddd.uv.map_cubic(lightpanel)
+    if not empty:
+        lightpanel = hole.triangulate().translate([0, 0, height - margin * 0.95])
+        lightpanel = lightpanel.material(ddd.mats.light_yellow)
+        lightpanel = ddd.uv.map_cubic(lightpanel)
 
-    lightpos = [length / 2, width / 2, height - margin / 2]
-    light = PointLight(lightpos, name="Lamp Floor Light", color=color, radius=length * 4, intensity=1.25, enabled=True)
+        lightpos = [length / 2, width / 2, height - margin / 2]
+        light = PointLight(lightpos, name="Lamp Floor Light", color=color, radius=length * 4, intensity=1.25, enabled=True)
+        lamp = ddd.group3([obj, lightpanel, light], name="Lamp Floor")
+    else:
+        lamp = ddd.group([obj], name="Lamp Floor Empty")
 
-    lamp = ddd.group3([obj, lightpanel, light], name="Lamp Floor")
     lamp = lamp.recenter(onplane=True)
 
     return lamp
 
-def lamp_block_based_bevel(length=0.8, width=0.15, bevel=[0.025, 0.025], height=0.10, color=[1.0, 1.0, 1.0]):
+def lamp_block_based_bevel(length=0.8, width=0.15, bevel=[0.025, 0.025], height=0.10, color=[1.0, 1.0, 1.0], empty=False):
 
     if isinstance(bevel, (float, int)):
         bevel = [bevel, bevel]
 
-    lamp = lamp_block_based(length - bevel[0] * 2, width - bevel[1] * 2, height, color)
+    lamp = lamp_block_based(length - bevel[0] * 2, width - bevel[1] * 2, height, color, empty=empty)
 
     def remap_vertices_to_corner(x, y, z, idx):
         if z == 0:

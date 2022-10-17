@@ -7,6 +7,7 @@ import logging
 from ddd.ddd import ddd
 import math
 from shapely.geometry.polygon import LinearRing
+from shapely.geometry.point import Point
 from ddd.core.exception import DDDException
 
 
@@ -63,7 +64,7 @@ class DDDSnap():
         if penetrate:
             coords_p = [coords_p[0] + dirvec[0] * penetrate * exterior, coords_p[1] + dirvec[1] * penetrate * exterior]
 
-        result.geom.coords = coords_p
+        result.geom = Point(coords_p)
         result.extra['ddd:angle:calculated'] = math.atan2(dirvec[1], dirvec[0]) + (math.pi if exterior < 0 else 0)
         result.extra['ddd:angle'] = result.extra['ddd:angle'] if result.extra.get('ddd:angle', None) is not None else result.extra['ddd:angle:calculated']
 

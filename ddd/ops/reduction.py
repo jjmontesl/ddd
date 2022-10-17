@@ -183,6 +183,20 @@ class DDDMeshOps():
 
         return obj
 
+    def filter_faces_func(self, obj, func):
+        if obj.mesh:
+            face_mask = [func(idx, face, obj.mesh.face_normals[idx]) for idx, face in enumerate(obj.mesh.faces)]
+            #print(obj.mesh.vertices.shape)
+            obj.mesh.update_faces(face_mask)
+            #print(obj.mesh.vertices.shape)
+            obj = obj.merge_vertices().clean()
+            #obj.mesh.remove_degenerate_faces()
+            #print(obj.mesh.vertices.shape)
+
+        obj.children = [self.remove_faces_pointing(c, obj, func) for c in obj.children]
+
+        return obj
+
     def interpolate_uv(self, f, p1, p2, p3, uv1, uv2, uv3):
         # From: https://answers.unity.com/questions/383804/calculate-uv-coordinates-of-3d-point-on-plane-of-m.html
         # Calculate vectors from point f to vertices p1, p2 and p3:

@@ -46,7 +46,8 @@ to the project, note:
 
 - Treat operations as if they modified the object (many operations currently return
   a copy of the object but this will change for performance and consistency reasons).
-  Use copy() explicitly for copying an object.
+  Use copy() explicitly for copying an object. Modifying in place is also necessary
+  for objects that keep references to other objects.
 - Access to metadata (`extra`, `.get`...) and propagation to children may change.
 - Usage will gravitate towards a Node hierarchy where each node has a transform
   (currently only DDDInstance objects have a transform and all other geometries are

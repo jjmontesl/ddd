@@ -102,7 +102,7 @@ class D1D2D3():
     def trace(self, local=None):
         """
         Start an interactive session.
-        Normally, users will use: "ddd.trace(locals())"
+        Intended usage is: `ddd.trace(locals())`
         """
         #import pdb; pdb.set_trace()
         import code
@@ -124,7 +124,7 @@ class D1D2D3():
             coords = [0, 0, 0]
         elif len(coords) == 2:
             coords = [coords[0], coords[1], 0.0]
-        geom = geometry.Point(coords)
+        geom = geometry.Point(*coords[:3])
         return self.DDDObject2(geom=geom, name=name, extra=extra)
 
     #@staticmethod
@@ -185,7 +185,8 @@ class D1D2D3():
         cmin, cmax = bounds #((bounds[0], bounds[1]), (bounds[2], bounds[3]))
         geom = geometry.Polygon([(cmin[0], cmin[1], 0.0), (cmax[0], cmin[1], 0.0),
                                  (cmax[0], cmax[1], 0.0), (cmin[0], cmax[1], 0.0)])
-        geom = polygon.orient(geom, -1)
+        #geom = polygon.orient(geom, -1)  # Until 2022-10, this line was enabled
+        #geom = polygon.orient(geom, 1)  # CCW (this is also how vertices above are defined)
         return self.DDDObject2(geom=geom, name=name)
 
     #@staticmethod

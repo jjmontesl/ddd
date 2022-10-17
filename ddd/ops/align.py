@@ -85,6 +85,8 @@ class DDDAlign():
         result = obj.translate([-center[0], -center[1], 0])
         return result
 
+    reanchor = anchor
+
 
     def along(self, obj, reference, endpoint=True):
         """

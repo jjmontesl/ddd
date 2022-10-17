@@ -103,7 +103,7 @@ class DDDPath3(DDDNode):
         obj = DDDPath3(name=name, children=list(self.children), path3=path3_copy, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
         return obj
 
-    def show3(self):
+    def show3(self, label=None):
         return self.copy()
 
     def discretize(self, distance=1.0):

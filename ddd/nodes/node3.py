@@ -876,7 +876,7 @@ class DDDNode3(DDDNode):
         return cobjs
 
     def marker(self, world_space=True, use_normal_box=False):
-        ref = ddd.marker(name=self.name + " (Marker)", extra=dict(self.extra), use_normal_box=use_normal_box)
+        ref = ddd.marker(name="%s (Marker)" % self.name, extra=dict(self.extra), use_normal_box=use_normal_box)
         if world_space:
             ref = ref.scale(self.transform.scale)  # Scale is not implemented (at least in DDDPath3 and DDDInstance?)
             ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
@@ -886,7 +886,8 @@ class DDDNode3(DDDNode):
 
     def show3(self, instance_mesh=None, instance_marker=None, label=None):
 
-        logger.info("Showing: %s", self)
+        total_children_len = sum(1 for _ in self.iterate_objects())
+        logger.info("Showing: %s (%d total objs)", self, total_children_len)
 
         #self.dump()
 

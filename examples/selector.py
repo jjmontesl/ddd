@@ -61,6 +61,10 @@ def test_selectors_attr_undef_set():
 def test_selectors_and():
     pass
 
+# Test paths, select *...
+
+# Test additions, insertios, funcs...
+
 
 # Run pipeline. This will run tasks defined here too
 pipeline = DDDPipeline(['periodictable_pipeline_base.py'])

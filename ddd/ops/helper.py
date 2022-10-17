@@ -91,7 +91,9 @@ class DDDHelper():
     def colorize_objects(self, obj, palette=None):
 
         if palette is None:
-            palette = [ddd.mats.blue, ddd.mats.green, ddd.mats.orange, ddd.mats.brown, ddd.mats.pink, ddd.mats.yellow, ddd.mats.cyan]
+            palette = [ddd.mats.blue, ddd.mats.crimson, ddd.mats.green, ddd.mats.orange, ddd.mats.brown, ddd.mats.pink,
+                       ddd.mats.yellow, ddd.mats.cyan, ddd.mats.violet, ddd.mats.coral, ddd.mats.darkblue,
+                       ddd.mats.darkslategrey, ddd.mats.darkturquoise]
 
         result = obj.copy()
 

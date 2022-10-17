@@ -53,23 +53,34 @@ class Generic3DPresentation():
                     if node.geom.type == 'LineString':
                         result = ddd.path3(node.geom.coords)
                         result = result.copy_from(node, copy_material=True)
+                    elif node.geom.type == 'MultiLineString':
+                        tnode = node.individualize()
+                        result = Generic3DPresentation.present(tnode)
+                        newchildren = list(result.children)
                     elif node.geom.type in ('MultiPolygon', ):
                         tnode = node.individualize()
                         result = Generic3DPresentation.present(tnode)
                         newchildren = list(result.children)
+                    elif node.geom.type in ('MultiPoint', ):
+                        tnode = node.individualize()
+                        result = Generic3DPresentation.present(tnode)
+                        newchildren = list(result.children)
                     else:
-                        result = node.copy3(copy_children=True)
+                        result = node.copy3(copy_children=False)
                         tnode = node
-                        if node.geom.type in ('Point', 'MultiPoint'):
+                        if node.geom.type in ('Point', ):  # this was failing silently !?, but there should not be MultiPoints already
                             tnode = node.buffer(0.25)
-                        elif node.geom.type in ('LineString', 'MultiLineString'):
-                            tnode = node.buffer(0.10)
-                            #tnode = node.buffer(0.10)
+                        #elif node.geom.type in ('LineString', 'MultiLineString'):
+                        #    tnode = node.buffer(0.10)
+                        #    #tnode = node.buffer(0.10)
                         try:
                             triangulated = tnode.triangulate(ignore_children=True)
                             result.mesh = triangulated.mesh
                         except Exception as e:
                             logger.warn("Could not triangulate 2D object for 3D representation export (%s): %s", node, e)
+                        except:
+                            logger.warn("ERROR: Could not triangulate 2D object for 3D representation export (%s)", node)
+                            raise
                 else:
                     # Fixme: this should be a static constructor in DDDNode3 (and DDDNode2.copy3() may call that, if still needed)
                     #result = node.copy3(copy_children=True)
@@ -90,4 +101,5 @@ class Generic3DPresentation():
             logger.error("Cannot present node %s: %s", node, e)
             raise
 
+        #ddd.trace(locals())
         return result
