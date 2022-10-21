@@ -15,6 +15,8 @@ from scipy.interpolate.interpolate import interp2d
 from ddd.core import settings
 from ddd.core.exception import DDDException
 import numpy as np
+import sys
+import traceback
 
 
 # Get instance of logger for this module
@@ -122,12 +124,12 @@ class GeoRasterTile:
             return self.value_simple(point)
 
         # Correct EUDEM11 <10000 values
-        try:
-            height_matrix = np.maximum(height_matrix, 0)
-        except TypeError as e:
-            # Fix None values (empty / missing)
-            # TODO: Except on sea, this should possibly get the average from surrounding values
-            return 0
+        # try:
+        #     height_matrix = np.maximum(height_matrix, 0)
+        # except TypeError as e:
+        #     # Fix None values (empty / missing)
+        #     # TODO: Except on sea, this should possibly get the average from surrounding values
+        #     return 0
 
         if k == 1:
             interpolated = interp2d([0, 1], [0, 1], height_matrix, 'linear')  # , copy=False
@@ -146,11 +148,17 @@ class GeoRasterLayer:
     Groups several GeoRasterTile configurations.
     """
 
+    landmaskMapCache=None
+
     def __init__(self, tiles_config):
         self.tiles_config = tiles_config
 
         self._last_tile = None
         self._last_tile_config = None
+        self._last_landmask_tile = None
+        self._last_landmask_tile_config = None
+        self._last_waterlayer_tile = None
+        self._last_waterlayer_tile_config = None
 
         # Cache of transformers for different georaster tile CRS
         self._transformers = {}
@@ -177,31 +185,90 @@ class GeoRasterLayer:
         This method caches the last accessed tile, as it is more likely to be hit next.
         """
 
-        if self._last_tile:
-            projected_point = self._transform_wgs84_to(point, self._last_tile.crs)
-            if (projected_point[0] >= self._last_tile_config['bounds'][0] and projected_point[0] < self._last_tile_config['bounds'][2] and
+        key = self._transform_wgs84_to(point, 'epsg:3857')
+        key = (round(key[0]), round(key[1]))
+
+        if self._last_tile or self._last_waterlayer_tile and self._last_landmask_tile:
+            tile = self._last_tile if self._last_tile else self._last_waterlayer_tile
+            projected_point = self._transform_wgs84_to(point, tile.crs)
+
+            if self._last_waterlayer_tile is not None:
+                landmask_value = self._last_landmask_tile.value(point, False)
+                if self._last_landmask_tile_config['water_value'] >= landmask_value:
+                    return self._last_waterlayer_tile
+
+            if self._last_tile_config and not 'is_water_mask' in self._last_tile_config and (projected_point[0] >= self._last_tile_config['bounds'][0] and projected_point[0] < self._last_tile_config['bounds'][2] and
                 projected_point[1] >= self._last_tile_config['bounds'][1] and projected_point[1] < self._last_tile_config['bounds'][3]):
                 return self._last_tile
-
+            
         for cc in self.tiles_config:
-
             projected_point = self._transform_wgs84_to(point, cc['crs'])
 
             #if (point[0] >= cc['bounds_wgs84_xy'][0] and point[0] < cc['bounds_wgs84_xy'][2] and
             #    point[1] >= cc['bounds_wgs84_xy'][1] and point[1] < cc['bounds_wgs84_xy'][3]):
             if (projected_point[0] >= cc['bounds'][0] and projected_point[0] < cc['bounds'][2] and
                 projected_point[1] >= cc['bounds'][1] and projected_point[1] < cc['bounds'][3]):
+                # TODO: the config must be ordered
+                is_mask_related=False
+                if self._last_landmask_tile is None and 'is_water_mask' in cc:
+                    self._last_landmask_tile_config = cc
+                    self._last_landmask_tile = GeoRasterTile.load(cc['path'], cc['crs'])
+                    is_mask_related=True
+
+                if self._last_waterlayer_tile is None and 'is_water_layer' in cc:
+                    self._last_waterlayer_tile_config = cc
+                    self._last_waterlayer_tile = GeoRasterTile.load(cc['path'], cc['crs'])
+                    is_mask_related=True
+
+                if self._last_landmask_tile is not None and self._last_waterlayer_tile is not None: # and 'is_water_mask' in cc and cc['is_water_mask'] == True:
+                    landmask_value = self._last_landmask_tile.value(point, False)
+  
+                    if self._last_landmask_tile_config['water_value'] >= landmask_value:
+                        return self._last_waterlayer_tile
+                        # return (self._last_waterlayer_tile, self._last_waterlayer_tile_config)
+
+                # if configs for watermask/landmask is already set, the last condition from above was already not met and we are still on those configs we must skip
+                if self._last_landmask_tile is not None and 'is_water_mask' in cc or self._last_waterlayer_tile is not None and 'is_water_layer' in cc:
+                    continue
+
+                if is_mask_related:
+                    continue
+
                 self._last_tile_config = cc
                 self._last_tile = GeoRasterTile.load(cc['path'], cc['crs'])
                 return self._last_tile
+                # return (self._last_tile, self._last_tile_config)
 
         return None
 
     def value(self, point, interpolate=True):
         tile = self.tile_from_point(point)
+
         if tile is None:
-            raise DDDException("No raster tile found for point: %s" % (point, ))
-        return tile.value(point, interpolate)
+            # {tile.layer.GetDescription()}
+            raise DDDException(f"No raster tile found for point: {point}")
+        # else:
+            # # key = self._transform_wgs84_to(point, 'epsg:3857')
+            # # key = (round(key[0]), round(key[1]))
+            # maskvalue=self._last_landmask_tile.value(point, False)
+            # print(f"[{maskvalue}] {tile.layer.GetDescription()} -> {point} || {tile.value(point, interpolate)} {tile.value(point, False)}") # , {self._last_waterlayer_tile.layer.GetDescription()}")
+            # # print(f"[{maskvalue}, {self._last_landmask_tile.layer.GetDescription()}] {tile.layer.GetDescription()} -> {point}")
+        
+        non_interpolated=tile.value(point, False)
+        interpolated=tile.value(point, interpolate)
+        
+        if abs(non_interpolated - 32768) <= 10 or abs(non_interpolated + 32768) <= 10:
+            if self._last_waterlayer_tile is not None:
+                return self._last_waterlayer_tile.value(point, interpolate)
+            return 0
+
+        if non_interpolated == 0 and abs(interpolated) >= 100:
+            return 0
+
+        if abs(non_interpolated) > 0 and abs(interpolated / non_interpolated) >= 3:
+            return non_interpolated
+
+        return interpolated
 
     def area(self, bounds):
         """

@@ -33,7 +33,8 @@ def pipeline_start(pipeline, root):
     item = item.material(ddd.mats.terrain)
     item = item.smooth(angle=math.pi/12)
     item = ddd.uv.map_cubic(item)
-    item.show()
+    # item.show()
+    item.save('/tmp/geo.glb')
 
     root.append(item)
 
