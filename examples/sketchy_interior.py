@@ -16,7 +16,7 @@
 
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import urban, landscape, industrial, interior, sports, \
+from ddd.pack.sketchy import posters, urban, landscape, industrial, interior, sports, \
     vehicles, common, buildings
 from ddd.pipeline.decorators import dddtask
 from ddd.pack.sketchy.urban import lamppost, lamp_ball, roundedpost,\
@@ -37,6 +37,13 @@ def pipeline_start(pipeline, root):
 
 
     items = ddd.group3()
+
+    item = posters.poster_ripped()
+    item.show()
+    items.append(item)
+
+    item = posters.poster_flat()
+    items.append(item)
 
     item = interior.furniture_test_out_in()
     item.show()

@@ -61,7 +61,7 @@ class Vector3(tuple):
     def __sub__(self, other):
         if isinstance(other, (int, float)):
             return Vector3((self[0] - other, self[1] - other, self[2] - other))
-        return Vector3((self[0] - other[0], self[1] - other[1], self[2] - (other[2] if len(other) > 2 else 0)))
+        return Vector3((self[0] - other[0], self[1] - other[1], (self[2] if len(self) > 2 else 0) - (other[2] if len(other) > 2 else 0)))
 
     def __mul__(self, other):
         if isinstance(other, (int, float)):

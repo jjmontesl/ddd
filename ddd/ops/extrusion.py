@@ -201,11 +201,10 @@ def extrude_between_geoms_wrap(geom_a, geom_b, offset, base_height):
     """
 
     # Ensure winding
-    if (geom_a.type == "Polygon" and geom_b.type == "Polygon"):
-        if (geom_a.exterior.is_ccw != geom_b.exterior.is_ccw):
-            #logger.debug("Cannot extrude between polygons with different winding. Orienting polygons.")
-            geom_a = orient(geom_a, -1)
-            geom_b = orient(geom_b, -1)
+    if geom_a.type == "Polygon" and not geom_a.exterior.is_ccw:
+        geom_a = orient(geom_a, 1)  # this is dependant on the source polygon, we assume the source is CCW (1)
+    if geom_b.type == "Polygon" and not geom_b.exterior.is_ccw:
+        geom_b = orient(geom_b, 1)  # this is dependant on the source polygon, we assume the source is CCW (1)
 
     coords_a = geom_a.coords if geom_a.type != 'Polygon' else geom_a.exterior.coords[:-1]  # Linearrings repeat first/last point
     coords_b = geom_b.coords if geom_b.type != 'Polygon' else geom_b.exterior.coords[:-1]  # Linearrings repeat first/last point
@@ -273,10 +272,10 @@ def extrude_coords(coords_a, coords_b, distance, base_height=0):
 
         # Vertex modulus is used to handle repeated first-last vertex in polys
         if advance_b or finished_a:
-            ntri = [shape_a_idx % modulus_a, shape_b_idx % modulus_b + vertices_b_idx, (shape_b_idx + 1) % modulus_b + vertices_b_idx]
+            ntri = [shape_b_idx % modulus_b + vertices_b_idx, shape_a_idx % modulus_a, (shape_b_idx + 1) % modulus_b + vertices_b_idx]
             shape_b_idx +=1
         elif not advance_b or finished_b:
-            ntri = [shape_a_idx % modulus_a, shape_b_idx % modulus_b + vertices_b_idx, (shape_a_idx + 1) % modulus_a]
+            ntri = [shape_b_idx % modulus_b + vertices_b_idx, shape_a_idx % modulus_a, (shape_a_idx + 1) % modulus_a]
             shape_a_idx +=1
         else:
             raise AssertionError()
