@@ -11,7 +11,6 @@ from ddd.ddd import ddd
 from ddd.pack.sketchy import plants, urban
 from ddd.geo import terrain
 from ddd.core.exception import DDDException
-from ddd.util.dddrandom import weighted_choice
 from collections import namedtuple
 
 

@@ -17,7 +17,7 @@ from ddd.util import dddrandom
 @dddtask(order="55.52", condition=True)
 def osm_augment_rocks_condition(pipeline):
     """
-    Run plant augmentation only if so configured (ddd:osm:augment:plants=True).
+    Run rock augmentation only if so configured (ddd:osm:augment:rocks=True).
     """
     return bool(pipeline.data.get('ddd:osm:augment:rocks', True))
 

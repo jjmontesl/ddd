@@ -260,8 +260,8 @@ class DDDGeometry():
         dir_start = (Vector3(obj.geom.coords[1]) - Vector3(obj.geom.coords[0])).normalized()
         dir_end = (Vector3(obj.geom.coords[-2]) - Vector3(obj.geom.coords[-1])).normalized()
 
-        p_start = Vector3(obj.geom.coords[0]) - ((dir_start * start_l) if start_l > 0 else obj.geom.coords[0])
-        p_end = Vector3(obj.geom.coords[-1]) - ((dir_end * end_l) if end_l > 0 else obj.geom.coords[1])
+        p_start = Vector3(obj.geom.coords[0]) - ((dir_start * start_l) if start_l != 0 else obj.geom.coords[0])
+        p_end = Vector3(obj.geom.coords[-1]) - ((dir_end * end_l) if end_l != 0 else obj.geom.coords[1])
 
         coords = [p_start] + obj.geom.coords[1:-1] + [p_end]
 

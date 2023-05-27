@@ -75,7 +75,7 @@ def lamp_block_based_bevel(length=0.8, width=0.15, bevel=[0.025, 0.025], height=
 
     lamp = lamp_block_based(length - bevel[0] * 2, width - bevel[1] * 2, height, color, empty=empty)
 
-    def remap_vertices_to_corner(x, y, z, idx):
+    def remap_vertices_to_corner(x, y, z, idx, o):
         if z == 0:
             if y < 0:
                 y = y - bevel[1]

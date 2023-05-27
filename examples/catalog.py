@@ -9,7 +9,9 @@ from ddd.pipeline.decorators import dddtask
 
 
 @dddtask()
-def example_catalog(pipeline, root):
+def example_catalog(pipeline, root, logger):
+
+    logger.warn("REMEMBER!! This example should usually be run with: --export-meshes")
 
     catalog = PrefabCatalog()
 

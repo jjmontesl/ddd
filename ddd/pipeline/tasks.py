@@ -113,6 +113,13 @@ class DDDTask(object):
 
         start_time = datetime.datetime.now()
 
+        # Assign params to pipeline if they are not already defined
+        if self.params:
+            for k, v in self.params.items():
+                if k not in pipeline.data:
+                    pipeline.data[k] = v
+
+        '''
         try:
             #logger.warn("DEBUG: %s", pipeline.root.select(path="/Areas", selector='[osm:id = "way-112075680"]', recurse=True))
             #logger.warn("DEBUG: %s", pipeline.root.select(path="/Ways", selector='[osm:id = "way-112075680"]', recurse=True))
@@ -120,6 +127,7 @@ class DDDTask(object):
             pass
         except:
             pass
+        '''
 
         #logger.info("Task select: filter=%s select=%s path=%s", self.filter, self.selector, self.path)
 

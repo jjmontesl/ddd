@@ -110,7 +110,7 @@ class PrefabCatalog():
             logger.info("Loading catalog object '%s' from: %s", key, filename)
             with open(filename, "rb") as f:
                 data = pickle.load(f)
-                data.extra['ddd:catalog:key'] = key  # Replace, in case file was copied in filesystem
+                data.extra['ddd:catalog:key'] = key  # Replace, in case file was renamed in the filesystem
                 data.select(apply_func=_clean_loaded)
                 self._cache[key] = data
                 obj = self.instance(key)

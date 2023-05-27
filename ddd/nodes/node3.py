@@ -18,6 +18,7 @@
 
 from _collections_abc import Iterable
 import base64
+import inspect
 import json
 import logging
 import math
@@ -274,16 +275,37 @@ class DDDNode3(DDDNode):
         obj.children = [c.elevation_func(func) for c in obj.children]
         return obj
 
-    def vertex_func(self, func, mask=None):
+    def vertex_func(self, func, mask=None, world_matrix=None):
         obj = self.copy()
+
+        if world_matrix is None:
+            world_matrix = obj.transform.to_matrix()
+        else:
+            world_matrix = transformations.concatenate_matrices(world_matrix, obj.transform.to_matrix())
+
+        obj.set("_world_matrix", world_matrix)
+
         if obj.mesh:
             for iv, v in enumerate(obj.mesh.vertices):
                 if mask is None or mask(v[0], v[1], v[2], iv):
-                    res = func(v[0], v[1], v[2], iv)
+
+                    # Support old vertex functions which didn't receive the object
+                    '''
+                    argspec = inspect.getfullargspec(func)
+                    if argspec and argspec.args and len(argspec.args) == 4:
+                        res = func(v[0], v[1], v[2], iv)
+                    else:
+                        res = func(v[0], v[1], v[2], iv, obj)
+                    '''
+                    res = func(v[0], v[1], v[2], iv, obj)
                     v[0] = res[0]
                     v[1] = res[1]
                     v[2] = res[2]
-        obj.children = [c.vertex_func(func) for c in self.children]
+
+        obj.children = [c.vertex_func(func, mask=mask, world_matrix=world_matrix) for c in self.children]
+
+        obj.unset("_world_matrix")
+
         return obj
 
     def vertex_iterator(self):
@@ -348,13 +370,34 @@ class DDDNode3(DDDNode):
         if not self.mesh and operation == 'union':
             return other.copy()
 
+        res = None
         obj = self.copy()
         if operation == 'subtract':
-            obj.mesh = boolean.difference([self.mesh, other.mesh], engine="blender")
+            res = boolean.difference([self.mesh, other.mesh], engine="blender")
         elif operation == 'union':
-            obj.mesh = boolean.union([self.mesh, other.mesh], engine="blender")
+            res = boolean.union([self.mesh, other.mesh], engine="blender")
         elif operation == 'intersection':
-            obj.mesh = boolean.intersection([self.mesh, other.mesh], engine="blender")
+            res = boolean.intersection([self.mesh, other.mesh], engine="blender")
+        else:
+            raise AssertionError()
+
+        if res:
+            if isinstance(res, Trimesh):
+                obj.mesh = res
+            elif isinstance(res, Scene):
+                if len(res.geometry) == 0:
+                    logger.error("CSG operation on %s resulted in an empty scene: %s", self, res)
+                    return obj
+                obj.mesh = None
+                ddd.trace(locals())
+                #scene.graph
+                for k, node in res.geometry.items():
+                    sobj = self.copy()
+                    sobj.mesh = node
+                    obj.append(sobj)
+            else:
+                logger.error("CSG operation result is not a Trimesh: %s", res)
+                return obj
         else:
             raise AssertionError()
 
@@ -543,7 +586,7 @@ class DDDNode3(DDDNode):
 
         return result
 
-    def merge_vertices(self, keep_normals=False):
+    def merge_vertices(self, keep_normals=False, children=True):
         """
         Merges vertices. Modifies the object in place
 
@@ -552,11 +595,12 @@ class DDDNode3(DDDNode):
         @see Also see trimesh.smoothed and trimesh.merge_vertices.
         """
 
-        for c in self.children:
-            c.merge_vertices(keep_normals=keep_normals)
+        if children:
+            for c in self.children:
+                c.merge_vertices(keep_normals=keep_normals, children=children) 
 
         if self.mesh:
-            self.mesh.merge_vertices(merge_norm=not keep_normals)  # , digits_vertex=5, digits_norm=5)  # merge_tex=True, digits_text
+            self.mesh.merge_vertices(merge_norm=not keep_normals)  # , digits_vertex=5, digits_norm=5)  # merge_tex=True, use_tex=True, merge_norm=False, digits_text
             # FIXME: Account for UVs instead of clearing them
             if self.extra.get('uv') and len(self.extra['uv']) != len(self.mesh.vertices):
                 logger.warn("FIXME: removing UVs (invalid count) after merge_vertices for: %s", self)
@@ -564,7 +608,7 @@ class DDDNode3(DDDNode):
 
         return self
 
-    def smooth(self, angle=math.pi * 0.475):  #, facet_minarea=None):
+    def smooth(self, angle=math.pi * 0.475, children=True):  #, facet_minarea=None):
         """
         Smoothes normals. Returns a copy of the object.
 
@@ -579,7 +623,8 @@ class DDDNode3(DDDNode):
         """
         result = self.copy()
 
-        result.children = [c.smooth(angle=angle) for c in result.children]
+        if children:
+            result.children = [c.smooth(angle=angle, children=children) for c in result.children]
 
         if self.mesh:
             #self.mesh.fix_normals()
@@ -589,8 +634,6 @@ class DDDNode3(DDDNode):
             if self.extra.get('uv') and len(self.extra['uv']) != len(self.mesh.vertices):
                 logger.warn("FIXME: removing UVs (invalid count) after smooth for: %s", self)
                 self.extra['uv'] = None
-
-        #result.mesh.merge_vertices(use_tex=True, merge_norm=False)
 
         return result
 
@@ -793,7 +836,7 @@ class DDDNode3(DDDNode):
 
             if (self.transform.position[0] != 0 or self.transform.position[1] != 0 or self.transform.position[2] != 0 or
                 any([self.transform.rotation[i] != DDDTransform._quaternion_identity[i] for i in range(3)])):
-                logger.warn("Scene root cannot have non-identity transforms, they are not applied, on export / view: %s", self.transform)
+                logger.info("Note: Scene root cannot have non-identity transforms, they are not applied, on export / view: %s", self.transform)
 
         #if mesh is None: mesh = ddd.marker().mesh
         #print("Adding: %s to %s" % (scene_node_name, scene_parent_node_name))

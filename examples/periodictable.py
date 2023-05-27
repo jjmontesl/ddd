@@ -62,8 +62,8 @@ def generate_scenario_run(root):
     logger.info("Num elements: %s", num_items)
     distance = (num_items * 10) / (2 * math.pi)
     #result = ddd.align.polar(elements, d=distance)
-    result = ddd.align.grid(elements)
-    elements.replace(result)
+    #result = ddd.align.grid(elements)
+    #elements.replace(result)
 
     elements3 = ddd.group3(name="Elements3")
     root.append(elements3)

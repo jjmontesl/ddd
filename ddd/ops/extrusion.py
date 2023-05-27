@@ -179,7 +179,7 @@ def extrude_between_geoms_subtract(shape_a, shape_b, offset, base_height):
         for g in shape_b.geom.interiors: shape_b_coords.extend(list(g.coords))
     """
 
-    def func(x, y , z, i):
+    def func(x, y , z, i, o):
         if (x, y) in shape_a_coords or (x, y, z) in shape_a_coords: z = base_height
         elif (x, y) in shape_b_coords or (x, y, z) in shape_b_coords: z = base_height + offset
         else:

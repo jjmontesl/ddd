@@ -42,6 +42,9 @@ class DDDNode():
         self.mat = material
         self.transform = transform if transform is not None else DDDTransform()
 
+        # TODO: FIXME: Adding A) parenting + full-blown hierarchy  and  B) per-function copy/alter semantics,  will impact tons of code... triple think and...
+        #self.parent = None
+
         self._uid = None
 
         #self.geom = None
@@ -129,6 +132,7 @@ class DDDNode():
         else:
             obj = ddd.DDDObject3(name=name if name else self.name, children=[], mesh=None, extra=dict(self.extra), material=self.mat)
         obj.transform = self.transform.copy()
+
         return obj
 
 
@@ -223,6 +227,7 @@ class DDDNode():
         metadata['ddd:name'] = node_name
         metadata['ddd:path'] = path_prefix + node_name
         metadata['ddd:str'] = str(self)
+        metadata['ddd:type'] = '2d' if hasattr(self, "geom") else '3d'
         if hasattr(self, "geom"):
             metadata['geom:type'] = self.geom.type if self.geom else None
         if self.mat and self.mat.name:

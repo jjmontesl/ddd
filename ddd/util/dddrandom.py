@@ -31,9 +31,9 @@ class DDDRandom:
         assert False, "Incorrect weighted choice."
 
 
+'''
 def weighted_choice(options):
     """
-    TODO: Move to a generic utils module (or ddd.random, and account for seeding and hashing etc).
     """
     total = sum([o for o in options.values()])
     rand = random.uniform(0, total)
@@ -42,3 +42,4 @@ def weighted_choice(options):
         if accum + v >= rand: return k
         accum += v
     assert False, "Incorrect weighted choice."
+'''

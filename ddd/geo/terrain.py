@@ -44,7 +44,7 @@ def terrain_geotiff(bounds, ddd_proj, detail=1.0):
     elevation = ElevationModel.instance()
 
     mesh = terrain_grid(bounds, detail=detail)
-    func = lambda x, y, z, i: [x, y, elevation.value(transform_ddd_to_geo(ddd_proj, [x, y]))]
+    func = lambda x, y, z, i, o: [x, y, elevation.value(transform_ddd_to_geo(ddd_proj, [x, y]))]
     mesh = mesh.vertex_func(func)
     #mesh.mesh.invert()
     return mesh
@@ -52,7 +52,7 @@ def terrain_geotiff(bounds, ddd_proj, detail=1.0):
 def terrain_geotiff_elevation_apply(obj, ddd_proj):
     elevation = ElevationModel.instance()
     #print(transform_ddd_to_geo(ddd_proj, [obj.mesh.vertices[0][ 0], obj.mesh.vertices[0][1]]))
-    func = lambda x, y, z, i: [x, y, z + elevation.value(transform_ddd_to_geo(ddd_proj, [x, y]))]
+    func = lambda x, y, z, i, o: [x, y, z + elevation.value(transform_ddd_to_geo(ddd_proj, [x, y]))]
     obj = obj.vertex_func(func)
     #mesh.mesh.invert()
     return obj
@@ -71,7 +71,7 @@ def terrain_geotiff_min_elevation_apply(obj, ddd_proj):
     if min_h is None:
         raise DDDException("Cannot calculate min value for elevation: %s" % obj)
 
-    #func = lambda x, y, z, i: [x, y, z + min_h]
+    #func = lambda x, y, z, i, o: [x, y, z + min_h]
     obj = obj.translate([0, 0, min_h])
     obj.extra['_terrain_geotiff_min_elevation_apply:elevation'] = min_h
     #mesh.mesh.invert()
@@ -91,7 +91,7 @@ def terrain_geotiff_max_elevation_apply(obj, ddd_proj):
     if max_h is None:
         raise DDDException("Cannot calculate max value for elevation: %s" % obj)
 
-    #func = lambda x, y, z, i: [x, y, z + max_h]
+    #func = lambda x, y, z, i, o: [x, y, z + max_h]
     obj = obj.translate([0, 0, max_h])
     obj.extra['_terrain_geotiff_max_elevation_apply:elevation'] = max_h
     #mesh.mesh.invert()

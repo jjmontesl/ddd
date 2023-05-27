@@ -49,11 +49,15 @@ class DDDTransform():
         return result
 
     def transform_vertices(self, vertices):
-        node_transform = transformations.concatenate_matrices(
+        node_transform = self.transformations.concatenate_matrices(
             transformations.translation_matrix(self.position),
             transformations.quaternion_matrix(self.rotation)
         )
         return trimesh.transform_points(vertices, node_transform)
+
+    def transform_point(self, point):
+        points = self.transform_vertices([point])
+        return points[0]
 
     def forward(self):
         return Vector3(np.dot(self.to_matrix(), [0, 1, 0, 1])[:3])  # Hack: use matrices

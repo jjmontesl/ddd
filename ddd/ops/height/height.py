@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 class HeightFunction():
 
-    def vertex_function(self, x, y, z, idx):
+    def vertex_function(self, x, y, z, idx, obj=None):
         return NotImplementedError()
 
 

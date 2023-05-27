@@ -39,7 +39,7 @@ class RunCommand(DDDCommand):
 
         logger.info("Running DDD123 script.")
 
-        pipeline = DDDPipeline(self.script, name="DDD Server Build Pipeline")
+        pipeline = DDDPipeline(self.script, name="DDD Build Pipeline")
 
         # Run pipeline
         pipeline.run()
@@ -51,3 +51,4 @@ class RunCommand(DDDCommand):
         if self.save:
             logger.info("Saving root node to: %s", self.save)
             pipeline.root.save(self.save)
+

@@ -105,12 +105,12 @@ class DDDHelper():
 
         return result
 
-    def marker_axis(self, name=None):
+    def marker_axis(self, name=None, material=None):
         if name is None: name ="Marker Axis"
         marker = ddd.group3(name=name)
         size = 0.15
-        line_x = ddd.path3([[-size, 0, 0], [size, 0, 0]]).material(ddd.mats.red)
-        line_y = ddd.path3([[0, -size, 0], [0, size, 0]]).material(ddd.mats.green)
-        line_z = ddd.path3([[0, 0, -size], [0, 0, size]]).material(ddd.mats.blue)
+        line_x = ddd.path3([[-size, 0, 0], [size, 0, 0]]).material(material if material else ddd.mats.red)
+        line_y = ddd.path3([[0, -size, 0], [0, size, 0]]).material(material if material else ddd.mats.green)
+        line_z = ddd.path3([[0, 0, -size], [0, 0, size]]).material(material if material else ddd.mats.blue)
         marker.append([line_x, line_y, line_z])
         return marker

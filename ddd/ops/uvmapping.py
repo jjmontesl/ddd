@@ -61,7 +61,8 @@ class DDDUVMapping():
         result.children = [self.map_3d_random(c) for c in result.children]
         return result
 
-    def map_cubic(self, obj, offset=None, scale=None, split=True):
+    # FIXME: Try to change default mapping of children to false? (seems a more sensible default) and normalize offset, scale order
+    def map_cubic(self, obj, offset=None, scale=None, split=True, children=True):
         """
         FIXME: Study and provide for when vertex should be duplicated (regarding UV and normals). Normals shall be calculated
         before UV mapping as vertex may need to be duplicated (although an adequate mapping would also reduce this)
@@ -127,10 +128,13 @@ class DDDUVMapping():
                     setuv(face, face[1], (p1[0], p1[1]))
                     setuv(face, face[2], (p2[0], p2[1]))
 
-        result.children = [self.map_cubic(c, offset, scale, split=split) for c in result.children]
+        if children:
+            result.children = [self.map_cubic(c, offset, scale, split=split, children=children) for c in result.children]
+
         return result
 
-    def map_spherical(self, obj, offset=None, scale=None, split=True):
+    # FIXME: Try to change default mapping of children to false? (seems a more sensible default) and normalize offset, scale order
+    def map_spherical(self, obj, offset=None, scale=None, split=True, children=True):
         """
         Uses a vertical cylinder centered on (0, 0).
 
@@ -189,10 +193,13 @@ class DDDUVMapping():
                 setuv(face, face[1], (0.5 + (phi1 / (math.pi * 2)), 0.5 + theta1 / (math.pi * 1)))
                 setuv(face, face[2], (0.5 + (phi2 / (math.pi * 2)), 0.5 + theta2 / (math.pi * 1)))
 
-        result.children = [self.map_cubic(c, offset, scale, split=split) for c in result.children]
+        if children:
+            result.children = [self.map_spherical(c, offset, scale, split=split, children=children) for c in result.children]
+
         return result
 
-    def map_cylindrical(self, obj, scale=None, offset=None, split=True):
+    # FIXME: Try to change default mapping of children to false? (seems a more sensible default) and normalize offset, scale order
+    def map_cylindrical(self, obj, scale=None, offset=None, split=True, children=True):
         """
         Uses a vertical cylinder centered on (0, 0).
         """
@@ -244,7 +251,9 @@ class DDDUVMapping():
                     setuv(face, face[1], (angle1 / (math.pi * 2), p1[2]))
                     setuv(face, face[2], (angle2 / (math.pi * 2), p2[2]))
 
-        result.children = [self.map_cubic(c, offset, scale, split=split) for c in result.children]
+        if children:
+            result.children = [self.map_cylindrical(c, scale, offset, split=split, children=children) for c in result.children]
+            
         return result
 
     def map_xy(self, obj):

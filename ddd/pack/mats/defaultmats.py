@@ -46,8 +46,13 @@ class DefaultMaterials(MaterialsCollection):
         self.rock_lightbrown = ddd.material(name="Rock Orange", color='#bd8658')
         self.rock = self.rock_black
 
+        self.terrain_ground = ddd.material(name="Ground Clear", color='#a48f74')
+        self.terrain_pebbles_sparse = ddd.material(name="Ground Pebbles Sparse", color='#e6821e')
+        self.terrain_veg_dead_sparse = ddd.material(name="Ground Veg Dead Sparse", color='#8c6d2a')
+        self.terrain = self.terrain_veg_dead_sparse.copy("Ground")
+
+
         self.sand = ddd.material(name="Sand", color='#fff694')
-        self.terrain = ddd.material(name="Ground", color='#e6821e')
         self.wetland = ddd.material(name="Wetland", color='#54610c')
 
         self.pavement = ddd.material(name="Sidewalk", color='#c0c0b0')
@@ -95,7 +100,8 @@ class DefaultMaterials(MaterialsCollection):
         self.plastic_white = ddd.material("Plastic White", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)
 
         # Glass
-        self.glass = ddd.material("Glass", color='#2e4163', metallic_factor=0.0, roughness_factor=0.0)  #  , extra={'ddd:transparent': True}
+        #self.glass = ddd.material("Glass", color='#2e4163', metallic_factor=0.0, roughness_factor=0.0)  #  , extra={'ddd:transparent': True}
+        self.glass = ddd.material("Glass", color='#2e4163', metallic_factor=0.0, roughness_factor=0.0, extra={'ddd:transparent': True, 'ddd:reflection': True})
 
         # Lights
         self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')
@@ -104,9 +110,10 @@ class DefaultMaterials(MaterialsCollection):
         self.light_red = ddd.material("LightRed", color='#ff0000')
         self.light_yellow = ddd.material("LightYellow", color='#ffff00')
 
-        # Trees
+        # Vegetation (trees, hedges)
         self.bark = ddd.material(name="Bark", color='#df9e75')
         self.treetop = ddd.material(name="Treetop", color='#1da345')
+        #self.hedge = 
 
         # Urban props materials
         self.fence = ddd.material(name="Fence", color='282024', extra={'ddd:transparent': True})

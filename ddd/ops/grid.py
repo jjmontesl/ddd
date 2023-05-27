@@ -43,7 +43,7 @@ def polygon_from_bounds(bounds_or_obj, sides=4):
 
 def shape_to_grid(obj, interval=2.0, name="Shaped Grid", adjust=False):
     bounds = obj.bounds()
-    grid = ddd.grid2(obj.bounds(), interval, name=name, adjust=adjust)
+    grid = ddd.grid2(bounds, interval, name=name, adjust=adjust)
     grid = grid.individualize().intersection(obj)
     return grid
 
@@ -61,7 +61,7 @@ class PerlinTerrainRandomHeightFunction(HeightFunction):
         self.height = height
         self.scale = scale
 
-    def vertex_function(self, x, y, z, idx):
+    def vertex_function(self, x, y, z, idx, o):
         h = self.height * noise.pnoise2(x * self.scale, y * self.scale, octaves=3, persistence=0.5, lacunarity=1.0, repeatx=1024, repeaty=1024, base=0)
         return (x, y, z + h)
 

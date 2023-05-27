@@ -24,6 +24,7 @@ def pipeline_text_3d(pipeline, root):
 
     #test_str = "Filarmónica !\"$%&/() 🌟 😀 🎩 🐲 - iüáí¿?¡!"
     test_str = "Filarmónica pidgeon !\"·$%&/() 🌟 😀 🎩 🐲 - iüáíñÑçÇñÁÉÄÖ~ ¿?¡!"
+    #test_str = "Simple test"
 
     text3d = Text3D()
     result = text3d.text(test_str)

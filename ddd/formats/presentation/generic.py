@@ -65,6 +65,26 @@ class Generic3DPresentation():
                         tnode = node.individualize()
                         result = Generic3DPresentation.present(tnode)
                         newchildren = list(result.children)
+
+                    elif node.geom.type in ('Point', ):
+                        try:
+                            # Attempt to make points stand out
+                            #result = node.copy3(copy_children=False)
+                            #triangulated = ddd.point().buffer(0.2).triangulate()
+                            #triangulated = triangulated.rotate(ddd.ROT_FLOOR_TO_FRONT).translate(node.point_coords())
+                            #result.mesh = triangulated.mesh
+                            result = ddd.helper.marker_axis(material=node.mat).translate(node.point_coords())
+                            result = result.copy_from(node, copy_material=True, copy_children=False)
+
+                            result = Generic3DPresentation.present(result)
+                            newchildren = list(result.children)
+
+                        except Exception as e:
+                            logger.warn("Could not triangulate 2D object (point) for 3D representation export (%s): %s", node, e)
+                        except:
+                            logger.warn("ERROR: Could not triangulate 2D object (point) for 3D representation export (%s)", node)
+                            raise
+
                     else:
                         result = node.copy3(copy_children=False)
                         tnode = node

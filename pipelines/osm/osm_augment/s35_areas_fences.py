@@ -16,6 +16,7 @@ from ddd.pipeline.decorators import dddtask
 
 
 # Add fences to schools
+# FIXME: Not used / not working, it's not a ddd task and it's obsolete (review)
 def generate_area_2d_school(self, area):
     feature = area.extra['osm:feature']
     area.name = "School: %s" % feature['properties'].get('name', None)

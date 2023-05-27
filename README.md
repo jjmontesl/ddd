@@ -2,8 +2,8 @@
 
 DDD(123) is a library for procedural generation of 2D and 3D geometries and scenes.
 
-DDD purpose is to provide a very expressive API for building and operating with
-shapes and models and at the same time closely reflect the hierarchy and metadata
+DDD purpose is to provide an expressive API for building and manipulating
+shapes and models and at the same time reflect the hierarchy and metadata
 that usually needs to accompany your built 2D or 3D documents.
 
 DDD follows an object graph (or in 3D, a scene graph) approach. Documents (scenes)
@@ -12,7 +12,7 @@ operations can be applied to individual nodes, entire branches, or selected
 nodes within a hierarchy.
 
 DDD can export entire scenes or branches easily to several 2D and 3D
-formats: SVG, PNG, GLTF/GLB, custom JSON structure.
+formats: SVG, PNG, GLTF/GLB, custom JSON...
 
 DDD includes an 'object catalog' concept, which allows reusing and caching objects
 speeding up the generation process, and allowing render engines to leverage shared
@@ -26,7 +26,7 @@ packages which provide most of the geometry operations.
 
 - Procedurally generate, alter and align 2D and 3D geometry.
 - Export 2D to SVG and PNG.
-- Export 3D to GLTF, FBX or OBJ.
+- Export 3D to GLTF/GLB, FBX or OBJ.
 - TTF based generation of text geometry.
 - Object catalog ("prefabs") support (for object and geometry reusing and runtime instancing).
 - Handle materials, normals and UV coordinates.
@@ -36,6 +36,7 @@ packages which provide most of the geometry operations.
 - A simple procedural models library (trees, urban props...)
 - Heightmap and splatmap generation (for terrain engines and splatmap based shading).
 - OpenStreetMap data 2D and 3D generation pipelines.
+- DEM (Digital Elevation Model) support for real-world terrain generation.
 
 
 ## Current status notes (Work in progress! Expect changes!)
@@ -45,12 +46,12 @@ transformed into a more widely usable tool. If you are using or contributing
 to the project, note:
 
 - Treat operations as if they modified the object (many operations currently return
-  a copy of the object but this will change for performance and consistency reasons).
-  Use copy() explicitly for copying an object. Modifying in place is also necessary
-  for objects that keep references to other objects.
+  a copy of the object but this is not consistent).
+  Use copy() explicitly for copying an object. Use replace() to replace an
+  object (necessary when there are existing references to objects).
 - Access to metadata (`extra`, `.get`...) and propagation to children may change.
-- Usage will gravitate towards a Node hierarchy where each node has a transform
-  (currently only DDDInstance objects have a transform and all other geometries are
+- API is gravitating towards a Node hierarchy where each node has a transform
+  (formerly only DDDInstance objects had a transform and all other geometries were
   in world space).
 
 
@@ -60,7 +61,7 @@ Please use the Issue tracker for questions, discussions and pull requests.
 If you need some ideas, here are some areas that need help:
 
 - Adding and documenting examples and tutorials.
-- Create a simple and flexible tree procedural generator and tree prefabs.
+- Write a flexible "tree/vegetation" procedural generator pack.
 - Adding other model packs and/or improving the aspect of the current assets pack.
 - Improve the OSM generation pipeline.
 - Improve road, signals and roadlines connectivity code.

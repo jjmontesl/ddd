@@ -75,15 +75,21 @@ class DDDNode2(DDDNode):
         obj = DDDObject2(name=name if name else self.name, children=children, geom=self.geom if self.geom else None, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
         return obj
 
-    def copy3(self, name=None, mesh=None, copy_children=False):
+    def copy3(self, name=None, mesh=None, copy_children=False, points_to_transform=True):
         """
         Copies this DDDObject2 into a DDDObject3, maintaining metadata but NOT children or geometry.
         """
         # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
         if copy_children:
-            obj = ddd.DDDObject3(name=name if name else self.name, children=[(c.copy3() if hasattr(c, 'copy3') else c.copy()) for c in self.children], mesh=mesh, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
+            obj = ddd.DDDObject3(name=name if name else self.name, children=[(c.copy3(copy_children=True, points_to_transform=points_to_transform) if hasattr(c, 'copy3') else c.copy()) for c in self.children], mesh=mesh, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
         else:
             obj = ddd.DDDObject3(name=name if name else self.name, children=[], mesh=mesh, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
+        #obj.set('source_node2', self)
+
+        if points_to_transform and self.geom and self.geom.type == "Point":
+            coords = self.point_coords()
+            obj.transform.translate(coords)
+
         return obj
 
     def replace(self, obj):
@@ -493,15 +499,15 @@ class DDDNode2(DDDNode):
     def _vertex_func_coords(self, func, coords, mask=None):
         ncoords = []
         for iv, v in enumerate(coords):
-            if mask is None or mask(v[0], v[1], v[2], iv):
-                res = func(v[0], v[1], v[2] if len(v) > 2 else 0.0, iv)
+            if mask is None or mask(v[0], v[1], v[2], iv, self):
+                res = func(v[0], v[1], v[2] if len(v) > 2 else 0.0, iv, self)
             else:
-                res = (v[0], v[1], v[2] if len(v) > 2 else 0.0, iv)
+                res = (v[0], v[1], v[2] if len(v) > 2 else 0.0, iv, self)
             ncoords.append(res[:len(v)])
             #print("%s > %s" % (v, res))
         return ncoords
 
-    def vertex_func(self, func, mask=None):
+    def vertex_func(self, func, mask=None, world_matrix=None):
         obj = self.copy()
         if obj.geom:
             if obj.geom.type == 'MultiPolygon':
@@ -516,7 +522,8 @@ class DDDNode2(DDDNode):
                 #logger.warn("Unknown geometry for 2D vertex func")
                 raise DDDException("Unknown geometry for 2D vertex func: %s" % self)
 
-        obj.children = [c.vertex_func(func) for c in self.children]
+        # TODO: world matrix is passed but not applied (copy code from node3 if this stays!)
+        obj.children = [c.vertex_func(func, mask=mask, world_matrix=world_matrix) for c in self.children]
         return obj
 
     def vertex_list(self, recurse=True):

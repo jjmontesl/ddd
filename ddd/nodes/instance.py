@@ -113,12 +113,26 @@ class DDDInstance(DDDNode):
         logger.warning("Ignoring material set to DDDInstance: %s", self)
         return self
 
-    def vertex_func(self, func):
+    def vertex_func(self, func, mask=None, world_matrix=None):
         """
         Applies a vertex function as a transform to the instance.
         """
         obj = self.copy()
-        obj.transform.position = func(obj.transform.position[0], obj.transform.position[1], obj.transform.position[2], None)
+        
+        '''
+        if world_matrix is None:
+            world_matrix = obj.transform.to_matrix()
+        else:
+            world_matrix = transformations.concatenate_matrices(world_matrix, obj.transform.to_matrix())
+        obj.set("_world_matrix", world_matrix)
+        '''
+
+        obj.transform.position = func(obj.transform.position[0], obj.transform.position[1], obj.transform.position[2], None, obj)
+        
+        #obj.children = [c.vertex_func(func, mask=mask, world_matrix=world_matrix) for c in obj.children]
+        
+        #obj.unset("_world_matrix", children=True)
+
         return obj
 
 
@@ -188,14 +202,22 @@ class DDDInstance(DDDNode):
                 #ref = self.ref.copy()
                 ref = self.ref.copy()  #.copy()
 
-                ref = ref.rotate([-ddd.PI_OVER_2, 0, 0])
+                # FIXME: TODO: NOTE: this line was used to fix issues with instances and prefabs and catalog and some exports or import pipelines, but it's unclear when to use it.
+                #   - ddd catalog-show  => seems to work with and without it
+                #   - vrspace --export-meshes, creating and instancing (no catalog)  => seems to work only without it
+                #   - vrspace --export-meshes, instancing from previously written catalog  => seems to work only without it
+                #   - examples/lights --export-meshes  => seems to work only without it
+                #   - vrspace .glb file imported via ddd-unity => ?
+                #ref = ref.rotate([-ddd.PI_OVER_2, 0, 0])
 
+                '''
                 ##ref = ref.scale(self.transform.scale)
                 #ref = ref.rotate(transformations.euler_from_quaternion(self.transform.rotation, axes='sxyz'))
                 #ref = ref.translate(self.transform.position)
 
                 #refscene = ref._recurse_scene(path_prefix=path_prefix + node_name + "/", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker)
                 #scene = append_scenes([scene] + [refscene])
+                '''
 
                 # Empty node with transform
                 #print("Instancing %s on %s" % (scene_node_name, scene_parent_node_name))

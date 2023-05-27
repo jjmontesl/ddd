@@ -454,6 +454,15 @@ class D1D2D3():
 
     #@staticmethod
     def initialize(self):
+        """
+        Initializes the ddd module and instance.
+
+        Currently, this 'ddd' instance references all modules to make them easily accessible.
+
+        .. note::
+            This way of initializing modules and assigning them to ddd is not too pythonic and confuses some code editors.
+            Any ideas and suggestions on how to improve this are welcome.
+        """
         #Node = DDDObject
         #Geometry2D = DDDObject2
         #Mesh = DDDObject3
@@ -474,6 +483,9 @@ class D1D2D3():
         ddd.DDDObject2 = DDDNode2
         ddd.DDDObject3 = DDDNode3
         ddd.DDDPath3 = DDDPath3
+
+        # NOTE: This way of initializing modules and assigning them to ddd is not too pythonic and confuses some code editors.
+        # NOTE: Any ideas and suggestions on how to improve this are welcome.
 
         from ddd.materials.materials import MaterialsCollection
         from ddd.math.math import DDDMath
@@ -515,5 +527,8 @@ class D1D2D3():
 
         ddd.paths = DDDPathOps()
 
+
+# Because 'ddd' is a class and not a module, we are creating a global instance and initialize it here (on import).
+# NOTE: This is not ideal, and also confuses some code editors. Any ideas and suggestions on how to improve this are welcome.
 ddd = D1D2D3()
 ddd.initialize()

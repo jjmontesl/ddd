@@ -5,6 +5,8 @@
 import math
 import random
 
+import functools
+
 from ddd.ddd import ddd
 from ddd.ops import filters, reduction
 
@@ -109,10 +111,17 @@ def tree_default(height=3.5, r=0.40, fork_iters=2, fork_height_ratio=0.35):
 
     def trunk_callback(height):
         section = ddd.regularpolygon(sides=5, r=r).extrude(height)
-        section = section.smooth(math.pi * 0.45)
+        
+        #section = ddd.regularpolygon(sides=5, r=r).extrude_step(ddd.regularpolygon(sides=5, r=r*0.8), height * 0.15)
+        #section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.8).translate([random.uniform(-0.4, 0.4), random.uniform(-0.4, 0.4)]), height * 0.35)
+        #section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.7).translate([random.uniform(-0.3, 0.3), random.uniform(-0.3, 0.3)]), height * 0.5)
+
+        # NOTE: this .smooth() actually _fails_ for extruded polygons unless below 8 sides or with several sections, but the default .extrude() is correctly smoothed around the vertical axis :?... 
+        #section = section.smooth(math.pi * 0.475) #  * 0.475)  
         section = ddd.uv.map_cylindrical(section, scale=(2, 2), split=False)
         section = section.material(ddd.mats.bark)
         return section
+
     def leaves_callback(height):
         tt = treetop(r=0.5 + 0.4 * height, subdivisions=0).material(ddd.mats.treetop)
         return tt
@@ -133,8 +142,10 @@ def tree_default(height=3.5, r=0.40, fork_iters=2, fork_height_ratio=0.35):
 
     obj.name = "Tree Default"
 
-    objtrunk = obj.select(func=lambda o: o.mat == ddd.mats.bark).combine()
-    objleaves = obj.select(func=lambda o: o.mat == ddd.mats.treetop).combine()
+    objtrunk = obj.select(func=lambda o: o.mat == ddd.mats.bark).combine().setname("Trunk")
+    #objtrunk = obj.select(func=lambda o: o.mat == ddd.mats.bark).flatten()
+    #objtrunk = functools.reduce(lambda a, b: a.union(b), objtrunk.children).smooth(math.pi * 0.475)
+    objleaves = obj.select(func=lambda o: o.mat == ddd.mats.treetop).combine().setname("Leaves")
     obj = ddd.group3([objtrunk, objleaves], name="Tree Default")
 
     return obj
@@ -153,15 +164,15 @@ def palm_leaf(length=3, fallfactor=1):
 
     f1 = lambda x: math.sin(x * math.pi)
     f2 = lambda x: f1(x * f1(x)) * 0.1
-    leafshape = lambda x, y, z, i: [x, y * (f2(1 - x)), z]
+    leafshape = lambda x, y, z, i, o: [x, y * (f2(1 - x)), z]
     obj = obj.vertex_func(leafshape)
 
     f1 = lambda x: math.log(abs(x) + 1) * 0.25
-    leafshape = lambda x, y, z, i: [x, y, f1(y)]
+    leafshape = lambda x, y, z, i, o: [x, y, f1(y)]
     obj = obj.vertex_func(leafshape)
 
     f1 = lambda x: 1 - math.gamma((x + 1) * fallfactor)
-    leafshape = lambda x, y, z, i: [x, y, z + f1(x)]
+    leafshape = lambda x, y, z, i, o: [x, y, z + f1(x)]
     obj = obj.vertex_func(leafshape)
 
     obj = obj.scale([length, length, length])
@@ -244,7 +255,7 @@ def tree_fir(height=20, r=0.2):
     #layer = layer.material(ddd.mats.treetop).twosided().translate([0, 0, 0.6])
     layer = ddd.sphere(subdivisions=1).scale([1, 1, 0.5])
     #layer = ddd.uv.map_spherical(layer)
-    layer = layer.vertex_func(lambda x, y, z, i: [x, y, z + ((x*x + y*y) * 0.7)])
+    layer = layer.vertex_func(lambda x, y, z, i, o: [x, y, z + ((x*x + y*y) * 0.7)])
     layer = layer.material(ddd.mats.treetop)
 
     numlayers = 8
@@ -346,7 +357,7 @@ def bush(height=0.8):
 def log(length=0.6):
     pass
 
-def stump(height=0.3, r=0.3):
+def tree_stump(height=0.3, r=0.3):
     """
     (Tocon)
     """

@@ -2,6 +2,7 @@
 # Library for simple scene modelling.
 # Jose Juan Montes and Contributors 2019-2021
 
+import logging
 from freetype import Face
 
 from svgpath2mpl import parse_path
@@ -10,6 +11,10 @@ from svgpathtools import wsvg, Line, QuadraticBezier, Path
 
 from ddd.ddd import ddd
 from svgpathtools.path import CubicBezier
+
+
+# Get instance of logger for this module
+logger = logging.getLogger(__name__)
 
 
 class Text3D():
@@ -37,7 +42,11 @@ class Text3D():
                 origin_y -= spacing_y
             else:
 
-                char_2d, face = self.char(c)
+                try:
+                    char_2d, face = self.char(c)
+                except:
+                    logger.error("Failed to generate Text3D char: %r" % (c,))
+                    continue
 
                 glyph  = face.glyph
                 width  = glyph.bitmap.width / self.char_size

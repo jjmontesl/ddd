@@ -38,7 +38,7 @@ def window_interior(width=1.6, height=1.2, depth=0.02):
 
     return obj
 
-def window_border_flat(width=1.6, height=1.2, border_depth=0.05, border_thick=0.1):
+def window_border_flat(width=1.6, height=1.2, border_depth=0.05, border_thick=0.04):
     obj = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Window Border")
     interior = obj.buffer(-border_thick)
     obj = obj.subtract(interior)
@@ -64,7 +64,7 @@ def window_border_shelf(width=1.6, height=1.2, border_depth=0.05, border_thick=0
     return obj
 '''
 
-def window_with_border(width=1.6, height=1.2, border_depth=0.05, border_thick=0.1):  #, shelf_thick=None):
+def window_with_border(width=1.6, height=1.2, border_depth=0.05, border_thick=0.04):  #, shelf_thick=None):
     interior = window_interior(width=width - border_thick * 2, height=height - border_thick * 2).translate([0, 0, border_thick])
     border = window_border_flat(width=width, height=height, border_depth=border_depth, border_thick=border_thick)
     obj = ddd.group3([interior, border], "Window")
