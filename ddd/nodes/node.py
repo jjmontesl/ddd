@@ -43,7 +43,7 @@ class DDDNode():
         self.transform = transform if transform is not None else DDDTransform()
 
         # TODO: FIXME: Adding A) parenting + full-blown hierarchy  and  B) per-function copy/alter semantics,  will impact tons of code... triple think and...
-        #self.parent = None
+        self.parent = None
 
         self._uid = None
 
@@ -567,9 +567,20 @@ class DDDNode():
         """
         if isinstance(obj, Iterable):
             for i in obj:
+
+                # FIXME: sanity check (exploratory)
+                #if i.parent is not None:
+                #    raise DDDException("Cannot append object(s) '%s' to '%s' children (already has parent: '%s')" % (i, self, i.parent))
+                
                 self.children.append(i)
+                i.parent = self
         elif isinstance(obj, DDDNode):
+            # FIXME: sanity check (exploratory)
+            #if obj.parent is not None:
+            #    raise DDDException("Cannot append object '%s' to '%s' children (already has parent: '%s')" % (obj, self, obj.parent))
+            
             self.children.append(obj)
+            obj.parent = self
         else:
             raise DDDException("Cannot append object to DDDObject children (wrong type): %s" % obj)
         return self

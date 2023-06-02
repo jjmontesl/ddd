@@ -14,8 +14,8 @@ import math
 
 
 # Generate grass
-@dddtask(order="55.49.+", path="/Areas/*", select='["ddd:material" ~ "Park|Grass|Garden|Forest"]["osm:golf" != "green"]')
-def osm_augment_plants_generate_grass_blades(obj, osm, root):
+@dddtask(select='["ddd:com:vegetation:grass"]')
+def ddd_common_vegetation_grass_blades(pipeline, root, obj):
     """
     Generates grass blades.
     """
@@ -33,11 +33,11 @@ def osm_augment_plants_generate_grass_blades(obj, osm, root):
         blade.extra['ddd:item'] = 'grass_blade'  # TODO: Change to DDD
         blades.append(blade)
 
-    root.find("/ItemsNodes").append(blades.children)
+    obj.append(blades)
 
 
-@dddtask(path="/Areas/*", select='["osm:leisure" ~ "garden"]')
-def osm_augment_plants_generate_flowers(obj, osm, root):
+@dddtask(select='["ddd:com:vegatation:flowers"]')
+def ddd_common_vegetation_flowers(obj, osm, root):
     blade_density_m2 = 1.0 / 20.0
     num_blades = int((obj.area() * blade_density_m2))
 
@@ -53,19 +53,10 @@ def osm_augment_plants_generate_flowers(obj, osm, root):
         blade.extra['ddd:flowers:type'] = random.choice(('blue', 'roses'))
         blades.append(blade)
 
-    root.find("/ItemsNodes").append(blades.children)
+    obj.append(blades)
 
 
-
-@dddtask(order="55.50", condition=True)
-def osm_augment_plants_condition(pipeline):
-    """
-    Run plant augmentation only if so configured (ddd:osm:augment:plants=True).
-    """
-    return parse_bool(pipeline.data.get('ddd:osm:augment:plants', False))
-
-
-# TODO: implement [!contains(["natural"="tree"])]
+'''
 @dddtask(order="55.50.+", path="/Areas/*", select='["ddd:area:type" = "park"]')  # [!contains(["natural"="tree"])]
 def osm_augment_trees_annotate(obj, root):
 
@@ -82,10 +73,10 @@ def osm_augment_trees_annotate(obj, root):
         obj.prop_set("ddd:aug:itemfill:density", default=0.0025)
         # TODO: Change tree type propabilities according to geographic zone
         # ...Different probabilities for planted trees (urban / beach) than from forest (natural flora)
+'''
 
-
-@dddtask(order="55.50.+", path="/Areas/*", select='["ddd:aug:itemfill" = True]')
-def osm_augment_trees_generate(logger, pipeline, root, obj):
+@dddtask(select='["ddd:com:vegatation:trees"]')
+def ddd_common_vegetation_trees(logger, pipeline, root, obj):
     tree_density_m2 = obj.extra.get("ddd:aug:itemfill:density", 0.0025)
     tree_types = {'default': 1, 'palm': 0.001}
     tree_types = obj.extra.get("ddd:aug:itemfill:types", tree_types)

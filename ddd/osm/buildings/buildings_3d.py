@@ -28,7 +28,6 @@ from ddd.pack.sketchy import plants, urban
 from ddd.pack.sketchy.buildings import window_with_border, door, portal
 from ddd.util.common import parse_bool
 from ddd.util.common import parse_meters
-from ddd.util.dddrandom import weighted_choice
 import numpy as np
 
 
@@ -134,7 +133,7 @@ class Buildings3DOSMBuilder():
         material_name = building_2d.get('ddd:building:material', building_2d.get('osm:building:material', building_material))
 
         # Roof defaults
-        roof_shape = weighted_choice({'none': 2, 'flat': 1, 'pyramidal': 0.5, 'attic': 0.5, 'terrace': 1})
+        roof_shape = ddd.random.weighted_choice({'none': 2, 'flat': 1, 'pyramidal': 0.5, 'attic': 0.5, 'terrace': 1})
         if floors < 2:
             roof_shape = 'none'
         #if floors < base_floors:

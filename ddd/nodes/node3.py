@@ -37,7 +37,7 @@ from trimesh import creation, primitives, boolean, transformations, remesh
 import trimesh
 from trimesh.base import Trimesh
 from trimesh.path import segments
-from trimesh import repair
+from trimesh import repair, transformations, transform_points
 from trimesh.path.entities import Line
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.transformations import quaternion_from_euler, quaternion_inverse
@@ -302,6 +302,14 @@ class DDDNode3(DDDNode):
                     v[1] = res[1]
                     v[2] = res[2]
 
+        # FIXME: Hack to apply world transforms to 3d nodes without mesh
+        elif not obj.children:
+            world_xyz = transform_points([obj.transform.position], world_matrix)[0]
+            #res = func(obj.transform.position[0], obj.transform.position[1], obj.transform.position[2], None, obj)
+            res = func(world_xyz[0], world_xyz[1], world_xyz[2], None, obj)
+            obj.transform.position = res  # [res[0], res[1], res[2]]
+            #ddd.trace(locals())
+
         obj.children = [c.vertex_func(func, mask=mask, world_matrix=world_matrix) for c in self.children]
 
         obj.unset("_world_matrix")
@@ -313,6 +321,8 @@ class DDDNode3(DDDNode):
         for m in meshes:
             for idx, v in enumerate(m.vertices):
                 yield (v[0], v[1], v[2], idx)
+    
+    #def vertex_iterator_world(self, parent_matrix=None):
 
     def _csg(self, other, operation):
 

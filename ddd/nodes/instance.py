@@ -31,6 +31,7 @@ from ddd.util.common import parse_bool
 from trimesh import boolean, creation, primitives, remesh, transformations
 from trimesh.convex import convex_hull
 from trimesh.transformations import quaternion_from_euler
+from trimesh import transformations, transform_points
 from ddd.ddd import ddd
 
 # Get instance of logger for this module
@@ -56,14 +57,6 @@ class DDDInstance(DDDNode):
         Instances are never considered empty, as they are assumed to contain something.
         """
         return False
-
-    def vertex_iterator(self):
-        rotation_matrix = transformations.quaternion_matrix(self.transform.rotation)
-        for v in self.ref.vertex_iterator():
-            vtransformed = np.dot(rotation_matrix, v)
-            vtransformed = [vtransformed[0] + self.transform.position[0], vtransformed[1] + self.transform.position[1], vtransformed[2] + self.transform.position[2], v[3]]
-            # FIXME: TODO: apply full transform via numpy
-            yield vtransformed
 
     def translate(self, v):
         obj = self.copy()
@@ -113,25 +106,35 @@ class DDDInstance(DDDNode):
         logger.warning("Ignoring material set to DDDInstance: %s", self)
         return self
 
+    def vertex_iterator(self):
+        # FIXME: this approach to transformations is invalid, doesn't account for nested transforms (use world_matrix...)
+        rotation_matrix = transformations.quaternion_matrix(self.transform.rotation)
+        for v in self.ref.vertex_iterator():
+            vtransformed = np.dot(rotation_matrix, v)
+            vtransformed = [vtransformed[0] + self.transform.position[0], vtransformed[1] + self.transform.position[1], vtransformed[2] + self.transform.position[2], v[3]]
+            # FIXME: TODO: apply full transform via numpy
+            yield vtransformed
+
     def vertex_func(self, func, mask=None, world_matrix=None):
         """
         Applies a vertex function as a transform to the instance.
         """
         obj = self.copy()
         
-        '''
         if world_matrix is None:
             world_matrix = obj.transform.to_matrix()
         else:
             world_matrix = transformations.concatenate_matrices(world_matrix, obj.transform.to_matrix())
         obj.set("_world_matrix", world_matrix)
-        '''
 
-        obj.transform.position = func(obj.transform.position[0], obj.transform.position[1], obj.transform.position[2], None, obj)
+        world_xyz = transform_points([obj.transform.position], world_matrix)[0]
+
+        #obj.transform.position = func(obj.transform.position[0], obj.transform.position[1], obj.transform.position[2], None, obj)
+        obj.transform.position = func(world_xyz[0], world_xyz[1], world_xyz[2], None, obj)
         
         #obj.children = [c.vertex_func(func, mask=mask, world_matrix=world_matrix) for c in obj.children]
         
-        #obj.unset("_world_matrix", children=True)
+        obj.unset("_world_matrix", children=True)
 
         return obj
 

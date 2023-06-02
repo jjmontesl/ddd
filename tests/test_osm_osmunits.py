@@ -17,7 +17,3 @@ def test_parse_meters():
     assert parse_meters("-1.5 inches") == -0.038099999999999995
     assert parse_meters("-1.5 inch") == -0.038099999999999995
 
-
-
-
-test_parse_meters()

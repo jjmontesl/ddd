@@ -47,9 +47,9 @@ class CompositeHeightFunction(HeightFunction):
     def __init__(self, functions):
         self.functions = functions
 
-    def vertex_function(self, x, y, z, idx):
+    def vertex_function(self, x, y, z, idx, o):
         for function in self.functions:
-            x, y, z = function.vertex_function(x, y, z, idx)
+            x, y, z = function.vertex_function(x, y, z, idx, o)
         return (x, y, z)
 
 

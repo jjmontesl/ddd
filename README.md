@@ -29,14 +29,13 @@ packages which provide most of the geometry operations.
 - Export 3D to GLTF/GLB, FBX or OBJ.
 - TTF based generation of text geometry.
 - Object catalog ("prefabs") support (for object and geometry reusing and runtime instancing).
-- Handle materials, normals and UV coordinates.
-- Basic collider primitives support (for export only).
-- Texture atlas support.
+- Materials, normals, UV coordinates.
+- Texture atlasing.
 - Document generation transformation pipelines.
 - A simple procedural models library (trees, urban props...)
 - Heightmap and splatmap generation (for terrain engines and splatmap based shading).
-- OpenStreetMap data 2D and 3D generation pipelines.
 - DEM (Digital Elevation Model) support for real-world terrain generation.
+- OpenStreetMap data 2D and 3D generation pipelines.
 
 
 ## Current status notes (Work in progress! Expect changes!)
@@ -51,7 +50,7 @@ to the project, note:
   object (necessary when there are existing references to objects).
 - Access to metadata (`extra`, `.get`...) and propagation to children may change.
 - API is gravitating towards a Node hierarchy where each node has a transform
-  (formerly only DDDInstance objects had a transform and all other geometries were
+  (formerly only DDDInstance objects had a transform and all other objects lived
   in world space).
 
 

@@ -107,6 +107,9 @@ class DDDPath3(DDDNode):
         return self.copy()
 
     def discretize(self, distance=1.0):
+        """
+        Transforms a parameterized curve (path) into another path but composed of linear segments only, by sampling points at a given distance.
+        """
 
         coords = []
         for entity in self.path3.entities:
@@ -144,6 +147,8 @@ class DDDPath3(DDDNode):
 
     def to_line(self):
         """
+        Transforms a path into a DDDNode2 line geometry.
+        
         This assumes that the path is a single Line entity (eg. as returned by `discretize()`).
 
         Note: this currently ignores children.

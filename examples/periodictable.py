@@ -223,7 +223,7 @@ def texts_front(root, pipeline, obj):
 
     result = result.rotate(ddd.ROT_FLOOR_TO_FRONT)
 
-    def flat_to_curve(x, y, z, idx):
+    def flat_to_curve(x, y, z, idx, o):
         source_span = 2.0 / 2.0  # centered on 0
         p = x / source_span  # normalized -1, 1
         angle = p * (math.pi * 0.3)

@@ -49,7 +49,7 @@ class DDDTransform():
         return result
 
     def transform_vertices(self, vertices):
-        node_transform = self.transformations.concatenate_matrices(
+        node_transform = transformations.concatenate_matrices(
             transformations.translation_matrix(self.position),
             transformations.quaternion_matrix(self.rotation)
         )

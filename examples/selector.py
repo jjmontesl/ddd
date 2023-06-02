@@ -67,7 +67,7 @@ def test_selectors_and():
 
 
 # Run pipeline. This will run tasks defined here too
-pipeline = DDDPipeline(['periodictable_pipeline_base.py'])
+pipeline = DDDPipeline('periodictable.py')
 pipeline.tasks = pipeline.tasks[:-9]  # TODO: include only loading part of pipeline correctly
 pipeline.run()
 

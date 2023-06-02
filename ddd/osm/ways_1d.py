@@ -403,7 +403,7 @@ class Ways1DOSMBuilder():
     def get_height_apply_func(self, way):
 
         '''
-        def height_apply_func(x, y, z, idx):
+        def height_apply_func(x, y, z, idx, o):
             # Find nearest point in path, and return its height
             coords = way.geom.coords if way.geom.type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
 
@@ -421,7 +421,7 @@ class Ways1DOSMBuilder():
 
         return height_apply_func
         '''
-        def height_apply_func(x, y, z, idx):
+        def height_apply_func(x, y, z, idx, o):
             # Find nearest points in path, then interpolate z
             coords = way.geom.coords if way.geom.type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
 

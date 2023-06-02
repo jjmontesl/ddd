@@ -16,7 +16,6 @@ import sys
 from ddd.pack.sketchy.urban import patio_table
 from collections import defaultdict
 from ddd.core.exception import DDDException
-from ddd.util.dddrandom import weighted_choice
 from ddd.pack.symbols import iconitems
 from ddd.ops import filters
 from ddd.geo.terrain import terrain_geotiff_elevation_value
@@ -258,7 +257,7 @@ class ItemsOSMBuilder():
 
         tree_type = item_2d.get('osm:tree:type')
         if isinstance(tree_type, dict):
-            tree_type = weighted_choice(tree_type)
+            tree_type = ddd.random.weighted_choice(tree_type)
 
         key = "tree-%s-%d" % (tree_type, random.choice([x + 1 for x in range(numvariants)]))
 

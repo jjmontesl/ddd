@@ -90,6 +90,13 @@ class DefaultMaterials(MaterialsCollection):
         self.metal_paint_white = ddd.material("PaintWhite", color='#f8fbff')
         self.metal_paint_black = ddd.material("PaintBlack", color='#000a17')
 
+        # Lights
+        self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')
+        self.light_green = ddd.material("LightGreen", color='#00ff00')
+        self.light_orange = ddd.material("LightOrange", color='#ffff00')
+        self.light_red = ddd.material("LightRed", color='#ff0000')
+        self.light_yellow = ddd.material("LightYellow", color='#ffff00')
+
         # Plastics
         self.plastic_transparent = ddd.material("Plastic Transparent", color='e8e0e4', metallic_factor=0.0, roughness_factor=0.7, extra={'ddd:transparent': True})  # name="PlasticTransparent",
         self.plastic_black = ddd.material("Plastic Black", color='#2c2936', metallic_factor=0.0, roughness_factor=0.7)
@@ -103,17 +110,27 @@ class DefaultMaterials(MaterialsCollection):
         #self.glass = ddd.material("Glass", color='#2e4163', metallic_factor=0.0, roughness_factor=0.0)  #  , extra={'ddd:transparent': True}
         self.glass = ddd.material("Glass", color='#2e4163', metallic_factor=0.0, roughness_factor=0.0, extra={'ddd:transparent': True, 'ddd:reflection': True})
 
-        # Lights
-        self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')
-        self.light_green = ddd.material("LightGreen", color='#00ff00')
-        self.light_orange = ddd.material("LightOrange", color='#ffff00')
-        self.light_red = ddd.material("LightRed", color='#ff0000')
-        self.light_yellow = ddd.material("LightYellow", color='#ffff00')
-
         # Vegetation (trees, hedges)
         self.bark = ddd.material(name="Bark", color='#df9e75')
         self.treetop = ddd.material(name="Treetop", color='#1da345')
         #self.hedge = 
+
+        # Grass and flowers blades
+        self.flowers_blue_blade = ddd.material(name="Flowers Blue", color='#51b8da', metallic_factor=0.0, roughness_factor=0.90, 
+                                               double_sided=True, alpha_mode='MASK',
+                                               extra={'ddd:collider': False})
+        self.flowers_roses_blade = ddd.material(name="Flowers Roses", color='#e96969',
+                                                metallic_factor=0.0, roughness_factor=0.95,
+                                                double_sided=True, alpha_mode='MASK',
+                                                extra={'ddd:collider': False})
+        self.grass_blade = ddd.material(name="Grass Blade", color='#2de355',
+                                        metallic_factor=0.0, roughness_factor=1.00,
+                                        double_sided=True, alpha_mode='MASK',
+                                        extra={'ddd:collider': False})
+        self.grass_blade_dry = ddd.material(name="Grass Blade Dry", color='#956542',
+                                            metallic_factor=0.0, roughness_factor=1.00,
+                                            double_sided=True, alpha_mode='MASK',
+                                            extra={'ddd:collider': False})    
 
         # Urban props materials
         self.fence = ddd.material(name="Fence", color='282024', extra={'ddd:transparent': True})

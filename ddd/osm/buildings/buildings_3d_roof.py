@@ -20,7 +20,6 @@ import math
 import random
 
 from ddd.ddd import ddd
-from ddd.util.dddrandom import weighted_choice
 from ddd.util.common import parse_meters
 
 
@@ -46,9 +45,9 @@ class BuildingsRoofs3DOSMBuilder():
         floors_min = int(float(part.get('ddd:building:min_level')))
         floor_0_height = part.get('ddd:building:level:0:height')
 
-        roof_buffered = weighted_choice({True: 1, False: 5})
+        roof_buffered = ddd.random.weighted_choice({True: 1, False: 5})
         roof_buffer = random.uniform(0.5, 1.2)
-        roof_wall_material = weighted_choice({"stone": 3, "bricks": 1})
+        roof_wall_material = ddd.random.weighted_choice({"stone": 3, "bricks": 1})
         pbuffered = roof_buffered
 
         floors_height = floor_0_height + (floors - 1) * 3.00

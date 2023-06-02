@@ -9,6 +9,7 @@ from ddd.core.exception import DDDException
 from ddd.ddd import ddd
 from ddd.geo.elevation import ElevationModel
 from ddd.ops.grid import terrain_grid
+from trimesh import transformations, transform_points
 
 
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'  # Galicia, Salamanca
@@ -49,11 +50,23 @@ def terrain_geotiff(bounds, ddd_proj, detail=1.0):
     #mesh.mesh.invert()
     return mesh
 
-def terrain_geotiff_elevation_apply(obj, ddd_proj):
+def terrain_geotiff_elevation_apply(obj, ddd_proj, offset=0):
+    
     elevation = ElevationModel.instance()
     #print(transform_ddd_to_geo(ddd_proj, [obj.mesh.vertices[0][ 0], obj.mesh.vertices[0][1]]))
-    func = lambda x, y, z, i, o: [x, y, z + elevation.value(transform_ddd_to_geo(ddd_proj, [x, y]))]
-    obj = obj.vertex_func(func)
+
+    #func = lambda x, y, z, i, o: [x, y, z + elevation.value(transform_ddd_to_geo(ddd_proj, [x, y]))]
+    def vertex_func(x, y, z, i, o):
+        _world_matrix = o.get('_world_matrix', None)
+        if _world_matrix is not None:
+            world_xyz = transform_points([[x, y, z]], _world_matrix)[0]
+        else:
+            world_xyz = [x, y, z]
+        #print([x, y, z], world_xyz)
+        return [x, y, z + offset + elevation.value(transform_ddd_to_geo(ddd_proj, [world_xyz[0], world_xyz[1]]))]
+    
+    obj = obj.vertex_func(vertex_func)
+
     #mesh.mesh.invert()
     return obj
 
@@ -61,18 +74,27 @@ def terrain_geotiff_min_elevation_apply(obj, ddd_proj):
     elevation = ElevationModel.instance()
 
     min_h = None
-    for v in obj.vertex_iterator():
+    for v in obj.vertex_iterator():  # obj.vertex_iterator_world()
         v_h = elevation.value(transform_ddd_to_geo(ddd_proj, [v[0], v[1]]))
         if min_h is None:
             min_h = v_h
         if v_h < min_h:
             min_h = v_h
 
+    # FIXME: hack added to allow meshes with no vertices, but this should be better handled with proper world/local coords, parenting, ordering of applying height, etc...
+    if min_h is None:
+        v = obj.transform.position
+        v_h = elevation.value(transform_ddd_to_geo(ddd_proj, [v[0], v[1]]))
+        min_h = v_h
+
     if min_h is None:
         raise DDDException("Cannot calculate min value for elevation: %s" % obj)
-
     #func = lambda x, y, z, i, o: [x, y, z + min_h]
-    obj = obj.translate([0, 0, min_h])
+    
+    # FIXME: This translate was changed to transform.translate to account for nodes that have no geometry, but this should be better handled...
+    #obj = obj.translate([0, 0, min_h])
+    obj.transform.translate([0, 0, min_h])
+
     obj.extra['_terrain_geotiff_min_elevation_apply:elevation'] = min_h
     #mesh.mesh.invert()
     return obj
