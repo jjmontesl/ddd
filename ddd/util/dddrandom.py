@@ -16,7 +16,10 @@ logger = logging.getLogger(__name__)
 class DDDRandom:
 
     def angle(self, factor=1.0):
-        return random.uniform(0, math.pi * 2 * factor)
+        """
+        Random angle in radians, between 0 and 2pi (or factor * 2pi).
+        """
+        return random.uniform(0, math.pi * 2.0 * factor)
 
     def weighted_choice(self, options):
         """

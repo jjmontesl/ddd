@@ -384,6 +384,7 @@ class ItemsOSMBuilder():
         item_3d.name = '%s: %s' % (name, item_2d.name)
         return item_3d
 
+    # TODO: Generalize to 'ddd:common'?
     def generate_item_3d_generic_catalog(self, key, item_2d, gen_func, name):
 
         item_3d = self.osm.catalog.instance(key)

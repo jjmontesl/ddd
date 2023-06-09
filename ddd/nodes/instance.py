@@ -76,8 +76,10 @@ class DDDInstance(DDDNode):
 
         rotation_quat = transformations.quaternion_from_euler(v[0], v[1], v[2], "sxyz")
         rotation_quat_inv = transformations.quaternion_inverse(rotation_quat)
-        obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)
-        obj.transform.rotation = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_inv)
+        #obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)
+        #obj.transform.rotation = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_inv)
+        
+        obj.transform.rotation = transformations.quaternion_multiply(rotation_quat_inv, obj.transform.rotation)  # Order matters!
 
         return obj
 
@@ -92,6 +94,8 @@ class DDDInstance(DDDNode):
         return None
 
     def marker(self, world_space=True, use_normal_box=False):
+        if self.name is None:
+            raise DDDException("Cannot create marker for instance without name: %s (%s)" % (self, self.extra))
         ref = ddd.marker(name=self.name, extra=dict(self.extra), use_normal_box=use_normal_box)
         if world_space:
             ref = ref.scale(self.transform.scale)
@@ -121,14 +125,15 @@ class DDDInstance(DDDNode):
         """
         obj = self.copy()
         
+        _parent_world_matrix = world_matrix
         if world_matrix is None:
             world_matrix = obj.transform.to_matrix()
         else:
             world_matrix = transformations.concatenate_matrices(world_matrix, obj.transform.to_matrix())
-        obj.set("_world_matrix", world_matrix)
+        
+        obj.set("_world_matrix", _parent_world_matrix)
 
-        world_xyz = transform_points([obj.transform.position], world_matrix)[0]
-
+        world_xyz = obj.transform.position
         #obj.transform.position = func(obj.transform.position[0], obj.transform.position[1], obj.transform.position[2], None, obj)
         obj.transform.position = func(world_xyz[0], world_xyz[1], world_xyz[2], None, obj)
         
@@ -185,12 +190,6 @@ class DDDInstance(DDDNode):
             metadata_serializable = json.loads(json.dumps(metadata, default=ddd.json_serialize))
 
         node_transform = self.transform.to_matrix()
-        '''
-        node_transform = transformations.concatenate_matrices(
-            transformations.translation_matrix(self.transform.position),
-            transformations.quaternion_matrix(self.transform.rotation)
-            )
-        '''
 
         scene_node_name = node_name # .replace(" ", "_")
         #scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
@@ -206,12 +205,13 @@ class DDDInstance(DDDNode):
                 ref = self.ref.copy()  #.copy()
 
                 # FIXME: TODO: NOTE: this line was used to fix issues with instances and prefabs and catalog and some exports or import pipelines, but it's unclear when to use it.
+                #   - Note: compensation for: .save() rotation may be involved
                 #   - ddd catalog-show  => seems to work with and without it
                 #   - vrspace --export-meshes, creating and instancing (no catalog)  => seems to work only without it
                 #   - vrspace --export-meshes, instancing from previously written catalog  => seems to work only without it
                 #   - examples/lights --export-meshes  => seems to work only without it
                 #   - vrspace .glb file imported via ddd-unity => ?
-                #ref = ref.rotate([-ddd.PI_OVER_2, 0, 0])
+                #ref = ref.rotate([-ddd.PI_OVER_2, 0, 0])  
 
                 '''
                 ##ref = ref.scale(self.transform.scale)

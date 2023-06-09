@@ -70,6 +70,7 @@ def terrain_geotiff_elevation_apply(obj, ddd_proj, offset=0):
     #mesh.mesh.invert()
     return obj
 
+# TODO: Min elevation is not terrain vertex appplication, maybe it should not be part of 'terrain', as it actually should be 'height function min'
 def terrain_geotiff_min_elevation_apply(obj, ddd_proj):
     elevation = ElevationModel.instance()
 
@@ -92,13 +93,14 @@ def terrain_geotiff_min_elevation_apply(obj, ddd_proj):
     #func = lambda x, y, z, i, o: [x, y, z + min_h]
     
     # FIXME: This translate was changed to transform.translate to account for nodes that have no geometry, but this should be better handled...
-    #obj = obj.translate([0, 0, min_h])
-    obj.transform.translate([0, 0, min_h])
+    obj = obj.translate([0, 0, min_h])
+    #obj.transform.translate([0, 0, min_h])
 
     obj.extra['_terrain_geotiff_min_elevation_apply:elevation'] = min_h
     #mesh.mesh.invert()
     return obj
 
+# TODO: Min elevation is not terrain vertex appplication, maybe it should not be part of 'terrain', as it actually should be 'height function min'
 def terrain_geotiff_max_elevation_apply(obj, ddd_proj):
     elevation = ElevationModel.instance()
 

@@ -30,10 +30,13 @@ class CatalogExportCommand(DDDCommand):
         # Save
         #catalog.export("/tmp/catalog.glb")
         catalog.export("catalog.fbx")
+        catalog.export("catalog.glb")
 
         # Show items
         #items = ddd.group3([catalog.instance(c) for c in catalog._cache.values()])
         #items = ddd.align.grid(items, space=10.0)
         #items.append(ddd.helper.all())
         #items.show()
+
+        
         catalog.show()

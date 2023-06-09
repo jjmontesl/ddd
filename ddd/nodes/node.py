@@ -227,6 +227,8 @@ class DDDNode():
         metadata['ddd:name'] = node_name
         metadata['ddd:path'] = path_prefix + node_name
         metadata['ddd:str'] = str(self)
+        metadata['ddd:transform'] = str(self.transform)  # For debugging, but this string does not really belong here? (e.g. it's properly exported as underscore attributes in JSON)
+        #metadata['ddd:parent'] = str(self.parent)
         metadata['ddd:type'] = '2d' if hasattr(self, "geom") else '3d'
         if hasattr(self, "geom"):
             metadata['geom:type'] = self.geom.type if self.geom else None
@@ -263,6 +265,14 @@ class DDDNode():
 
         for c in self.children:
             c.dump(data=data, indent_level=indent_level + 1)
+
+    def objlog(self, logstr):
+        """
+        Adds a log string to the object. This is used to store information about the object processing.
+        """
+        current_log = self.get('ddd:_log', "")
+        current_log = current_log + logstr + " "
+        self.set('ddd:_log', current_log)
 
     def count(self):
         # TODO: Is this semantically correct? what about hte root node and children?

@@ -368,7 +368,7 @@ def grass_blade():
     """
     Creates a grass blade quad (meant to be used through instancing).
     """
-    blade = ddd.rect()
+    blade = ddd.rect(name="Grass Blade")
     blade = blade.material(ddd.mats.grass_blade)
     blade = blade.triangulate()
     blade = ddd.uv.map_cubic(blade)
@@ -383,7 +383,7 @@ def flowers_blade(material):
     """
     Creates a grass blade quad (meant to be used through instancing).
     """
-    blade = ddd.rect()
+    blade = ddd.rect(name="Flowers Blade")
     blade = blade.material(material)
     blade = blade.triangulate()
     blade = ddd.uv.map_cubic(blade)

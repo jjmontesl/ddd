@@ -41,7 +41,9 @@ def pipeline_start(pipeline, root):
     items = ddd.align.grid(items, width=4)
     items.append( ddd.helper.all(size=40.0, center=[5, 5, 0]).twosided() )
 
-    #items.save("/tmp/test.glb")
+    items.save("/tmp/test.glb")
+    items.save("/tmp/test.fbx")
+    
     #items.save("/tmp/test.json")
     pipeline.root = items
 

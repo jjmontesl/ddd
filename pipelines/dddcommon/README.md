@@ -14,5 +14,6 @@ Modules:
 
 - splatmap/...?
 - containment?
+- stats: report stats about triangle, objects, attributes... (also create ddd module for the base ops)
 
 

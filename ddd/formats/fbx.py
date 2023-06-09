@@ -20,11 +20,12 @@ class DDDFBXFormat():
         """
         """
 
+        # FIXME: non multi-process safe
         tmpscript = "/tmp/ddd-blender-fbx-convert.py"
         tmpglbfile = "/tmp/tmpfbx.glb"
         targetfbxfile = filename
 
-        # Save temporary GLB file
+        # Save temporary GLB file (converting axis)
         obj.save(tmpglbfile)
 
         # Convert through blender

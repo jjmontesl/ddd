@@ -34,6 +34,7 @@ from ddd.core.exception import DDDException
 from ddd.core.selectors.selector_ebnf import selector_ebnf
 from ddd.materials.material import DDDMaterial
 from ddd.ops import extrusion
+from ddd.math.bounds import DDDBounds
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -56,6 +57,10 @@ class D1D2D3():
     JOIN_MITRE = 2
     JOIN_BEVEL = 3
 
+    FLOAT_INF_POS = float('inf')
+    FLOAT_INF_NEG = float('-inf')
+
+    # Positive rotations are counter-clockwise (from 0, into the first quadrant)
     ROT_FLOOR_TO_FRONT = (math.pi / 2.0, 0, 0)
     ROT_TOP_CW = (0, 0, -math.pi / 2.0)
     ROT_TOP_CCW = (0, 0, math.pi / 2.0)
@@ -271,6 +276,9 @@ class D1D2D3():
 
     def marker(self, pos=None, name=None, extra=None, use_normal_box=False):
 
+        if name is None:
+            raise DDDException("Cannot create marker with no name.")
+
         if use_normal_box:
             marker = ddd.helper.marker_axis(name="Marker: " + name)
             # FIXME: Path3 scale doesn't work (scaled in marker_axis)
@@ -290,17 +298,13 @@ class D1D2D3():
     def ddd3(self, *args, **kwargs):
         return self.DDDObject3(*args, **kwargs)
 
-    def grid2(self, bounds, detail=1.0, name=None, adjust=False):
+    def grid2(self, bounds: DDDBounds, detail=1.0, name=None, adjust=False):
 
         if adjust:
-            bounds = [[(math.floor(b / detail) * detail) for b in bounds[0]],
-                      [(math.ceil(b / detail) * detail) for b in bounds[1]]]
-
-        cmin, cmax = bounds[0], bounds[1]
-
-        # FIXME: This needs normalizing so all bounds have same format, and/or use DDDBounds
-        if len(bounds) == 2:
-            cmin, cmax = bounds
+            cmin, cmax = [[(math.floor(b / detail) * detail) for b in bounds[0]],
+                          [(math.ceil(b / detail) * detail) for b in bounds[1]]]
+        else:
+            cmin, cmax = bounds[0], bounds[1]
 
         if isinstance(detail, int): detail= float(detail)
         if isinstance(detail, float): detail = [detail, detail]
@@ -463,9 +467,6 @@ class D1D2D3():
             This way of initializing modules and assigning them to ddd is not too pythonic and confuses some code editors.
             Any ideas and suggestions on how to improve this are welcome.
         """
-        #Node = DDDObject
-        #Geometry2D = DDDObject2
-        #Mesh = DDDObject3
 
         ddd = self
 
@@ -479,6 +480,12 @@ class D1D2D3():
         ddd.DDDInstance = DDDInstance
         ddd.DDDNode2 = DDDNode2
         ddd.DDDNode3 = DDDNode3
+
+        #ddd.node2 = DDDNode2
+        #ddd.node3 = DDDNode3
+        #Node = DDDObject
+        #Geometry2D = DDDObject2
+        #Mesh = DDDObject3
 
         ddd.DDDObject2 = DDDNode2
         ddd.DDDObject3 = DDDNode3

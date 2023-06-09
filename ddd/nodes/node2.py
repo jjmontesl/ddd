@@ -29,6 +29,7 @@ from ddd.core.selectors.selector_ebnf import selector_ebnf
 from ddd.ddd import ddd
 from ddd.formats.geojson import DDDGeoJSONFormat
 from ddd.formats.json import DDDJSONFormat
+from ddd.formats.yaml import DDDYAMLFormat
 from ddd.formats.svg import DDDSVG
 from ddd.math.vector2 import Vector2
 from ddd.math.vector3 import Vector3
@@ -75,6 +76,7 @@ class DDDNode2(DDDNode):
         obj = DDDObject2(name=name if name else self.name, children=children, geom=self.geom if self.geom else None, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
         return obj
 
+    # FIXME: Points_to_transform is confusing, should possibly be requested explicitly? 
     def copy3(self, name=None, mesh=None, copy_children=False, points_to_transform=True):
         """
         Copies this DDDObject2 into a DDDObject3, maintaining metadata but NOT children or geometry.
@@ -1564,6 +1566,13 @@ class DDDNode2(DDDNode):
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
             #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = DDDJSONFormat.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = data.encode("utf8")
+
+        elif path.endswith(".yaml"):
+            logger.info("Exporting 2D as YAML to: %s", path)
+            #rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDYAMLFormat.export_yaml(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
             data = data.encode("utf8")
 
         elif path.endswith('.geojson'):

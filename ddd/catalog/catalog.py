@@ -80,7 +80,7 @@ class PrefabCatalog():
         return ddd.group3(items, name="Catalog Group")
 
     def show(self):
-        ddd.align.grid(self.all()).show()
+        ddd.align.grid(self.all()).show3(instance_mesh=True)
 
     def save(self, key):
         key = key.replace("_", "-").replace(":", "-").replace(".", "-")

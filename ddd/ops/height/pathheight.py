@@ -38,7 +38,7 @@ class PathHeightFunction(HeightFunction):
         assert(isinstance(path, ddd.DDDObject2))
         self.path = path
 
-    def vertex_function(self, x, y, z, idx):
+    def vertex_function(self, x, y, z, idx, o):
         coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = self.path.closest_segment(ddd.point([x, y]))
         interp_z = coords_p[2]
         return (x, y, z + interp_z)  # FIXME: z should not be added here, or not by default, as Z coordinates are already local in the path
@@ -50,7 +50,7 @@ class NodeBisectPathHeightFunction(PathHeightFunction):
         super().__init__(path)
         self._debug_root = debug_root
 
-    def vertex_function(self, x, y, z, idx):
+    def vertex_function(self, x, y, z, idx, o):
 
         # TODO: precalculate the point list and perpendiculars at each node
         path = self.path
@@ -138,7 +138,7 @@ class BankingPathProfileHeightFunction(PathProfileHeightFunction):
         self.conf = conf
 
     '''
-    def vertex_function(self, x, y, z, idx):
+    def vertex_function(self, x, y, z, idx, o):
 
         coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = self.path.closest_segment(D1D2D3.point([x, y]))
 
@@ -175,7 +175,7 @@ class BankingPathProfileHeightFunction(PathProfileHeightFunction):
         return (x, y, z + h)
     '''
 
-    def vertex_function(self, x, y, z, idx):
+    def vertex_function(self, x, y, z, idx, o):
 
         # TODO: precalculate the point list and perpendiculars at each node
         path = self.path

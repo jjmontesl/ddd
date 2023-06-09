@@ -9,6 +9,7 @@ from trimesh import transformations
 import trimesh
 
 from ddd.math.vector3 import Vector3
+from ddd.core.exception import DDDException
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class DDDTransform():
         self.rotation = DDDTransform._quaternion_identity
         self.scale = [1, 1, 1]
 
-    def __str__(self):
+    def __repr__(self):
         return "DDDTransform(pos=%s, rot=%s, s=%s)" % (self.position, self.rotation, self.scale)
 
     def copy(self):
@@ -96,10 +97,20 @@ class DDDTransform():
     '''
 
     def translate(self, v):
-        """Modifies the transform in place."""
+        """
+        Modifies the transform in place. Translation vector is in local coordinates.
+        """
         self.position = [self.position[0] + v[0], self.position[1] + v[1], self.position[2] + v[2] if len(v) > 2 else self.position[2]]
 
     def rotate(self, v, origin=None):
+        """
+        Modifies the transform in place. TODO: Rotation vector is in local coordinates ??
+
+        Note: origin is not implemented correctly (FIXME, TODO)
+        """
+
+        if len(v) != 3:
+            raise DDDException("Rotation vector must have 3 components.")
 
         center_coords = None
         if origin == 'local':
@@ -123,12 +134,13 @@ class DDDTransform():
             self.position = np.dot(rotation_matrix, self.position + [1])[:3]
         '''
 
-        self.rotation = transformations.quaternion_multiply(rot, self.rotation)  # order matters!
+        # Order matters! (we apply rotation "rot" to current "self.rotation")
+        self.rotation = transformations.quaternion_multiply(rot, self.rotation)  
 
 
 '''
 
-# Former DDDTransform in DDD (backup, this ione included rotation and scale matrix for babylon :?)
+# Former DDDTransform in DDD (backup, this ione included rotation and scale matrix for BabylonJS :?)
 
 class DDDTransform():
     """

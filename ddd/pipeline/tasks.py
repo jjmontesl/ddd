@@ -26,6 +26,8 @@ class DDDTask(object):
     Defines a task for DDD pipelines.
 
     - order: A string in the form '#.#...'. See below.
+    - log: Log message on task execution (instead of default)
+    - objlog: Log task action on each object to object's metadata (ddd:_log)
 
     Order is a string that defines the ordering within this pipeline.
     If not specified, order is taken from the last defined task with its last number
@@ -45,7 +47,7 @@ class DDDTask(object):
                  order=None, #parent=None, before=None, after=None,
                  log=None, recurse=False,
                  condition=False, cache=False, cache_override=False, init=False,
-                 params=None):
+                 params=None, objlog=True):
 
         # Metrics
         self._run_seconds = None
@@ -66,6 +68,7 @@ class DDDTask(object):
         self.init = init
 
         self.log = log
+        self.objlog = objlog
 
         self.path = path
         self.filter = filter
@@ -188,6 +191,10 @@ class DDDTask(object):
 
             self._run_selected += 1
             pipeline.random_seed(f'{self.name}_{o.name}_{self._run_selected}')
+
+            if self.objlog:
+                logstr = "Task: %s." % (self, )
+                o.objlog(logstr)
 
             try:
                 if 'o' in kwargs: kwargs['o'] = o
