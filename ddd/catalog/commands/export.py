@@ -29,8 +29,9 @@ class CatalogExportCommand(DDDCommand):
 
         # Save
         #catalog.export("/tmp/catalog.glb")
+        # Note, saving several catalogs will overwrite the side JSON file
         catalog.export("catalog.fbx")
-        catalog.export("catalog.glb")
+        #catalog.export("catalog.glb")
 
         # Show items
         #items = ddd.group3([catalog.instance(c) for c in catalog._cache.values()])

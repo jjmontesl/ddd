@@ -614,6 +614,14 @@ class DDDNode():
                 return False
         return True
 
+    def expanded_instances(self):
+        """
+        Return a copy of the node where DDDInstance nodes have been recursively replaced by their referenced nodes.
+        """
+        result = self.copy()
+        result.children = [c.expanded_instances() for c in self.children]
+        return result
+
     def save(self, path, instance_marker=None, instance_mesh=None, include_metadata=True, size=None):
         # FIXME: Review: for base DDDNode, we are converting to DDDNode2/3 in order to save with a weak criteria
         if path.endswith(".svg"):

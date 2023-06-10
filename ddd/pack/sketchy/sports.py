@@ -61,8 +61,8 @@ def field_lines_area(area, lines_method, padding=0.5, search_erode=0.5, **kwargs
     if not rectangle.geom or not rectangle.geom.exterior: return
 
     coords = rectangle.geom.exterior.coords
-    width_seg = ddd.line([coords[0], coords[1]])
-    length_seg = ddd.line([coords[1], coords[2]])
+    length_seg = ddd.line([coords[0], coords[1]])
+    width_seg = ddd.line([coords[1], coords[2]])
     width_l = width_seg.geom.length
     length_l = length_seg.geom.length
 
@@ -95,10 +95,10 @@ def football_field_lines(length=105.0, width=67.5, line_width=0.10):
     rectangle = ddd.rect([-length / 2, -width / 2, length / 2, width / 2])
 
     coords = rectangle.geom.exterior.coords
-    width_seg = ddd.line([coords[0], coords[1]])
-    length_seg = ddd.line([coords[1], coords[2]])
-    width2_seg = ddd.line([coords[2], coords[3]])
-    length2_seg = ddd.line([coords[3], coords[0]])
+    length_seg = ddd.line([coords[0], coords[1]])
+    width_seg = ddd.line([coords[1], coords[2]])
+    length2_seg = ddd.line([coords[2], coords[3]])
+    width2_seg = ddd.line([coords[3], coords[0]])
     width_l = width_seg.geom.length
     length_l = length_seg.geom.length
 
@@ -197,10 +197,10 @@ def handball_field_lines(length=40.0, width=20.0, line_width=0.10):
     rectangle = ddd.rect([-length / 2, -width / 2, length / 2, width / 2])
 
     coords = rectangle.geom.exterior.coords
-    width_seg = ddd.line([coords[0], coords[1]])
-    length_seg = ddd.line([coords[1], coords[2]])
-    width2_seg = ddd.line([coords[2], coords[3]])
-    length2_seg = ddd.line([coords[3], coords[0]])
+    length_seg = ddd.line([coords[0], coords[1]])
+    width_seg = ddd.line([coords[1], coords[2]])
+    length2_seg = ddd.line([coords[2], coords[3]])
+    width2_seg = ddd.line([coords[3], coords[0]])
     width_l = width_seg.geom.length
     length_l = length_seg.geom.length
 
@@ -287,11 +287,12 @@ def tennis_field_lines(length=23.77, width=10.97, square_length_ratio=6.40 / 23.
     item = ddd.group3(name="Tennis lines")
 
     rectangle = ddd.rect([-length / 2, -width / 2, length / 2, width / 2])
+    
     coords = rectangle.geom.exterior.coords
-    width_seg = ddd.line([coords[0], coords[1]])
-    length_seg = ddd.line([coords[1], coords[2]])
-    width2_seg = ddd.line([coords[2], coords[3]])
-    length2_seg = ddd.line([coords[3], coords[0]])
+    length_seg = ddd.line([coords[0], coords[1]])
+    width_seg = ddd.line([coords[1], coords[2]])
+    length2_seg = ddd.line([coords[2], coords[3]])
+    width2_seg = ddd.line([coords[3], coords[0]])
     width_l = width_seg.geom.length
     length_l = length_seg.geom.length
 
@@ -303,12 +304,11 @@ def tennis_field_lines(length=23.77, width=10.97, square_length_ratio=6.40 / 23.
     item.append(exterior)
 
     centralline_2d = ddd.line([width_seg.geom.centroid, width2_seg.geom.centroid], name="Central line")
-    goal_width = 4.88
 
     # Sideline
     sideline_pos_ratio = 8.23 / 10.97
     for side in (-1, 1):
-        sideline = centralline_2d.translate([0, side * width * sideline_pos_ratio * 0.5])
+        sideline = centralline_2d.copy().translate([0, side * width * sideline_pos_ratio * 0.5])
         sideline = sideline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
         sideline.extra['ddd:collider'] = False
         sideline.extra['ddd:shadows'] = False
@@ -403,10 +403,10 @@ def basketball_field_lines(length=28, width=15, line_width=0.075):
 
     rectangle = ddd.rect([-length / 2, -width / 2, length / 2, width / 2])
     coords = rectangle.geom.exterior.coords
-    width_seg = ddd.line([coords[0], coords[1]])
-    length_seg = ddd.line([coords[1], coords[2]])
-    width2_seg = ddd.line([coords[2], coords[3]])
-    length2_seg = ddd.line([coords[3], coords[0]])
+    length_seg = ddd.line([coords[0], coords[1]])
+    width_seg = ddd.line([coords[1], coords[2]])
+    length2_seg = ddd.line([coords[2], coords[3]])
+    width2_seg = ddd.line([coords[3], coords[0]])
     width_l = width_seg.geom.length
     length_l = length_seg.geom.length
 

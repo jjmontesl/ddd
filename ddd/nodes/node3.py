@@ -196,11 +196,13 @@ class DDDNode3(DDDNode):
 
     def rotate(self, v, origin=None):
         """
-        Returns a copy of this node rotated by vector V.
+        Returns a copy of this node rotated by euler angles defined by vector V.
 
         If origin is None, the origin is the local origin of the first object, and children are rotated around the same point.
         If origin is 'local', every object is rotated around its local origin.
         If origin is 'bounds_center', the center of AABB is used (the same center is used for all children).
+
+        See examples/transforms.py for positioning examples and tests using both transforms and mesh operations.
         """
         center_coords = [0, 0, 0]
         if origin == 'local':
@@ -213,20 +215,17 @@ class DDDNode3(DDDNode):
             center_coords = origin
 
         rotation_matrix = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
+        if center_coords is not None:
+            translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
+            translate_after = transformations.translation_matrix(np.array(center_coords))
+            #transf = translate_before * rot # * rot * translate_after  # doesn't work, these matrices are 4x3, not 4x4 HTM
+            rotation_matrix = transformations.concatenate_matrices(translate_before, rotation_matrix, translate_after)
 
         obj = self.copy()
         if obj.mesh:
-            if center_coords is not None:
-                translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
-                translate_after = transformations.translation_matrix(np.array(center_coords))
-                #transf = translate_before * rot # * rot * translate_after  # doesn't work, these matrices are 4x3, not 4x4 HTM
-                rotation_matrix = transformations.concatenate_matrices(translate_before, rotation_matrix, translate_after)
-
-            #transf = rot
             obj.mesh.vertices = trimesh.transform_points(obj.mesh.vertices, rotation_matrix)
 
         # Update the transform
-
         obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]
 
         rotation_quat = quaternion_from_euler(v[0], v[1], v[2], "sxyz")
@@ -254,6 +253,9 @@ class DDDNode3(DDDNode):
         return obj
 
     def rotate_quaternion(self, quaternion):
+        # FIXME: This should behave as .rotate() (better, update this method implement rotate() using this method)
+        logger.warn("")
+
         obj = self.copy()
 
         rotation_matrix = transformations.quaternion_matrix(quaternion)
@@ -293,6 +295,11 @@ class DDDNode3(DDDNode):
         return obj
 
     def elevation_func(self, func):
+        """
+        DEPRECATED
+        
+        TODO: Remove this function and replace the only user with height functions or vertex functions
+        """
         obj = self.copy()
         if obj.mesh:
             for v in obj.mesh.vertices:
@@ -841,7 +848,7 @@ class DDDNode3(DDDNode):
         if metadata.get('ddd:marker', False) and not instance_marker:
             return scene
 
-        mesh = self.mesh
+        mesh = self.mesh.copy() if self.mesh else None
 
         # UV coords test
         if mesh:
@@ -856,6 +863,24 @@ class DDDNode3(DDDNode):
         ##transformations.euler_from_quaternion(obj.transform.rotation, axes='sxyz')
         #node_transform = transformations.translation_matrix([0, 0, 0])
         node_transform = self.transform.to_matrix()
+
+        if axis:  # "xZy"
+            base_change = np.array([
+                [1, 0, 0, 0],
+                [0, 0, 1, 0],
+                [0, -1, 0, 0],
+                [0, 0, 0, 1],
+            ])
+            
+            if mesh:
+                mesh.apply_transform(base_change)
+
+            base_change_conj = np.transpose(base_change.copy())
+            #node_transform = transformations.concatenate_matrices(base_change, node_transform)
+            node_transform = transformations.concatenate_matrices(node_transform, base_change_conj)
+            node_transform = transformations.concatenate_matrices(base_change, node_transform)
+            #node_transform = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_conj)
+            #obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)
 
         #node_name = encoded_node_name.replace(" ", "_")
         scene_node_name = node_name  #.replace(" ", "_")
@@ -881,14 +906,14 @@ class DDDNode3(DDDNode):
             for idx, c in enumerate(self.children):
                 c._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx),
                                       instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata,
-                                      scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames)
+                                      scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames, axis=axis)
 
         # Export markers for empty nodes (for visualization only)
         if mesh is None and not self.children and instance_marker:
             marker = self.marker(world_space=False, use_normal_box=instance_marker)
             marker._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#marker",
                                       instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata,
-                                      scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames)
+                                      scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames, axis=axis)
 
         # Serialize metadata as dict
         #if False:
@@ -994,7 +1019,8 @@ class DDDNode3(DDDNode):
             # Example code light
             #light = trimesh.scene.lighting.DirectionalLight()
             #light.intensity = 10
-            #scene.lights = [light]
+            #trimesh_scene.lights = [light]
+            
             trimesh_scene.show('gl')
 
         elif D1D2D3Bootstrap.renderer == 'pyrender':
@@ -1004,7 +1030,7 @@ class DDDNode3(DDDNode):
 
             #pr_scene = pyrender.Scene.from_trimesh_scene(rotated)
             # Scene not rotated, as pyrender seems to use Z for vertical.
-            meshes = self._recurse_meshes(instance_mesh=instance_mesh, instance_marker=instance_marker)  # rotated
+            meshes = self._recurse_meshes(instance_mesh=instance_mesh, instance_marker=instance_marker)
             pr_scene = pyrender.Scene()
             for m in meshes:
                 prm = pyrender.Mesh.from_trimesh(m)  #, smooth=False) #, wireframe=True)
@@ -1059,29 +1085,28 @@ class DDDNode3(DDDNode):
         elif path.endswith('.fbx'):
 
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])  # will be rotated since fbx exporter currently calls glb exporter
-            rotated = self.copy()
-
-            trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata)
+            #rotated = self.copy()
+            #trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata)
             data = DDDFBXFormat.export_fbx(self, path)
 
         elif path.endswith('.glb'):
 
-            rotated = self.rotate([-math.pi / 2.0, 0, 0])
-            #rotated = self.copy()
+            #rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            rotated = self.copy()
             
             #rotated.children[0].transform.rotation = transformations.quaternion_from_euler(-ddd.PI_OVER_2, 0, 0, "sxyz")
             #rotated.transform.rotation = transformations.quaternion_from_euler(-ddd.PI_OVER_2, 0, 0, "sxyz")
 
-            trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata, axis="xzy")
+            trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata, axis="xZy")
             data = trimesh.exchange.gltf.export_glb(trimesh_scene, include_normals=D1D2D3Bootstrap.export_normals)
 
         elif path.endswith('.gltf'):
             
-            rotated = self.rotate([-math.pi / 2.0, 0, 0])
-            #rotated = self.copy()
+            #rotated = self.rotate([-math.pi / 2.0, 0, 0])
+            rotated = self.copy()
             
             #scene = rotated._recurse_scene("", "", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata, axis="xzy")
+            trimesh_scene = rotated._recurse_scene_tree("", "", instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata, axis="xZy")
             files = trimesh.exchange.gltf.export_gltf(trimesh_scene, include_normals=D1D2D3Bootstrap.export_normals)
             data = files['model.gltf']
             #trimesh_scene.export(path)  # files = trimesh.exchange.gltf.export_glb(trimesh_scene, include_normals=D1D2D3Bootstrap.export_normals)

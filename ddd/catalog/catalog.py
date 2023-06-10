@@ -75,9 +75,15 @@ class PrefabCatalog():
 
         return obj
 
-    def all(self):
+    def all(self, name="Root"):  # "Catalog"
+        """
+        Returns a group with all the items in the catalog, all at origin.
+
+        Note: name of the root must be "Root" for DDD Importer to work (TODO: fix that and use a better root name)
+        """
         items = [self.instance(k) for k in self._cache.keys() if self._cache[k]]
-        return ddd.group3(items, name="Catalog Group")
+        
+        return ddd.group3(items, name=name)
 
     def show(self):
         ddd.align.grid(self.all()).show3(instance_mesh=True)
@@ -129,6 +135,15 @@ class PrefabCatalog():
 
     def export(self, path="catalog.glb"):
         scene = self.all()
-        scene.save(path + ".json", instance_mesh=True, instance_marker=True)
+
+        # Expand instances, so their children and content are included in the export
+        scene = scene.expanded_instances()
+
+        # Currently this is needed to avoid name clashing when importing from side-loaded JSON file (e.g. DDD -> Unity)
+        scene.rename_unique()
+
+        path_wo_ext = os.path.splitext(path)[0]
+
+        scene.save(path_wo_ext + ".json", instance_mesh=True, instance_marker=True)
         scene.save(path, instance_mesh=True, instance_marker=True)
 

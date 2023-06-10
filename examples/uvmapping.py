@@ -43,15 +43,17 @@ def pipeline_start(pipeline, root):
     fig = fig.material(ddd.mats.traffic_signs)
     fig = ddd.uv.map_cubic(fig)
     #fig.show()
-    #items.append(fig)
+    items.append(fig)
 
     fig = TextureAtlasUtils().create_sprite_rect(ddd.mats.traffic_signs)
+    fig = fig.triangulate().rotate(ddd.ROT_FLOOR_TO_FRONT)
     #fig.show()
-    #items.append(fig)
+    items.append(fig)
 
     fig = TextureAtlasUtils().create_sprite_from_atlas(ddd.mats.traffic_signs, "ES_P6.png")
+    fig = fig.triangulate().rotate(ddd.ROT_FLOOR_TO_FRONT)
     #fig.show()
-    #items.append(fig)
+    items.append(fig)
 
 
     '''
@@ -67,4 +69,6 @@ def pipeline_start(pipeline, root):
     items.append(ddd.helper.all(size=40.0, center=[5, 5, 0]).twosided())
 
     root.append(items)
+
+    root.show()
 

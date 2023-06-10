@@ -71,7 +71,7 @@ class DDDJSONFormat():
                     refdata = DDDJSONFormat.export_data(ref, path_prefix="", name_suffix="#ref", instance_mesh=instance_mesh, instance_marker=instance_marker)  #, instance_mesh=instance_mesh, instance_marker=instance_marker)
                     data['_ref'] = refdata
 
-            if instance_marker:
+            if instance_marker and not instance_mesh:
                 ref = obj.marker()
                 refdata = DDDJSONFormat.export_data(ref, path_prefix="", name_suffix="#marker", instance_mesh=instance_mesh, instance_marker=instance_marker)
                 data['_marker'] = refdata

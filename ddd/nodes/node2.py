@@ -1483,7 +1483,7 @@ class DDDNode2(DDDNode):
         return cmeshes
 
     # DDDObject2 didn't have this, and Presentations are used instead: normalize with DDDNode
-    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None, usednames=None):
+    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None, usednames=None, axis=None):
 
         if usednames is None: usednames = set()
         node_name = self.uniquename(usednames)
@@ -1511,6 +1511,7 @@ class DDDNode2(DDDNode):
         scene_node_name = node_name.replace(" ", "_")
         scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
 
+        # FIXME: Use node_transform and apply axis if needed
         node_transform = transformations.identity_matrix()
 
         #if scene is None:
@@ -1529,7 +1530,7 @@ class DDDNode2(DDDNode):
             for idx, c in enumerate(self.children):
                 c._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#%d" % (idx),
                                       instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata,
-                                      scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames)
+                                      scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames, axis=axis)
 
         # Serialize metadata as dict
         #if False:

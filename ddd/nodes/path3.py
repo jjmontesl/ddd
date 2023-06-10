@@ -19,10 +19,13 @@ import copy
 import json
 import logging
 
+import numpy as np
 import trimesh
+from trimesh import boolean, creation, primitives, remesh, transformations
 from trimesh.path import entities
-from ddd.nodes.node import DDDNode
+
 from ddd.ddd import ddd
+from ddd.nodes.node import DDDNode
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -43,7 +46,7 @@ class DDDPath3(DDDNode):
     def __repr__(self):
         return "%s (%s %dv %de %dc)" % (self.uniquename(), self.__class__.__name__, len(self.path3.vertices) if self.path3 else 0, len(self.path3.entities) if self.path3 else 0, len(self.children) if self.children else 0)
 
-    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None, usednames=None):
+    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None, usednames=None, axis=None):
 
         if len(self.path3.entities) < 0:
             return scene
@@ -71,6 +74,24 @@ class DDDPath3(DDDNode):
         # Get node transform
         #node_transform = transformations.identity_matrix()
         node_transform = self.transform.to_matrix()
+
+        if axis:  # "xZy"
+            base_change = np.array([
+                [1, 0, 0, 0],
+                [0, 0, 1, 0],
+                [0, -1, 0, 0],
+                [0, 0, 0, 1],
+            ])
+
+            if self.path3:
+                self.path3.vertices = trimesh.transform_points(self.path3.vertices, base_change)
+
+            base_change_conj = np.transpose(base_change.copy())
+            #node_transform = transformations.concatenate_matrices(base_change, node_transform)
+            node_transform = transformations.concatenate_matrices(node_transform, base_change_conj)
+            node_transform = transformations.concatenate_matrices(base_change, node_transform)
+            #node_transform = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_conj)
+            #obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)        
 
         # Material + UVs
 

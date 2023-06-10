@@ -19,18 +19,11 @@ import logging
 
 import numpy as np
 from ddd.core.exception import DDDException
-from ddd.formats.geojson import DDDGeoJSONFormat
-from ddd.formats.json import DDDJSONFormat
-from ddd.formats.png3drender import DDDPNG3DRenderFormat
-from ddd.formats.svg import DDDSVG
-from ddd.materials.atlas import TextureAtlas
-from ddd.math.transform import DDDTransform
 from ddd.nodes.node import DDDNode
-from ddd.ops import extrusion
 from ddd.util.common import parse_bool
-from trimesh import boolean, creation, primitives, remesh, transformations
+from trimesh import transformations
 from trimesh.convex import convex_hull
-from trimesh.transformations import quaternion_from_euler
+from trimesh.transformations import quaternion_from_euler, quaternion_conjugate
 from trimesh import transformations, transform_points
 from ddd.ddd import ddd
 
@@ -68,18 +61,34 @@ class DDDInstance(DDDNode):
         """
         In an instance this rotates the transform, relative to the local origin.
         """
+
+        center_coords = [0, 0, 0]
+        if origin == 'local':
+            center_coords = None
+            #center_coords = self.transform.position
+            #center_coords = [0, 0, 0]
+        elif origin == 'bounds_center' or origin == 'centroid':  # group_centroid, use for children
+            center_coords = self.center_aabb()
+        elif origin:
+            center_coords = origin
+        
         obj = self.copy()
 
-        # Update the transform
         rotation_matrix = transformations.euler_matrix(v[0], v[1], v[2], 'sxyz')
+        if center_coords is not None:
+            translate_before = transformations.translation_matrix(np.array(center_coords) * -1)
+            translate_after = transformations.translation_matrix(np.array(center_coords))
+            #transf = translate_before * rot # * rot * translate_after  # doesn't work, these matrices are 4x3, not 4x4 HTM
+            rotation_matrix = transformations.concatenate_matrices(translate_before, rotation_matrix, translate_after)
+
+        # Update the transform
         obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]
 
-        rotation_quat = transformations.quaternion_from_euler(v[0], v[1], v[2], "sxyz")
-        rotation_quat_inv = transformations.quaternion_inverse(rotation_quat)
-        #obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)
-        #obj.transform.rotation = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_inv)
-        
-        obj.transform.rotation = transformations.quaternion_multiply(rotation_quat_inv, obj.transform.rotation)  # Order matters!
+        rotation_quat = quaternion_from_euler(v[0], v[1], v[2], "sxyz")
+        rotation_quat_conj = quaternion_conjugate(rotation_quat)
+        #rotation_quat_inv = quaternion_inverse(rotation_quat)
+        obj.transform.rotation = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_conj)
+        obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)
 
         return obj
 
@@ -153,7 +162,7 @@ class DDDInstance(DDDNode):
 
         This allows instances to be combined or expanded in batches, at the expense of multiplying their geometry.
 
-        TODO: Maybe this method should not exist, and client code should either replace instances before combining (there's curerntly no method for that),
+        TODO: Maybe this method should not exist, and client code should either replace instances before combining (there's currently no method for that),
               or remove them if they are to be managed separately.
         """
         return DDDObject3(name=name)
@@ -170,7 +179,19 @@ class DDDInstance(DDDNode):
             return ddd.DDDNode3(name=name)
     '''
 
-    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None, usednames=None):
+    def expanded_instances(self):
+        """
+        Return a copy of the referenced node by this DDDInstance.
+        """
+        if not self.ref:
+            raise DDDException("Cannot expand instance without reference: %s" % (self, ))
+        
+        result = self.ref.expanded_instances()  # already a copy
+        result.copy_from(self, copy_transform=True)
+        
+        return result
+    
+    def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None, usednames=None, axis=None):
 
         #node_name = self.uniquename()
         #node_name = self.name
@@ -190,6 +211,21 @@ class DDDInstance(DDDNode):
             metadata_serializable = json.loads(json.dumps(metadata, default=ddd.json_serialize))
 
         node_transform = self.transform.to_matrix()
+        
+        if axis:  # "xZy"
+            base_change = np.array([
+                [1, 0, 0, 0],
+                [0, 0, 1, 0],
+                [0, -1, 0, 0],
+                [0, 0, 0, 1],
+            ])
+
+            base_change_conj = np.transpose(base_change.copy())
+            #node_transform = transformations.concatenate_matrices(base_change, node_transform)
+            node_transform = transformations.concatenate_matrices(node_transform, base_change_conj)
+            node_transform = transformations.concatenate_matrices(base_change, node_transform)
+            #node_transform = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_conj)
+            #obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)
 
         scene_node_name = node_name # .replace(" ", "_")
         #scene_node_name = metadata['ddd:path'].replace(" ", "_")  # TODO: Trimesh requires unique names, but using the full path makes them very long. Not using it causes instanced geeometry to fail.
@@ -206,11 +242,12 @@ class DDDInstance(DDDNode):
 
                 # FIXME: TODO: NOTE: this line was used to fix issues with instances and prefabs and catalog and some exports or import pipelines, but it's unclear when to use it.
                 #   - Note: compensation for: .save() rotation may be involved
-                #   - ddd catalog-show  => seems to work with and without it
+                #   - ddd catalog-show  => seems to work with and without it (LEARNED: because there's no cal to rotate when presenting)
                 #   - vrspace --export-meshes, creating and instancing (no catalog)  => seems to work only without it
                 #   - vrspace --export-meshes, instancing from previously written catalog  => seems to work only without it
                 #   - examples/lights --export-meshes  => seems to work only without it
                 #   - vrspace .glb file imported via ddd-unity => ?
+                # FIXME: Only needed when the scene_tree requires rotation/axis (try directly altering axis?)
                 #ref = ref.rotate([-ddd.PI_OVER_2, 0, 0])  
 
                 '''
@@ -230,7 +267,7 @@ class DDDInstance(DDDNode):
                 # Child
                 ref._recurse_scene_tree(path_prefix=path_prefix + node_name + "/", name_suffix="#ref",
                                         instance_mesh=instance_mesh, instance_marker=instance_marker, include_metadata=include_metadata,
-                                        scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames)
+                                        scene=scene, scene_parent_node_name=scene_node_name, usednames=usednames, axis=axis)
 
             else:
                 if type(self) == type(DDDInstance):
