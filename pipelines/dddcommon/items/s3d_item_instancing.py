@@ -30,8 +30,12 @@ def generate_item_3d_generic(item_2d, gen_func, name):
     return item_3d
 
 # TODO: Generalize to 'ddd:common' and move code to ops.items...?
-def generate_item_3d_generic_catalog(catalog, key, item_2d, gen_func, name):
+def generate_item_3d_generic_catalog(catalog, key, item_2d, gen_func, name, variants=None):
 
+    if variants:
+        variant_idx = random.randint(0, variants - 1)
+        key = key + " " + str(variant_idx)
+    
     item_3d = catalog.instance(key)
     if not item_3d:
         item_3d = gen_func()
@@ -69,16 +73,22 @@ def ddd_common_item_instance(logger, pipeline, root, obj):
     #item = pipeline.catalog.instance('CabinetSet')
     if item_key == 'tree':
          #item = plants.tree_default(height=random.uniform(5,9))
-         item = generate_item_3d_generic_catalog(pipeline.catalog, 'Tree 0', obj, plants.tree_default, 'Tree %s' % obj.name)
+         item = generate_item_3d_generic_catalog(pipeline.catalog, 'Tree', obj, plants.tree_default, 'Tree %s' % obj.name, variants=4)
+         item.set('ddd:inclination:snap_to_height_normal', default=0.20)
+         item.select(selector='[ddd:material = "Bark"]', recurse=True).set('ddd:collider', True, children=True)
     elif item_key == 'bush':
         #item = plants.tree_bush()
-        item = generate_item_3d_generic_catalog(pipeline.catalog, 'Bush 0', obj, plants.tree_bush, 'Bush %s' % obj.name)
+        item = generate_item_3d_generic_catalog(pipeline.catalog, 'Bush', obj, plants.tree_bush, 'Bush %s' % obj.name, variants=4)
+        item.set('ddd:inclination:snap_to_height_normal', default=0.40)
     elif item_key == 'grass_blade':
         #item = plants.grass_blade()
-        item = generate_item_3d_generic_catalog(pipeline.catalog, 'Grass Blade 0', obj, plants.grass_blade, 'Grass Blade %s' % obj.name)
+        item = generate_item_3d_generic_catalog(pipeline.catalog, 'Grass Blade', obj, plants.grass_blade, 'Grass Blade %s' % obj.name, variants=1)
+        item.set('ddd:inclination:snap_to_height_normal', default=0.80)
     elif item_key == 'rock':
         #item = landscape.rock()
-        item = generate_item_3d_generic_catalog(pipeline.catalog, 'Rock 0', obj, landscape.rock, 'Rock %s' % obj.name)
+        item = generate_item_3d_generic_catalog(pipeline.catalog, 'Rock', obj, landscape.rock, 'Rock %s' % obj.name, variants=3)
+        item.set('ddd:inclination:snap_to_height_normal', default=0.80)
+        item.set('ddd:collider', True, children=True)
     else:
         raise DDDException("Unknown item: %s" % item_key)
 
@@ -90,12 +100,6 @@ def ddd_common_item_instance(logger, pipeline, root, obj):
     # FIXME: what is this hack? why do we rename children? (possibly to avoid name collisions for trimesh :? but this is not fully correct)
     for c in item.children:
         c.name = str(c.name) + " " + str(item_idx)
-
-    # Changes to the item (should be done in a separate task, or in many cases, when the object is created for the catalog)
-    # FIXME: Trees should not have colliders in the leaves
-    # FIXME: Use cylinder colliders as possible (in general, define custom colliders in object creation, enable it here)
-    item.select(selector='[ddd:material = "Bark"]', recurse=True).set('ddd:collider', True, children=True)
-
 
     #centroid = obj.centroid().geom.coords[0]
     #centroid = obj.point_coords()
@@ -116,5 +120,7 @@ def ddd_common_item_instance(logger, pipeline, root, obj):
 
     item.set('ddd:height', 'min')
     item.set('ddd:angle', default=ddd.random.angle())
+    item.set('ddd:inclination:angle', default=ddd.random.angle(factor=0.025))
+
 
     return item

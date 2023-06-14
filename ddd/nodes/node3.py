@@ -839,7 +839,15 @@ class DDDNode3(DDDNode):
 
         metadata_serializable = None
         if include_metadata:
-            metadata_serializable = json.loads(json.dumps(metadata, default=ddd.json_serialize))
+            try:
+                metadata_serializable = json.loads(json.dumps(metadata, default=ddd.json_serialize))
+                ##metadata_serializable = json.loads(json.dumps(metadata, default=ddd.json_serialize, cls=ddd.RemoveCircularRefsJSONEncoder, check_circular=False))  # 
+                #metadata_serializable = json.loads(json.dumps(metadata, cls=ddd.RemoveCircularRefsJSONEncoder, check_circular=True))  # 
+            except:
+                logger.error("Could not serialize metadata for %s", self)
+                metadata_serializable = None
+                #raise
+            
         #scene.metadata['extras'] = test_metadata
 
         # Do not export nodes indicated 'ddd:export-as-marker' if not exporting markers

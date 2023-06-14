@@ -97,12 +97,21 @@ class DDDMaterial():
         self.color = color
         self.color_rgba = None
         if self.color:
-            self.color_rgba = trimesh.visual.color.hex_to_rgba(self.color)
+            if isinstance(self.color, str):
+                self.color_rgba = trimesh.visual.color.hex_to_rgba(self.color)
+            else:
+                # Assume it's a tuple
+                self.color_rgba = np.array(self.color)
 
         self.texture_color = texture_color
         self.texture_color_rgba = None
         if self.texture_color:
-            self.texture_color_rgba = trimesh.visual.color.hex_to_rgba(self.texture_color)
+            if isinstance(self.texture_color, str):
+                self.texture_color_rgba = trimesh.visual.color.hex_to_rgba(self.texture_color)
+            else:
+                # Assume it's a tuple
+                self.texture_color_rgba = np.array(self.texture_color)
+                
 
         self.alpha_cutoff = alpha_cutoff
         self.alpha_mode = alpha_mode

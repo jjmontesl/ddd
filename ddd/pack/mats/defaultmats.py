@@ -6,7 +6,6 @@ import logging
 from ddd.ddd import ddd
 from ddd.materials.materials import MaterialsCollection
 
-
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
@@ -107,8 +106,9 @@ class DefaultMaterials(MaterialsCollection):
         self.plastic_white = ddd.material("Plastic White", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)
 
         # Glass
-        #self.glass = ddd.material("Glass", color='#2e4163', metallic_factor=0.0, roughness_factor=0.0)  #  , extra={'ddd:transparent': True}
-        self.glass = ddd.material("Glass", color='#2e4163', metallic_factor=0.0, roughness_factor=0.0, extra={'ddd:transparent': True, 'ddd:reflection': True})
+        #self.glass = ddd.material("Glass", color='#2e4163', metallic_factor=0.0, roughness_factor=0.0)  #  , extra={'ddd:transparent': True} 
+        self.glass = ddd.material("Glass", color=[46/255, 65/255, 63/255, 0.5], metallic_factor=0.5, roughness_factor=0.0, extra={'ddd:transparent': True, 'ddd:reflection': True}, alpha_mode='BLEND')  #  , extra={'ddd:transparent': True}
+        self.glass_red = ddd.material("Glass Red", color=[255/255, 65/255, 63/255, 0.5], metallic_factor=0.5, roughness_factor=0.0, extra={'ddd:transparent': True, 'ddd:reflection': True}, alpha_mode='BLEND')  #  , extra={'ddd:transparent': True}
 
         # Vegetation (trees, hedges)
         self.bark = ddd.material(name="Bark", color='#df9e75')

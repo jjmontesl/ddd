@@ -42,7 +42,7 @@ class DDDNode():
         self.mat = material
         self.transform = transform if transform is not None else DDDTransform()
 
-        # TODO: FIXME: Adding A) parenting + full-blown hierarchy  and  B) per-function copy/alter semantics,  will impact tons of code... triple think and...
+        # TODO: FIXME: Adding A) parenting + full-blown hierarchy  and  B) per-function copy/alter semantics,  consider impact... triple think and...
         self.parent = None
 
         self._uid = None
@@ -270,9 +270,9 @@ class DDDNode():
         """
         Adds a log string to the object. This is used to store information about the object processing.
         """
-        current_log = self.get('ddd:_log', "")
+        current_log = self.get('_ddd:log', "")
         current_log = current_log + logstr + " "
-        self.set('ddd:_log', current_log)
+        self.set('_ddd:log', current_log)
 
     def count(self):
         # TODO: Is this semantically correct? what about hte root node and children?
@@ -582,15 +582,22 @@ class DDDNode():
                 #if i.parent is not None:
                 #    raise DDDException("Cannot append object(s) '%s' to '%s' children (already has parent: '%s')" % (i, self, i.parent))
                 
+                # Parenting this way doesn't work because we add nodes to temporary nodes (e.g. during select)
+                #i.parent = self
+
                 self.children.append(i)
-                i.parent = self
+                
+
         elif isinstance(obj, DDDNode):
             # FIXME: sanity check (exploratory)
             #if obj.parent is not None:
             #    raise DDDException("Cannot append object '%s' to '%s' children (already has parent: '%s')" % (obj, self, obj.parent))
             
+            # Parenting this way doesn't work because we add nodes to temporary nodes (e.g. during select)
+            #obj.parent = self
+
             self.children.append(obj)
-            obj.parent = self
+
         else:
             raise DDDException("Cannot append object to DDDObject children (wrong type): %s" % obj)
         return self

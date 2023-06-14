@@ -17,6 +17,7 @@
 import logging
 import math
 import sys
+import json
 
 import numpy as np
 import trimesh
@@ -436,7 +437,33 @@ class D1D2D3():
             #data = None
         #if data: print(data)
         return data
+    
+    '''
+    class RemoveCircularRefsJSONEncoder(json.JSONEncoder):
+        """
+        From: https://stackoverflow.com/questions/54873059/what-would-be-the-pythonic-way-to-go-to-prevent-circular-loop-while-writing-json
+        """
+        def __init__(self, *args, **argv):
+            super().__init__(*args, **argv)
+            self.proc_objs = []
+        def default(self, obj):
+            if id(obj) in self.proc_objs:
+                return repr(obj)  # short circle the object dumping
+            else:
+                print("Added: %s" % obj)
+                self.proc_objs.append(id(obj))
 
+                try:
+                    return super().default(obj)
+                except TypeError as e:
+                    return ddd.json_serialize(obj)
+                except ValueError as e:
+                    return ddd.json_serialize(obj)
+            #else:
+            #    return super().default(obj)
+    '''
+
+            
     def load(self, name):
 
         def load_glb():

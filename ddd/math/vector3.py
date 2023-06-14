@@ -80,6 +80,11 @@ class Vector3(tuple):
         return self[0] * other[0] + self[1] * other[1] + self[2] * other[2]
         #return self[0] * other[0] + self[1] * other[1] + (self[2] * other[2] if len(self) >= len(other) >= 3 else 0)
 
+    def cross(self, other):
+        return Vector3((self[1] * other[2] - self[2] * other[1], 
+                        self[2] * other[0] - self[0] * other[2], 
+                        self[0] * other[1] - self[1] * other[0]))
+
     def angle(self, other):
         dp = self.normalized().dot(other.normalized())
         a = math.acos(dp)

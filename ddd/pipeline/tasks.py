@@ -27,13 +27,15 @@ class DDDTask(object):
 
     - order: A string in the form '#.#...'. See below.
     - log: Log message on task execution (instead of default)
-    - objlog: Log task action on each object to object's metadata (ddd:_log)
+    - objlog: Log task action on each object to object's metadata (_ddd:log)
 
     Order is a string that defines the ordering within this pipeline.
     If not specified, order is taken from the last defined task with its last number
     incremented (eg if last task is 10.10.1, this task becomes 10.10.2), equivalent to '*.+'.
     It order starts with '*', the asterisk is replaced by the previous task number except the
     last number (eg if last task is 10.10.1, with '*.50' this task becomes '10.10.50').
+
+    Reduce causes the task to be run repeatedly until no objects are selected by it.
 
     Init tasks are run initially.
 
@@ -47,7 +49,7 @@ class DDDTask(object):
                  order=None, #parent=None, before=None, after=None,
                  log=None, recurse=False,
                  condition=False, cache=False, cache_override=False, init=False,
-                 params=None, objlog=True):
+                 params=None, objlog=True, reduce=False):
 
         # Metrics
         self._run_seconds = None
@@ -74,7 +76,7 @@ class DDDTask(object):
         self.filter = filter
         self.recurse = recurse
         self.replace = True
-
+        self.reduce = reduce
 
         # Dictionary of parameters introduced by the task
         self.params = params
@@ -180,12 +182,8 @@ class DDDTask(object):
             else:
                 raise DDDException("Unknown argument in task parameter list: %s (task: %s)" % (arg, self))
 
-        logger.debug("Select: func=%s selector=%s path=%s recurse=%s ", self.filter, self.selector, self.path, self.recurse)
-        objs = pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=self.recurse)
-
-        self.runlog(objs.count())
-
         self._run_selected = 0
+        repeat = True
 
         def task_select_apply(o):
 
@@ -212,8 +210,19 @@ class DDDTask(object):
                 logger.error("Error running task %s on %s: %s", self, o, e)
                 raise DDDException("Error running task %s on %s: %s" % (self, o, e), ddd_obj=o)
 
-        pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=self.recurse, apply_func=task_select_apply)
+        while repeat:
+        
+            logger.debug("Select: func=%s selector=%s path=%s recurse=%s reduce=%s", self.filter, self.selector, self.path, self.recurse, self.reduce)
+            objs = pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=self.recurse)
 
+            self.runlog(objs.count())
+            
+            pipeline.root.select(func=self.filter, selector=self.selector, path=self.path, recurse=self.recurse, apply_func=task_select_apply)
+
+            if not self.reduce or objs.count() == 0:
+                repeat = False
+
+        
         '''
         for o in objs.children:
             #logger.debug("Running task %s for object: %s", self, o)

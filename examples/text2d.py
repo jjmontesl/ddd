@@ -25,14 +25,14 @@ def pipeline_start(pipeline, root, logger):
                                                 texture_path=ddd.DATA_DIR + "/fontatlas/opensansemoji64.greyscale.png",
                                                 #texture_normal_path=ddd.DATA_DIR + "/materials/road-marks-es/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
                                                 #atlas_path="/materials/road-marks-es/RoadMarkings2.plist",
-                                                alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
+                                                alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0, alpha_mode="MASK",
                                                 extra={'ddd:material:type': 'font', 'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096})
 
     pipeline.data['font:atlas:dddfonts_01_64'] = ddd.material(name="Test-DDDFonts-01-64", color='#f88888',
                                                 texture_path=ddd.DATA_DIR + "/fontatlas/dddfonts_01_64.greyscale.png",
                                                 #texture_normal_path=ddd.DATA_DIR + "/materials/road-marks-es/TexturesCom_Atlas_RoadMarkings2_1K_normal.png",
                                                 #atlas_path="/materials/road-marks-es/RoadMarkings2.plist",
-                                                alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
+                                                alpha_cutoff=0.95, metallic_factor=0.0, roughness_factor=1.0, alpha_mode="MASK",
                                                 extra={'ddd:material:type': 'font', 'ddd:collider': False, 'ddd:shadows': False, 'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096})
 
 
