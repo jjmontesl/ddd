@@ -27,12 +27,12 @@ packages which provide most of the geometry operations.
 - Procedurally generate, alter and align 2D and 3D geometry.
 - Export 2D to SVG and PNG.
 - Export 3D to GLTF/GLB, FBX or OBJ.
-- TTF based generation of text geometry.
+- TTF based generation of text geometry (2D and 3D).
 - Object catalog ("prefabs") support (for object and geometry reusing and runtime instancing).
 - Materials, normals, UV coordinates.
 - Texture atlasing.
-- Document generation transformation pipelines.
-- A simple procedural models library (trees, urban props...)
+- Support for staged pipelines for generation tasks.
+- Simple procedural models library (trees, urban props...)
 - Heightmap and splatmap generation (for terrain engines and splatmap based shading).
 - DEM (Digital Elevation Model) support for real-world terrain generation.
 - OpenStreetMap data 2D and 3D generation pipelines.
@@ -75,7 +75,7 @@ Do not hesitate to get in touch if you have any question.
 procedure below doesn't work without changes. Please refer to the ddd-docker project (see below)
 which configures a working installation.
 
-DDD is tested on Ubuntu 18.04. Installation under Windows does not work.
+DDD is tested on Ubuntu 22.04. Installation under Windows does not work.
 If you are on Windows, you may wish to try using Docker (see the "Using the docker image" section below).
 
 Clone the source repository:
@@ -123,15 +123,20 @@ Examples in the `examples` directory can be run from the same directory by
 typing `ddd` followed by the script name:
 
     cd examples
-    ddd operations.py
+    ddd logo.py
     ddd sketchy.py
+    ddd operations.py
 
 **Quickly generate 3D from OSM**
 
 This generates a model centered on the given WGS84 coordinates (lat,lon),
 using a traverse mercator projection centered on the same point.
 
-    ddd osm-build --name my_osm_model --center=-8.4054,43.3862 --radius=125
+    ddd osm_build.py \
+      -p ddd:osm:area:center="-8.723,42.238" \
+      -p ddd:osm:output:name=vigo_center \
+      -p ddd:osm:area:radius=75 \
+      --export-meshes --cache-clear
 
 Note that OSM 2D/3D generation requires additional configuration and input
 data. See the [OSM Generation Pipeline](doc/osm.md) for further information.

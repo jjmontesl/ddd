@@ -8,10 +8,22 @@ transformation pipeline.
 This introduces a complete yet basic transformation process. This can later
 extended by further pipeline configuration (like the other OSM related examples show).
 
+## Running
 
-### Summary
+   # Generates a model of the given location with 75 m radius, exporting catalog objects as geometry
+   ddd osm_build.py \
+      -p ddd:osm:area:center="-8.723,42.238" \
+      -p ddd:osm:output:name=vigo_center \
+      -p ddd:osm:area:radius=75 \
+      --catalog-overwrite --export-meshes -o --cache-clear
 
-As this is a complex pipeline, it introduces ad-hoc concepts and stages.
+## Documentation
+
+### Introduction
+
+### Overview of OSM Pipeline stages
+
+This is a complex pipeline, it introduces ad-hoc concepts and stages.
 Modifying or extending this pipeline requires understanding these steps.
 
 1) Init
@@ -42,6 +54,10 @@ Modifying or extending this pipeline requires understanding these steps.
         /Meta		 For geometry to be used during processing but not in included the output
 
 
+3.1) Areas, containment, elevation...
+
+3.2) Ways, intersections, elevation...
+
 4) Processing and structured information.
 
    This is what should be needed to produce a 2D render. Different pipeline variants could use different
@@ -69,6 +85,28 @@ Modifying or extending this pipeline requires understanding these steps.
 6) 3D Generation
 
    ...
+
+
+## Generation dependencies
+
+### OSM Data
+
+### Digital Elevation Model (Terrain)
+
+### Population
+
+## Generation considerations
+
+### Materials and textures
+
+### Fonts, icons and other datasources
+
+### Instancing
+
+
+
+
+
 
 
 

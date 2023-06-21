@@ -198,7 +198,7 @@ class DDDNode2(DDDNode):
 
     def translate(self, coords):
         """
-        This method modifies the object (since v0.7 2022-10).
+        This method modifies the object (since v0.7 2022-10). E.g. vrsspace generation relies on translate and rotate being in-place operations.
         """
 
         if hasattr(coords, 'geom'):
@@ -1340,10 +1340,27 @@ class DDDNode2(DDDNode):
 
         #ddd.group([other.buffer(5.0),  ddd.point(result[2]).buffer(5.0).material(ddd.mat_highlight), ddd.line([result[2], result[3]]).buffer(2.0), ddd.point(result[0]).buffer(5.0), closest_self.buffer(0.2)]).show()
         return result
+    
+    def closest_vertex(self, other):
+        """
+        Closest vertex in a LineString to other geometry.
+
+        Returns (coords_p, vertex_idx)
+        """
+        coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d = self.closest_segment(other)
+
+        # Find which of the two vertices is closer
+        dist_a = ddd.point(segment_coords_a).distance(other)
+        dist_b = ddd.point(segment_coords_b).distance(other)
+        if dist_a < dist_b:
+            return (segment_coords_a, segment_idx)
+        else:
+            return (segment_coords_b, segment_idx + 1)
+
 
     def vertex_index(self, coords):
         """
-        Returns the closest vertex in this geometry to other geometry.
+        Returns the vertex at given coordinates.
         Coords can be a coordinate tuple or a Point-like DDDObject2
         Does not support children in "other" geometry.
         """
@@ -1353,7 +1370,7 @@ class DDDNode2(DDDNode):
             coords = coords.geom.coords[0]
         coords = np.array(coords)
         if self.geom.type != 'LineString':
-            raise Exception("Only LineString is supported for 'closest_vertex' method: %s %s" % (self, coords))
+            raise Exception("TODO: Only LineString is supported for 'vertex_index' method: %s %s" % (self, coords))
         if self.geom:
             for idx, c in enumerate(self.geom.coords):
                 #print (idx, c, other.geom.coords[0])

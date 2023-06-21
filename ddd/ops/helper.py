@@ -114,3 +114,22 @@ class DDDHelper():
         line_z = ddd.path3([[0, 0, -size], [0, 0, size]]).material(material if material else ddd.mats.blue)
         marker.append([line_x, line_y, line_z])
         return marker
+
+    def check_data_refs(self, obj, ignore_keys=None):
+        """
+        Walk all objects, tracking objects referenced by their metadata, and checks if any of the referenced objects (dicts or lists) is shared by more than one object.
+
+        Currently is not able to check nested structures in metadata, only first level.
+        """
+            
+        refs = {}
+        for o in obj.iterate_objects():
+            for (k, v) in o.extra.items():
+                if isinstance(v, dict) or isinstance(v, list):
+                    if ignore_keys is None or k not in ignore_keys:
+                        refs.setdefault(id(v), []).append((o, k))
+
+        for (k, v) in refs.items():
+            if len(v) > 1:
+                objstxt = ", ".join(["'%s'['%s']" % (o, ok) for o, ok in v]) #  if (ignore_keys is None or ok not in ignore_keys)])
+                logger.warning("Objects references the same object %s from: %s" % (k, objstxt))    
