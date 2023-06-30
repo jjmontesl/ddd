@@ -185,7 +185,8 @@ class ServerServeCommand(DDDCommand):
         asyncio.ensure_future(self.pipeline_init())
 
         try:
-            web.run_app(app, host="localhost", port=8085)
+            web.run_app(app, host="127.0.0.1", port=8085)
+            #web.run_app(app, host="localhost", port=8085)
         except KeyboardInterrupt:
             logger.info("Interrupted by user.")
 

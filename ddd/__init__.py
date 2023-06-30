@@ -1,3 +1,3 @@
 #
 
-APP_VERSION = '0.6.5-devel'
+APP_VERSION = '0.7.0-devel'

@@ -127,16 +127,19 @@ typing `ddd` followed by the script name:
     ddd sketchy.py
     ddd operations.py
 
-**Quickly generate 3D from OSM**
+**Generate 3D from OSM example**
 
 This generates a model centered on the given WGS84 coordinates (lat,lon),
 using a traverse mercator projection centered on the same point.
 
-    ddd osm_build.py \
+    cd pipelines/osm
+
+    mkdir -p output/_catalog && \
+    DDD_GEO_ELEVATION_DUMMY=True ddd osm_build.py \
       -p ddd:osm:area:center="-8.723,42.238" \
       -p ddd:osm:output:name=vigo_center \
       -p ddd:osm:area:radius=75 \
-      --export-meshes --cache-clear
+      --export-meshes --cache-clear --no-textures --show
 
 Note that OSM 2D/3D generation requires additional configuration and input
 data. See the [OSM Generation Pipeline](doc/osm.md) for further information.

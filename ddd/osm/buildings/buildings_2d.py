@@ -67,7 +67,7 @@ class Buildings2DOSMBuilder():
         for feature in list(buildings_2d.children):
 
             if not feature.geom: continue
-            if feature.geom.type == 'Point': continue
+            if feature.geom.geom_type == 'Point': continue
 
             # Skip parents, so nested buildings (eg. Torre de Hercules) are considered independently
             if feature.extra.get('osm:building', None): continue
@@ -259,7 +259,7 @@ class Buildings2DOSMBuilder():
             if part.is_empty():
                 logger.warn("Skipping analysis of building with empty geometry: %s", part)
                 continue
-            if part.geom.type != 'Polygon':
+            if part.geom.geom_type != 'Polygon':
                 logger.warn("Skipping analysis of building with non Polygon geometry (not implemented): %s", part)
                 continue
             if part.get('ddd:building:parts', None): continue  # Ignore parents as they are not rendered
@@ -271,7 +271,7 @@ class Buildings2DOSMBuilder():
             if part.is_empty():
                 logger.warn("Skipping analysis of building with empty geometry: %s", part)
                 continue
-            if part.geom.type != 'Polygon':
+            if part.geom.geom_type != 'Polygon':
                 logger.warn("Skipping analysis of building with non Polygon geometry (not implemented): %s", part)
                 continue
             if part.get('ddd:building:parts', None): continue  # Ignore parents as they are not rendered

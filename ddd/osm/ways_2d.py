@@ -237,7 +237,7 @@ class Ways2DOSMBuilder():
 
             # Point intersections should be from 1 to 1 continuous ways (eg. crosswalks), they are not constructed
             # as they don't have 2d representation.
-            if intersection_shape.geom.type in ('Point', 'LineString'):
+            if intersection_shape.geom.geom_type in ('Point', 'LineString'):
                 #logger.debug("Intersection shape of 1D type (skipping): %s (%s)", intersection_shape, intersection)
                 continue
 
@@ -474,7 +474,7 @@ class Ways2DOSMBuilder():
             #ddd.group2([join_ways, intersection_shape.material(ddd.mats.highlight)]).show()
 
             # Resolve intersection
-            if intersection_shape and intersection_shape.geom and intersection_shape.geom.type in ('Polygon', 'MultiPolygon') and not intersection_shape.geom.is_empty:
+            if intersection_shape and intersection_shape.geom and intersection_shape.geom.geom_type in ('Polygon', 'MultiPolygon') and not intersection_shape.geom.is_empty:
 
                 # Prepare way_1d (joining ways if needed)
                 highest_way = highest_ways[0].copy()
@@ -613,7 +613,7 @@ class Ways2DOSMBuilder():
 
                         new_other = other.subtract(way).clean().union().clean()
                         #if new_other.geom and new_other.geom.area < 0.01: new_other.geom = None
-                        if new_other.geom and new_other.is_empty(): new_other.geom.type = None
+                        if new_other.geom and new_other.is_empty(): new_other.geom.geom_type = None
 
                         other.replace(new_other)
 
@@ -623,9 +623,9 @@ class Ways2DOSMBuilder():
         # Get the 1D line reference
         path = way_2d.extra['way_1d']
 
-        # print(path.geom.type)
+        # print(path.geom.geom_type)
 
-        if path.geom.type != "LineString" or path.is_empty():
+        if path.geom.geom_type != "LineString" or path.is_empty():
             logger.warn("Cannot generate roadlines for %s: way_1d %s is not a LineString.", way_2d, path)
             return
 
@@ -723,7 +723,7 @@ class Ways2DOSMBuilder():
         path = way_2d.extra['way_1d']
         length = path.geom.length
 
-        if path.geom.type != "LineString":
+        if path.geom.geom_type != "LineString":
             logger.warn("Cannot generate crosswalk for %s: way_1d %s is not a LineString.", way_2d, path)
             return
 
@@ -741,7 +741,7 @@ class Ways2DOSMBuilder():
             pathline = path.copy()
             line_margin = 0.5
             pathline = pathline.intersection(way_2d.buffer(-line_margin))  # It's better to reduce the line, this seems to cause multilinestrings
-            if (pathline.geom.type != "LineString"):
+            if (pathline.geom.geom_type != "LineString"):
                 logger.warn("Cannot generate crosswalk for %s: way_1d %s is not a LineString after reducing.", way_2d, path)
                 return
 
@@ -787,7 +787,7 @@ class Ways2DOSMBuilder():
         path = way_2d.extra['way_1d']
         length = path.geom.length
 
-        if path.geom.type != "LineString":
+        if path.geom.geom_type != "LineString":
             logger.warn("Cannot generate lamps for %s: way_1d %s is not a LineString.", way_2d, path)
             return
 
@@ -893,7 +893,7 @@ class Ways2DOSMBuilder():
         path = way_2d.extra['way_1d']
         length = path.geom.length
 
-        if path.geom.type != "LineString":
+        if path.geom.geom_type != "LineString":
             logger.warn("Cannot generate traffic signs for %s: way_1d %s is not a LineString.", way_2d, path)
             return
 
@@ -976,9 +976,9 @@ class Ways2DOSMBuilder():
 
                 splits = None
 
-                if remaining.geom.type != 'Point' and remaining.geom.type not in ('MultiPoint', 'GeometryCollection'):
+                if remaining.geom.geom_type != 'Point' and remaining.geom.geom_type not in ('MultiPoint', 'GeometryCollection'):
                     splits = ops.split(remaining.geom, perp.geom)
-                    splits = [s for s in splits]
+                    splits = [s for s in splits.geoms]
                     splits.sort(key=lambda s: s.area)
 
                 if splits and len(splits) > 1:

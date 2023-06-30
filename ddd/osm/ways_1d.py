@@ -192,7 +192,7 @@ class Ways1DOSMBuilder():
 
         logger.warn("Asociating Items to Ways via nodes (only Point items).")
         for item in items_1d.children:
-            if item.geom.type in ('Polygon', 'MultiPolygon', 'LineString'):
+            if item.geom.geom_type in ('Polygon', 'MultiPolygon', 'LineString'):
                 continue
             if tuple(item.geom.coords[0][:2]) in vertex_cache:
                 logger.debug("Associating item to way: %s (%s) to %s", item, item.extra, vertex_cache[item.geom.coords[0]])
@@ -405,7 +405,7 @@ class Ways1DOSMBuilder():
         '''
         def height_apply_func(x, y, z, idx, o):
             # Find nearest point in path, and return its height
-            coords = way.geom.coords if way.geom.type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
+            coords = way.geom.coords if way.geom.geom_type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
 
             closest_in_path = None  # path.geom.coords[0]
             closest_dist = math.inf
@@ -423,7 +423,7 @@ class Ways1DOSMBuilder():
         '''
         def height_apply_func(x, y, z, idx, o):
             # Find nearest points in path, then interpolate z
-            coords = way.geom.coords if way.geom.type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
+            coords = way.geom.coords if way.geom.geom_type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
 
             way.dump(data='ddd')
             coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = way.closest_segment(ddd.point([x, y]))

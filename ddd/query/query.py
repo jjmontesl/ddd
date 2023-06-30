@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 class Query():
     """
     Represents a scenegraph query.
+
+    NOTE: See selectors/selection, as it overlaps with the intent of this class. Description of that class is better as of today.
     """
 
     def __init__(self):

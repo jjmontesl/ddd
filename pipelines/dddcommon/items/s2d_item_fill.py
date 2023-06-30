@@ -74,7 +74,7 @@ def generate_area_items(area, group_name, item_types, item_density_m2=0.0025, it
 
         # Give some margin for grid, and check the area is still a polygon
         item_area = item_area.buffer(-1.0)
-        if item_area.is_empty() or item_area.geom.type != "Polygon":
+        if item_area.is_empty() or item_area.geom.geom_type != "Polygon":
             return items
 
         (major_seg, minor_seg, angle) = ddd.geomops.oriented_axis(item_area)

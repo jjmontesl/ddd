@@ -57,7 +57,7 @@ class DDDSnap():
         # Find side (TODO: for linear -not rings- there is no winding direction)
         exterior = 1
         pol = LinearRing([segment_coords_a[:2], segment_coords_b[:2], (point.geom.coords[0][0], point.geom.coords[0][1], 0)])
-        if closest_obj.geom.type != "LineString":
+        if closest_obj.geom.geom_type != "LineString":
             if pol.is_ccw == closest_obj.geom.is_ccw:
                 exterior = -1
 

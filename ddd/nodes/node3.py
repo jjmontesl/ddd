@@ -100,7 +100,7 @@ class DDDNode3(DDDNode):
     def __repr__(self):
         #return "%s(%s, faces=%d, children=%d)" % (self.__class__.__name__, self.uniquename(), len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
         return "%s (%s %df %dc)" % (self.name, self.__class__.__name__, len(self.mesh.faces) if self.mesh else 0, len(self.children) if self.children else 0)
-        #return "%s (%s %s %sv %dc)" % (self.name, self.__class__.__name__, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
+        #return "%s (%s %s %sv %dc)" % (self.name, self.__class__.__name__, self.geom.geom_type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
     def copy(self, name=None, copy_children=True):
         if name is None: name = self.name

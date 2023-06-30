@@ -135,7 +135,7 @@ def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
 
                 # Give some margin for grid, and check the area is still a polygon
                 tree_area = tree_area.buffer(-1.0)
-                if tree_area.is_empty() or tree_area.geom.type != "Polygon":
+                if tree_area.is_empty() or tree_area.geom.geom_type != "Polygon":
                     return trees
 
                 (major_seg, minor_seg, angle) = ddd.geomops.oriented_axis(tree_area)

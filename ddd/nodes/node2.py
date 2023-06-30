@@ -61,7 +61,7 @@ class DDDNode2(DDDNode):
         self._strtree = None
 
     def __repr__(self):
-        return "%s (%s %s %sv %dc)" % (self.name, self.__class__.__name__, self.geom.type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
+        return "%s (%s %s %sv %dc)" % (self.name, self.__class__.__name__, self.geom.geom_type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
 
     def copy(self, name=None, copy_children=True):
         """
@@ -88,7 +88,7 @@ class DDDNode2(DDDNode):
             obj = ddd.DDDObject3(name=name if name else self.name, children=[], mesh=mesh, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
         #obj.set('source_node2', self)
 
-        if points_to_transform and self.geom and self.geom.type == "Point":
+        if points_to_transform and self.geom and self.geom.geom_type == "Point":
             coords = self.point_coords()
             obj.transform.translate(coords)
 
@@ -130,7 +130,7 @@ class DDDNode2(DDDNode):
     def line_to(self, coords):
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
 
-        if self.geom.type == "Point":
+        if self.geom.geom_type == "Point":
             linecoords = [self.geom.coords[0], coords]
         else:
             linecoords = [p for p in self.geom.coords]
@@ -168,7 +168,7 @@ class DDDNode2(DDDNode):
         return result
 
     def centroid(self):
-        if self.geom.type == 'Point':
+        if self.geom and self.geom.geom_type == 'Point':
             return ddd.point(self.geom.coords[0])
 
         geom = self.union().geom
@@ -180,7 +180,7 @@ class DDDNode2(DDDNode):
 
     def point_coords(self):
         """Return the coordinates of the geometry, asuming it is a single point (e.g. as returned by `centroid()`)."""
-        if self.geom and self.geom.type == 'Point':
+        if self.geom and self.geom.geom_type == 'Point':
             coords = self.geom.coords[0]
             return Vector3.array(coords)
         else:
@@ -188,7 +188,7 @@ class DDDNode2(DDDNode):
 
     def line_angle(self):
         """Returns the angle to +X, asuming it is a LineString with 2 vertices. Z coordinates, if present, are ignored."""
-        if self.geom and self.geom.type == 'LineString' and len(self.geom.coords) == 2:
+        if self.geom and self.geom.geom_type == 'LineString' and len(self.geom.coords) == 2:
             p0 = Vector2.array(self.geom.coords[0])
             p1 = Vector2.array(self.geom.coords[1])
             segment = p1 - p0
@@ -305,9 +305,9 @@ class DDDNode2(DDDNode):
 
             if fix_invalid:
                 polygons = []
-                geoms = [result.geom] if result.geom.type not in ("MultiPolygon", "MultiLineString", "GeometryCollection") else result.geom.geoms
+                geoms = [result.geom] if result.geom.geom_type not in ("MultiPolygon", "MultiLineString", "GeometryCollection") else result.geom.geoms
                 for geom in geoms:
-                    if geom.type == 'LineString':
+                    if geom.geom_type == 'LineString':
                         pass
                     else:
                         item_ext = LineString(geom.exterior.coords[:] + geom.exterior.coords[0:1])
@@ -324,7 +324,7 @@ class DDDNode2(DDDNode):
                 logger.warn("Removed invalid geometry: %s", result)
                 result.geom = None
 
-        if result.geom and (result.geom.type != 'GeometryCollection' and not result.geom.is_simple):
+        if result.geom and (result.geom.geom_type != 'GeometryCollection' and not result.geom.is_simple):
             logger.warn("Removed geometry that crosses itself: %s", result)
             result.geom = None
 
@@ -365,7 +365,7 @@ class DDDNode2(DDDNode):
         if result.geom and not result.geom.is_valid:
             logger.warn("Removed invalid geometry: %s", result)
             result.geom = None
-        if result.geom and (result.geom.type != 'GeometryCollection' and not result.geom.is_simple):
+        if result.geom and (result.geom.geom_type != 'GeometryCollection' and not result.geom.is_simple):
             logger.warn("Removed geometry that crosses itself: %s", result)
             result.geom = None
 
@@ -439,7 +439,7 @@ class DDDNode2(DDDNode):
                                            ddd_obj=ddd.group2([self, other.material(ddd.mats.highlight)]))
         '''
 
-        if other.children or (self.geom and self.geom.type in ('MultiPolygon', 'GeometryCollection')):
+        if other.children or (self.geom and self.geom.geom_type in ('MultiPolygon', 'GeometryCollection')):
             other = other.union()
 
         #for c in other.children:
@@ -465,32 +465,32 @@ class DDDNode2(DDDNode):
         return geoms
 
     def coords_iterator(self, recurse=True):
-        if self.geom and self.geom.type == 'MultiPolygon':
+        if self.geom and self.geom.geom_type == 'MultiPolygon':
             for g in self.geom.geoms:
                 for coord in g.exterior.coords:
                     yield coord
-        elif self.geom and self.geom.type == 'Polygon':
+        elif self.geom and self.geom.geom_type == 'Polygon':
             for coord in self.geom.exterior.coords:
                 yield coord
-        elif self.geom and self.geom.type == 'GeometryCollection':
+        elif self.geom and self.geom.geom_type == 'GeometryCollection':
             for g in self.geom.geoms:
                 for coord in ddd.shape(g).coords_iterator():
                     yield coord
-        elif self.geom and self.geom.type == 'LineString':
+        elif self.geom and self.geom.geom_type == 'LineString':
             for coord in self.geom.coords:
                 yield coord
-        elif self.geom and self.geom.type == 'Point':
+        elif self.geom and self.geom.geom_type == 'Point':
             for coord in self.geom.coords:
                 yield coord
-        elif self.geom and self.geom.type == 'MultiPoint':
+        elif self.geom and self.geom.geom_type == 'MultiPoint':
             for g in self.geom.geoms:
                 yield g.coords[0]
-        elif self.geom and self.geom.type == 'MultiLineString':
+        elif self.geom and self.geom.geom_type == 'MultiLineString':
             for g in self.geom.geoms:
                 for coord in g.coords:
                     yield coord
         elif self.geom:
-            raise NotImplementedError("Not implemented coords_iterator for geom: %s" % self.geom.type)
+            raise NotImplementedError("Not implemented coords_iterator for geom: %s" % self.geom.geom_type)
 
         if recurse:
             for c in self.children:
@@ -512,13 +512,13 @@ class DDDNode2(DDDNode):
     def vertex_func(self, func, mask=None, world_matrix=None):
         obj = self.copy()
         if obj.geom:
-            if obj.geom.type == 'MultiPolygon':
+            if obj.geom.geom_type == 'MultiPolygon':
                 logger.warn("Vertex Func applied to MultiPolygon is currently invalid (only applies to exteriors and uses deprecated Shapely coords assignation)")
                 for g in obj.geom.geoms:
                     g.exterior.coords = self._vertex_func_coords(func, g.exterior.coords, mask=mask)
-            elif obj.geom.type == 'Polygon':
+            elif obj.geom.geom_type == 'Polygon':
                 obj.geom = ddd.polygon(self._vertex_func_coords(func, obj.geom.exterior.coords, mask=mask)).geom
-            elif obj.geom.type == 'LineString':
+            elif obj.geom.geom_type == 'LineString':
                 obj.geom = ddd.line(self._vertex_func_coords(func, obj.geom.coords, mask=mask)).geom
             else:
                 #logger.warn("Unknown geometry for 2D vertex func")
@@ -537,13 +537,13 @@ class DDDNode2(DDDNode):
         """
         if not self.geom:
             return 0
-        elif self.geom.type == 'MultiPolygon':
+        elif self.geom.geom_type == 'MultiPolygon':
             return sum([len(p.exterior.coords) for p in self.geom.geoms])
-        elif self.geom.type == 'MultiLineString':
+        elif self.geom.geom_type == 'MultiLineString':
             return sum([len(p.coords) for p in self.geom.geoms])
-        elif self.geom.type == 'MultiPoint':
+        elif self.geom.geom_type == 'MultiPoint':
             return sum([len(p.coords) for p in self.geom.geoms])
-        elif self.geom.type == 'Polygon':
+        elif self.geom.geom_type == 'Polygon':
             if self.geom.is_empty: return 0
             return len(self.geom.exterior.coords) + sum([len(i.coords) for i in self.geom.interiors])
         else:
@@ -561,7 +561,7 @@ class DDDNode2(DDDNode):
         """
         result = self.copy()
         if self.geom:
-            if result.geom.type == "MultiPolygon":
+            if result.geom.geom_type == "MultiPolygon":
                 pols = []
                 for g in result.geom.geoms:
                     nnext = [(c[0], c[1]) for c in g.exterior.coords]
@@ -570,11 +570,11 @@ class DDDNode2(DDDNode):
                         nnints.append([(c[0], c[1]) for c in gi.coords])
                     pols.append(Polygon(nnext, nnints))
                 result.geom = MultiPolygon(pols)
-            elif result.geom.type == "MultiLineString":
+            elif result.geom.geom_type == "MultiLineString":
                 for g in result.geom.geoms:
                     g.coords = [(c[0], c[1]) for c in g.coords]
                     #g.coords[:,2] = 0
-            elif result.geom.type == "Polygon":
+            elif result.geom.geom_type == "Polygon":
                 #result.geom.exterior.coords = [(x, y) for (x, y, _) in result.geom.exterior.coords]
                 #for g in result.geom.interiors:
                 #    g.coords = [(x, y) for (x, y, _) in g.coords]
@@ -761,6 +761,7 @@ class DDDNode2(DDDNode):
 
     def snap_vertices_to(self, other, tolerance=ddd.EPSILON * 10):
         """
+        Returns a copy of this geometry with vertices snapped to the other geometry vertices.
         """
         result = self.copy()
         if other.is_empty():
@@ -814,7 +815,7 @@ class DDDNode2(DDDNode):
                 raise DDDException("Invalid polygon: empty.")
             #if not self.geom.is_simple:
             #    raise DDDException("Invalid polygon: polygon is not simple.")
-            if self.geom.type == "Polygon":
+            if self.geom.geom_type == "Polygon":
                 if len(list(self.geom.exterior.coords)) < 3:
                     raise DDDException("Polygon with invalid number of coordinates (<3).", ddd_obj=self)
                 for interior in self.geom.interiors:
@@ -822,6 +823,9 @@ class DDDNode2(DDDNode):
                         raise DDDException("Polygon with invalid number of interior coordinates (<3).", ddd_obj=self)
                 if self.geom.area < ddd.EPSILON:
                     raise DDDException("Polygon with null area.", ddd_obj=self)
+            #elif self.geom.geom_type == "LineString":
+            #    if len(list(self.geom.coords)) < 2 or self.geom.length < ddd.EPSILON:
+            #        raise DDDException("LineString with invalid number of coordinates (<2).", ddd_obj=self)
 
         for c in self.children:
             c.validate()
@@ -838,35 +842,35 @@ class DDDNode2(DDDNode):
 
         newchildren = []
 
-        if self.geom and self.geom.type == 'GeometryCollection':
+        if self.geom and self.geom.geom_type == 'GeometryCollection':
             result.geom = None
             for partialgeom in self.geom.geoms:
                 newobj = self.copy(copy_children=False)
                 newobj.geom = partialgeom
                 newchildren.append(newobj)
 
-        elif self.geom and self.geom.type == 'MultiPolygon':
+        elif self.geom and self.geom.geom_type == 'MultiPolygon':
             result.geom = None
             for partialgeom in self.geom.geoms:
                 newobj = self.copy(copy_children=False)
                 newobj.geom = partialgeom
                 newchildren.append(newobj)
 
-        elif self.geom and self.geom.type == 'MultiLineString':
+        elif self.geom and self.geom.geom_type == 'MultiLineString':
             result.geom = None
             for partialgeom in self.geom.geoms:
                 newobj = self.copy(copy_children=False)
                 newobj.geom = partialgeom
                 newchildren.append(newobj)
 
-        elif self.geom and self.geom.type == 'MultiPoint':
+        elif self.geom and self.geom.geom_type == 'MultiPoint':
             result.geom = None
             for partialgeom in self.geom.geoms:
                 newobj = self.copy(copy_children=False)
                 newobj.geom = Point(partialgeom.coords[0])
                 newchildren.append(newobj)
 
-        elif self.geom and self.geom.type == 'Polygon' and remove_interiors and self.geom.interiors:
+        elif self.geom and self.geom.geom_type == 'Polygon' and remove_interiors and self.geom.interiors:
             result.geom = None
             newobj = self.copy(copy_children=False)
             newobj.geom = self.geom.exterior
@@ -895,7 +899,7 @@ class DDDNode2(DDDNode):
         if (twosided):
             logger.warn("Calling 'triangulate' with twosided=True has seen to give wrong normals (black materials) due to vertex merging: %s", self)
         if self.geom:
-            if self.geom.type == 'MultiPolygon' or self.geom.type == 'MultiLineString' or self.geom.type == 'GeometryCollection':
+            if self.geom.geom_type == 'MultiPolygon' or self.geom.geom_type == 'MultiLineString' or self.geom.geom_type == 'GeometryCollection':
                 meshes = []
                 for geom in self.geom.geoms:
                     pol = DDDObject2(geom=geom, extra=dict(self.extra), name="Triangulated Multi: %s" % self.name)
@@ -903,7 +907,7 @@ class DDDNode2(DDDNode):
                     meshes.append(mesh)
                 result = self.copy3()
                 result.children = meshes
-            elif not self.geom.is_empty and not self.geom.type == 'LineString' and not self.geom.type == 'Point':
+            elif not self.geom.is_empty and not self.geom.geom_type == 'LineString' and not self.geom.geom_type == 'Point':
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)
                 #vertices, faces = creation.triangulate_polygon(self.geom)  # , min_angle=math.pi / 180.0)
@@ -993,7 +997,7 @@ class DDDNode2(DDDNode):
         '''
 
         if self.geom:
-            if self.geom.type == 'MultiPolygon' or self.geom.type == 'GeometryCollection':
+            if self.geom.geom_type == 'MultiPolygon' or self.geom.geom_type == 'GeometryCollection':
                 meshes = []
                 for (idx, geom) in enumerate(self.geom.geoms):
                     pol = ddd.shape(geom).copy_from(self, copy_children=False)
@@ -1006,17 +1010,17 @@ class DDDNode2(DDDNode):
                     except IndexError as e:
                         logger.error("Could not extrude Polygon in MultiPolygon: %s", e)
                 result = DDDObject3(children=meshes, name="%s (split extr)" % self.name)
-            #elif self.geom.type == "Polygon" and self.geom.exterior.type == "LinearRing" and len(list(self.geom.exterior.coords)) < 3:
+            #elif self.geom.geom_type == "Polygon" and self.geom.exterior.type == "LinearRing" and len(list(self.geom.exterior.coords)) < 3:
             #    logger.warn("Cannot extrude: A LinearRing must have at least 3 coordinate tuples (cleanup first?)")
             #    result = DDDObject3(children=[], name="%s (empty polygon extr)" % self.name)
-            elif not self.geom.is_empty and not self.geom.type == 'LineString' and not self.geom.type == 'Point':
+            elif not self.geom.is_empty and not self.geom.geom_type == 'LineString' and not self.geom.geom_type == 'Point':
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)
                 #vertices, faces = creation.triangulate_polygon(self.geom, engine="meshpy")  # , min_angle=math.pi / 180.0)
                 #vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p30", engine='triangle')
 
                 #self.geom = ops.transform(lambda x, y, *z: (x, y), self.geom)
-                #print(self.geom, self.geom.type, self.geom.exterior, self.geom.exterior.type)
+                #print(self.geom, self.geom.geom_type, self.geom.exterior, self.geom.exterior.type)
 
                 vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
                 try:
@@ -1034,7 +1038,7 @@ class DDDNode2(DDDNode):
                 elif height < 0:
                     result = result.translate([0, 0, height])
 
-            elif not self.geom.is_empty and self.geom.type == 'LineString':
+            elif not self.geom.is_empty and self.geom.geom_type == 'LineString':
                 coords_a = list(self.geom.coords)
                 coords_b = list(self.geom.coords)
                 mesh = extrusion.extrude_coords(coords_a, coords_b, abs(height))
@@ -1117,7 +1121,7 @@ class DDDNode2(DDDNode):
             result.geom = None
             for s in splits.geoms:
                 shape = ddd.shape(s)
-                shape.copy_from(self, copy_children=False)
+                shape.copy_from(self, copy_material=True, copy_children=False, copy_transform=True)
                 result.append(shape)
             #result.append(ddd.shape(splits[1]))qq
             #self.geom = splits[1]
@@ -1201,7 +1205,7 @@ class DDDNode2(DDDNode):
         """
         result = self.copy()
         if self.geom:
-            result.geom = result.geom.exterior if result.geom.type == "Polygon" else result.geom
+            result.geom = result.geom.exterior if result.geom.geom_type == "Polygon" else result.geom
         result.children = [c.linearize() for c in self.children]
         return result
 
@@ -1214,7 +1218,7 @@ class DDDNode2(DDDNode):
         TODO: review Shapely exterior vs boundary
         """
         result = self.copy().individualize().clean()
-        if result.geom and result.geom.type == "Polygon":
+        if result.geom and result.geom.geom_type == "Polygon":
             result.geom = LineString(list(result.geom.exterior.coords))
         #elif result.geom:
         #    raise DDDException("Cannot take linearized outline from geometry:
@@ -1226,7 +1230,7 @@ class DDDNode2(DDDNode):
         result = self.copy()
         if result.geom:
             result.geom = result.geom.boundary
-        #if result.geom and result.geom.type == "Polygon":
+        #if result.geom and result.geom.geom_type == "Polygon":
         #    result.geom = LineString(list(result.geom.exterior.coords))
         result.children = [c.outline() for c in result.children]
         return result
@@ -1314,6 +1318,8 @@ class DDDNode2(DDDNode):
 
         If Z coordinates are available, coords_p will be interpolated in the Z dimension too (as interpolate_segment() and Shapely .interpolate() do).
 
+        Note that closest_object_d is the distance to the point in the segment (for interpolation), not to the segment itself.
+
         Returns: coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_object, closest_object_d
         """
         closest_self, closest_d = self.closest(other)
@@ -1322,11 +1328,11 @@ class DDDNode2(DDDNode):
         try:
             # For ring types we care about the segment
             # FIXME: this does not account for polygon interiors, in case they are needed
-            if closest_self.geom.type == 'Polygon':
+            if closest_self.geom.geom_type == 'Polygon':
                 linearized = closest_self.outline()
                 d = linearized.geom.project(other.geom)
                 result = (*linearized.interpolate_segment(d), closest_self, d)
-            #elif closest_self.geom.type in ('MultiPolygon', 'MultiGeometry'):
+            #elif closest_self.geom.geom_type in ('MultiPolygon', 'MultiGeometry'):
             #    # WARNING: resulting indexes will be incorrect, the individualized object does not really exist in the self
             #    closest_self, closest_d = closest_self.individualize().closest(other)
             #    linearized = closest_self.outline()
@@ -1364,12 +1370,12 @@ class DDDNode2(DDDNode):
         Coords can be a coordinate tuple or a Point-like DDDObject2
         Does not support children in "other" geometry.
         """
-        if isinstance(coords, DDDObject2) and coords.geom.type == "Point":
+        if isinstance(coords, DDDObject2) and coords.geom.geom_type == "Point":
             if coords.children:
                 raise DDDException("Calculating closest vertex to a geometry with children is not supported.")
             coords = coords.geom.coords[0]
         coords = np.array(coords)
-        if self.geom.type != 'LineString':
+        if self.geom.geom_type != 'LineString':
             raise Exception("TODO: Only LineString is supported for 'vertex_index' method: %s %s" % (self, coords))
         if self.geom:
             for idx, c in enumerate(self.geom.coords):
@@ -1461,7 +1467,7 @@ class DDDNode2(DDDNode):
 
         if self.children:
             raise DDDException("Cannot calculate line_substring of objects with children.")
-        if not self.geom or self.geom.type != "LineString":
+        if not self.geom or self.geom.geom_type != "LineString":
             raise DDDException("Cannot calculate line_substring of non LineString objects.")
 
         substr_length = self.geom.length if not normalized else 1.0

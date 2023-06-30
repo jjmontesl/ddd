@@ -259,7 +259,7 @@ class D1D2D3():
 
     def path3(self, mesh_or_coords=None, name=None):
         if isinstance(mesh_or_coords, self.DDDObject2):
-            if mesh_or_coords.geom.type != 'LineString':
+            if mesh_or_coords.geom.geom_type != 'LineString':
                 raise ValueError('Expected a LineString geometry: %s', mesh_or_coords)
             coords = mesh_or_coords.geom.coords
         else:

@@ -315,7 +315,7 @@ class DDDMeshOps():
                 for geom in grid2.geom.geoms:
                     #flip = ((idi % 2) + (idj % 2)) % 2
                     geom = geom.intersection(triangle.geom)
-                    if geom.type == 'Point' or geom.type == 'LineString' or geom.is_empty:
+                    if geom.geom_type == 'Point' or geom.geom_type == 'LineString' or geom.is_empty:
                         continue
 
                     # May be unnecessary, didn't solve the core dump issue

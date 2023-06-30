@@ -174,8 +174,8 @@ def extrude_between_geoms_subtract(shape_a, shape_b, offset, base_height):
     shape_b_coords = list(shape_b.geom.exterior.coords)
     for g in shape_b.geom.interiors: shape_b_coords.extend(list(g.coords))
     """
-    shape_b_coords = list(shape_b.geom.exterior.coords) if shape_b.geom.type == "Polygon" else list(shape_b.geom.coords)
-    if shape_b.geom.type == "Polygon":
+    shape_b_coords = list(shape_b.geom.exterior.coords) if shape_b.geom.geom_type == "Polygon" else list(shape_b.geom.coords)
+    if shape_b.geom.geom_type == "Polygon":
         for g in shape_b.geom.interiors: shape_b_coords.extend(list(g.coords))
     """
 

@@ -231,7 +231,7 @@ class DDDNode():
         #metadata['ddd:parent'] = str(self.parent)
         metadata['ddd:type'] = '2d' if hasattr(self, "geom") else '3d'
         if hasattr(self, "geom"):
-            metadata['geom:type'] = self.geom.type if self.geom else None
+            metadata['geom:type'] = self.geom.geom_type if self.geom else None
         if self.mat and self.mat.name:
             metadata['ddd:material'] = self.mat.name
         if self.mat and self.mat.color:
@@ -286,7 +286,7 @@ class DDDNode():
 
     #def find_or_none(self, path=None):
 
-    def find(self, path=None):
+    def find(self, path=None) -> 'DDDNode':
         """
         Note: recently changed to return None instead of an exception if no objects are found.
         """
@@ -313,6 +313,9 @@ class DDDNode():
         Note: Recurse is True in this function, but False for selectors in DDDTasks.
         TODO: Make recurse default to False (this will require extensive testing)
         """
+
+        #if path and path[0] == '/':
+        #    logger.warning("Path expressions starting with / are discouraged, as they may be interpreted as absolute paths, and support will change in the future: %s", path)
 
         if empty is None:
             if isinstance(self, ddd.DDDNode2):

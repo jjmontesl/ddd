@@ -500,7 +500,7 @@ class ItemsOSMBuilder():
         # TODO: Move the actual site generation, given an area, to sketchy
 
         coords = item_2d.centroid().geom.coords[0]
-        if item_2d.geom.type in ("Point", "LineString"):
+        if item_2d.geom.geom_type in ("Point", "LineString"):
             points = item_2d.buffer(5.0).random_points(12)
         else:
             points = item_2d.random_points(12)

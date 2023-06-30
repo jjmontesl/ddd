@@ -273,7 +273,7 @@ class DDDUVMapping():
 
         result = obj
         if obj.geom:
-            if obj.geom.type == "MultiPolygon":
+            if obj.geom.geom_type == "MultiPolygon":
                 logger.error("Geometry to map 2D path to does not have exterior coordinates: %s" % obj)
             elif obj.geom.exterior:
                 result.extra['uv'] = [uv_apply_func(v[0], v[1], 0.0, idx) for idx, v in enumerate(obj.geom.exterior.coords)]
@@ -305,7 +305,7 @@ def map_2d_path(obj, path, line_x_offset=0.0, line_x_width=0.1, line_d_offset=0.
 
     result = obj
     if obj.geom:
-        if obj.geom.type == "MultiPolygon":
+        if obj.geom.geom_type == "MultiPolygon":
             logger.error("Geometry to map 2D path to does not have exterior coordinates: %s" % obj)
         elif obj.geom.exterior:
             result.extra['uv'] = [uv_apply_func(v[0], v[1], 0.0, idx) for idx, v in enumerate(obj.geom.exterior.coords)]

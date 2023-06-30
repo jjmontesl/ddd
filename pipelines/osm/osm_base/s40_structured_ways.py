@@ -129,11 +129,11 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
                 split2.name = "Crosswalk: %s" % split2.name
 
             # This seems not to help Points appearing in ways_2d build (intersections)
-            if (split1 and split1.geom.type == 'Point'):
+            if (split1 and split1.geom.geom_type == 'Point'):
                 ways.remove(split1)
-            if (split2 and split2.geom.type == 'Point'):
+            if (split2 and split2.geom.geom_type == 'Point'):
                 ways.remove(split2)
-            if (split3 and split3.geom.type == 'Point'):
+            if (split3 and split3.geom.geom_type == 'Point'):
                 ways.remove(split3)
 
             if (split2 and split3):

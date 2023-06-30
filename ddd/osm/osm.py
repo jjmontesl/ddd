@@ -242,7 +242,7 @@ class OSMBuilder():
                 continue
 
             # Separate GeometryCollection geometries
-            if feature_2d.geom.type == "GeometryCollection":
+            if feature_2d.geom.geom_type == "GeometryCollection":
                 logger.info("Splitting GeometryCollection: %s", feature_2d)
                 for f in feature_2d.individualize().children:
                     f.extra['osm:feature_2d'] = f

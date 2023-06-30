@@ -8,7 +8,7 @@ This file contains the DDDSelector grammar definition in EBNF format.
 
 selector_ebnf = r"""
 
-TAG_KEY_STRING : /[a-zA-Z][a-zA-Z:_]*/
+TAG_KEY_STRING : /[a-zA-Z][a-zA-Z:_0-9]*/
 SINGLE_QUOTED_STRING  : /'[^']*'/
 
 ?value: dict

@@ -60,7 +60,7 @@ class Areas2DOSMBuilder():
             if not area.geom:
                 logger.error("Area with no geometry: %s", area)
                 continue
-            if area.geom.type == 'Point': continue
+            if area.geom.geom_type == 'Point': continue
 
             original_area = area
             area.set('ddd:area:original', default=original_area)  # Before subtracting any internal area
@@ -119,7 +119,7 @@ class Areas2DOSMBuilder():
         result = ddd.group2()
         if not union.geom: return result
 
-        for c in ([union.geom] if union.geom.type == "Polygon" else union.geom.geoms):
+        for c in ([union.geom] if union.geom.geom_type == "Polygon" else union.geom.geoms):
             if c.type == "LineString":
                 logger.warning("Interways areas union resulted in LineString geometry. Skipping.")
                 continue
@@ -180,7 +180,7 @@ class Areas2DOSMBuilder():
                 #if way_2d.extra.get('osm:highway', None) not in ('footway', 'path', 'track', None): continue
                 if way_2d.get('ddd:area:type', None) == 'water': continue
 
-                if way_2d.geom.type == "MultiPolygon":
+                if way_2d.geom.geom_type == "MultiPolygon":
                     logger.warn("Skipping way postprocess (multipolygon not supported, should individualize ways2 earlier -introduces way intersection joint errors-?): %s", way_2d)
                     continue
 
@@ -345,7 +345,7 @@ class Areas2DOSMBuilder():
 
 
         areas_2d = []
-        #geoms = coastline_areas.geom.geoms if coastline_areas.geom.type == 'MultiPolygon' else [coastline_areas.geom]
+        #geoms = coastline_areas.geom.geoms if coastline_areas.geom.geom_type == 'MultiPolygon' else [coastline_areas.geom]
         for water_area_geom in coastline_areas.individualize().flatten().clean().children:
             # Find closest point, closest segment, and angle to closest segment
             #water_area_geom = ddd.shape(water_area_geom).clean(eps=0.01).geom

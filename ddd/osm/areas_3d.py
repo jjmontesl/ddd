@@ -67,7 +67,7 @@ class Areas3DOSMBuilder():
 
         areas = []
         areas_2d = []
-        geoms = coastline_areas.geom.geoms if coastline_areas.geom.type == 'MultiPolygon' else [coastline_areas.geom]
+        geoms = coastline_areas.geom.geoms if coastline_areas.geom.geom_type == 'MultiPolygon' else [coastline_areas.geom]
         for water_area_geom in geoms:
             # Find closest point, closest segment, and angle to closest segment
             water_area_geom = ddd.shape(water_area_geom).clean(eps=0.01).geom
@@ -157,9 +157,9 @@ class Areas3DOSMBuilder():
 
     def generate_area_3d_gen(self, area_2d):
 
-        if area_2d.geom is not None and area_2d.geom.type != "LineString" and area_2d.geom.type:
+        if area_2d.geom is not None and area_2d.geom.geom_type != "LineString" and area_2d.geom.geom_type:
 
-            if area_2d.geom.type in ('GeometryCollection', 'MultiPolygon'):
+            if area_2d.geom.geom_type in ('GeometryCollection', 'MultiPolygon'):
                 logger.debug("Generating area 3d as separate areas as it is a GeometryCollection: %s", area_2d)
                 # FIXME: We might do this in extrude_step, like we do in triangulate and extrude, but difficult as it is in steps.
                 # But also, we should have an individualize that work, correct iterators, and a generic cleanup/flatten method
@@ -468,7 +468,7 @@ class Areas3DOSMBuilder():
                 logger.error("Could not generate underwater area (invalid area %s): %s", area_2d, e)
                 continue
 
-            if area_2d.geom.type == "LineString":
+            if area_2d.geom.geom_type == "LineString":
                 logger.error("Could not generate underwater area (area is line): %s", area_2d)
                 continue
 

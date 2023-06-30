@@ -94,7 +94,7 @@ class TreeToSelector(Transformer):
         datakey = t[0]
         datavalue = t[1]
         def datafilter_attr_eq_func(obj):
-            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
+            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.geom_type if obj.geom else None}
             return (datakey in metadata and metadata[datakey] == datavalue)
         return datafilter_attr_eq_func
 
@@ -102,7 +102,7 @@ class TreeToSelector(Transformer):
         datakey = t[0]
         datavalue = t[1]
         def datafilter_attr_neq_func(obj):
-            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
+            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.geom_type if obj.geom else None}
             #return (datakey in metadata and metadata[datakey] != datavalue)
             return (datakey not in metadata or metadata[datakey] != datavalue)  # If data is not present, consider it not equal
         return datafilter_attr_neq_func
@@ -110,14 +110,14 @@ class TreeToSelector(Transformer):
     def datafilter_attr_def(self, t):
         datakey = t[0]
         def datafilter_attr_def_func(obj):
-            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
+            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.geom_type if obj.geom else None}
             return (datakey in metadata) or (datakey in obj.extra)
         return datafilter_attr_def_func
 
     def datafilter_attr_undef(self, t):
         datakey = t[0]
         def datafilter_attr_undef_func(obj):
-            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
+            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.geom_type if obj.geom else None}
             return (datakey not in metadata) and (datakey not in obj.extra)
         return datafilter_attr_undef_func
 
@@ -125,7 +125,7 @@ class TreeToSelector(Transformer):
         datakey = t[0]
         regexp = re.compile(datakey)
         def datafilter_attr_def_re_func(obj):
-            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
+            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.geom_type if obj.geom else None}
             for datakey in metadata:
                 matches = bool(regexp.match(datakey))
                 if matches: return True
@@ -137,7 +137,7 @@ class TreeToSelector(Transformer):
         datavalue = t[1]
         regexp = re.compile(datavalue)
         def datafilter_attr_regexp_func(obj):
-            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.type if obj.geom else None}
+            metadata = obj.metadata("", "")  #TODO: Pass path {'geom:type': obj.geom.geom_type if obj.geom else None}
             if datakey in metadata:
                 if metadata[datakey] is None: return False  # Regexp doesn't match a None value
                 return regexp.match(metadata[datakey])
@@ -199,7 +199,7 @@ class DDDSelector(object):
             #print(datavalue)
             #logger.info("Eval select: %s %s %s", datakey, dataop, datavalue)
 
-            extrameta = {'geom:type': obj.geom.type if obj.geom else None}
+            extrameta = {'geom:type': obj.geom.geom_type if obj.geom else None}
 
             for k, v in (list(obj.extra.items()) + list(extrameta.items())):
                 if datakey != k: continue

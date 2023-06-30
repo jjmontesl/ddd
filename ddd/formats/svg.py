@@ -177,11 +177,11 @@ class DDDSVG():
         Wraps Shapely export methods to allow finer control of styling and metadata.
         """
 
-        if geom.type == 'Polygon':
+        if geom.geom_type == 'Polygon':
             return DDDSVG.svg_polygon(geom, data, **kwargs)
-        elif geom.type == 'LineString':
+        elif geom.geom_type == 'LineString':
             return DDDSVG.svg_linestring(geom, data, **kwargs)
-        elif geom.type == 'Point':
+        elif geom.geom_type == 'Point':
             return DDDSVG.svg_point(geom, data, **kwargs)
         elif isinstance(geom, BaseMultipartGeometry):
             return DDDSVG.svg_multipart(geom, data, **kwargs)

@@ -5,6 +5,7 @@
 import logging
 import math
 import random
+import importlib
 from ddd.core.exception import DDDException
 
 
@@ -38,3 +39,17 @@ def parse_meters(expr):
         quantity = quantity.to(ureg.meter).magnitude
     return float(quantity)
 
+def parse_symbol(fqn):
+    # Try to import as module
+    modulename = ".".join(fqn.split(".")[:-1])
+    symbolname = fqn.split(".")[-1]
+    if modulename:
+        modul = importlib.import_module(modulename)
+        if hasattr(modul, symbolname):
+            symb = getattr(modul, symbolname)
+            #cliobj = clazz()
+            #cliobj.parse_args(self._unparsed_args)
+            #cliobj.run()
+            return symb
+    
+    raise DDDException("Could not parse symbol: %r", fqn)

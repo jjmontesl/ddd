@@ -137,7 +137,7 @@ def osm_features_test_random(pipeline, root):
 
 
 '''
-@dddtask(path="/Features/*", log=True)  # and o.geom.type in ('Point', 'Polygon', 'MultiPolygon') .. and o.geom.type == 'Polygon' |  ... path="/Features", select=r'["geom:type"="Polygon"]'
+@dddtask(path="/Features/*", log=True)  # and o.geom.geom_type in ('Point', 'Polygon', 'MultiPolygon') .. and o.geom.geom_type == 'Polygon' |  ... path="/Features", select=r'["geom:type"="Polygon"]'
 def osm_features_crop_extended_area(pipeline, osm, root, obj):
     """Crops to extended area size to avoid working with huge areas."""
 

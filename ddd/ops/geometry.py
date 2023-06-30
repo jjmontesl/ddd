@@ -86,11 +86,11 @@ class DDDGeometry():
         Returns the same object if it has no interior holes.
         """
         result = obj.copy()
-        if result.geom and result.geom.type == "MultiPolygon":
+        if result.geom and result.geom.geom_type == "MultiPolygon":
             result = result.individualize()
 
         if result.geom:
-            if result.geom.type == "Polygon":
+            if result.geom.geom_type == "Polygon":
                 # Walk inner holes
                 if len(result.geom.interiors) > 0:
                     splitter_coords = [result.geom.interiors[0].centroid.coords[0], result.geom.interiors[0].centroid.coords[0]]
@@ -155,10 +155,10 @@ class DDDGeometry():
         Modifies the object in place. Subdivides children recursively.
         """
 
-        if obj.geom.type == 'Polygon':
+        if obj.geom.geom_type == 'Polygon':
             return self._subdivide_to_size_polygon(obj, max_edge)
 
-        if obj.geom.type != 'LineString':
+        if obj.geom.geom_type != 'LineString':
             raise DDDException("Cannot subdivide geometry of type: %s" % obj)
 
         sqr_max_edge = max_edge ** 2
@@ -254,7 +254,7 @@ class DDDGeometry():
 
         Returns a new object.
         """
-        if obj.geom.type != 'LineString':
+        if obj.geom.geom_type != 'LineString':
             raise DDDException("Cannot line_extend %s (not a LineString)" % obj)
 
         dir_start = (Vector3(obj.geom.coords[1]) - Vector3(obj.geom.coords[0])).normalized()

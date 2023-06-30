@@ -66,7 +66,7 @@ class Text3D():
 
                 origin_x += horiAdvance
 
-        return ddd.group(chars, name="Text: %s" % text)
+        return ddd.group2(chars, name="Text: %s" % text)
 
 
     def char(self, ch):

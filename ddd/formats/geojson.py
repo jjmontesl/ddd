@@ -53,7 +53,7 @@ class DDDGeoJSONFormat():
         data.update(extra)
 
         if obj.geom:
-            if obj.geom.type == 'Polygon':
+            if obj.geom.geom_type == 'Polygon':
                 geometry = geojson.Polygon([list(obj.geom.exterior.coords)])
                 feature = geojson.Feature(geometry=geometry, name=node_name)
                 feature.properties = data

@@ -50,23 +50,23 @@ class Generic3DPresentation():
 
             elif isinstance(node, ddd.DDDObject2):
                 if node.geom:
-                    if node.geom.type == 'LineString':
+                    if node.geom.geom_type == 'LineString':
                         result = ddd.path3(node.geom.coords)
                         result = result.copy_from(node, copy_material=True)
-                    elif node.geom.type == 'MultiLineString':
+                    elif node.geom.geom_type == 'MultiLineString':
                         tnode = node.individualize()
                         result = Generic3DPresentation.present(tnode)
                         newchildren = list(result.children)
-                    elif node.geom.type in ('MultiPolygon', ):
+                    elif node.geom.geom_type in ('MultiPolygon', ):
                         tnode = node.individualize()
                         result = Generic3DPresentation.present(tnode)
                         newchildren = list(result.children)
-                    elif node.geom.type in ('MultiPoint', ):
+                    elif node.geom.geom_type in ('MultiPoint', ):
                         tnode = node.individualize()
                         result = Generic3DPresentation.present(tnode)
                         newchildren = list(result.children)
 
-                    elif node.geom.type in ('Point', ):
+                    elif node.geom.geom_type in ('Point', ):
                         try:
                             # Attempt to make points stand out
                             #result = node.copy3(copy_children=False)
@@ -88,9 +88,9 @@ class Generic3DPresentation():
                     else:
                         result = node.copy3(copy_children=False)
                         tnode = node
-                        if node.geom.type in ('Point', ):  # this was failing silently !?, but there should not be MultiPoints already
+                        if node.geom.geom_type in ('Point', ):  # this was failing silently !?, but there should not be MultiPoints already
                             tnode = node.buffer(0.25)
-                        #elif node.geom.type in ('LineString', 'MultiLineString'):
+                        #elif node.geom.geom_type in ('LineString', 'MultiLineString'):
                         #    tnode = node.buffer(0.10)
                         #    #tnode = node.buffer(0.10)
                         try:
