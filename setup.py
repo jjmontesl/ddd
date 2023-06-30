@@ -33,7 +33,8 @@ setup(
     ],
 
     install_requires = [
-        "aiohttp < 4.0",
+        #"aiohttp < 4.0",
+        "aiohttp < 3.8.0",
         "chardet < 4.0",
         "CairoSVG >= 2.4.2",
         "centerline >= 0.6.4",
@@ -47,7 +48,7 @@ setup(
         "networkx >= 2.2",
         "noise >= 1.2.2",
         #"numpy >= 1.20.0",
-        "numpy < 1.20",  # np.bool deprecated, used by Trimesh
+        "numpy < 1.20",
         "pandas < 1.2.0",
         "Pillow >= 8.2.0",
         "pint == 0.12",
@@ -65,8 +66,8 @@ setup(
         #"pyrender >= 0.1.45",  # optional, doesn't install on containers
         "scipy < 1.6.0",
         #"Shapely >= 1.8.1.post1",
-        "Shapely == 1.8.1.post1",
-        "trimesh[all] == 3.15.1",
+        "Shapely == 1.8.1.post1",    # Later versions don't allow object assignemnt (our usage of geom._obj_ref for spatial indices)
+        "trimesh[all] == 3.15.1",    # Later versions don't have the 'extras' argument in scene.add_geometry, need migration
         "triangle >= 20190115.3",
         "watchdog == 2.1.7",  # for server
 

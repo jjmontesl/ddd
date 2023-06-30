@@ -33,6 +33,7 @@ def example_csg(pipeline, root):
 
     #items = ddd.meshops.batch_by_material(items)
     #items.dump()
-    items.show()
+    root.append(items)
+    root.show()
     #items.save("/tmp/test.json")
     #items.save("/tmp/test.glb")
