@@ -173,7 +173,6 @@ def curvedpost(height=4.2, arm_length=4.5, r=0.1, corner_radius=0.75, arm_items=
     post = ddd.group([post] + items)
     return post
 
-
 def lamp_case(height=0.5, r=0.30):
     lamp_shape = ddd.point(name="Lamp Case").buffer(r - 0.10, resolution=1)
     lamp = lamp_shape.extrude_step(lamp_shape.buffer(0.10, cap_style=ddd.CAP_SQUARE, join_style=ddd.JOIN_BEVEL), height * 0.8)
@@ -716,6 +715,7 @@ def religion_cross(width=1, height=1.5):
     return sign
 
 def column(r=0.1, height=2.0, top=None):
+    # TODO: Move to "common"
     col = ddd.point([0, 0]).buffer(r, resolution =1).extrude(height)
     col = ddd.uv.map_cubic(col)
     if top:

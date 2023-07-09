@@ -962,11 +962,20 @@ class DDDNode2(DDDNode):
 
         return result
 
-    def revolve(self):
+    def revolve(self, sections=12):
+        """
+        Creates a revolution surface (3D) from a 2D contour (linestring).
+
+        From trimesh: 
+        - Revolve a 2D line string around the 2D Y axis, with a result with the 2D Y axis pointing along the 3D Z axis.
+        - If linestring is closed, it needs to be counterclockwise for normals to face outwards.
+        """
+
         # Coords are reversed so 'creation.revolve' creates outwards-facing meshes for ddd.polygon()
         coords = list(reversed(list(self.remove_z().coords_iterator())))
-        tmesh = creation.revolve(coords)
+        tmesh = creation.revolve(coords, angle=None, sections=sections)
         obj = ddd.mesh(tmesh, name=self.name)
+        obj.copy_from(self)
         return obj
 
     def extrude(self, height, center=False, cap=True, base=True):

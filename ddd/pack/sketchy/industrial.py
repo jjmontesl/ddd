@@ -13,6 +13,10 @@ import math
 from trimesh import transformations
 
 
+# Get instance of logger for this module
+logger = logging.getLogger(__name__)
+
+
 def crane_vertical():
     """
     Large vertical crane (such as those seen in cargo ports).
@@ -159,12 +163,10 @@ def crane_vertical():
     return item
 
 
-def crate(height=1.0, width=1.0, length=1.0):
+def crate(height=1.0, width=1.0, length=1.0, beam_thick=0.02, beam_width=0.05):
     """
     Crate
     """
-
-    beam_thick = 0.05
 
     face_base = ddd.rect([beam_thick, beam_thick, width - beam_thick, length - beam_thick])
     crate = face_base #.recenter()
@@ -172,18 +174,110 @@ def crate(height=1.0, width=1.0, length=1.0):
     crate = crate.material(ddd.mats.wood_planks)
     crate = ddd.uv.map_cubic(crate)
 
-    planks_f = planks_crossed(width, height - beam_thick, beam_thick).rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, beam_thick, 0])
+    planks_f = planks_crossed(width, height - beam_thick, beam_thick, beam_width).rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, beam_thick, 0])
     planks_fm = planks_f.translate([0, length - beam_thick, 0]) # .translate([0, beam_thick, 0])
-    planks_s = planks_crossed(length - 2 * beam_thick, height - beam_thick, beam_thick).rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CCW).translate([0, beam_thick, 0])
+    planks_s = planks_crossed(length - 2 * beam_thick, height - beam_thick, beam_thick, beam_width).rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CCW).translate([0, beam_thick, 0])
     planks_sm = planks_s.translate([width - beam_thick, 0, 0])
-    planks_t = planks_crossed(width, height, beam_thick).translate([0, 0, height - beam_thick])
+    planks_t = planks_crossed(width, length, beam_thick, beam_width).translate([0, 0, height - beam_thick])
     planks = ddd.group([planks_f, planks_fm, planks_s, planks_sm, planks_t])
     planks = planks.combine()
-    planks = planks.material(ddd.mats.wood)
-    planks = ddd.uv.map_cubic(planks)
+    planks = planks.material(ddd.mats.wood_planks)
+    planks = ddd.uv.map_cubic(planks, scale=[1.0, 2.176])
 
     crate = ddd.group([crate, planks], name="Crate")
     #crate = crate.recenter(onplane=True)
 
     return crate
+
+
+def barrel_metal(r=0.30, height=0.88):
+    """
+    A metal barrel, corrugated. Typically used for liquids like oil or paint.
+    Example typical dimensions: 88cm tall, 61cm diameter
+    Ref: https://upload.wikimedia.org/wikipedia/commons/0/07/Drum_%28container%29.jpg
+    """
+    
+    rings = 2
+    detail_sides = 14
+    inlet_distance_radius = 0.65
+
+    circle = ddd.regularpolygon(detail_sides, r=r)
+    circle_minus = ddd.regularpolygon(detail_sides, r=r - 0.0065)
+    circle_plus = ddd.regularpolygon(detail_sides, r=r + 0.004)
+    hexagon_cap = ddd.regularpolygon(6, r=0.04).translate([0, -r * inlet_distance_radius])
+
+    obj = circle_plus.extrude_step(circle, 0.0025)
+    #obj = obj.extrude_step(circle, -0.01)
+    
+    segment_height = (height) / (rings + 1)
+    for i in range(rings):
+        obj = obj.extrude_step(circle, segment_height - 0.09)
+        obj = obj.extrude_step(circle_minus, 0.01)
+        obj = obj.extrude_step(circle_minus, 0.01)
+        obj = obj.extrude_step(circle_plus, 0.02)
+        obj = obj.extrude_step(circle_plus, 0.01)
+        obj = obj.extrude_step(circle_minus, 0.02)
+        obj = obj.extrude_step(circle_minus, 0.01)
+        obj = obj.extrude_step(circle, 0.01)
+
+    obj = obj.extrude_step(circle, segment_height - 0.02)
+    obj = obj.extrude_step(circle_plus, 0.02)
+    obj = obj.extrude_step(circle_minus, -0.005)
+
+    obj = obj.extrude_step(hexagon_cap, 0.00)
+    obj = obj.extrude_step(hexagon_cap, 0.01)
+    #obj = obj.extrude_step(hexagon_cap.buffer(-0.002), 0.002)  # Bisel for inlet
+
+    obj = obj.material(ddd.mats.metal_paint_blue)
+    obj = obj.smooth(ddd.PI * 0.22)   # smoothes 12-sides or more cylinder but not the nut or the bevel
+    obj = ddd.uv.map_cylindrical(obj)
+    obj.name = "Barrel"
+
+    cap_shape = ddd.regularpolygon(8, r=0.03)
+    cap_end = ddd.rect([0.02, 0.01]).recenter()
+    cap = cap_shape.extrude_step(cap_shape, 0.015).extrude_step(cap_end, 0.0).extrude_step(cap_end, 0.0125)
+    cap = cap.material(ddd.mats.plastic_red)
+    cap = cap.smooth()
+    cap = ddd.uv.map_cylindrical(cap)
+    cap.transform.translate([0, -r * inlet_distance_radius, height + 0.005])
+    obj.append(cap)
+    
+    logger.warn("Barrel collider should be a cylinder.")
+
+    #obj.show()
+    return obj
+
+
+def pipe_segment(r=0.30, height=2.00):
+    """
+    This pipe segment is not hollow.
+    """
+    
+    nut_thick = 0.10
+    nut_extra_radius = r * 0.4
+    nut_bevel = 0.01
+
+    hexagon = ddd.regularpolygon(6, r=r + nut_extra_radius)
+    hexagon_beveled = hexagon.buffer(-nut_bevel)
+    #circle = ddd.point([0, 0]).buffer(r, resolution=0, cap_style=ddd.CAP_ROUND)
+    circle = ddd.regularpolygon(10, r=r)
+
+
+    obj = hexagon_beveled.extrude_step(hexagon, nut_bevel, cap=False, base=False)
+    obj = obj.extrude_step(hexagon, nut_thick - nut_bevel * 2)
+    obj = obj.extrude_step(hexagon_beveled, nut_bevel)
+    obj = obj.extrude_step(circle, 0.0)
+    obj = obj.extrude_step(circle, height - 2 * nut_thick)
+    obj = obj.extrude_step(hexagon_beveled, 0)
+    obj = obj.extrude_step(hexagon, nut_bevel)
+    obj = obj.extrude_step(hexagon, nut_thick - nut_bevel * 2)
+    obj = obj.extrude_step(hexagon_beveled, nut_bevel)
+    obj = obj.material(ddd.mats.metal)
+    obj = obj.smooth(ddd.PI * 0.22)   # smoothes cylinder but not the nut or the bevel
+    obj = ddd.uv.map_cylindrical(obj)
+    obj.name = "Pipe Section"
+    
+    logger.warn("Pipe Section collider should be a cylinder.")
+
+    return obj
 

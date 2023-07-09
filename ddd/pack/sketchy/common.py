@@ -18,13 +18,19 @@
 import logging
 import math
 import random
+import numpy as np
 
 from ddd.ddd import ddd
-import numpy as np
+from ddd.core.exception import DDDException
 
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
+
+
+"""
+Partial general purpose shapes and parts of other objects.
+"""
 
 def bar_u(height=0.8, width=0.4, r=0.15, thick=0.1):
     """
@@ -32,6 +38,10 @@ def bar_u(height=0.8, width=0.4, r=0.15, thick=0.1):
 
     Oriented with arc up, like a bike parking.
     """
+
+    if r >= width / 2:
+        raise DDDException("Radius is too big for width")
+
     vertical_height = height - r
 
     base = ddd.regularpolygon(6, r=thick * 0.5, name="U-Shape")
@@ -61,3 +71,15 @@ def planks_crossed(width, height, beam_thick=0.05, beam_width = 0.075):
     beams = beams.extrude(beam_thick)
 
     return beams
+
+
+def ring(r=1.0, thick_r=0.1, height_flatten=0.5, sides=6):
+
+    shape = ddd.regularpolygon(sides, r=thick_r)
+    shape = shape.scale([1, height_flatten])
+    shape = shape.translate([r, 0])
+
+    ring = shape.revolve()
+
+    return ring
+

@@ -25,9 +25,10 @@ ddd $DDD_OPTS png3drender.py
 ddd $DDD_OPTS randompoints.py
 #ddd $DDD_OPTS selector.py  # Incomplete
 ddd $DDD_OPTS shapes.py
-ddd $DDD_OPTS sketchy_interior.py
-ddd $DDD_OPTS sketchy_large.py
 ddd $DDD_OPTS sketchy.py
+ddd $DDD_OPTS sketchy_interior.py
+ddd $DDD_OPTS sketchy_industrial.py
+ddd $DDD_OPTS sketchy_lighting.py
 ddd $DDD_OPTS snap.py
 ddd $DDD_OPTS sports.py
 ddd $DDD_OPTS subdivide.py
@@ -39,5 +40,6 @@ ddd $DDD_OPTS text3d.py
 ddd $DDD_OPTS transforms.py
 ddd $DDD_OPTS uvmapping.py
 #ddd $DDD_OPTS volume.py
+
 
 

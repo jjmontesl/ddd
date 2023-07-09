@@ -6,7 +6,8 @@ import logging
 import random
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy.urban import post, lamp_ball
+from ddd.pack.sketchy.urban import post
+from ddd.pack.sketchy.lighting import lamp_ball
 from ddd.ops import filters
 
 
@@ -45,6 +46,25 @@ def rock(bounds=(1, 1, 1)):
 
 def well(terrain, subtract=True):
     raise NotImplementedError()
+
+
+def post_wooden_pointy(height=2.5, radius=0.2):
+    """
+    A sharpened pointy post, like those used for fencing of building wooden palisades (satakewall / paling).
+    Typically 1.5-4m tall, made of wood.
+    """
+    sides = 5
+    tip_height = 0.30
+
+    base = ddd.regularpolygon(sides, radius, name="Post")
+    obj = base.extrude_step(base, height- tip_height)  # , cap=False, base=False)
+    obj = obj.extrude_step(ddd.point(), tip_height)
+
+    obj = obj.merge_vertices().smooth(0)
+    obj = obj.material(ddd.mats.wood)
+    obj = ddd.uv.map_cylindrical(obj, scale=[1.0, 1.0], split=False)
+    
+    return obj
 
 
 def lighthouse(height=10, r=1.5):

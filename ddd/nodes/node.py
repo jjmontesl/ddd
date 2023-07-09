@@ -142,7 +142,7 @@ class DDDNode():
 
         Modifies this object in place, and returns itself. This does not copy geometry or meshes or other non-node data.
 
-        TODO: copy_material shall possibly be True by default
+        TODO: copy_material shall possibly be True by default?
         """
         if obj.name:
             self.name = obj.name

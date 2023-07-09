@@ -39,6 +39,7 @@ class D1D2D3Bootstrap():
         "geo-raster-coverage": ("ddd.geo.commands.georastercoverage.GeoRasterCoverageCommand", "Generate a georaster coverage map."),
         "geo-population": ("ddd.geo.commands.geopopulation.GeoPopulationCommand", "Query the population model."),
         "serve": ("ddd.server.commands.serve.ServerServeCommand", "Start the DDD Tool API for a pipeline."),
+        "describe": ("ddd.core.commands.describe.DescribeCommand", "Describes a pipeline or script."),
         "run": ("ddd.core.commands.run.RunCommand", "Runs a given pipeline or script (default)."),  # default
         })
 

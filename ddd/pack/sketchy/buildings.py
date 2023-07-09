@@ -16,7 +16,6 @@
 
 
 from ddd.ddd import ddd
-from _curses_panel import top_panel
 
 """
 Pocedures to build building related items, as seen from outside,

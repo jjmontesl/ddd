@@ -254,7 +254,7 @@ class DDDNode3(DDDNode):
 
     def rotate_quaternion(self, quaternion):
         # FIXME: This should behave as .rotate() (better, update this method implement rotate() using this method)
-        logger.warn("")
+        logger.warn("This should behave as .rotate() (better, update this method implement rotate() using this method)")
 
         obj = self.copy()
 

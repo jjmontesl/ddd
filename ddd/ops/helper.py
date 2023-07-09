@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class DDDHelper():
 
-    def all(self, size=20.0, plane_xy=True, grid_yz=True, grid_xz=True, grid_space=2.0, center=None, around_center=False):
+    def all(self, size=20.0, plane_xy=True, grid_yz=True, grid_xz=True, grid_xy=False, grid_space=2.0, center=None, around_center=False):
 
         objs = ddd.group3(name="Helper grid")
 
@@ -26,7 +26,10 @@ class DDDHelper():
 
         objs = objs.combine()
 
-        # Avoid combining as it has a different texture
+        # Avoid combining as it has a different texture or are 2D
+
+        if grid_xy:
+            objs.append(self.grid_xy(size, grid_space))
         if plane_xy:
             objs.append(self.plane_xy(size))
 
@@ -56,13 +59,11 @@ class DDDHelper():
             grid.append(line2)
         return grid
 
-    '''
-    def grid_xy(self, size=10.0, grid_space=1.0):
+    def grid_xy_solid(self, size=10.0, grid_space=1.0):
         grid = self.grid_xz(size, grid_space)
         grid = grid.rotate((ddd.PI_OVER_2, 0, 0)).translate([0, size, 0])
-        grid.name = "Helper grid XY"
+        grid.name = "Helper grid XY (Solid)"
         return grid
-    '''
 
     def grid_yz(self, size=10.0, grid_space=1.0):
         gw = 0.05
@@ -102,6 +103,14 @@ class DDDHelper():
             if o.is_empty(): continue
             o.replace(o.material(palette[idx], include_children=False))
             idx = (idx + 1) % len(palette)
+
+        return result
+    
+    def offset_objects(self, obj, offset=0.02):
+        result = obj.copy()
+        for (i, o) in enumerate(result.iterate_objects()):
+            if o.is_empty(): continue
+            o.transform.translate([0, 0, i * offset])
 
         return result
 
