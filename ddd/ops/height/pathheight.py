@@ -38,10 +38,10 @@ class PathHeightFunction(HeightFunction):
         assert(isinstance(path, ddd.DDDObject2))
         self.path = path
 
-    def vertex_function(self, x, y, z, idx, o):
+    def value(self, x, y, z, idx=None, o=None):
         coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = self.path.closest_segment(ddd.point([x, y]))
         interp_z = coords_p[2]
-        return (x, y, z + interp_z)  # FIXME: z should not be added here, or not by default, as Z coordinates are already local in the path
+        return interp_z
 
 
 class NodeBisectPathHeightFunction(PathHeightFunction):
@@ -50,7 +50,7 @@ class NodeBisectPathHeightFunction(PathHeightFunction):
         super().__init__(path)
         self._debug_root = debug_root
 
-    def vertex_function(self, x, y, z, idx, o):
+    def value(self, x, y, z, idx, o):
 
         # TODO: precalculate the point list and perpendiculars at each node
         path = self.path
@@ -124,7 +124,7 @@ class NodeBisectPathHeightFunction(PathHeightFunction):
         #print(list(closest.geom.coords))
         #interp_z = closest.geom.coords[0][2]
 
-        return (x, y, z + interp_z)  # FIXME: z should not be added here, or not by default, as Z coordinates are already local in the path
+        return interp_z  # FIXME: z should not be added here, or not by default, as Z coordinates are already local in the path
 
 
 class PathProfileHeightFunction(PathHeightFunction):
@@ -137,45 +137,7 @@ class BankingPathProfileHeightFunction(PathProfileHeightFunction):
         self.path = path
         self.conf = conf
 
-    '''
-    def vertex_function(self, x, y, z, idx, o):
-
-        coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = self.path.closest_segment(D1D2D3.point([x, y]))
-
-        d = ((Vector3([x, y, z]) - Vector3(coords_p)) * Vector3([1, 1, 0]))  # make Z 0 in order to get the correct length
-        #print(d)
-        d = d.length()
-        # Side of the segment
-        segment_d = (Vector3(segment_coords_b) - Vector3(segment_coords_a)).normalized()
-        segment_d_perp = Vector3([-segment_d[1], segment_d[0], segment_d[2]])
-        side = segment_d_perp.dot((Vector3([x, y, z]) - Vector3(coords_p)).normalized())
-
-        signed_d = d * DDDMath.sign(side)
-
-        #Example
-        #halfw = 2.5
-        #bank_h = 2.0
-        #bank_offset = 0.5
-
-        #Golf
-        halfw = 2.0
-        bank_h = 2.0
-        bank_offset = 0.5  # 0.5
-
-        profile_path_factor = DDDMath.smoothstep_pulse(closest_d, 14.0, 21.0, 22.0, 26.0)
-
-        signed_d = DDDMath.clamp(signed_d, -halfw, halfw)
-
-        d_norm = ((signed_d + (profile_path_factor * bank_offset)) / halfw)
-        d_norm = d_norm ** 2
-        h = d_norm * bank_h
-
-        h = h * profile_path_factor
-
-        return (x, y, z + h)
-    '''
-
-    def vertex_function(self, x, y, z, idx, o):
+    def value(self, x, y, z, idx, o):
 
         # TODO: precalculate the point list and perpendiculars at each node
         path = self.path
@@ -296,4 +258,5 @@ class BankingPathProfileHeightFunction(PathProfileHeightFunction):
         #print(signed_d, d, r, d_norm, h)
         h = h * profile_path_factor
 
-        return (x, y, z + h)
+        #return (x, y, z + h)
+        return h

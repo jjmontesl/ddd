@@ -61,13 +61,13 @@ class DDDTransform():
         return points[0]
 
     def forward(self):
-        return Vector3(np.dot(self.to_matrix(), [0, 1, 0, 1])[:3])  # Hack: use matrices
+        return Vector3(np.dot(self.to_matrix(), [0, 1, 0, 1])[:3])
 
     def to_matrix(self):
         """
         Returns a HTM for the translation, rotation and scale represented by this Transform.
 
-        NOTE: This method was created to export Babylon instance lists, the fixed for DDD transforms. The fix for Babylon should go elsewhere.
+        NOTE: This method was created to export Babylon instance lists, then fixed for DDD transforms. The fix for Babylon should go elsewhere if still needed.
         NOTE: The copy in ddd.py still has the old method, should be removed from there.
         """
 
@@ -104,9 +104,14 @@ class DDDTransform():
 
     def rotate(self, v, origin=None):
         """
-        Modifies the transform in place. TODO: Rotation vector is in local coordinates ??
+        Rotates the transform in place, rotating the given euler angles rotation (in radians).
 
-        Note: origin is not implemented correctly (FIXME, TODO)
+        By default (when origin is None), rotation is performed around the local origin (0,0,0), altering only the rotation component of the transform.
+
+        TODO: Note: origin is not implemented (FIXME, TODO ?)
+
+        TODO: Rotation vector is in local coordinates ??
+        TODO: current behavior is critical for several operations, but it should be made clear how this behaves.
         """
 
         if len(v) != 3:

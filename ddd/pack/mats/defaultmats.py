@@ -66,9 +66,9 @@ class DefaultMaterials(MaterialsCollection):
                                          extra={'zoffset': -8.5, 'ddd:collider': False, 'ddd:shadows': False})  # Eg. leisure track
 
         # Structural / building materials
-        self.bronze = ddd.material(name="Bronze", color='#f0cb11')
-        self.steel = ddd.material(name="Steel", color='#78839c')
-        self.metal = ddd.material(name="Steel", color='#68738c')
+        self.bronze = ddd.material(name="Bronze", color='#f0cb11', metallic_factor=0.95, roughness_factor=0.25)
+        self.steel = ddd.material(name="Steel", color='#78839c', metallic_factor=0.975, roughness_factor=0.125)
+        self.metal = ddd.material(name="Steel", color='#68738c', metallic_factor=0.975, roughness_factor=0.125)
 
         self.stone = ddd.material(name="Stone", color='#9c9378')
         self.cement = ddd.material(name="Cement", color='#b8b8a0')
@@ -78,16 +78,17 @@ class DefaultMaterials(MaterialsCollection):
         self.bricks_raw = ddd.material(name="Bricks Raw", color='#d49156')
         self.marble_white = ddd.material(name="Marble White", color='#c0c3c8', metallic_factor=0.4, roughness_factor=0.05)
 
-        self.wood = ddd.material(name="Wood", color='#efae85')
-        self.wood_planks = ddd.material(name="Wood Planks", color='#b57857')
+        self.wood = ddd.material(name="Wood", color='#efae85', metallic_factor=0.0, roughness_factor=0.7)
+        self.wood_planks = ddd.material(name="Wood Planks", color='#b57857', metallic_factor=0.0, roughness_factor=0.6)
+        self.wood_planks_stained = ddd.material(name="Wood Planks Stained", color='#856231', metallic_factor=0.0, roughness_factor=0.65)
 
         # Painted materials
-        self.metal_paint_red = ddd.material("PaintRed", color='#d01010')
-        self.metal_paint_green = ddd.material("PaintGreen", color='#265e13')
-        self.metal_paint_yellow = ddd.material("PaintYellow", color='#ebe015')
-        self.metal_paint_blue = ddd.material("PaintBlue", color='#184794')
-        self.metal_paint_white = ddd.material("PaintWhite", color='#f8fbff')
-        self.metal_paint_black = ddd.material("PaintBlack", color='#000a17')
+        self.metal_paint_red = ddd.material("PaintRed", color='#d01010', metallic_factor=0.975, roughness_factor=0.2)
+        self.metal_paint_green = ddd.material("PaintGreen", color='#265e13', metallic_factor=0.975, roughness_factor=0.2)
+        self.metal_paint_yellow = ddd.material("PaintYellow", color='#ebe015', metallic_factor=0.975, roughness_factor=0.2)
+        self.metal_paint_blue = ddd.material("PaintBlue", color='#184794', metallic_factor=0.975, roughness_factor=0.3)
+        self.metal_paint_white = ddd.material("PaintWhite", color='#f8fbff', metallic_factor=0.975, roughness_factor=0.2)
+        self.metal_paint_black = ddd.material("PaintBlack", color='#000a17', metallic_factor=0.975, roughness_factor=0.2)
 
         # Lights
         self.lightbulb = ddd.material("LightLampOff", color='e8e0e4')

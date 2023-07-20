@@ -177,6 +177,18 @@ class DDDNode2(DDDNode):
         result = ddd.point(geom.centroid.coords)
         result.copy_from(self, copy_material=True)
         return result
+    
+    def representative_point(self):
+        if self.geom and self.geom.geom_type == 'Point':
+            return ddd.point(self.geom.coords[0])
+        
+        geom = self.union().geom
+        if geom is None:
+            raise DDDException("Cannot find representative_point (no geometry) for object: %s" % self)
+        
+        result = ddd.point(geom.representative_point().coords)
+        result.copy_from(self, copy_material=True)
+        return result
 
     def point_coords(self):
         """Return the coordinates of the geometry, asuming it is a single point (e.g. as returned by `centroid()`)."""

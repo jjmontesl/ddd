@@ -317,6 +317,7 @@ def osm_model_elevation_apply_min_height(obj, osm, root):
     return obj
 '''
 
+# TODO: Similar code is now also on ddd_common
 @dddtask(path="/Items3/*", select='["ddd:elevation" = "geotiff"]')
 def osm_model_elevation_apply_terrain(obj, osm, root):
     obj = terrain.terrain_geotiff_elevation_apply(obj, osm.ddd_proj)
@@ -346,11 +347,14 @@ def osm_model_elevation_apply_building(logger, obj, osm, pipeline, root):
     obj = obj.translate([0, 0, -0.20])
     return obj
 
+
+# TODO: Similar code is now also on ddd_common
 @dddtask(path="/Items3/*", select='["ddd:elevation" = "min"]')
 def osm_model_elevation_apply_terrain_min(obj, osm, root):
     obj = terrain.terrain_geotiff_min_elevation_apply(obj, osm.ddd_proj)
     return obj
 
+# TODO: Similar code is now also on ddd_common
 @dddtask(path="/Items3/*", select='["ddd:elevation" = "max"]')
 def osm_model_elevation_apply_terrain_max(obj, osm, root):
     obj = terrain.terrain_geotiff_max_elevation_apply(obj, osm.ddd_proj)

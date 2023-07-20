@@ -33,6 +33,7 @@ def common_height_apply_terrain(obj, pipeline, root):
     obj = terrain.terrain_geotiff_elevation_apply(obj, ddd_proj, offset=terrain_offset)
     return obj
 
+
 @dddtask(path="/", select='["ddd:height" = "min"]', recurse=False)
 def common_height_apply_terrain_min(root, pipeline, obj):
     ddd_proj = pipeline.data['geo:proj:local']
@@ -42,6 +43,7 @@ def common_height_apply_terrain_min(root, pipeline, obj):
         #obj = obj.translate([0, 0, terrain_offset])
         obj.transform.translate([0, 0, terrain_offset])
     return obj
+
 
 @dddtask(path="/", select='["ddd:height" = "max"]', recurse=False)
 def common_height_apply_terrain_max(root, pipeline, obj):

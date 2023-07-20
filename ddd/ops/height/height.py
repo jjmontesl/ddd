@@ -22,7 +22,7 @@ import numpy as np
 from ddd.math.math import DDDMath
 
 """
-Framework and functions for height mapping of different accidents or strategies to terrain or meshes.
+Framework and functions for height mapping of different accidents or strategies, e.g. for terrain or meshes, or points.
 
 These functions are based on mapping XY coordinates to height, in a manner that can be combined with other
 mapping functions to generate a complete height map. They shall fade to 0 beyond their respective range.
@@ -36,22 +36,51 @@ Geometry needs to be prepared for, or subdivided before applying these functions
 logger = logging.getLogger(__name__)
 
 
-class HeightFunction():
 
-    def vertex_function(self, x, y, z, idx, obj=None):
-        return NotImplementedError()
+class HeightFunction():
+    """
+    Base class for height functions (or, more precisely, '1d value' functions), that map XY(Z) coordinates to a value.
+    """
+
+    def value(self, x, y, z, idx=None, o=None) -> float:
+        """
+        Returns the function value for the given coordinates.
+        """
+        raise NotImplementedError()
+
+    def vertex_function(self, x, y, z, idx=None, obj=None):
+        """
+        Default vertex function implementation, which calls value and ADDS height to Z.
+        """
+        height_val = self.value(x, y, z, idx, obj)
+        return (x, y, z + height_val)
+
+
+class ConstantHeightFunction(HeightFunction):
+    """
+    A height function that combines several height functions (adding their results).
+    """
+
+    def __init__(self, value=0):
+        self.constant_value = value
+    
+    def value(self, x, y, z, idx=None, o=None):
+        return self.constant_value
 
 
 class CompositeHeightFunction(HeightFunction):
+    """
+    A height function that combines several height functions (adding their results).
+    """
 
     def __init__(self, functions):
         self.functions = functions
-
-    def vertex_function(self, x, y, z, idx, o):
+    
+    def value(self, x, y, z, idx=None, o=None):
+        result = 0
         for function in self.functions:
-            x, y, z = function.vertex_function(x, y, z, idx, o)
-        return (x, y, z)
-
+            result = result + function.value(x, y, result, idx, o)
+        return result
 
 
 def height_func_bump(coords, center, r, h):

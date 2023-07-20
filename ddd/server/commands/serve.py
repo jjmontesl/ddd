@@ -4,25 +4,25 @@
 
 import argparse
 import asyncio
-from concurrent import futures
 import concurrent
+import json
 import logging
+import os
 import sys
+import traceback
+from concurrent import futures
 
-from aiohttp import web
 import socketio
-from watchdog.events import FileSystemEventHandler, FileModifiedEvent
+from aiohttp import web
+from watchdog.events import FileModifiedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from ddd.core import settings
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.command import DDDCommand
-from ddd.pipeline.pipeline import DDDPipeline
-import json
-import os
-import traceback
+from ddd.ddd import ddd
 from ddd.formats.presentation.generic import Generic3DPresentation
-
+from ddd.pipeline.pipeline import DDDPipeline
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -70,18 +70,18 @@ class FileChangedEventHandler(FileSystemEventHandler):
 
     def on_any_event(self, ev):
 
-        logger.info("File monitoring event: %s", ev)
+        logger.debug("File monitoring event: %s", ev)
 
         if not isinstance(ev, FileModifiedEvent):
             return
-        if not ev.src_path.endswith(".py"):
+        if not ev.src_path.endswith(".py") and not ev.src_path.endswith(".yaml"):
             return
 
         if self.dddserver.running:
             logger.warn("Pipeline is already running (ignoring reload due to saved file)")
             return
 
-        logger.info("Reloading pipeline.")
+        logger.info("Reloading pipeline (source file modified: %s).", ev.src_path)
         try:
             self.dddserver.pipeline_reload()
         except Exception as e:
@@ -135,7 +135,7 @@ class ServerServeCommand(DDDCommand):
         self.loop = asyncio.get_event_loop()
 
         # Create pipeline
-        self.pipeline = None
+        self.pipeline : DDDPipeline | None = None
         self.running = False
 
         # Start python-socketio
@@ -229,7 +229,13 @@ class ServerServeCommand(DDDCommand):
         } for t in tasks_sorted]
 
         # Serialize and deserialize to ensure data is JSON serializable (converts objects to strings)
-        data = json.loads(json.dumps(self.pipeline.data, default=str))
+        try:
+            #data = json.loads(json.dumps(self.pipeline.data, default=str))
+            data = json.loads(json.dumps(self.pipeline.data, default=lambda x: ddd.json_serialize(x)))
+        except Exception as e:
+            logger.error("Could not prepare serializable pipeline data: %s", e)
+            print(traceback.format_exc())
+            data = None  # self.pipeline.data
 
         status = {
             'script': self.script,

@@ -165,14 +165,15 @@ def crane_vertical():
 
 def crate(height=1.0, width=1.0, length=1.0, beam_thick=0.02, beam_width=0.05):
     """
-    Crate
+    A crate, reinforced with with crossing planks.
+    Centered on its center horizontally, lying on the floor plane.
     """
 
     face_base = ddd.rect([beam_thick, beam_thick, width - beam_thick, length - beam_thick])
-    crate = face_base #.recenter()
+    crate = face_base
     crate = crate.extrude(height - beam_thick)
-    crate = crate.material(ddd.mats.wood_planks)
-    crate = ddd.uv.map_cubic(crate)
+    crate = crate.material(ddd.mats.wood_planks_stained)  # or wood_planks_stained
+    crate = ddd.uv.map_cubic(crate, scale=[0.5, 0.5])
 
     planks_f = planks_crossed(width, height - beam_thick, beam_thick, beam_width).rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, beam_thick, 0])
     planks_fm = planks_f.translate([0, length - beam_thick, 0]) # .translate([0, beam_thick, 0])
@@ -181,10 +182,10 @@ def crate(height=1.0, width=1.0, length=1.0, beam_thick=0.02, beam_width=0.05):
     planks_t = planks_crossed(width, length, beam_thick, beam_width).translate([0, 0, height - beam_thick])
     planks = ddd.group([planks_f, planks_fm, planks_s, planks_sm, planks_t])
     planks = planks.combine()
-    planks = planks.material(ddd.mats.wood_planks)
+    planks = planks.material(ddd.mats.wood)
     planks = ddd.uv.map_cubic(planks, scale=[1.0, 2.176])
 
-    crate = ddd.group([crate, planks], name="Crate")
+    crate = ddd.group([crate, planks], name="Crate").recenter(onplane=True)
     #crate = crate.recenter(onplane=True)
 
     return crate
@@ -195,6 +196,8 @@ def barrel_metal(r=0.30, height=0.88):
     A metal barrel, corrugated. Typically used for liquids like oil or paint.
     Example typical dimensions: 88cm tall, 61cm diameter
     Ref: https://upload.wikimedia.org/wikipedia/commons/0/07/Drum_%28container%29.jpg
+
+    Barrel is centered on its center horizontally, lying on the floor plane. The cap on the -Y side of the barrel.
     """
     
     rings = 2
