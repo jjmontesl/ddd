@@ -173,7 +173,7 @@ def crate(height=1.0, width=1.0, length=1.0, beam_thick=0.02, beam_width=0.05):
     crate = face_base
     crate = crate.extrude(height - beam_thick)
     crate = crate.material(ddd.mats.wood_planks_stained)  # or wood_planks_stained
-    crate = ddd.uv.map_cubic(crate, scale=[0.5, 0.5])
+    crate = ddd.uv.map_cubic(crate, scale=[2.0, 2.0])
 
     planks_f = planks_crossed(width, height - beam_thick, beam_thick, beam_width).rotate(ddd.ROT_FLOOR_TO_FRONT).translate([0, beam_thick, 0])
     planks_fm = planks_f.translate([0, length - beam_thick, 0]) # .translate([0, beam_thick, 0])
@@ -245,7 +245,7 @@ def barrel_metal(r=0.30, height=0.88):
     cap.transform.translate([0, -r * inlet_distance_radius, height + 0.005])
     obj.append(cap)
     
-    logger.warn("Barrel collider should be a cylinder.")
+    # TODO: Barrel collider should be a cylinder?
 
     #obj.show()
     return obj
@@ -280,7 +280,5 @@ def pipe_segment(r=0.30, height=2.00):
     obj = ddd.uv.map_cylindrical(obj)
     obj.name = "Pipe Section"
     
-    logger.warn("Pipe Section collider should be a cylinder.")
-
     return obj
 

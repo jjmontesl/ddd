@@ -38,6 +38,27 @@ def pipeline_start(pipeline, root):
     fig = fig.translate([0, 0, 2])
     items.append(fig)
 
+    fig = ddd.sphere()
+    fig = fig.material(ddd.mats.logo)
+    #fig = fig.merge_vertices()
+    #fig = fig.smooth(math.pi*2)
+    fig = ddd.uv.map_spherical(fig, scale=[2.0, 2.0])
+    fig = fig.translate([0, 0, 2])
+    items.append(fig)
+
+    # Cylinder with logo
+    fig = ddd.cylinder(height=2, r=1.0)
+    fig = fig.material(ddd.mats.logo)
+    fig = ddd.uv.map_cylindrical(fig)
+    fig = fig.translate([0, 0, 2])
+    items.append(fig)
+
+    fig = ddd.cylinder(height=2, r=1.0)
+    fig = fig.material(ddd.mats.logo)
+    fig = ddd.uv.map_cylindrical(fig, scale=[2.0, 2.0])
+    fig = fig.translate([0, 0, 2])
+    items.append(fig)
+
     # Cube
     fig = ddd.box()
     fig = fig.material(ddd.mats.traffic_signs)

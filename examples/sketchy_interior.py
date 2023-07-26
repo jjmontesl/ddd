@@ -16,7 +16,7 @@
 
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import posters, urban, landscape, industrial, interior, sports, \
+from ddd.pack.sketchy import printing, urban, landscape, industrial, interior, sports, \
     vehicles, common, buildings
 from ddd.pipeline.decorators import dddtask
 from ddd.pack.sketchy.urban import lamppost, lamp_ball, roundedpost,\
@@ -38,11 +38,11 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
-    item = posters.poster_ripped()
-    item.show()
+    item = printing.poster_ripped()
+    #item.show()
     items.append(item)
 
-    item = posters.poster_flat()
+    item = printing.poster_flat()
     items.append(item)
 
     item = interior.furniture_test_out_in()
@@ -64,6 +64,10 @@ def pipeline_start(pipeline, root):
 
     item = buildings.window_with_border()
     items.append(item)
+
+    item = buildings.window_with_border_and_grille(grille=(3,2))
+    items.append(item)
+    #item.show()
 
     item = common.bar_u()
     items.append(item)

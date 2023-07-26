@@ -65,7 +65,7 @@ def lamp_block_based(length=0.8, width=0.15, height=0.10, color="#ffffff", empty
     front = ddd.rect([length, width])
     hole = ddd.line([[width / 2, width / 2], [length - width / 2, width / 2]])
     hole = hole.buffer(width / 2 - margin, cap_style=ddd.CAP_ROUND, resolution=3)
-    front_hole = front.subtract(hole)
+    #front_hole = front.subtract(hole)
     #front_hole.show()
 
     obj = front.extrude_step(front.scale([1, 1]), height, base=False)
@@ -183,6 +183,7 @@ def lamp_lantern_case_grid_top(height=0.5, r=0.30):
 
     #lamp_case = ddd.group([lamp, light], name="Lamp Case and Light")
     lamp_case = ubar
+    lamp_case.setname('Lantern Case')
 
     return lamp_case
 

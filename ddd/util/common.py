@@ -34,12 +34,19 @@ def parse_tile(value):
     return parse_xyztile(value)
 
 def parse_meters(expr):
+    """
+    Parse meters from a string expression that can contain a unit label. Unit conversion is performed automatically to meters if needed.
+    """
     quantity = ureg.parse_expression(str(expr))
     if not isinstance(quantity, float) and not isinstance(quantity, int):
         quantity = quantity.to(ureg.meter).magnitude
     return float(quantity)
 
 def parse_symbol(fqn):
+    """
+    Parses a python symbol (e.g. a function) from a fully qualified name, trying to import modules as needed to find the symbol.
+    """
+
     # Try to import as module
     modulename = ".".join(fqn.split(".")[:-1])
     symbolname = fqn.split(".")[-1]
@@ -52,4 +59,4 @@ def parse_symbol(fqn):
             #cliobj.run()
             return symb
     
-    raise DDDException("Could not parse symbol: %r", fqn)
+    raise DDDException("Could not parse symbol: %r" % fqn)

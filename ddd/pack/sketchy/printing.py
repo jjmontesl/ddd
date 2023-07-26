@@ -20,7 +20,7 @@ def poster_flat(width=0.4, height=0.6):
     """
     Poster is upright centered and facing -Y, on the XY plane.
     """
-    poster = ddd.rect([width, height], name="Poster Ripped")
+    poster = ddd.rect([width, height], name="Poster")
     poster = poster.triangulate()
     poster = poster.material(ddd.MAT_TEST)  # ddd.mats.paper_coarse)
     poster = ddd.uv.map_cubic(poster, scale=[1 / width, 1 / height])

@@ -52,6 +52,35 @@ def window_border_flat(width=1.6, height=1.2, border_depth=0.05, border_thick=0.
 
     return obj
 
+def window_border_grille(width=1.6, height=1.2, border_depth=0.05, border_thick=0.04, border_material=None, grille=(2, 2)):
+    
+    grille_width = width / grille[0]
+    grille_height = height / grille[1]
+    grille_depth = border_depth - 0.01
+    grille_thick = border_thick - 0.01
+
+    result = ddd.group3(name="Window Grille")
+    
+    vertical_bar = ddd.rect([0, 0, grille_thick, grille_depth]).extrude(height).translate([-border_thick * 0.5, -border_depth, 0])
+    for x in range(grille[0] - 1):
+        bar = vertical_bar.copy().translate([-width * 0.5 + grille_width * (x + 1), 0, 0])
+        result = result.append(bar)
+
+    horizontal_bar = ddd.rect([0, 0, width, grille_depth]).extrude(grille_thick).translate([-width * 0.5, -border_depth, -grille_thick * 0.5])
+    for y in range(grille[1] - 1):
+        bar = horizontal_bar.copy().translate([0, 0, grille_height * (y + 1)])
+        result = result.append(bar)
+
+    obj = result.combine()
+    if border_material is None: material = ddd.mats.wood
+    obj = obj.material(border_material)
+
+    obj = ddd.uv.map_cubic(obj)
+
+    return obj
+    
+
+
 '''
 def window_border_shelf(width=1.6, height=1.2, border_depth=0.05, border_thick=0.1):
     obj = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Window Border Shelf")
@@ -72,9 +101,16 @@ def window_with_border(width=1.6, height=1.2, border_depth=0.05, border_thick=0.
     obj = ddd.group3([interior, border], "Window")
     return obj
 
+def window_with_border_and_grille(width=1.6, height=1.2, border_depth=0.05, border_thick=0.04, border_material=None, grille=(2,2)):  #, shelf_thick=None):
+    interior = window_interior(width=width - border_thick * 2, height=height - border_thick * 2).translate([0, 0, border_thick])
+    
+    border = window_border_flat(width=width, height=height, border_depth=border_depth, border_thick=border_thick, border_material=border_material)
+    grille = window_border_grille(width=width - border_thick * 2, height=height - border_thick * 2, grille=grille).translate([0, 0, border_thick])
+    border = border.append(grille).combine()
 
-def window_grille():
-    pass
+    obj = ddd.group3([interior, border], "Window")
+    return obj
+
 
 
 def door(width=1.4, height=2.2, depth=0.06):

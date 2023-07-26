@@ -32,17 +32,3 @@ class DDDRandom:
             if accum + v >= rand: return k
             accum += v
         assert False, "Incorrect weighted choice."
-
-
-'''
-def weighted_choice(options):
-    """
-    """
-    total = sum([o for o in options.values()])
-    rand = random.uniform(0, total)
-    accum = 0.0
-    for k, v in options.items():
-        if accum + v >= rand: return k
-        accum += v
-    assert False, "Incorrect weighted choice."
-'''

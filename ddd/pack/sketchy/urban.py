@@ -546,7 +546,6 @@ def post_box(height=1.10, r=0.35):
     obj = obj.material(ddd.mats.metal_paint_yellow)
     obj = ddd.uv.map_cylindrical(obj)
     obj.name = "Post Box"
-    logger.warn("Post Box collider should be a cylinder.")
     return obj
 
 

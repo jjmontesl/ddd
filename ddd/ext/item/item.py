@@ -12,9 +12,8 @@ from ddd.ddd import ddd
 logger = logging.getLogger(__name__)
 
 
-class DDDItems():
+class DDDItem():
     """
-    Helpers for item generation and placement.
     """
 
     pass
