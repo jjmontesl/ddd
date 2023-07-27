@@ -93,7 +93,8 @@ class BuildingsRoofs3DOSMBuilder():
             roof = part.buffer(roof_buffer if pbuffered else 0, cap_style=2, join_style=2).extrude_step(part.buffer(-2), height, method=ddd.EXTRUSION_METHOD_SUBTRACT).translate([0, 0, max_height]).material(roof_material)
 
         elif roof_shape == 'gabled':
-            # Attic
+            # Gabled
+            # TODO: Use new pack/buildings/roof to build this part
             base = part.buffer(roof_buffer if pbuffered else 0)
             orientation = "major"
             if part.extra.get("osm:roof:orientation", "along") == "across": orientation = "minor"

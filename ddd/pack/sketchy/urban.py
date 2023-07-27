@@ -845,10 +845,14 @@ def trash_bin_post(height = 1.30):
 
 
 def patio_table(width=0.8, length=0.8, height=0.73):
+    """
+    A simple table, centered on its center.
+    """
+
     table_thick = 0.05
     tabletop = ddd.rect([0, 0, width, length], name="Table top").recenter().extrude(table_thick)
     tabletop = ddd.uv.map_cubic(tabletop)
-    tabletop = tabletop.translate([0, 0, height-table_thick])
+    tabletop = tabletop.translate([0, 0, height - table_thick])
 
     table = ddd.group3([tabletop], name="Table")
 
