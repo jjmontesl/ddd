@@ -33,11 +33,12 @@ from ddd.math.transform import DDDTransform
 logger = logging.getLogger(__name__)
 
 
-def fixture_round_wall(r=0.1, depth=0.02, resolution=3):
+def fixture_round_wall(r=0.05, depth=0.02, resolution=3):
     """
     """
-    obj = ddd.disc(r=r, resolution=resolution, name="Fixture Round Wall")
-    obj = obj.extrude(depth)
+    obj1 = ddd.disc(r=r, resolution=resolution, name="Fixture Round Wall")
+    obj2 = obj1.scale([0.9, 0.9])
+    obj = obj1.extrude_step(obj2, depth)
     
     obj = obj.material(ddd.mats.steel)
     obj = ddd.uv.map_cylindrical(obj)
@@ -54,27 +55,38 @@ def fixture_round_wall(r=0.1, depth=0.02, resolution=3):
     return obj
 
 
-def pole_arm_simple(length=0.4, thick=0.02):
+def arm_pole_simple(length=0.4, thick=0.02):
     """
     """
-    obj = ddd.rect([thick, length], name="Pole Arm Simple").extrude(thick)
+    obj = ddd.rect([thick, length], name="Arm Pole").extrude(thick)
     obj = obj.translate([-thick * 0.5, -length, -thick * 0.5])
     obj = obj.material(ddd.mats.steel)
     obj = ddd.uv.map_cubic(obj)
 
     slot_default = DDDTransform()
-    slot_default.translate([0, -length * 0.85, -thick * 0.5])
+    slot_default.translate([0, -length, 0])
+    
+    slot_below = DDDTransform()
+    slot_below.translate([0, -length * 0.85, -thick * 0.5])
 
     obj.set('ddd:slots', {
-        'below': slot_default
+        'default': slot_default,
+        'below': slot_below
     })
 
     return obj
 
 
-def pole_arm_forge(length=0.4):
-    return pole_arm_simple(length=length)
+def arm_pole_forge(length=0.4):
+    return arm_pole_simple(length=length)
 
+
+def arm_flat_wall(length=0.4):
+    """
+    TODO: Create a curve with a generic shape constructor, transform to line.
+    Construct a flat rect shape and extrude along the curve (other shapes can be used to construct poles). Generalize.
+    """
+    pass
 
 # look into urban / lamp mast uses 3 angled arms
 #def arm_angled()

@@ -77,6 +77,7 @@ class D1D2D3():
     PI_OVER_4 = math.pi / 4.0
     PI_OVER_8 = math.pi / 8.0
     PI_OVER_3 = math.pi / 3.0
+    GOLDEN_RATIO = (1 + 5 ** 0.5) / 2
 
     VECTOR_UP = np.array([0.0, 0.0, 1.0])
     VECTOR_DOWN = np.array([0.0, 0.0, -1.0])
@@ -533,6 +534,7 @@ class D1D2D3():
         from ddd.ops.uvmapping import DDDUVMapping
         from ddd.pack.mats.defaultmats import DefaultMaterials
         from ddd.util.dddrandom import DDDRandom
+        from ddd.util.expressions import DDDExpressions
 
         ddd.mats = MaterialsCollection()
         ddd.mats.highlight = ddd.material(color='#ff00ff')
@@ -561,8 +563,10 @@ class D1D2D3():
 
         ddd.paths = DDDPathOps()
 
+        ddd.expr = DDDExpressions()
+
 
 # Because 'ddd' is a class and not a module, we are creating a global instance and initialize it here (on import).
 # NOTE: This is not ideal, and also confuses some code editors. Any ideas and suggestions on how to improve this are welcome.
-ddd = D1D2D3()
+ddd : D1D2D3 = D1D2D3()
 ddd.initialize()

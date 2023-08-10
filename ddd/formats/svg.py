@@ -138,7 +138,7 @@ class DDDSVG():
             data = data + '</g>'
 
         '''
-        # FIXME: This code is duplicated from DDDInstance: normalize export / generation
+        # FIXME: This code is duplicated from DDDInstance: normalize export / generation (instances, markers...)
         from ddd.ddd import DDDInstance
         if isinstance(obj, DDDInstance):
 

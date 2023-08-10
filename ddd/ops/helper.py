@@ -141,4 +141,4 @@ class DDDHelper():
         for (k, v) in refs.items():
             if len(v) > 1:
                 objstxt = ", ".join(["'%s'['%s']" % (o, ok) for o, ok in v]) #  if (ignore_keys is None or ok not in ignore_keys)])
-                logger.warning("Objects references the same object %s from: %s" % (k, objstxt))    
+                logger.warning("Objects references the same object %r from: %s" % (k, objstxt))    

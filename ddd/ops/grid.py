@@ -66,6 +66,7 @@ class PerlinTerrainRandomHeightFunction(HeightFunction):
         return (x, y, z + h)
 
 
+# TODO: This function doesn't belong here, and it's used for e.g. plant pots earth noise
 def terrain_height_simple_random(mesh, height=1.0, scale=0.025):
 
     height_func = PerlinTerrainRandomHeightFunction(height, scale)

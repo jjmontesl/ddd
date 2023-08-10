@@ -22,7 +22,18 @@ logger = logging.getLogger(__name__)
 
 class AABox(DDDNode3):
     """
-    Axis-aligned box.
+    Axis-aligned box. If rotated, bounds are extended/contracted to fit the rotated box (AA rotation).
+
+    The information in this class may look similar to DDDBounds, but DDDBounds are 
+    also used for 2D objects (and currently don't support AA rotation). 
+    In addition, note that this class stores center and extent, whereas Bounds store
+    the min/max corners of a geometry. This class does provide a static constructor 
+    to construct objects from bounds. 
+
+    FIXME: This class exports itself as a Collider, but it should be a primitive, and the collider composed as needed by client code.
+    In additions, colliders can indeed be rotated in 3D, but this class does not support that.
+    Well, it can be rotated via transform which is yet more confusing: study, fix if needed, document.
+    (Also, are collider coordinates in local space I guess? Better: normalize colliders as nodes like DDDSlots?) 
 
     TODO: Separate from Node3 (should be only "trimesh mesh" if anything, or a primitive) Move to primitives (check Trimesh primitives)
     """
@@ -44,7 +55,7 @@ class AABox(DDDNode3):
         return result
 
     def export(self):
-        return {"type": "BoxCollider",
+        return {"type": "BoxCollider",  # FIXME: Do not export itself as BoxCollider (AABox?)
                 "center": list(self.center),
                 "size": list(self.size)}
 
@@ -54,6 +65,12 @@ class AABox(DDDNode3):
         return obj
 
     def rotate(self, v, origin="local"):
+        """
+        AAA rotation.
+
+        TODO: FIXME: review how "origin" is used by client code, and document this method and intent better. How does this integrate with the transform hierarchy?
+        """
+
         obj = self.copy()
 
         rot = quaternion_from_euler(v[0], v[1], v[2], "sxyz")
@@ -88,10 +105,15 @@ class AABox(DDDNode3):
 
 
 class DDDCollision():
+    """
+    Helpers to construct and manage colliders.
+
+    This class can be accessed as 'ddd.collision'.
+    """
 
     def aabox_from_aabb(self, obj):
         """
-        Adds a box collider to the object, using object AABB for dimensions.
+        Adds a box collider to the object, using object's AABB for dimensions.
         """
 
         #logger.debug("Adding AABox collider to object: %s", obj)

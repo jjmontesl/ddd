@@ -99,6 +99,7 @@ class ServerServeCommand(DDDCommand):
 
         #program_name = os.path.basename(sys.argv[0])
         parser = argparse.ArgumentParser()  # description='', usage = ''
+        parser.prog = parser.prog + " " + D1D2D3Bootstrap._instance.command
 
         #parser.add_argument("-w", "--worker", default=None, help="worker (i/n)")
         parser.add_argument("script", help="script or pipeline entry point")

@@ -21,20 +21,16 @@ class D1D2D3Bootstrap():
 
     _logging_initialized = False
 
-    # Config ideally shall be an object set to ddd if anything? also check ddd.conf, settings, (dir + home + data dir???!)  pipeline conf...
+    # Config ideally shall be an object set to ddd or ctx if anything? also check ddd.conf, settings, (dir + home + data dir???!)  pipeline conf...
     export_marker = True
     export_mesh = False
 
-
-    # TODO: make classes that provide help, leave "run" for user scripts
     commands = OrderedDict({
         "catalog-show": ("ddd.catalog.commands.show.CatalogShowCommand", "Show catalog"),
         "catalog-export": ("ddd.catalog.commands.export.CatalogExportCommand", "Export catalog to file"),
         "catalog-clear": ("ddd.catalog.commands.clear", "Clear catalog"),
         "font-generate": ("ddd.text.commands.fontatlasgen.FontAtlasGenerateCommand", "Generate a font atlas"),
         "texture-pack": ("ddd.materials.commands.texturepack.TexturePackCommand", "Pack textures into texture atlases"),
-        #"osm-build": ("ddd.osm.commands.build.OSMBuildCommand", "Build a scene or tile using the OSM Builder"),
-        #"osm-datainfo": ("ddd.osm.commands.areainfo.OSMDataInfoCommand", "Dump information about generated tiles"),
         "geo-raster-collect": ("ddd.geo.commands.georastercollect.GeoRasterCollectCommand", "Collect georaster files and generate config."),
         "geo-raster-coverage": ("ddd.geo.commands.georastercoverage.GeoRasterCoverageCommand", "Generate a georaster coverage map."),
         "geo-population": ("ddd.geo.commands.geopopulation.GeoPopulationCommand", "Query the population model."),
@@ -47,14 +43,14 @@ class D1D2D3Bootstrap():
         self.debug = True
 
     @staticmethod
-    def initialize_logging(debug=False):
+    def initialize_logging(debug=False, warnonly=False):
 
         if D1D2D3Bootstrap._logging_initialized:
             return
 
         D1D2D3Bootstrap._logging_initialized = True
 
-        default_level = logging.INFO if not debug else logging.DEBUG
+        default_level = logging.WARN if warnonly else (logging.INFO if not debug else logging.DEBUG)
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=default_level)
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
@@ -123,24 +119,13 @@ class D1D2D3Bootstrap():
         #exclusive_grp.add_argument('--color', action='store_true', dest='color', default=None, help='color')
         #exclusive_grp.add_argument('--no-color', action='store_false', dest='color', help='no-color')
 
-        # Tasks to run (short, long, area, catalog...) - depends on script (define tasks?)
-        # Workers/ Multiprocess
-        # Catalog tasks (common: generate catalog, show catalog)
-        # Overwrite / Fail / Skip task
-        # Generate GIS GeoJSON with chunks and info
-        # Generate classification input data
-        # Generate custom data (customs_1d, etc)
-        # Run only 1 chunk / task
-        # Show / no show / custom debug shows  | logging categories
-        # Timings
-        # Exoort instance-markers and/or instance-geometry by default
-
         #parser.add_argument("rest", nargs='*')
 
         args, unparsed_args = parser.parse_known_args()  # sys.argv[1:]
 
         self.debug = args.debug
         self.command = args.command
+        self.command_class = None
 
         self.configs = args.config if args.config else []
         #self.configs = ['~/.ddd.conf', './ddd.conf'] + self.configs
@@ -149,11 +134,13 @@ class D1D2D3Bootstrap():
         self.overwrite = args.overwrite
         self.properties = args.properties
 
-        if args.help:
-            print(parser.format_help())
+        self.help = args.help
+        if self.help or not self.command:
             if not self.command:
+                print(parser.format_help())
                 sys.exit(0)
             else:
+                #print(parser.format_help())  # prints general help before any per-command help
                 unparsed_args = unparsed_args + ['-h']
 
         self.profile = args.profile
@@ -185,10 +172,11 @@ class D1D2D3Bootstrap():
                 D1D2D3Bootstrap.data[key] = value
 
         if self.command in self.commands:
-            self.command = self.commands[self.command][0]
+            self.command_class = self.commands[self.command][0]
         else:
             unparsed_args = [self.command] + unparsed_args
-            self.command = self.commands['run'][0]
+            self.command = 'run'
+            self.command_class = self.commands['run'][0]
 
         self._unparsed_args = unparsed_args
 
@@ -298,11 +286,11 @@ class D1D2D3Bootstrap():
 def main():
     ddd_bootstrap = D1D2D3Bootstrap()
     ddd_bootstrap.parse_args(sys.argv)
-    D1D2D3Bootstrap.initialize_logging(debug=ddd_bootstrap.debug)
+    D1D2D3Bootstrap.initialize_logging(debug=ddd_bootstrap.debug, warnonly=ddd_bootstrap.help)
     ddd_bootstrap.runconfig()
 
-    logger.info("Running %s", ddd_bootstrap.command)
-    ddd_bootstrap.runcommand(ddd_bootstrap.command)
+    logger.info("Running %s", ddd_bootstrap.command_class)
+    ddd_bootstrap.runcommand(ddd_bootstrap.command_class)
 
 
 if __name__ == "__main__":

@@ -256,8 +256,11 @@ class DDDUVMapping():
             
         return result
 
+
     def map_xy(self, obj):
-        raise NotImplementedError()
+        # FIXME: currently using cubic mapping but we want a vertical XY mapping
+        return self.map_cubic(obj)
+
 
     #def map_wrap(self, obj):
     #    raise NotImplementedError
@@ -282,6 +285,33 @@ class DDDUVMapping():
 
         result.children = [self.map_2d_linear(c) for c in obj.children]
         return result
+    
+
+    def interpolate_uv(self, f, p1, p2, p3, uv1, uv2, uv3):
+        """
+        Helper function to interpolate UVs in faces.
+        
+        Calculate vectors from point f to vertices p1, p2 and p3.
+        
+        From: https://answers.unity.com/questions/383804/calculate-uv-coordinates-of-3d-point-on-plane-of-m.html
+        """
+
+        #ddd.trace(locals())
+
+        f1 = p1 - f
+        f2 = p2 - f
+        f3 = p3 - f
+
+        # Calculate the areas and factors (order of parameters doesn't matter):
+        a = np.linalg.norm(np.cross(p1-p2, p1-p3))  # main triangle area a
+        a1 = np.linalg.norm(np.cross(f2, f3)) / a  # p1's triangle area / a
+        a2 = np.linalg.norm(np.cross(f3, f1)) / a  # p2's triangle area / a
+        a3 = np.linalg.norm(np.cross(f1, f2)) / a  # p3's triangle area / a
+
+        # Find the uv corresponding to point f (uv1/uv2/uv3 are associated to p1/p2/p3):
+        uv = np.array(uv1) * a1 + np.array(uv2) * a2 + np.array(uv3) * a3;
+
+        return uv    
 
 
 def map_2d_path(obj, path, line_x_offset=0.0, line_x_width=0.1, line_d_offset=0.0, line_d_scale=1.0):

@@ -78,9 +78,12 @@ class DefaultMaterials(MaterialsCollection):
         self.bricks_raw = ddd.material(name="Bricks Raw", color='#d49156')
         self.marble_white = ddd.material(name="Marble White", color='#c0c3c8', metallic_factor=0.4, roughness_factor=0.05)
 
+        self.clay = ddd.material(name="Clay", color='#e57757', metallic_factor=0.02, roughness_factor=0.85)
+
         self.wood = ddd.material(name="Wood", color='#efae85', metallic_factor=0.0, roughness_factor=0.7)
         self.wood_planks = ddd.material(name="Wood Planks", color='#b57857', metallic_factor=0.0, roughness_factor=0.6)
         self.wood_planks_stained = ddd.material(name="Wood Planks Stained", color='#856231', metallic_factor=0.0, roughness_factor=0.65)
+
 
         # Painted materials
         self.metal_paint_red = ddd.material("PaintRed", color='#d01010', metallic_factor=0.975, roughness_factor=0.2)
@@ -99,7 +102,8 @@ class DefaultMaterials(MaterialsCollection):
 
         # Plastics
         self.plastic_transparent = ddd.material("Plastic Transparent", color='e8e0e4', metallic_factor=0.0, roughness_factor=0.7, extra={'ddd:transparent': True})  # name="PlasticTransparent",
-        self.plastic_black = ddd.material("Plastic Black", color='#2c2936', metallic_factor=0.0, roughness_factor=0.7)
+        self.plastic_black = ddd.material("Plastic Black", color='#2c2936', metallic_factor=0.0, roughness_factor=0.43)
+        self.plastic_black_ridges = ddd.material("Plastic Black Ridges", color='#1a1821', metallic_factor=0.1, roughness_factor=0.0) 
         self.plastic_red = ddd.material("Plastic Red", color='#cc2b2b', metallic_factor=0.0, roughness_factor=0.7)
         self.plastic_green = ddd.material("Plastic Green", color='#64a80a', metallic_factor=0.0, roughness_factor=0.7)
         self.plastic_yellow = ddd.material("Plastic Yellow", color='#fffb08', metallic_factor=0.0, roughness_factor=0.7)
@@ -107,13 +111,13 @@ class DefaultMaterials(MaterialsCollection):
         self.plastic_white = ddd.material("Plastic White", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)
 
         # Glass
-        #self.glass = ddd.material("Glass", color='#2e4163', metallic_factor=0.0, roughness_factor=0.0)  #  , extra={'ddd:transparent': True} 
+        # FIXME: ddd:reflection, which semantically relates to mirrors / reflective surfaces (rel: reflection probes) in VRS, should NOT be a default for glass (which does requires env reflections but not necessarily a probe)
         self.glass = ddd.material("Glass", color=[46/255, 65/255, 63/255, 0.5], metallic_factor=0.5, roughness_factor=0.0, extra={'ddd:transparent': True, 'ddd:reflection': True}, alpha_mode='BLEND')  #  , extra={'ddd:transparent': True}
         self.glass_red = ddd.material("Glass Red", color=[255/255, 65/255, 63/255, 0.5], metallic_factor=0.5, roughness_factor=0.0, extra={'ddd:transparent': True, 'ddd:reflection': True}, alpha_mode='BLEND')  #  , extra={'ddd:transparent': True}
 
         # Vegetation (trees, hedges)
         self.bark = ddd.material(name="Bark", color='#df9e75')
-        self.treetop = ddd.material(name="Treetop", color='#1da345')
+        self.treetop = ddd.material(name="Treetop", color='#1da345', extra={'ddd:collider': False})
         #self.hedge = 
 
         # Grass and flowers blades
@@ -139,8 +143,11 @@ class DefaultMaterials(MaterialsCollection):
         self.metallic_grid = ddd.material(name="Fence", color='#28281e', extra={'ddd:transparent': True})  # Floors
 
         self.cable_metal = ddd.material(name="CableMetal", color='#28282e')
-        self.chain = ddd.material(name="CableMetal", color='#28282e')
+        self.chain = ddd.material(name="Chain", color='#202022')
         self.rope = ddd.material(name="Rope", color='#c7b01c')
+
+        # Interior (props) materials
+        self.paper = ddd.material(name="Paper", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)
 
         # Buildings
         self.building_1 = ddd.material(color='#f7f0be')

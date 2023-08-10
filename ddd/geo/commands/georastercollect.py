@@ -14,6 +14,7 @@ import argparse
 from geographiclib.geodesic import Geodesic
 import pyproj
 from pyproj.proj import Proj
+from ddd.core.cli import D1D2D3Bootstrap
 
 from ddd.core.command import DDDCommand
 from ddd.geo.georaster import GeoRasterTile
@@ -31,6 +32,7 @@ class GeoRasterCollectCommand(DDDCommand):
 
         #program_name = os.path.basename(sys.argv[0])
         parser = argparse.ArgumentParser()  # description='', usage = ''
+        parser.prog = parser.prog + " " + D1D2D3Bootstrap._instance.command
 
         #parser.add_argument("--radius", type=float, default=None, help="radius of target area")
         #parser.add_argument("--area", type=str, help="GeoJSON polygon of target area")

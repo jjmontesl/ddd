@@ -5,6 +5,7 @@
 from builtins import staticmethod
 import logging
 import subprocess
+import tempfile
 
 from ddd.render.offscreen import Offscreen3DRenderer
 from trimesh import transformations
@@ -18,11 +19,15 @@ class DDDFBXFormat():
     @staticmethod
     def export_fbx(obj, filename):
         """
+        Exports a DDD object to FBX format.
+
+        Currently, it uses Blender to convert an intermediate GLB file to FBX.
         """
 
-        # FIXME: non multi-process safe
-        tmpscript = "/tmp/ddd-blender-fbx-convert.py"
-        tmpglbfile = "/tmp/tmpfbx.glb"
+        # Generate safe temporary filenames for conversion script and temporary .glb file, 
+        tmpscript = tempfile.mktemp(suffix=".py", prefix="ddd-blender-fbx-convert-")
+        tmpglbfile = tempfile.mktemp(suffix=".glb", prefix="ddd-blender-fbx-convert-")
+
         targetfbxfile = filename
 
         # Save temporary GLB file (converting axis)

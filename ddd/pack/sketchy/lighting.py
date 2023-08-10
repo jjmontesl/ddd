@@ -129,13 +129,15 @@ def lamp_lantern_cap(height=0.2):
     A lantern top cap, to reflect light downwards and provide a support from above (for ceiling or side mounts).
     """
 
+    # Cap revolution profile is constructed with an arbitrary ~4 x 2.9 shape, then scaled to desired height
+    larger_radius = 3.5  # Ref: 4.0
     lamp_cap_profile = (
         ddd.point().arc_to([1, -1], [0, -1], False).line_to([1.1, -1.0]).line_to([1.1, -1.1]).
         line_to([1.2, -1.1]).line_to([1.2, -1.2]).
         line_to([2.0, -2.0]).line_to([2.0, -2.2]).
-        line_to([2.2, -2.3]).line_to([4.0, -2.9]).
+        line_to([2.2, -2.3]).line_to([larger_radius, -2.9]).
 
-        line_to([3.99, -2.91]).line_to([2.19, -2.31]).
+        line_to([larger_radius - 0.01, -2.91]).line_to([2.19, -2.31]).
         line_to([2.0, -2.21]).line_to([1.99, -2.01]).
         line_to([0, -2.01]).line_to([0, 0])
     )
@@ -212,7 +214,7 @@ def lamp_bulb_capsule(height=0.2, r=0.05):
     return obj
 
 
-def lamp_lantern(length=0.8, width=0.15, bevel=[0.10, 0.10], color=[1.0, 1.0, 1.0]):
+def lamp_lantern():  # length=0.8, width=0.15, bevel=[0.10, 0.10], color=[1.0, 1.0, 1.0]):
     # Ref: https://www.artstation.com/artwork/QzDmo3
     
     lamp_cap = lamp_lantern_cap()
@@ -232,6 +234,8 @@ def lamp_lantern(length=0.8, width=0.15, bevel=[0.10, 0.10], color=[1.0, 1.0, 1.
     lamp_glass_cover = lamp_glass_cover.translate([0, 0, -0.135])
     lamp_glass_cover = lamp_glass_cover.material(ddd.mats.glass)
     lamp = lamp.append(lamp_glass_cover)
+
+    lamp = lamp.translate([0, 0, 0.03])  # center on the inside of the top dome
 
     #lamp.show()
     return lamp

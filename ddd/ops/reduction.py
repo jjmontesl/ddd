@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 class DDDMeshOps():
     """
     TODO: This module shall not be called "reduction", as it shall gather all meshops.
+          Maybe reduction / simplifying operations could be separated but as of today the naming is incorrect.
     """
 
     def reduce(self, obj):
@@ -123,27 +124,6 @@ class DDDMeshOps():
 
         return obj
 
-    def interpolate_uv(self, f, p1, p2, p3, uv1, uv2, uv3):
-        # From: https://answers.unity.com/questions/383804/calculate-uv-coordinates-of-3d-point-on-plane-of-m.html
-        # Calculate vectors from point f to vertices p1, p2 and p3:
-
-        #ddd.trace(locals())
-
-        f1 = p1 - f
-        f2 = p2 - f
-        f3 = p3 - f
-
-        # Calculate the areas and factors (order of parameters doesn't matter):
-        a = np.linalg.norm(np.cross(p1-p2, p1-p3))  # main triangle area a
-        a1 = np.linalg.norm(np.cross(f2, f3)) / a  # p1's triangle area / a
-        a2 = np.linalg.norm(np.cross(f3, f1)) / a  # p2's triangle area / a
-        a3 = np.linalg.norm(np.cross(f1, f2)) / a  # p3's triangle area / a
-
-        # Find the uv corresponding to point f (uv1/uv2/uv3 are associated to p1/p2/p3):
-        uv = np.array(uv1) * a1 + np.array(uv2) * a2 + np.array(uv3) * a3;
-
-        return uv
-
     def subdivide_to_grid(self, obj, grid_size=2.0):  #, min_distance=0.1):
         """
         Subdivides a mesh ensuring that every face has vertices in the grid.
@@ -223,7 +203,7 @@ class DDDMeshOps():
                 bounds = triangle.bounds()
 
                 # Function of the plane to interpolate third axis
-                # See: https://math.stackexchange.com/questions/753113/how-to-find-an-equation-of-the-plane-given-its-normal-vector-and-a-point-on-the
+                # Ref: https://math.stackexchange.com/questions/753113/how-to-find-an-equation-of-the-plane-given-its-normal-vector-and-a-point-on-the
                 oan = vnp.dot(v1)
                 zfunc = lambda x, y: (oan - vnp[0] * x - vnp[1] * y) / vnp[2]
 
@@ -251,7 +231,7 @@ class DDDMeshOps():
                         ogeom.validate()
                         geom = ogeom.geom
                     except Exception as e:
-                        logger.info("Invlaid geometry produced while subdividing to grid: %s", obj)
+                        logger.info("Invalid geometry produced while subdividing to grid: %s", obj)
                         continue
 
                     if geom is None:
@@ -288,7 +268,7 @@ class DDDMeshOps():
                             (uv1, uv2, uv3) = (uvs[face[0]], uvs[face[1]], uvs[face[2]])
                             (p1, p2, p3) = (vertices[face[0]], vertices[face[1]], vertices[face[2]])
                             for gv in gvs:
-                                nuv = self.interpolate_uv(gv, p1, p2, p3, uv1, uv2, uv3)
+                                nuv = ddd.uv.interpolate_uv(gv, p1, p2, p3, uv1, uv2, uv3)
                                 newuvs.append(nuv)
 
                     except Exception as e:
@@ -312,6 +292,7 @@ class DDDMeshOps():
                 result.mesh = None
 
         return result
+
 
     def slice_plane(self, obj, plane_normal, plane_origin):
         """

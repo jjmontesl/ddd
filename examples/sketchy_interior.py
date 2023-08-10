@@ -38,6 +38,15 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
+
+    item = interior.plant_pot(earth_height_norm = 0.85)
+    #item.show()
+    items.append(item)
+
+    item = interior.plant_pot()
+    #item.show()
+    items.append(item)
+
     item = printing.poster_ripped()
     #item.show()
     items.append(item)
@@ -45,6 +54,15 @@ def pipeline_start(pipeline, root):
     item = printing.poster_flat()
     items.append(item)
 
+    item = printing.text_note()
+    item.show()
+    items.append(item)
+
+    item = printing.text_note_teared()
+    item.show()
+    items.append(item)
+
+    
     item = interior.furniture_test_out_in()
     item.show()
     items.append(item)
@@ -69,6 +87,7 @@ def pipeline_start(pipeline, root):
     items.append(item)
     #item.show()
 
+    
     item = common.bar_u()
     items.append(item)
 
@@ -79,6 +98,11 @@ def pipeline_start(pipeline, root):
     items.append(item)
 
     item = urban.drinking_water()
+    items.append(item)
+
+    
+    item = interior.paper_bin_basket()
+    item.show()
     items.append(item)
 
     item = urban.trash_bin()

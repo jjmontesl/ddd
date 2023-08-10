@@ -34,6 +34,11 @@ Generates roofs, given a footprint shape.
 
 
 def roof_gabled(obj, roof_buffer=0.0):
+    """
+    Creates a gabled roof for the given footprint.
+
+    The base of the gabled roof keeps the footprint shape, even if irregular.
+    """
 
     base = obj
     
@@ -53,5 +58,9 @@ def roof_gabled(obj, roof_buffer=0.0):
     
     roof = base.extrude_step(axis_line, roof_height)  #.material(roof_material)
     roof = roof.subtract(roof.translate([0, 0, -roof_thick]))
+    roof = roof.clean()
+
+    roof = roof.smooth(ddd.PI_OVER_8)
+    roof = ddd.uv.map_cubic(roof)
 
     return roof

@@ -8,6 +8,7 @@ import sys
 
 import argparse
 import freetype
+from ddd.core.cli import D1D2D3Bootstrap
 
 from ddd.core.command import DDDCommand
 from ddd.core.exception import DDDException
@@ -31,6 +32,7 @@ class FontAtlasGenerateCommand(DDDCommand):
 
         #program_name = os.path.basename(sys.argv[0])
         parser = argparse.ArgumentParser()  # description='', usage = ''
+        parser.prog = parser.prog + " " + D1D2D3Bootstrap._instance.command
 
         parser.add_argument("--atlasname", type=str, default="test", help="name of the atlas font pack")
         parser.add_argument("--outputdir", type=str, default="", help="output dir")

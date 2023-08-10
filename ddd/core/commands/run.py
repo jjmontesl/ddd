@@ -4,6 +4,7 @@
 
 import argparse
 import logging
+from ddd.core.cli import D1D2D3Bootstrap
 
 from ddd.core.command import DDDCommand
 from ddd.pipeline.pipeline import DDDPipeline
@@ -19,8 +20,8 @@ class RunCommand(DDDCommand):
 
     def parse_args(self, args):
 
-        #program_name = os.path.basename(sys.argv[0])
         parser = argparse.ArgumentParser()  # description='', usage = ''
+        parser.prog = parser.prog + " " + D1D2D3Bootstrap._instance.command
 
         parser.add_argument("--show", action="store_true", default=False, help="show root node at the end")
         parser.add_argument("--save", action="store", nargs="?", default=None, type=str, help="save root node at the end")
@@ -37,7 +38,7 @@ class RunCommand(DDDCommand):
 
     def run(self):
 
-        logger.info("Running DDD123 script.")
+        logger.info("Running DDD123 script: %s", self.script)
 
         pipeline = DDDPipeline(self.script, name="DDD Build Pipeline")
 

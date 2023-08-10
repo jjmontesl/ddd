@@ -6,7 +6,7 @@ import logging
 
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd
-from ddd.util.common import parse_symbol
+from ddd.util.common import parse_symbol, func_map_args
 
 
 # Get instance of logger for this module
@@ -22,11 +22,13 @@ class DDDItemBuilder():
         #obj3 = itembuilder.build(builder_desc, obj)
         """
 
-        # Build object
+        # Resolve build function
         build_func_name = builder_desc['item:func']
         build_func = parse_symbol(build_func_name)
 
-        result = build_func()
+        # Resolve arguments
+        build_func_kwargs = func_map_args(build_func, maps=(obj.extra, builder_desc))
+        result = build_func(**build_func_kwargs)
 
         # Build and connect slots recursively
         build_slots = builder_desc.get('item:slots', {})

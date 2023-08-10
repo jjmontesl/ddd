@@ -101,41 +101,6 @@ class Areas3DOSMBuilder():
         pass
     '''
 
-    '''
-    def generate_ground_3d(self, area_crop):
-
-        logger.info("Generating 3D terrain (bounds: %s)", area_crop.bounds)
-
-        terr = self.osm.ground_2d
-
-        # The buffer is fixing a core segment violation :/
-        #terr.save("/tmp/test.svg")
-        #terr.dump()
-        #terr.show()
-        #terr = ddd.group([DDDObject2(geom=s.buffer(0.5).buffer(-0.5)) for s in terr.geom.geoms if not s.is_empty])
-
-        #terr.save("/tmp/test.svg")
-        #terr = terr.triangulate()
-        try:
-            #terr = terr.individualize()
-            #terr.validate()
-            logger.warning("There's a buffer(0.000-0.001) operation which shouldn't be here: improve and use 'clean()'.")
-            terr = terr.buffer(0.001)
-            #terr = terr.buffer(0.0)
-            #terr = terr.clean(eps=0.001)
-
-            #terr = terr.extrude(0.3)
-            terr = terr.triangulate()
-        except ValueError as e:
-            logger.error("Cannot generate terrain (FIXME): %s", e)
-            raise DDDException("Coould not generate terrain: %s" % e, ddd_obj=terr)
-
-        terr = terrain.terrain_geotiff_elevation_apply(terr, self.osm.ddd_proj)
-
-        self.osm.ground_3d.append(terr)
-    '''
-
-
     def generate_area_3d(self, area_2d):
 
         logger.debug("Generating area 3D for: %s", area_2d)

@@ -124,11 +124,12 @@ class NodeBisectPathHeightFunction(PathHeightFunction):
         #print(list(closest.geom.coords))
         #interp_z = closest.geom.coords[0][2]
 
-        return interp_z  # FIXME: z should not be added here, or not by default, as Z coordinates are already local in the path
+        return interp_z
 
 
 class PathProfileHeightFunction(PathHeightFunction):
     pass
+
 
 class BankingPathProfileHeightFunction(PathProfileHeightFunction):
 

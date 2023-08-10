@@ -35,6 +35,7 @@ class TexturePackCommand(DDDCommand):
 
         #program_name = os.path.basename(sys.argv[0])
         parser = argparse.ArgumentParser()  # description='', usage = ''
+        parser.prog = parser.prog + " " + D1D2D3Bootstrap._instance.command
 
         #parser.add_argument("-w", "--worker", default=None, help="worker (i/n)")
         #parser.add_argument("-l", "--limit", type=int, default=None, help="tasks limit")

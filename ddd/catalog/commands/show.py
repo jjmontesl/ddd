@@ -20,6 +20,7 @@ class CatalogShowCommand(DDDCommand):
     def parse_args(self, args):
 
         parser = argparse.ArgumentParser()  # description='', usage = ''
+        parser.prog = parser.prog + " " + D1D2D3Bootstrap._instance.command
         args = parser.parse_args(args)
 
     def run(self):
@@ -34,4 +35,5 @@ class CatalogShowCommand(DDDCommand):
         #items = ddd.align.grid(items, space=10.0)
         #items.append(ddd.helper.all())
         #items.show()
+        
         catalog.show()

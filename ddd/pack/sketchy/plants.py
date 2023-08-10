@@ -100,7 +100,7 @@ def treetop(r=1.75, flatness=0.3, subdivisions=1):
     treetop = treetop.scale([1.0, 1.0, (1.0 - flatness) * random.uniform(0.85, 1.15)])
     treetop = treetop.smooth(math.pi * 2 / 3)
     treetop = ddd.uv.map_spherical(treetop, scale=[3, 2])
-    treetop = filters.noise_random(treetop, scale=0.25)
+    treetop = filters.noise_random(treetop, scale=r * 0.25)
     treetop.extra['ddd:collider'] = False
     treetop.name = "Treetop"
     return treetop
@@ -123,7 +123,7 @@ def tree_default(height=3.5, r=0.40, fork_iters=2, fork_height_ratio=0.35):
         return section
 
     def leaves_callback(height):
-        tt = treetop(r=0.5 + 0.4 * height, subdivisions=0).material(ddd.mats.treetop)
+        tt = treetop(r=0.6 * height, subdivisions=0).material(ddd.mats.treetop)
         return tt
 
     obj = recursivetree(height=height, r=r, leaves_callback=leaves_callback, trunk_callback=trunk_callback,
@@ -186,7 +186,7 @@ def palm_leaf(length=3, fallfactor=1):
 
     return obj
 
-def tree_palm(height=14, r=0.30):
+def tree_palm(height=14, r=0.30, leaf_length=None):
     """
     Arecaceae. Currently 181 genera with around 2,600 species are known.
 
@@ -198,26 +198,32 @@ def tree_palm(height=14, r=0.30):
     The palms generally grow with 4–9 stems per clump, but up to 25 stems is possible.
     """
 
+    trunk_offset_a = r
+    trunk_offset_b = r * 1.33
+
+    if not leaf_length:
+        leaf_length = height * 0.7
+
     def trunk_callback(height):
         section = ddd.regularpolygon(sides=5, r=r).extrude_step(ddd.regularpolygon(sides=5, r=r*0.8), height * 0.15)
-        section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.8).translate([random.uniform(-0.4, 0.4), random.uniform(-0.4, 0.4)]), height * 0.35)
-        section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.7).translate([random.uniform(-0.3, 0.3), random.uniform(-0.3, 0.3)]), height * 0.5)
+        section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.8).translate([random.uniform(-trunk_offset_b, trunk_offset_b), random.uniform(-trunk_offset_b, trunk_offset_b)]), height * 0.35)
+        section = section.extrude_step(ddd.regularpolygon(sides=5, r=r*0.7).translate([random.uniform(-trunk_offset_a, trunk_offset_a), random.uniform(-trunk_offset_a, trunk_offset_a)]), height * 0.5)
         section = section.smooth(math.pi * 0.45)
         section = ddd.uv.map_cylindrical(section, split=False)
         section = section.material(ddd.mats.bark)
         return section
 
     def leaves_callback(sheight):
-        golden = (1 + 5 ** 0.5) / 2
+        # FIXME: because leaf height is already cut in first iteration, when using fork_height_ratio=1.0, sheight is 0
         leaf = ddd.group3(name="Leaf group")
 
-        tt = palm_leaf(length=0.5 + height / 5, fallfactor=1.45).material(ddd.mats.treetop)
+        tt = palm_leaf(length=leaf_length * 0.6, fallfactor=1.45).material(ddd.mats.treetop)
         tt = ddd.align.matrix_polar(tt, 5)
         leaf.append(tt)
-        tt = palm_leaf(length=1.1 + height / 5, fallfactor=1.2).rotate([0, -math.pi * 0.1, math.pi * 2 * (golden)]).material(ddd.mats.treetop)
+        tt = palm_leaf(length=leaf_length * 1.0, fallfactor=1.2).rotate([0, -math.pi * 0.1, math.pi * 2 * (ddd.GOLDEN_RATIO)]).material(ddd.mats.treetop)
         tt = ddd.align.matrix_polar(tt, 3)
         leaf.append(tt)
-        tt = palm_leaf(length=0.5 + height / 6, fallfactor=1).rotate([0, -math.pi * 0.3, math.pi * 2 * (golden * 2)]).material(ddd.mats.treetop)
+        tt = palm_leaf(length=leaf_length * 0.8, fallfactor=1).rotate([0, -math.pi * 0.3, math.pi * 2 * (ddd.GOLDEN_RATIO * 2)]).material(ddd.mats.treetop)
         tt = ddd.align.matrix_polar(tt, 2)
         leaf.append(tt)
 

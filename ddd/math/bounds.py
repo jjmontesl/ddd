@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class DDDBounds(tuple):
     """
-    Stores bounds in a two element tuple (min, max).
+    Stores AA (axis-aligned) bounds in a two element tuple (min, max).
     """
 
     #def __init__(self, array):

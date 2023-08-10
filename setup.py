@@ -62,6 +62,7 @@ setup(
         #"PyOpenGL-accelerate",  # == 3.1.5",  # TODO: fails inside docker?
         "pypng >= 0.0.20",
         "pyproj < 3.0.0",
+        "PyTexturePacker >= 1.1.0",
         "python-socketio",  # >= 5.4.0",
         #"pyrender >= 0.1.45",  # optional, doesn't install on containers
         "scipy < 1.6.0",

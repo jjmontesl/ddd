@@ -6,6 +6,7 @@ import os
 import sys
 
 # Data properties (these properties are shared with ddd / pipeline)
+# TODO: Remove this global variable (?) + normalize settings between settings module, ddd, dddbootstrap and pipeline
 data = {}
 
 # Allow config files to include other files

@@ -61,6 +61,12 @@ class DDDTransform():
         return points[0]
 
     def forward(self):
+        """
+        Returns the transform forward vector (positive +Y axis).
+
+        Note, however, that "front" is defined as -Y in other places like packs packages 
+        or constants like "ROT_FLOOR_TO_FRONT".
+        """
         return Vector3(np.dot(self.to_matrix(), [0, 1, 0, 1])[:3])
 
     def to_matrix(self):

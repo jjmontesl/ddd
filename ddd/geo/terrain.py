@@ -2,14 +2,20 @@
 # Library for simple scene modelling.
 # Jose Juan Montes and Contributors 2019-2021
 
+import logging
+
 import noise
 import pyproj
+from trimesh import transform_points, transformations
 
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd
 from ddd.geo.elevation import ElevationModel
 from ddd.ops.grid import terrain_grid
-from trimesh import transformations, transform_points
+
+
+# Get instance of logger for this module
+logger = logging.getLogger(__name__)
 
 
 #dem_file = '/home/jjmontes/git/ddd/data/dem/eudem/eudem_dem_5deg_n40w010.tif'  # Galicia, Salamanca
@@ -84,6 +90,7 @@ def terrain_geotiff_min_elevation_apply(obj, ddd_proj):
 
     # FIXME: hack added to allow meshes with no vertices, but this should be better handled with proper world/local coords, parenting, ordering of applying height, etc...
     if min_h is None:
+        logger.warning("DEPRECATED: Node %s has no vertices, cannot calculate min terrain height. Using transform.position.")
         v = obj.transform.position
         v_h = elevation.value(transform_ddd_to_geo(ddd_proj, [v[0], v[1]]))
         min_h = v_h

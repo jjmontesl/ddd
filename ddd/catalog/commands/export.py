@@ -8,6 +8,7 @@ import logging
 import argparse
 
 from ddd.catalog.catalog import PrefabCatalog
+from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.command import DDDCommand
 
 
@@ -20,6 +21,7 @@ class CatalogExportCommand(DDDCommand):
     def parse_args(self, args):
 
         parser = argparse.ArgumentParser()  # description='', usage = ''
+        parser.prog = parser.prog + " " + D1D2D3Bootstrap._instance.command
         args = parser.parse_args(args)
 
     def run(self):

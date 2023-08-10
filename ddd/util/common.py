@@ -7,7 +7,7 @@ import math
 import random
 import importlib
 from ddd.core.exception import DDDException
-
+import inspect
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ def parse_xyztile(value):
 def parse_tile(value):
     return parse_xyztile(value)
 
+
 def parse_meters(expr):
     """
     Parse meters from a string expression that can contain a unit label. Unit conversion is performed automatically to meters if needed.
@@ -41,6 +42,7 @@ def parse_meters(expr):
     if not isinstance(quantity, float) and not isinstance(quantity, int):
         quantity = quantity.to(ureg.meter).magnitude
     return float(quantity)
+
 
 def parse_symbol(fqn):
     """
@@ -60,3 +62,27 @@ def parse_symbol(fqn):
             return symb
     
     raise DDDException("Could not parse symbol: %r" % fqn)
+
+def func_map_args(func, maps):
+    """
+    Resolves function parameters from a list of maps.
+    Each parameter is searched in the list of maps, in order, trying to search for the parameter name in the map keys.
+    Each key is also tried with several prefixes, in order: no prefixes, "data:", and the function name followed by ":".
+    
+    This is used by item builders to map parameters from the item definition to the function parameters.
+    """
+    args = {}
+    prefixes = ["", "data:", func.__name__ + ":"]
+    func_parameters = inspect.signature(func).parameters.values()
+    for param in func_parameters:
+        for map in maps:
+            for prefix in prefixes:
+                if prefix + param.name in map:
+                    args[param.name] = map[prefix + param.name]
+                    break
+            if param.name in args:
+                break
+    logger.info("Mapped function arguments for func %s: %s", func, args)
+    return args
+
+    

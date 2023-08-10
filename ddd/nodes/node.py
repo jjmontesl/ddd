@@ -199,6 +199,7 @@ class DDDNode():
         return node_name
 
     def transform_translate(self, coords):
+        # TODO: FIXME: where is this used? this ad-hoc frunction in 'node' is dodgy, possibly should not exist
         result = self.copy()
         result.transform.translate(coords)
         return result
@@ -281,7 +282,7 @@ class DDDNode():
 
     def one(self):
         if len(self.children) != 1:
-            raise DDDException("Expected 1 object but found %s." % len(self.children))
+            raise DDDException("Expected 1 object but found %s: %s" % (len(self.children), self.children))
         return self.children[0]
 
     #def find_or_none(self, path=None):
@@ -311,7 +312,8 @@ class DDDNode():
         """
 
         Note: Recurse is True in this function, but False for selectors in DDDTasks.
-        TODO: Make recurse default to False (this will require extensive testing)
+        TODO: migrate towards the full selector syntax (path not needed), returning a "resultset/queryset/...", introduce "ctx"? nodes should not be created (only returned and managed via the resultset)
+        TODO: If it stays, make recurse default to False (this will require extensive testing), resolve the difference between task selectors and this one?
         """
 
         #if path and path[0] == '/':
@@ -323,6 +325,7 @@ class DDDNode():
             elif isinstance(self, ddd.DDDNode3):
                 empty = 3
 
+        # TODO: this is dodgy, consider how to manage inserts/removals if using proper queries and resultsets, trying to avoid adding information to objects and creating nodes!
         if hasattr(self, '_remove_object'): delattr(self, '_remove_object')
         if hasattr(self, '_add_object'): delattr(self, '_add_object')
 

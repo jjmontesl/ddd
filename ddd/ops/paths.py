@@ -36,7 +36,7 @@ class DDDPathOps():
     """
     """
 
-    def from_points_spline(self, line):
+    def from_points_spline(self, line) -> DDDPath3:
         """
         Uses trimesh.path.simplify.points_to_spline_entity to generate a Spline from the given points.
         The distance between points has an impact on the resulting spline.
@@ -47,7 +47,7 @@ class DDDPathOps():
         result.path3 = trimesh.path.path.Path3D([entity], control)
         return result
 
-    def from_points_heuristic(self, line, distance=1.0):
+    def from_points_heuristic(self, line, distance=1.0) -> DDDPath3:
         """
         Generates a DDDPath3 object from the given LineString (which can have Z coordinates).
 
@@ -127,10 +127,10 @@ class DDDPathOps():
                 raise NotImplementedError(entity)
 
         result.path3 = trimesh.path.path.Path3D(entities, coords)
-        print(result.path3)
+        #print(result.path3)
         return result
 
-    def bezier_to_arcs(self, entity, vertices, tolerance=0.01):
+    def bezier_to_arcs(self, entity, vertices, tolerance=0.01) -> trimesh.path.path.Path3D:
         """
         From: https://pomax.github.io/bezierinfo/#arcapproximation
         """
@@ -193,7 +193,7 @@ class DDDPathOps():
 
     def round_corners(self, line, distance=1.0, angle_min=0):
         """
-        Generates a DDDPath3 object from the given LineString (which can have Z coordinates),
+        Generates a ???? object from the given LineString (which can have Z coordinates),
         rounding corners
 
         The heuristics are:

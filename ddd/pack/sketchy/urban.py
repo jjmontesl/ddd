@@ -68,9 +68,11 @@ def cable(a, b, thick=0.20):
 
 def catenary_cable(a, b, thick=0.10, length_ratio=1.1):
     """
-    TODO: move catenary calculations to "path" module and also check Trimesh paths to support that.
+    Creates a cable following a catenary curve.
 
-    The library requires the anchor to be below the fairlead.
+    TODO: move catenary calculations to "path" or "curves" module, maybe and also start from providing Path3D support.
+
+    Implementation detail: the library requires the anchor to be below the fairlead (this is handled by this method).
     """
 
     a = np.array(a)

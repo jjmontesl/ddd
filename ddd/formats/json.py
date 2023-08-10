@@ -50,7 +50,7 @@ class DDDJSONFormat():
             cpath = cdata['_extra']['ddd:path']
             data[cpath] = cdata
 
-        # FIXME: This code is duplicated from DDDInstance: normalize export / generation
+        # FIXME: This code is duplicated from DDDInstance: normalize export / generation (instances, markers...)
         from ddd.nodes.instance import DDDInstance
         if isinstance(obj, DDDInstance):
 
