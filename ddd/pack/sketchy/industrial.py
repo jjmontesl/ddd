@@ -61,9 +61,9 @@ def crane_vertical():
     platform_radius = column_radius + 0.85
     platform_base_height = pier_height + base_height + column_height - 2.0
     platform_shape = ddd.point(name="Crane platform").buffer(platform_radius, cap_style=ddd.CAP_ROUND)
-    platform = platform_shape.triangulate(twosided=True)
+    platform = platform_shape.triangulate().twosided()
     platform = platform.material(ddd.mats.metallic_grid)
-    platform_fence = platform_shape.outline().extrude(1.2).material(ddd.mats.fence)
+    platform_fence = platform_shape.outline().extrude(1.2).material(ddd.mats.fence).twosided()
     platform = ddd.group([platform, platform_fence], name="Crane platform")
     platform = ddd.uv.map_cylindrical(platform)
     platform = platform.translate([0, 0, platform_base_height])

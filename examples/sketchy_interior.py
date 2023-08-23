@@ -16,11 +16,12 @@
 
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import printing, urban, landscape, industrial, interior, sports, \
-    vehicles, common, buildings
+from ddd.pack.sketchy import (appliances, buildings, common, industrial,
+                              interior, printing, urban,
+                              )
+from ddd.pack.sketchy.urban import (lamp_ball, lamppost, post_arm_angled,
+                                    roundedpost)
 from ddd.pipeline.decorators import dddtask
-from ddd.pack.sketchy.urban import lamppost, lamp_ball, roundedpost,\
-    post_arm_angled
 
 
 @dddtask()
@@ -38,6 +39,13 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
+    
+    item = appliances.clock_wall_round()
+    items.append(item)
+
+    item = appliances.clock_wall_round_framed()
+    item.show()
+    items.append(item)
 
     item = interior.plant_pot(earth_height_norm = 0.85)
     #item.show()
@@ -55,16 +63,16 @@ def pipeline_start(pipeline, root):
     items.append(item)
 
     item = printing.text_note()
-    item.show()
+    #item.show()
     items.append(item)
 
     item = printing.text_note_teared()
-    item.show()
+    #item.show()
     items.append(item)
 
     
     item = interior.furniture_test_out_in()
-    item.show()
+    #item.show()
     items.append(item)
 
     item = interior.drawer()
@@ -102,7 +110,6 @@ def pipeline_start(pipeline, root):
 
     
     item = interior.paper_bin_basket()
-    item.show()
     items.append(item)
 
     item = urban.trash_bin()

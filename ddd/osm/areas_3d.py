@@ -7,7 +7,7 @@ import logging
 from ddd.core.exception import DDDException
 from ddd.ddd import ddd
 from ddd.geo import terrain
-from ddd.pack.sketchy import plants, urban, sports
+from ddd.pack.sketchy import plants, sports_fields, urban
 import traceback
 
 
@@ -385,16 +385,16 @@ class Areas3DOSMBuilder():
 
         lines = None
         if sport == 'tennis':
-            lines = sports.field_lines_area(area_2d_orig, sports.tennis_field_lines, padding=2.5)
+            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.tennis_field_lines, padding=2.5)
         elif sport == 'basketball':
-            lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=1)
+            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.basketball_field_lines, padding=1)
         elif sport == 'gymnastics':
             #lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=2.0)
             lines = ddd.group3()
         elif sport in ('handball'):
-            lines = sports.field_lines_area(area_2d_orig, sports.handball_field_lines, padding=1)
+            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.handball_field_lines, padding=1)
         elif sport in ('soccer', 'futsal'):
-            lines = sports.field_lines_area(area_2d_orig, sports.football_field_lines, padding=1)
+            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.football_field_lines, padding=1)
         else:
             # No sport assigned
             lines = ddd.group3()

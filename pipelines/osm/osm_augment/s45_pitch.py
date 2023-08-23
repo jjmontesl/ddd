@@ -4,8 +4,6 @@
 
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
-from ddd.core.exception import DDDException
-from ddd.pack.sketchy import sports
 
 
 @dddtask(order="45.10.+.+", path="/Areas/*", select='["ddd:area:type" = "pitch"]')  # [!contains(["natural"="tree"])]

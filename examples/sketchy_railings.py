@@ -16,10 +16,8 @@
 
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import landscape
+from ddd.pack.sketchy import (railings, )
 from ddd.pipeline.decorators import dddtask
-from ddd.pack.sketchy.urban import lamppost, lamp_ball, roundedpost,\
-    post_arm_angled
 
 
 @dddtask()
@@ -33,17 +31,20 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
-    item = landscape.post_wooden_pointy()
+    
+    # TODO: pass line or polygon? (in order to find nodes...)
+    footprint = ddd.line([[0, 0], [4, 0]]).buffer(0.1)
+    item = railings.railing_builder_tiled_x(footprint)
+    item.show()
     items.append(item)
 
-    item = landscape.rock()
+    footprint = ddd.line([[0, 0], [2, 0], [4, 2], [4, 4]]).buffer(0.1)
+    item = railings.railing_builder_tiled_x(footprint)
+    item.show()
     items.append(item)
 
-    item = landscape.ladder_pool()
-    items.append(item)
 
-
-    items = ddd.align.grid(items)
+    items = ddd.align.grid(items, space=10)
     items.append(ddd.helper.all())
     #items.show()
     #items.save("/tmp/test.glb")

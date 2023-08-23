@@ -1,12 +1,10 @@
 # ddd - DDD123
 # Library for procedural scene modelling.
-# Jose Juan Montes 2020
+# Jose Juan Montes 2020-2023
 
 from ddd.ddd import ddd
 from ddd.pipeline.decorators import dddtask
-from ddd.core.exception import DDDException
-from ddd.pack.sketchy import sports
-import functools
+
 
 #@dddgroupgeocondition(select='osm.center [contains()')
 @dddtask(order="10.10.10.+")  # [!contains(["natural"="tree"])]

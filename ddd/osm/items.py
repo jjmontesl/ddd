@@ -9,8 +9,7 @@ import random
 import numpy as np
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import plants, urban, landscape, industrial, sports,\
-    common
+from ddd.pack.sketchy import plants, sports_fields, urban, landscape, industrial, common
 from ddd.geo import terrain
 import sys
 from ddd.pack.sketchy.urban import patio_table
@@ -174,7 +173,7 @@ class ItemsOSMBuilder():
 
         elif item_2d.extra.get('osm:golf', None) == 'hole':
             # TODO: Tilt objects using a generic tilting mechanism (also, this one may be also based on terrain gradient)
-            item_3d = self.generate_item_3d_generic(item_2d, sports.golf_flag, "Golf Flag")
+            item_3d = self.generate_item_3d_generic(item_2d, sports_fields.golf_flag, "Golf Flag")
 
         elif item_2d.extra.get('osm:highway', None) == 'street_lamp' and item_2d.get('osm:lamp_mount', None) == 'high_mast':
             item_3d = self.generate_item_3d_street_lamp_high_mast(item_2d)

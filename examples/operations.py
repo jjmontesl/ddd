@@ -8,10 +8,29 @@ from ddd.pack.sketchy import urban, landscape
 from ddd.ddd import ddd
 import math
 import sys
+from ddd.text.font import DDDFontAtlas
+from ddd.text.text2d import Text2D
 from ddd.text.text3d import Text3D
 import logging
 
 from ddd.pipeline.decorators import dddtask
+
+@dddtask()
+def fonts(pipeline, root, logger):
+    """
+    Fonts for Text 2D (only used for development / test)
+    """
+    #pipeline.data['font'] = Font()
+    pipeline.data['font:atlas:dddfonts_01_64'] = ddd.material(name="DDDFonts-01-64", color='#f88888',
+                                                texture_path=ddd.DATA_DIR + "/fontatlas/dddfonts_01_64.greyscale.png",
+                                                alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
+                                                alpha_mode='MASK',
+                                                extra={'ddd:material:type': 'font', 'ddd:collider': False, 'ddd:shadows': False,
+                                                       'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096, })
+
+    atlas = DDDFontAtlas.load_atlas(ddd.DATA_DIR + "/fontatlas/dddfonts_01_64.dddfont.json")
+    text2d = Text2D(atlas, "Oliciy-default-64", pipeline.data['font:atlas:dddfonts_01_64'])
+    pipeline.data['text2d'] = text2d
 
 
 @dddtask()
@@ -23,7 +42,7 @@ def pipeline_start(pipeline, root):
     items = ddd.group3()
 
     # Remember to use JOIN_ROUND so resolution is applied when buffering points
-    fig = ddd.point([0, 0]).buffer(1.0, resolution=2, join_style=ddd.JOIN_ROUND, cap_style=ddd.CAP_ROUND).triangulate()
+    fig = ddd.point([0, 0], name="Point+Buffer+Triangulate").buffer(1.0, resolution=2, join_style=ddd.JOIN_ROUND, cap_style=ddd.CAP_ROUND).triangulate()
     items.append(fig)
     fig = ddd.point([0, 0]).buffer(1.0, resolution=3, join_style=ddd.JOIN_ROUND, cap_style=ddd.CAP_ROUND).triangulate()
     items.append(fig)
@@ -236,11 +255,15 @@ def pipeline_start(pipeline, root):
 
 
     # All items
-    items = ddd.align.grid(items, space=10.0)
+    
     #items.append(ddd.helper.all())
 
     items = ddd.uv.map_cubic(items)
     items = items.material(ddd.MAT_TEST)
+
+    ddd.helper.labels_add(items, pipeline.data['text2d'], label=lambda o: o.name, offset=[0, -4, 1.5])
+
+    items = ddd.align.grid(items, space=10.0)
 
 
     root.append(items)

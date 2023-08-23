@@ -81,6 +81,8 @@ class D1D2D3():
 
     VECTOR_UP = np.array([0.0, 0.0, 1.0])
     VECTOR_DOWN = np.array([0.0, 0.0, -1.0])
+    VECTOR_RIGHT = np.array([1.0, 0.0, 0.0])
+    VECTOR_LEFT = np.array([-1.0, 0.0, 0.0])
     VECTOR_BACKWARD = np.array([0.0, 1.0, 0.0])
     VECTOR_FORWARD = np.array([0.0, -1.0, 0.0])  # Towards camera
 

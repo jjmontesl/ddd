@@ -188,8 +188,7 @@ class Areas2DOSMBuilder():
                     way_2d.set('ddd:area:cut:by', [])
 
                 # Find candidate intersections
-                cand_geoms = areas_2d_originals_idx._strtree.query(way_2d.geom)
-                cand_areas = ddd.group2([g._ddd_obj for g in cand_geoms])
+                cand_areas = areas_2d_originals_idx.index_query(way_2d)
 
                 #for area in areas_2d_original.children:  #self.osm.areas_2d.children:  # self.osm.areas_2d.children:
                 for area_original in cand_areas.children:

@@ -6,22 +6,46 @@ import math
 
 items = ddd.group3()
 
+
+'''
+item = industrial.barrel_metal()
+items.append(item)
+
+item = industrial.pipe_segment()
+items.append(item)
+
+item = industrial.crate()
+items.append(item)
+
+item = landscape.powertower()
+items.append(item)
+
+item = landscape.lighthouse()
+items.append(item)
+'''
+
 item = industrial.crane_vertical()
 items.append(item)
 
-#item = landscape.powertower()
-#items.append(item)
-
-#item = landscape.lighthouse()
-#items.append(item)
 #item.show()
 
-#items = ddd.align.grid(items, 10.0)
+items = ddd.align.grid(items, 8.0)
 #items.append(ddd.helper.all())
 #items.show()
 
-items.save("/tmp/ddd-image-3d.png")
+camera = ddd.DDDNode3()
+camera.transform.position = (0, -20, 0)  # currently not working as trimesh will center the object on screen and fix distance
+#camera.transform.look_at(items.center())
+camera.transform.rotate([-30 * ddd.DEG_TO_RAD, 0, 45 * ddd.DEG_TO_RAD])
 
+root = ddd.DDDNode3()
+root.append(items)
+
+items.transform = camera.transform.copy()
+items.transform.invert()  # FIXME: here using the child node to invert the camera view, as cameras are not yet supported and neither root node transforms
+#items.transform.rotate([0, 45, 180])
+
+root.save("/tmp/ddd-image-3d.png")
 
 
 '''

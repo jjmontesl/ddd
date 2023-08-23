@@ -28,6 +28,26 @@ def pipeline_test_line_substring(pipeline, root, logger):
                obj2.buffer(0.1, cap_style=ddd.CAP_FLAT).material(ddd.MAT_HIGHLIGHT)])
     result.show()
 
+
+@dddtask()
+def pipeline_test_centerline(pipeline, root, logger):
+    """
+    Tests geometric operations.
+    """
+
+    items = ddd.group3()
+
+    # Test substrings
+    obj = ddd.line([(0, 0), (4, 0)]).buffer(0.1)
+
+    cl = obj.centerline(0.05).highlight()
+
+    result = ddd.group([obj, cl])
+    result.show()
+
+    cl.buffer(0.05).extrude(1.0).show()
+
+
 @dddtask()
 def pipeline_test_vertex_order_align_snap(pipeline, root):
     """

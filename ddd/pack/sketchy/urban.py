@@ -716,7 +716,7 @@ def religion_cross(width=1, height=1.5):
     return sign
 
 def column(r=0.1, height=2.0, top=None):
-    # TODO: Move to "common"
+    # TODO: Move to "common", or buildings, or... (add and use a slot for the "top")
     col = ddd.point([0, 0]).buffer(r, resolution =1).extrude(height)
     col = ddd.uv.map_cubic(col)
     if top:

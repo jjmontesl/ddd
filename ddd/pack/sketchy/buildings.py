@@ -181,8 +181,27 @@ def portal(width=3.6, height=2.8, frame_width=0.08, frame_depth=0.05, door_width
     return obj
 
 
+# TODO: the "column" concept conflicts with other column concepts
 #def column():
 #    pass
+
+
+def column(height=2.00, r=0.075):
+    """
+    A column. 
+    
+    Columns may be usable for exterior columns, as well as for interior both structural and decorative (e.g. railings) columnns. 
+    In some configurations, they may also be usable as support.
+    """
+
+    col = ddd.point([0, 0], name="Column").buffer(r, resolution=0, cap_style=ddd.CAP_SQUARE).extrude(height)  # , cap=False, base=False)
+    #col = col.smooth(math.pi)
+    col = col.material(ddd.mats.stone)
+    col = ddd.uv.map_cylindrical(col)  #, split=False)
+    #col = ddd.collision.aabox_from_aabb(col)
+
+    return col
+
 
 
 '''

@@ -79,8 +79,9 @@ class Buildings2DOSMBuilder():
             feature_margin = feature.buffer(-0.05)
             #building_parents = buildings_2d.select(func=lambda o: o.extra.get('osm:building', None) and o != feature and o.geom in candidate_parents and o.contains(feature_margin) and o in features_2d_original)
 
-            candidate_parents = buildings_2d._strtree.query(feature_margin.geom)
-            building_parents = [o._ddd_obj for o in candidate_parents if o._ddd_obj.get('osm:building', None) and o._ddd_obj != feature and o._ddd_obj.contains(feature_margin) and o._ddd_obj in features_2d_original]
+            #candidate_parents = buildings_2d._strtree.query(feature_margin.geom)
+            candidate_parents = buildings_2d.index_query(feature_margin)
+            building_parents = [o for o in candidate_parents if o.get('osm:building', None) and o != feature and o.contains(feature_margin) and o in features_2d_original]
             building_parents = ddd.group2(building_parents)
 
             if len(building_parents.children) == 0:

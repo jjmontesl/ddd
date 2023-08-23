@@ -4,12 +4,11 @@ DDD(123) is a library for procedural generation of 2D and 3D geometries and scen
 
 DDD purpose is to provide an expressive API for building and manipulating
 shapes and models and at the same time reflect the hierarchy and metadata
-that usually needs to accompany your built 2D or 3D documents.
+that usually needs to go along with your built 2D or 3D documents.
 
-DDD follows an object graph (or in 3D, a scene graph) approach. Documents (scenes)
-are composed by nodes that form a **node tree**. A key concept in DDD is that
-operations can be applied to individual nodes, entire branches, or selected
-nodes within a hierarchy.
+DDD uses an **object tree approach** (or in 3D, a scene tree). Documents (2D or scenes)
+are composed by nodes that form a **node hierarchy**. In DDD, operations can often
+be applied to individual nodes, entire branches, or selected nodes within a hierarchy.
 
 DDD can export entire scenes or branches easily to several 2D and 3D
 formats: SVG, PNG, GLTF/GLB, custom JSON...
@@ -18,8 +17,8 @@ DDD includes an 'object catalog' concept, which allows reusing and caching objec
 speeding up the generation process, and allowing render engines to leverage shared
 meshes and geometry instancing.
 
-The library is strongly based and relies on the underlying Shapely and Trimesh
-packages which provide most of the geometry operations.
+The library heavily relies on the fantastic Shapely and Trimesh packages which 
+provide most of the 2D and 3D geometric operations.
 
 
 ## Features
@@ -27,12 +26,12 @@ packages which provide most of the geometry operations.
 - Procedurally generate, alter and align 2D and 3D geometry.
 - Export 2D to SVG and PNG.
 - Export 3D to GLTF/GLB, FBX or OBJ.
-- TTF based generation of text geometry (2D and 3D).
+- TTF based generation of text geometry and/or textures (2D and 3D).
 - Object catalog ("prefabs") support (for object and geometry reusing and runtime instancing).
 - Materials, normals, UV coordinates.
 - Texture atlasing.
 - Support for staged pipelines for generation tasks.
-- Simple procedural models library (trees, urban props...)
+- Simple low-poly procedural models library (trees, urban props...)
 - Heightmap and splatmap generation (for terrain engines and splatmap based shading).
 - DEM (Digital Elevation Model) support for real-world terrain generation.
 - OpenStreetMap data 2D and 3D generation pipelines.
@@ -45,14 +44,11 @@ transformed into a more widely usable tool. If you are using or contributing
 to the project, note:
 
 - Treat operations as if they modified the object (many operations currently return
-  a copy of the object but this is not consistent).
+  a copy of the object but this is not consistent), and/or check the documentation.
   Use copy() explicitly for copying an object. Use replace() to replace an
-  object (necessary when there are existing references to objects).
+  object (necessary if there are existing references to that object).
 - Access to metadata (`extra`, `.get`...) and propagation to children may change.
-- API is gravitating towards a Node hierarchy where each node has a transform
-  (formerly only DDDInstance objects had a transform and all other objects lived
-  in world space).
-
+- Use of node transforms in some operations is not consistent, and not well documented.
 
 ## Contributing
 
@@ -75,7 +71,7 @@ Do not hesitate to get in touch if you have any question.
 procedure below doesn't work without changes. Please refer to the ddd-docker project (see below)
 which configures a working installation.
 
-DDD is tested on Ubuntu 22.04. Installation under Windows does not work.
+DDD targets Ubuntu 20.04/22.04. Installation under Windows has not been tested and possibly doesn't work.
 If you are on Windows, you may wish to try using Docker (see the "Using the docker image" section below).
 
 Clone the source repository:
@@ -85,11 +81,11 @@ Clone the source repository:
 Create a virtual environment:
 
     cd ddd
-    python3 -m venv env
+    python3 -m venv venv
 
 Activate the virtualenv (run this on ever new shell in order to use `ddd`):
 
-    . env/bin/activate
+    . venv/bin/activate
 
 Install DDD inside the virtualenv set up to run from the source:
 
@@ -108,6 +104,12 @@ for the pip install to succeed, the path to the GDAL library needs to be defined
     export CPLUS_INCLUDE_PATH=/usr/include/gdal/
     export C_INCLUDE_PATH=/usr/include/gdal/
     pip install gdal==2.2.3
+
+**Running tests**
+
+    python -m unittest tests/*.py
+    
+    #pytest tests  # Old
 
 **Using the Docker image**
 

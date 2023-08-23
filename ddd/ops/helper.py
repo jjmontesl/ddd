@@ -141,4 +141,26 @@ class DDDHelper():
         for (k, v) in refs.items():
             if len(v) > 1:
                 objstxt = ", ".join(["'%s'['%s']" % (o, ok) for o, ok in v]) #  if (ignore_keys is None or ok not in ignore_keys)])
-                logger.warning("Objects references the same object %r from: %s" % (k, objstxt))    
+                logger.warning("Objects references the same object %r from: %s" % (k, objstxt))
+
+    
+    # TEST
+    def labels_add(self, obj, text2d, label=None, offset=[0, 0, 1]):
+        """
+        Creates a label for each object in the scene, using the object's metadata.
+        """
+        for o in obj.children:
+            
+            label_str = label(o)
+            label_str = str(label_str)
+            #print(label_str)
+
+            if True:  # label_str:
+                result = text2d.text(label_str)
+                result = result.material(text2d.material)
+                result = result.scale([0.5, 0.5, 0.5])
+                result = result.recenter()
+                #result.transform.translate(obj.transform.position)
+                if offset:
+                    result.transform.translate(offset)
+                o.append(result)

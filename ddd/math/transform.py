@@ -102,6 +102,13 @@ class DDDTransform():
         return self.to_matrix().flatten()
     '''
 
+    def invert(self):
+        """
+        Inverts the transform in place.
+        """
+        self.position = [-self.position[0], -self.position[1], -self.position[2]]
+        self.rotation = transformations.quaternion_inverse(self.rotation)
+
     def translate(self, v):
         """
         Modifies the transform in place. Translation vector is in local coordinates.

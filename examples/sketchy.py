@@ -16,8 +16,7 @@
 
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import urban, landscape, industrial, interior, sports, \
-    vehicles, common, buildings
+from ddd.pack.sketchy import sports_fields, urban, landscape, industrial, interior, vehicles, common, buildings
 from ddd.pipeline.decorators import dddtask
 from ddd.pack.sketchy.urban import lamppost, lamp_ball, roundedpost,\
     post_arm_angled
@@ -74,7 +73,7 @@ def pipeline_start(pipeline, root):
     item = landscape.ladder_pool()
     items.append(item)
 
-    item = sports.golf_flag()
+    item = sports_fields.golf_flag()
     items.append(item)
 
 

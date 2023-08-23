@@ -1,17 +1,16 @@
-# Jose Juan Montes 2020
+# Jose Juan Montes 2020-2023
 
 
-from ddd.pack.sketchy import urban, landscape, sports
-from ddd.ddd import ddd
+import logging
 import math
 from csv import DictReader
-from ddd.pipeline.pipeline import DDDPipeline
+
+from ddd.ddd import ddd
+from ddd.pack.sketchy import urban
 from ddd.pipeline.decorators import dddtask
-import logging
-import random
+from ddd.pipeline.pipeline import DDDPipeline
 from ddd.text.font import DDDFontAtlas
 from ddd.text.text2d import Text2D
-
 
 """
 An example of a configurable processing pipeline in DDD.

@@ -29,7 +29,7 @@ def poster_flat(width=0.4, height=0.6):
 
 def poster_fold(width=0.4, height=0.6):
     """
-    Poster with a fold at a corner at the top.
+    Poster with a fold on a corner.
     """
     pass
 
@@ -97,3 +97,10 @@ def text_note_teared(width=0.210, height=0.297, tear_height_norm=0.75, text="Thi
     item = ddd.uv.map_cubic(item, scale=[1 / width, 1 / height])
     item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).translate([-width/2, 0, -height * 0.5])
     return item
+
+
+def frame_table():
+    raise NotImplementedError()
+
+def frame_wall():
+    raise NotImplementedError()

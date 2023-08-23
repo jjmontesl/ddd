@@ -40,6 +40,7 @@ from ddd.util.common import parse_bool
 from shapely import affinity, geometry, ops
 from shapely.geometry import polygon, shape
 from shapely.geometry.linestring import LineString
+from shapely.geometry.multilinestring import MultiLineString
 from shapely.geometry.multipolygon import MultiPolygon
 from shapely.geometry.polygon import Polygon, orient
 from shapely.geometry.point import Point
@@ -47,6 +48,7 @@ from shapely.ops import polygonize, unary_union
 from shapely.strtree import STRtree
 from trimesh import boolean, creation, primitives, remesh, transformations
 from trimesh.base import Trimesh
+from centerline.geometry import Centerline
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -105,10 +107,29 @@ class DDDNode2(DDDNode):
         return self
 
     def index_create(self):
+        """
+        Constructs an RTree index rooted on this node, that can be used to query for geometries that intersect with this one.
+        Some operations will internally use this index if it is available.
+
+        Remember to clear the index as soon as it's no longer needed, since later operations may alter the node tree
+        making the index invalid.
+        """
         self._strtree = STRtree(self.geom_recursive())
 
     def index_clear(self):
+        """
+        Clears the RTree index rooted on this node, if it exists.
+        """
         self._strtree = None
+        self._reftable = None
+
+    def index_query(self, other):
+        """
+        Returns a list of candidate geometries that **potentially** intersect with the given geometry.
+        """
+        cand_geoms = self._strtree.query(other.geom)
+        result = ddd.group2([self._reftable[id(cg)] for cg in cand_geoms])
+        return result
 
     def start(self):
         coords = self.geom.coords[0]
@@ -1093,6 +1114,26 @@ class DDDNode2(DDDNode):
 
         return result
 
+    def centerline(self, distance=None):
+        result = self.copy()
+
+        if distance is None:
+            # TODO: Estimate min distance from oriented rectangle
+            distance = 0.05 # 5
+
+        cl = Centerline(self.geom, interpolation_distance=distance)
+
+        # Transform to MultiLineString or LineString
+        geom = MultiLineString([LineString(c) for c in cl.geoms])
+        geom = ops.linemerge(geom)
+        result.geom = geom
+
+        # Attempt to reduce geometry complexity
+        result = result.simplify(distance)
+        result.geom = ops.linemerge(result.geom)
+
+        return result
+
     def extrude_along(self, path):
         """
         Extrudes a shape along a path
@@ -1131,6 +1172,11 @@ class DDDNode2(DDDNode):
         return result
 
     def split(self, other):
+        """
+        Splits a geometry using other geometry.
+
+        Note: This operation calls the Shapely operation of the same name.
+        """
         splitter = other  # .union()
         result = self.copy()
         result.name = "%s (split)" % self.name
@@ -1180,6 +1226,7 @@ class DDDNode2(DDDNode):
 
     def grid_points(self, spacing=0.1):
         """
+        Generates a grid of points inside the geometry (as opossed as, for example, `random_points()`).
         """
         result = []
         shape = self.union()
@@ -1282,7 +1329,8 @@ class DDDNode2(DDDNode):
         if self._strtree:
             #logger.info("Using STRTree for 'closest' operation: %s", self)
             nearest = self._strtree.nearest(other.geom)
-            return (nearest._ddd_obj, nearest._ddd_obj.geom.distance(other.geom))
+            nearest_obj = self._reftable[id(nearest)]
+            return (nearest_obj, nearest_obj.geom.distance(other.geom))
 
         if self.geom:
             closest_o = self
@@ -1502,20 +1550,33 @@ class DDDNode2(DDDNode):
 
         return result
 
-    def geom_recursive(self):
+    def geom_recursive(self, _reftable=None):
         """
         Returns a list of all Shapely geometries recursively.
+
+        This method adds an attribute '_reftable' to the root of object on which the method is called, in order to be able to identify its geometries
+        For example, this is used by the spatial index to identify DDD objects corresponding to the geometries obtained from the index queries.
+        (See `index_create` for further info.)
 
         Note: Currently this method also adds Shapely geometries an attribute `_ddd_obj` pointing to the DDD object that references it. This will be changed.
         """
         geoms = []
+        
+        _base_reftable = _reftable
+        if _reftable is None: _reftable = {}
+        
         if self.geom:
-            self.geom._ddd_obj = self  # TODO: This is unsafe, generate a dictionary of id(geom) -> object (see https://shapely.readthedocs.io/en/stable/manual.html#strtree.STRtree.strtree.query)
+            #self.geom._ddd_obj = self  # TODO: This is unsafe, generate a dictionary of id(geom) -> object (see https://shapely.readthedocs.io/en/stable/manual.html#strtree.STRtree.strtree.query)
+            _reftable[id(self.geom)] = self
             geoms = [self.geom]
         if self.children:
             for c in self.children:
-                cgems = c.geom_recursive()
+                cgems = c.geom_recursive(_reftable)
                 geoms.extend(cgems)
+        
+        if _base_reftable is None:
+            self._reftable = _reftable
+        
         return geoms
 
     # DDDObject2 didn't have this, and Presentations are used instead: normalize with DDDNode. Added to support render to pyrender (?)

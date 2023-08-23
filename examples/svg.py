@@ -1,11 +1,9 @@
-# Jose Juan Montes 2019-2020
+# Jose Juan Montes 2019-2023
 
-from ddd.pack.sketchy import urban, landscape, sports
-from ddd.ddd import ddd
 import math
-import random
 import webbrowser
 
+from ddd.ddd import ddd
 
 row = ddd.group2()
 for i in range(3, 12 + 1):

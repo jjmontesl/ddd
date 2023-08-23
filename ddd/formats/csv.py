@@ -1,11 +1,10 @@
 # ddd - D1D2D3
 # Library for simple scene modelling.
-# Jose Juan Montes 2020
+# Jose Juan Montes 2020-2023
 
 import json
 import logging
 import math
-import yaml
 
 from shapely import geometry, affinity, ops
 from trimesh import transformations
@@ -19,15 +18,28 @@ from ddd.ddd import ddd
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
-class DDDYAMLFormat():
+class DDDCSVFormat():
+
+    raise NotImplementedError()
 
     @staticmethod
-    def export_yaml(obj, path_prefix="", instance_mesh=True, instance_marker=False):
+    def export_csv(obj, path_prefix="", instance_mesh=True, instance_marker=False):
 
         from ddd.ddd import D1D2D3
-        data = DDDYAMLFormat.export_data(obj, path_prefix, "", instance_mesh, instance_marker)
+        data = DDDCSVFormat.export_data(obj, path_prefix, "", instance_mesh, instance_marker)
 
-        encoded = yaml.dump(data, indent=2, sort_keys=True, default_flow_style=False, width=None)
+        # Collect columns / headers
+        keys = []
+        keys.sort()
+
+        csvwriter = csv.DictWriter(csvfile, fieldnames=keys, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        csvwriter.writeheader()
+
+        for row in data:
+            csvwriter.writerow(row)
+
+        #csvwriter.writerow({'emp_name': 'John Smith', 'dept': 'Accounting', 'birth_month': 'November'})
+
 
         return encoded
 
@@ -40,30 +52,26 @@ class DDDYAMLFormat():
         node_name = obj.uniquename() + name_suffix
 
         extra = obj.metadata(path_prefix, name_suffix)
-        data_ddd = {'_name': node_name,
-                    '_path': extra['ddd:path'],
-                    '_str': str(obj),
-                    '_parent': str(obj.parent),
-                    #'_extra': extra,
-                    '_transform': repr(obj.transform),
-                    '_material': str(obj.mat)}
-        
-        data = dict(extra)
-        data.update(data_ddd)
+        data = {'_name': node_name,
+                '_path': extra['ddd:path'],
+                '_str': str(obj),
+                '_parent': str(obj.parent),
+                #'_extra': extra,
+                '_transform': repr(obj.transform),
+                '_material': str(obj.mat)}
 
         for idx, c in enumerate(obj.children):
 
             cdata = DDDYAMLFormat.export_data(c, path_prefix=path_prefix + node_name + "/", instance_mesh=instance_mesh, instance_marker=instance_marker)  # , name_suffix="#%d" % (idx)
-            #cpath = cdata['_extra']['ddd:path']
-            cpath = cdata['_path']
+            cpath = cdata['_extra']['ddd:path']
             data[cpath] = cdata
 
         # FIXME: this serializes objects and dicts incorrectly, we need to deep-process dictionaries to remove some references while keeping structure
-        # Used to print DDDNodes, objects and others as strings
-        for k, v in data.items():
-            if not isinstance(v, (str, float, int, bool, dict, list)):
+        for k, v in extra.items():
+            if not isinstance(v, (str, float, int, bool)):
                 dv = ddd.json_serialize(v)
-                data[k] = dv
+                extra[k] = dv
+
 
         # FIXME: This code is duplicated from DDDInstance: normalize export / generation
         from ddd.nodes.instance import DDDInstance
