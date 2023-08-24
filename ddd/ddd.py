@@ -43,8 +43,6 @@ logger = logging.getLogger(__name__)
 
 class D1D2D3():
 
-    #BASE_DIR = os.path.join(os.getenv('PWD'), "..") if os.getenv('PWD') else "../"
-    #DATA_DIR = os.path.join(BASE_DIR, "/data")
     settings = settings
 
     # TODO: Remove all usage
@@ -161,7 +159,16 @@ class D1D2D3():
         """
         geom = shape(geometry)
         return ddd.DDDObject2(geom=geom, name=name)
+    
+    def svgpath(self, path, name=None):
+        """
+        Create a 2D shape from a SVG path description
 
+        TODO: consider if this should also/instead return a DDDPath3
+        """
+        # TODO: implement (through DDDSVGLoader (?))
+        raise NotImplementedError()
+        
     #@staticmethod
     def geometry(self, geometry):
         """
@@ -537,9 +544,10 @@ class D1D2D3():
         from ddd.pack.mats.defaultmats import DefaultMaterials
         from ddd.util.dddrandom import DDDRandom
         from ddd.util.expressions import DDDExpressions
+        from ddd.ext.item.slots import DDDSlots
 
         ddd.mats = MaterialsCollection()
-        ddd.mats.highlight = ddd.material(color='#ff00ff')
+        ddd.mats.highlight = ddd.material(color='#ff00ff', name="Highlight")
         ddd.mats.test = ddd.material(color='#808080', name="Test Material", texture_path=ddd.DATA_DIR + "/materials/util/test_squares_bw.png")
         ddd.MAT_HIGHLIGHT = ddd.mats.highlight
         ddd.MAT_TEST = ddd.mats.test
@@ -566,6 +574,8 @@ class D1D2D3():
         ddd.paths = DDDPathOps()
 
         ddd.expr = DDDExpressions()
+
+        ddd.slots = DDDSlots()
 
 
 # Because 'ddd' is a class and not a module, we are creating a global instance and initialize it here (on import).

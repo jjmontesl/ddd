@@ -113,13 +113,18 @@ def window_with_border_and_grille(width=1.6, height=1.2, border_depth=0.05, bord
     return obj
 
 
+#def door_panels_raised():
+#    """
+#    Builds a door, composed of 1) a flat padding  2) 1 o 2 raised/carved panels with given shapes optionally separated leaving the center empty.
+#    """
+#    pass
+
 
 def door(width=1.4, height=2.2, depth=0.06):
     """
     A door, centered on X and aligned to floor plane, lying on the XZ plane.
 
     TODO: Support left/right door
-    TODO: Add slots for handles, locks, knockers, mailboxes... etc.
     """
     obj = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Door")
     obj = obj.extrude(depth) # .translate([0, 0, depth])
@@ -130,11 +135,23 @@ def door(width=1.4, height=2.2, depth=0.06):
 
     # TODO: Provide data for hinge joints (Q: as slots?)
 
-    # TODO: Provide slots
+    # Slots:
 
+    # Handle front (start of the handle, closest to the door border)
+    ddd.slots.slot_add(obj, 'handle-front', [-width * 0.35, -depth, 1.07])
+    # Handle back (start of the handle, closest to the door border)
+    ddd.slots.slot_add(obj, 'handle-back', [-width * 0.35, depth, 1.07], rotation=ddd.ROT_TOP_HALFTURN)
+    # Knocker / doorbell / banner... (center of the area)
+
+    
     handle = interior.handle_TEST()  # TODO: add handles as item/builder defs, keep door(s) as a simple geometry and/or with decoration
-    handle.transform.translate([-width * 0.4, -depth, 1.07])
-    obj.append(handle)
+    ddd.slots.slot_connect(obj, 'handle-front', handle)
+    handle = interior.handle_TEST()  # TODO: add handles as item/builder defs, keep door(s) as a simple geometry and/or with decoration
+    handle = handle.scale([-1, 1, 1]).invert()  # Hackish way to invert the handle
+    ddd.slots.slot_connect(obj, 'handle-back', handle)
+
+    #handle.transform.translate([-width * 0.35, -depth, 1.07])
+    #obj.append(handle)
 
     #handle = door_handle()
     #obj.append(handle)

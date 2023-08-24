@@ -14,8 +14,6 @@ from ddd.pack.sketchy.urban import post, curvedpost
 logger = logging.getLogger(__name__)
 
 
-
-
 def golf_club(length=1.2):
     """
     """
@@ -45,3 +43,6 @@ def tabletennis_bat():
 def baseball_bat():
     pass
 
+
+def trophy(height=0.45, icon=None, label=None):
+    pass

@@ -52,6 +52,13 @@ def sink():
 def bathtub():
     pass
 
+
+def shower_base():
+    """
+    Shower tray.
+    """
+    pass
+
 def shower():
     pass
 

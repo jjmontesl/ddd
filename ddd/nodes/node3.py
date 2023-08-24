@@ -300,6 +300,31 @@ class DDDNode3(DDDNode):
             obj.mesh.invert()
         obj.children = [c.invert() for c in self.children]
         return obj
+    
+    def flip_faces(self):
+        """
+        FIXME: What is the difference with invert(), should both exist? document differences
+        """
+        result = self.copy()
+        if result.mesh:
+            flipped_faces = np.fliplr(result.mesh.faces)
+            result.mesh.faces = flipped_faces
+            #result.geom = result.geom.simplify(distance)  #, preserve_topology=True)
+        result.children = [c.flip_faces() for c in self.children]
+        return result    
+    
+    def twosided(self):
+        result = self.copy()
+
+        result.children = [c.twosided() for c in result.children]
+
+        if result.mesh:
+            inverted = self.mesh.copy()
+            inverted.invert()
+            #result.append(ddd.mesh(inverted))
+            result.mesh = concatenate(result.mesh, inverted)
+
+        return result    
 
     def elevation_func(self, func):
         """
@@ -571,31 +596,6 @@ class DDDNode3(DDDNode):
 
         return metadata
     '''
-
-    def twosided(self):
-        result = self.copy()
-
-        result.children = [c.twosided() for c in result.children]
-
-        if result.mesh:
-            inverted = self.mesh.copy()
-            inverted.invert()
-            #result.append(ddd.mesh(inverted))
-            result.mesh = concatenate(result.mesh, inverted)
-
-        return result
-
-    def flip_faces(self):
-        """
-        FIXME: What is the difference with invert(), should both exist? document differences
-        """
-        result = self.copy()
-        if result.mesh:
-            flipped_faces = np.fliplr(result.mesh.faces)
-            result.mesh.faces = flipped_faces
-            #result.geom = result.geom.simplify(distance)  #, preserve_topology=True)
-        result.children = [c.flip_faces() for c in self.children]
-        return result
 
     def convex_hull(self):
         result = self.copy()

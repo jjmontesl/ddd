@@ -16,7 +16,7 @@
 
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import sports_fields, urban, landscape, industrial, interior, vehicles, common, buildings
+from ddd.pack.sketchy import printing, sports_fields, urban, landscape, industrial, interior, vehicles, common, buildings
 from ddd.pipeline.decorators import dddtask
 from ddd.pack.sketchy.urban import lamppost, lamp_ball, roundedpost,\
     post_arm_angled
@@ -37,6 +37,10 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
+    item = printing.book()
+    item.show()
+    items.append(item)
+    
     item = industrial.crate()
     items.append(item)
 

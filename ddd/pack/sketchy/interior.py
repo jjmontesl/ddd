@@ -14,6 +14,9 @@ from ddd.ops.layout import DDDLayout, VerticalDDDLayout
 from ddd.pack.sketchy import common
 
 
+# TODO: This module (interior) possibly needs to be exploded into "home" (beds, etc), "office", "modular-furniture-builder", "common", "plumbing"...
+
+
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
@@ -51,32 +54,42 @@ def handle_blocky(width=0.1, height=0.3, depth=0.05, separation=0.06):
 def handle_bar_flat():
     pass
 
-def handle_bar_curved():
-    """
-    """
-    obj = common.bar_u(height=0.06, width=0.15, r=0.03, thick=0.03, half=True)
-    obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
-    obj = obj.material(ddd.mats.metal)
-    obj = obj.smooth(ddd.PI_OVER_2)
-    obj = ddd.uv.map_cubic(obj, split=False)
-    return obj
 
-def handle_bar_u():
+def handle_bar_u(vertical=True):
     """
     A U shaped handle, with the base on the ...
     """
-    obj = common.bar_u(height=0.06, width=0.15, r=0.03, thick=0.03)
-    obj = obj.rotate(ddd.ROT_TOP_CW).rotate(ddd.ROT_FLOOR_TO_FRONT)
+    obj = common.bar_u(height=0.06, width=0.20, r=0.03, thick=0.03)
+    
+    if vertical: obj = obj.rotate(ddd.ROT_TOP_CW)  # if vertical
+    obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
+
     obj = obj.material(ddd.mats.metal)
     obj = obj.merge_vertices()
     obj = obj.smooth(ddd.PI_OVER_2)
     obj = ddd.uv.map_cubic(obj, split=False)
     return obj
 
+
+def handle_bar_curved():
+    """
+    """
+    obj = common.bar_u(height=0.07, width=0.16, r=0.03, thick=0.03, half=True)
+    obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    obj = obj.material(ddd.mats.metal)
+    obj = obj.smooth(ddd.PI_OVER_2)
+    obj = ddd.uv.map_cubic(obj, split=False)
+    return obj
+
+
 #def handle_fixture_plate(shape_func=shapes.squared):
 #    pass
 
 handle_TEST = handle_bar_curved
+
+
+def clothes_hanger():
+    raise NotImplementedError()
 
 
 def paper_bin_basket(height=0.27, radius=0.12):
