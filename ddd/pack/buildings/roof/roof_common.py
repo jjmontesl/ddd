@@ -33,7 +33,7 @@ Generates roofs, given a footprint shape.
 """
 
 
-def roof_gabled(obj, roof_buffer=0.0):
+def roof_gabled(obj, roof_height = 1.2, roof_buffer=0.0):
     """
     Creates a gabled roof for the given footprint.
 
@@ -57,8 +57,14 @@ def roof_gabled(obj, roof_buffer=0.0):
     #half_profile = ddd.polygon(([])
     
     roof = base.extrude_step(axis_line, roof_height)  #.material(roof_material)
-    roof = roof.subtract(roof.translate([0, 0, -roof_thick]))
+    volume_subtract = roof.copy().translate([0, 0, -roof_thick])
+
+    roof.set('ceiling:volume', roof)
+
+    roof = roof.subtract(volume_subtract)
     roof = roof.clean()
+
+    roof.set('ceiling:volume:interior', volume_subtract)
 
     roof = roof.smooth(ddd.PI_OVER_8)
     roof = ddd.uv.map_cubic(roof)

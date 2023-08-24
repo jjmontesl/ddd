@@ -44,7 +44,7 @@ def pipeline_start(pipeline, root):
     items.append(item)
 
     item = appliances.clock_wall_round_framed()
-    item.show()
+    #item.show()
     items.append(item)
 
     item = interior.plant_pot(earth_height_norm = 0.85)
@@ -78,15 +78,20 @@ def pipeline_start(pipeline, root):
     item = interior.drawer()
     items.append(item)
 
-    item = interior.cabinet_door()
+    item = interior.cabinet_door_raised()
     items.append(item)
 
     item = industrial.crate()
     items.append(item)
 
     item = buildings.door()
-    items.append(item)
     #item.show()
+    items.append(item)
+
+    #item = buildings.door()
+    ##item.show()
+    #items.append(item)
+    
 
     item = buildings.window_with_border()
     items.append(item)

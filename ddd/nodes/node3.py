@@ -163,6 +163,13 @@ class DDDNode3(DDDNode):
 
         return bounds
 
+    def size(self):
+        """
+        Returns the AABB size
+        """
+        ((xmin, ymin, zmin), (xmax, ymax, zmax)) = self.bounds()
+        return [xmax - xmin, ymax - ymin, zmax - zmin]  
+
     def recenter(self, onplane=False):
         ((xmin, ymin, zmin), (xmax, ymax, zmax)) = self.bounds()
         center = [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]

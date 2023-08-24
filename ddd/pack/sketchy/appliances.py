@@ -84,12 +84,12 @@ def clock_wall_round_framed(radius=0.24, frame_width=0.03):
     
     return clock_frame
 
+
 """
 TODO:
 
 - Microwave Oven
-- Fridge
-- 
+- Fridge (solid or hollow)
 
 - TV Flat
 - TV CRT 
@@ -106,7 +106,6 @@ TODO:
 - Tablet
 - Cellphone Smartphone
 - Cellphone Analog (w antenna)
-
 
 
 """

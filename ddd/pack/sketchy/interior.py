@@ -11,6 +11,7 @@ from ddd.ops import grid
 from ddd.math.transform import DDDTransform
 
 from ddd.ops.layout import DDDLayout, VerticalDDDLayout
+from ddd.pack.sketchy import common
 
 
 # Get instance of logger for this module
@@ -29,24 +30,53 @@ def tap_push(r=0.01, height=0.1, length=0.15):
 def tap():
     return tap_push()
 
+
 def handle_knob(r=0.03):
-    knob = ddd.sphere(r=r, subdivisions=0.5, name="Knob")
+    knob = ddd.sphere(r=r, subdivisions=0.5, name="Knob").translate([0, -r * 0.8, 0])
     knob = knob.material(ddd.mats.plastic_white)
     knob = knob.smooth()
     return knob
 
-def handle_block():
-    # TODO: bring here door_handle... from buildings.py
+def handle_blocky(width=0.1, height=0.3, depth=0.05, separation=0.06):
+    """
+    """
+    shape = ddd.rect([width, height], name="Door Handle").recenter()
+    obj = shape.scale([0.5, 0.5]).extrude_step(shape, separation, base=False)
+    obj = obj.extrude_step(shape, depth)
+    obj = obj.material(ddd.mats.metal)
+    obj = ddd.uv.map_cubic(obj)
+    obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    return obj
+
+def handle_bar_flat():
     pass
+
+def handle_bar_curved():
+    """
+    """
+    obj = common.bar_u(height=0.06, width=0.15, r=0.03, thick=0.03, half=True)
+    obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    obj = obj.material(ddd.mats.metal)
+    obj = obj.smooth(ddd.PI_OVER_2)
+    obj = ddd.uv.map_cubic(obj, split=False)
+    return obj
 
 def handle_bar_u():
-    pass
+    """
+    A U shaped handle, with the base on the ...
+    """
+    obj = common.bar_u(height=0.06, width=0.15, r=0.03, thick=0.03)
+    obj = obj.rotate(ddd.ROT_TOP_CW).rotate(ddd.ROT_FLOOR_TO_FRONT)
+    obj = obj.material(ddd.mats.metal)
+    obj = obj.merge_vertices()
+    obj = obj.smooth(ddd.PI_OVER_2)
+    obj = ddd.uv.map_cubic(obj, split=False)
+    return obj
 
-def handle_door():
-    pass
-
-#def handle_plate(shape_func=shapes.squared):
+#def handle_fixture_plate(shape_func=shapes.squared):
 #    pass
+
+handle_TEST = handle_bar_curved
 
 
 def paper_bin_basket(height=0.27, radius=0.12):
@@ -174,15 +204,15 @@ def shelf(width=0.4, depth=0.4, thick=0.04):
     shelf = ddd.uv.map_cubic(shelf)
     return shelf
 
-def cabinet_door(height=0.5, width=0.4, hinge=0, thick=0.04, front_thick=0.02, knob_height_n = 0.5):
+def cabinet_door_raised(height=0.5, width=0.4, hinge=0, padding=0.04, front_thick=0.02, knob_height_n = 0.5):
     """
     A door, with the hinge on the Z axis, resting on its base (hinge is on the left (0) or right (1)).
     """
     door_face = ddd.rect([width, height], name="Cabinet Door")
-    door = door_face.extrude_step(door_face, thick)
-    door = door.extrude_step(door_face.buffer(-thick), front_thick)
+    door = door_face.extrude_step(door_face, padding)
+    door = door.extrude_step(door_face.buffer(-padding), front_thick)
 
-    door = door.rotate(ddd.ROT_FLOOR_TO_FRONT).translate((0, thick, 0))
+    door = door.rotate(ddd.ROT_FLOOR_TO_FRONT).translate((0, padding, 0))
     door = door.material(ddd.mats.wood)
     door = door.smooth(angle=0)
     door = ddd.uv.map_cubic(door)
@@ -202,6 +232,8 @@ def cabinet_door(height=0.5, width=0.4, hinge=0, thick=0.04, front_thick=0.02, k
 
 def furniture_layout(layout, depth=0.4, thick=0.04):
 
+    # TODO: Redesign considering slots / builders / layout / etc... (classes?)
+
     obj = ddd.DDDNode3(name="Furniture").copy_from(layout, copy_children=False)
 
     fobj = None
@@ -213,7 +245,7 @@ def furniture_layout(layout, depth=0.4, thick=0.04):
     if ftype == 'shelf':
         fobj = shelf(width, depth, thick).translate([width / 2, 0, -height])
     elif ftype == 'cabinet':
-        fobj = cabinet_door(height, width, thick=thick).translate([0, 0, -height])
+        fobj = cabinet_door_raised(height, width, padding=thick).translate([0, 0, -height])
     elif ftype == 'drawer':
         fobj = drawer(width, height, depth=depth, thick=thick).translate([width / 2, 0, -height])
 
@@ -286,3 +318,7 @@ def furniture_cabinet_vertical_shelf_drawer_cabinet(height=None, width=1.0, dept
     return obj
     '''
 
+
+
+def vent_fan():
+    pass

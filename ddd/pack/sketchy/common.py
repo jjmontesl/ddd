@@ -32,11 +32,13 @@ logger = logging.getLogger(__name__)
 Partial general purpose shapes and parts of other objects.
 """
 
-def bar_u(height=0.8, width=0.4, r=0.15, thick=0.1):
+def bar_u(height=0.8, width=0.4, r=0.15, thick=0.1, half=False):
     """
     A U-shaped figure, like that used for handles, bycicle stands...
 
-    Oriented with arc up, like a bike parking.
+    Oriented with arc up, like a bike parking, centered on it's base, between the two legs, at mid width.
+
+    If 'half' is True, the U is halved, generating only the left side, but extending to the full width.
     """
 
     if r >= width / 2:
@@ -47,12 +49,15 @@ def bar_u(height=0.8, width=0.4, r=0.15, thick=0.1):
     base = ddd.regularpolygon(6, r=thick * 0.5, name="U-Shape")
 
     path = ddd.point().line_to([0, vertical_height]).arc_to([r, height], [r, vertical_height], True, resolution=1)
-    path = path.line_to([width - r, height]).arc_to([width, vertical_height], [width-r, vertical_height], True, resolution=1)
-    path = path.line_to([width, 0])
+    if not half:
+        path = path.line_to([width - r, height]).arc_to([width, vertical_height], [width-r, vertical_height], True, resolution=1)
+        path = path.line_to([width, 0])
+    else:
+        path = path.line_to([width, height])
 
     item = base.extrude_along(path)
     item = item.rotate(ddd.ROT_FLOOR_TO_FRONT)  #.rotate(ddd.ROT_TOP_CW)
-    item = item.translate([-width*0.5, 0, 0])
+    item = item.translate([-width * 0.5, 0, 0])
     item = item.material(ddd.mats.steel)
     item = ddd.uv.map_cubic(item)
     return item

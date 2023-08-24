@@ -9,6 +9,13 @@ import logging
 import sys
 import gzip
 
+
+"""
+This module generates icon items from SVG files, but also provides
+a mechanism to do a fuzzy search for icons based on text.
+"""
+
+
 # Catalog path
 # TODO: Read from setting
 ICONITEM_CATALOG_ROOT_PATH = settings.DDD_DATADIR + "/vector"
