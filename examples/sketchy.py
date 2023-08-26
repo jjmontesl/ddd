@@ -37,10 +37,6 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
-    item = printing.book()
-    item.show()
-    items.append(item)
-    
     item = industrial.crate()
     items.append(item)
 

@@ -179,3 +179,12 @@ def ladder_pool(height=1.75, width=0.6):
 
     return item
 
+
+def ladder_bars(height=2.25, width=0.8, step_depth=0.20, step_thick=0.05):
+    pass
+
+def ladder_bars_wall(height=2.25, width=0.8, step_depth=0.20, step_thick=0.05):
+    """
+    Integrated in the wall, with supports (better use item builder?)
+    """
+    pass

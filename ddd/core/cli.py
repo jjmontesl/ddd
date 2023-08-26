@@ -140,7 +140,7 @@ class D1D2D3Bootstrap():
                 print(parser.format_help())
                 sys.exit(0)
             else:
-                #print(parser.format_help())  # prints general help before any per-command help
+                print(parser.format_help())  # prints general help before any per-command help
                 unparsed_args = unparsed_args + ['-h']
 
         self.profile = args.profile

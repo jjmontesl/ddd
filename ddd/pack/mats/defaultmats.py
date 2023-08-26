@@ -78,7 +78,10 @@ class DefaultMaterials(MaterialsCollection):
         self.bricks_raw = ddd.material(name="Bricks Raw", color='#d49156')
         self.marble_white = ddd.material(name="Marble White", color='#c0c3c8', metallic_factor=0.4, roughness_factor=0.05)
 
-        self.clay = ddd.material(name="Clay", color='#e57757', metallic_factor=0.02, roughness_factor=0.85)
+        self.clay = ddd.material(name="Clay", color='#e57757', metallic_factor=0.02, roughness_factor=0.85)  # E.g. pottery...
+
+        self.porcelain_white = ddd.material("Porcelain White", color='#f2f5fe', metallic_factor=0.2, roughness_factor=0.2)
+        self.porcelain = self.porcelain_white
 
         self.wood = ddd.material(name="Wood", color='#efae85', metallic_factor=0.0, roughness_factor=0.7)
         self.wood_planks = ddd.material(name="Wood Planks", color='#b57857', metallic_factor=0.0, roughness_factor=0.6)
@@ -109,6 +112,9 @@ class DefaultMaterials(MaterialsCollection):
         self.plastic_yellow = ddd.material("Plastic Yellow", color='#fffb08', metallic_factor=0.0, roughness_factor=0.7)
         self.plastic_blue = ddd.material("Plastic Blue", color='#1763bf', metallic_factor=0.0, roughness_factor=0.7)
         self.plastic_white = ddd.material("Plastic White", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)
+
+        # Fabrics
+        self.carpet_red = ddd.material("Carpet Red", color='#9c0b0b', metallic_factor=0.0, roughness_factor=0.975)
 
         # Glass
         # FIXME: ddd:reflection, which semantically relates to mirrors / reflective surfaces (rel: reflection probes) in VRS, should NOT be a default for glass (which does requires env reflections but not necessarily a probe)

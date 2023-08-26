@@ -38,7 +38,7 @@ def start_run(root):
     """
     # Get features (depends on the process)
     features = ddd.group2()
-    with open("../data/periodictable/periodictable.csv") as f:
+    with open("../data/various/periodictable.csv") as f:
         csv = DictReader(f)
         for row in csv:
             feature = ddd.point(name="Element: %s" % row['Element'])

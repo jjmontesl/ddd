@@ -7,7 +7,7 @@ import logging
 from ddd.ddd import ddd
 from trimesh import transformations
 from ddd.math.vector3 import Vector3
-from ddd.ops import grid
+from ddd.ops import filters, grid
 from ddd.math.transform import DDDTransform
 
 from ddd.ops.layout import DDDLayout, VerticalDDDLayout
@@ -88,7 +88,21 @@ def handle_bar_curved():
 handle_TEST = handle_bar_curved
 
 
-def clothes_hanger():
+def coat_hanger():
+    """
+    Coat hanger, clothes hanger (Percha).
+    """
+    raise NotImplementedError()
+
+def coat_stand():
+    """
+    Coat Rack, Coat Stand (Coat Hanger, Clothes Hanger) - Perchero.
+
+    Eg: 0.12 x 0.12x x 1.56 | 1.60 | 1.80 (solid block with branches)
+    """
+    raise NotImplementedError()
+
+def coat_rack_wall():
     raise NotImplementedError()
 
 
@@ -130,6 +144,46 @@ def paper_bin_basket(height=0.27, radius=0.12):
     item.append(slot)    
 
     return item
+
+
+def carpet_rect(width=1.0, length=1.5, thickness=0.01, noise=0.005):
+    """
+    A rectangular carpet.
+    """
+    base = ddd.rect([width, length], name="Carpet").recenter()
+
+    if noise:
+        noise_subdivision = width * 0.5  # Carpets don't have many noise points, towels work better with 0.25 or lower
+        base = ddd.geomops.subdivide_to_size(base, max_edge=noise_subdivision)
+        base = filters.noise_random(base, scale=noise)
+        #base = base.simplify(0.05).clean(eps=-0.02)
+        base = base.clean(eps=-0.02)
+
+    carpet = base.buffer(-0.005).extrude_step(base, thickness * 0.75, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+    carpet = carpet.extrude_step(base.buffer(-0.01), thickness * 0.25, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+    carpet = carpet.material(ddd.mats.carpet_red)
+    carpet = ddd.uv.map_cubic(carpet, scale=[0.5, 0.5, 0.5], split=False)
+    carpet = carpet.smooth(ddd.PI)
+    return carpet
+
+
+def sofa_default(height=0.69, width=1.8, depth=0.8, arm_width=0.13, legs_height=0.15, seat_height=0.47, cushion_thick=0.12, cushion_top=0.86):
+    """
+    See eg: https://www.ikea.com/es/en/images/products/parup-3-seat-sofa-with-chaise-longue-vissle-dark-green__1108788_pe869619_s5.jpg?f=xl
+
+    Note: default dimensions are for an large sofa.
+    Note: Cushions may slightly extend above the height or before the depth (?)
+    """
+    pass
+
+def sofa_chaise_longue(height=0.69, width=2.35, depth=0.8, arm_width=0.13, legs_height=0.15, seat_height=0.47, cushion_thick=0.12, cushion_top=0.86, extension_depth=1.48, extension_width=0.70, extension_side=1.0):
+    """
+    See eg: https://www.ikea.com/es/en/images/products/parup-3-seat-sofa-with-chaise-longue-vissle-dark-green__1108788_pe869619_s5.jpg?f=xl
+    
+    Note: default dimensions are for an XL chaise longue.
+    Note: Cushions may slightly extend above the height or before the depth (?)
+    """
+    pass
 
 
 def plant_pot(height=0.34, radius=0.185, thickness=0.01, earth_height_norm=0.0):

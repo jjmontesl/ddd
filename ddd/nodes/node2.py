@@ -817,7 +817,7 @@ class DDDNode2(DDDNode):
         if self.children:
             area_union = self.union()
 
-        area = area_union.geom.area if self.geom else 0
+        area = area_union.geom.area if area_union.geom else 0
         return area
 
     def is_empty(self):

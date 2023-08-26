@@ -1,0 +1,295 @@
+lang,title,title_en,author,author_en,year,publisher,pages,icon,unicode_emoji,genre,topic
+
+en,The Lord of the Rings,,J. R. R. Tolkien,,1954,Allen & Unwin,1178,🪐,ring,fantasy,middle-earth
+en,The Hobbit,,J. R. R. Tolkien,,1937,Allen & Unwin,310,🏔,mountain,fantasy,middle-earth
+en,Harry Potter and the Philosopher's Stone,,J. K. Rowling,,1997,Bloomsbury,223,🧙‍♂️,hat-wizard,fantasy,wizardry
+en,The Catcher in the Rye,,J. D. Salinger,,1951,Little, Brown and Company,234,🧢,baseball-cap,drama,adolescence
+en,The Great Gatsby,,F. Scott Fitzgerald,,1925,Charles Scribner's Sons,218,🚗,car,drama,american-dream
+en,"The Lion, the Witch and the Wardrobe",,C. S. Lewis,,1950,Geoffrey Bles,206,🦁,lion-crown,fantasy,narnia
+en,The Hunger Games,,Suzanne Collins,,2008,Scholastic,374,🏹,arrow-circle-right,fantasy,dystopia
+en,The Chronicles of Narnia,,C. S. Lewis,,1950,Geoffrey Bles,206,🦁,lion-crown,fantasy,narnia
+en,Animal Farm,,George Orwell,,1945,Secker and Warburg,112,🐖,pig-outline,drama,dystopia
+en,The Da Vinci Code,,Dan Brown,,2003,Double Day,454,🎨,paint-palette,thriller,conspiracy
+en,1984,,George Orwell,,1949,Secker & Warburg,328,📹,camera,satire,dystopia
+en,Brave New World,,Aldous Huxley,,1932,Chatto & Windus,288,🌍,globe,fiction,dystopia
+en,Moby-Dick,,Herman Melville,,1851,Harper & Brothers,927,🐋,whale,fiction,adventure
+en,Pride and Prejudice,,Jane Austen,,1813,Thomas Egerton,279,❤️,heart,drama,romance
+en,To Kill a Mockingbird,,Harper Lee,,1960,J. B. Lippincott & Co.,281,🐦,bird,drama,racism
+en,Wuthering Heights,,Emily Brontë,,1847,Thomas Cautley Newby,348,🍃,wind,drama,tragedy
+en,Jane Eyre,,Charlotte Brontë,,1847,Smith, Elder & Co.,474,🔥,fire,drama,romance
+en,The Odyssey,,Homer (translated by various),,circa 8th century BC,Various,461,⛵,boat,classic,adventure
+en,Fahrenheit 451,,Ray Bradbury,,1953,Ballantine Books,227,🔥,fire,drama,dystopia
+en,Of Mice and Men,,John Steinbeck,,1937,Covici Friede,187,🐁,mouse,drama,tragedy
+en,Lord of the Flies,,William Golding,,1954,Faber and Faber,224,🔥,fire,drama,island-life
+en,Crime and Punishment,,Fyodor Dostoevsky,,1866,The Russian Messenger,671,⚖️,scale,drama,crime
+en,War and Peace,,Leo Tolstoy,,1869,The Russian Messenger,1225,⚔️,swords,drama,historical
+en,The Picture of Dorian Gray,,Oscar Wilde,,1890,Ward, Lock & Co.,252,🖼,frame,drama,morality
+en,The Secret Garden,,Frances Hodgson Burnett,,1911,Heinemann,300,🌹,rose,children,mystery
+en,Middlemarch,,George Eliot,,1871,William Blackwood and Sons,904,📖,book,drama,society
+en,Rebecca,,Daphne du Maurier,,1938,Victor Gollancz,449,🏰,castle,gothic,mystery
+en,Catcher in the Rye,,J.D. Salinger,,1951,Little, Brown and Company,277,🧢,hat,drama,adolescence
+en,Ulysses,,James Joyce,,1922,Shakespeare and Company,730,📖,book,modernist,everyday-life
+en,The Adventures of Huckleberry Finn,,Mark Twain,,1884,Chatto & Windus,366,🚣,raft,adventure,society
+en,Dracula,,Bram Stoker,,1897,Archibald Constable and Company,418,🦇,bat,horror,gothic
+en,Don Quixote,,Miguel de Cervantes,,1605,Francisco de Robles,863,🛡,shield,classic,adventure
+en,The Wind in the Willows,,Kenneth Grahame,,1908,Methuen & Co.,258,🍃,leaf,children,adventure
+en,The Tale of Peter Rabbit,,Beatrix Potter,,1902,Frederick Warne & Co,72,🐇,rabbit,children,adventure
+en,The Handmaid's Tale,,Margaret Atwood,,1985,McClelland and Stewart,311,🔴,circle,drama,dystopia
+en,The Bell Jar,,Sylvia Plath,,1963,Heinemann,234,🔔,bell,drama,mental-health
+en,A Clockwork Orange,,Anthony Burgess,,1962,Heinemann,192,🍊,orange,drama,dystopia
+en,Gone with the Wind,,Margaret Mitchell,,1936,Macmillan Publishers,1037,🍂,leaf,drama,historical
+en,One Hundred Years of Solitude,,Gabriel García Márquez,,1967,Editorial Sudamericana,417,⏳,hourglass,drama,fantasy
+en,The Alchemist,,Paulo Coelho,,1988,Editora Rocco,163,⛰,mountain,fantasy,adventure
+
+en,The Social Construction of Reality,,Peter L. Berger,,1966,Anchor Books,219,🌍,globe,sociology,social-perception
+en,The Structure of Scientific Revolutions,,Thomas S. Kuhn,,1962,University of Chicago Press,172,⚙️,gear,science,philosophy-of-science
+en,Advanced XML,,Ray Lischner,,2001,,352,💻,computer,technical,computer science
+en,Advanced C++,,James O. Coplien,,1992,,544,💻,computer,technical,computer science
+en,Modern Architecture,,Kenneth Frampton,,1980,,320,🏢,building,technical,architecture
+en,De Architectura,,Vitruvius,,15 BC,,352,🏛,building,technical,architecture
+en,Towards a New Architecture,,Le Corbusier,,1923,,320,🏢,building,technical,architecture
+en,The Structure of Scientific Revolutions,,Thomas S. Kuhn,,1962,University of Chicago Press,212,🔬,microscope,philosophy,philosophy-of-science
+en,The Selfish Gene,,Richard Dawkins,,1976,Oxford University Press,368,🧬,dna,bio,genetics
+en,A Brief History of Time,,Stephen Hawking,,1988,Bantam Books,256,⏳,hourglass,physics,cosmology
+en,The Feynman Lectures on Physics,,Richard P. Feynman,,1964,Basic Books,1552,📘,book,physics,lectures
+en,The Emperor's New Mind,,Roger Penrose,,1989,Oxford University Press,480,🧠,brain,comp-sci,consciousness
+en,The Road to Reality,,Roger Penrose,,2004,Jonathan Cape,1099,🌌,universe,physics,cosmology
+en,Introduction to Quantum Mechanics,,David J. Griffiths,,1995,Prentice Hall,408,🔍,magnifying-glass,physics,quantum-mechanics
+en,Molecular Biology of the Cell,,Bruce Alberts,,1983,Garland Science,1392,🦠,cell,bio,cell-biology
+en,Principles of Neural Science,,Eric R. Kandel,,1981,McGraw-Hill,1414,⚡,neuron,biology,neuroscience
+en,On Growth and Form,,D'Arcy Wentworth Thompson,,1917,Cambridge University Press,1116,🍀,leaf,bio,biology
+en,An Introduction to Medicinal Chemistry,,Graham L. Patrick,,1995,Oxford University Press,832,💊,pill,chemistry,medicinal-chemistry
+en,Principles of Geochemistry,,Brian Mason,,1952,John Wiley & Sons,328,🌍,earth,geo,geochemistry
+en,Fundamentals of Atmospheric Radiation,,Craig F. Bohren,,2006,Wiley-VCH,472,🌦️,cloud,geo,atmosphere
+en,Chemical Kinetics and Dynamics,,Jeffrey I. Steinfeld,,1989,Prentice Hall,528,⚗️,flask,chemistry,chemical-kinetics
+en,The Nature of the Chemical Bond,,Linus Pauling,,1939,Cornell University Press,644,🧪,test-tube,chemistry,chemical-bonding
+en,Biochemistry,,Donald Voet,,1990,John Wiley & Sons,1464,🔬,microscope,bio,biochemistry
+en,Artificial Intelligence: A Modern Approach,,Stuart Russell,,1995,Prentice Hall,1152,🤖,robot,comp-sci,artificial-intelligence
+en,Design Patterns: Elements of Reusable Object-Oriented Software,,Erich Gamma,,1994,Addison-Wesley,395,💾,disk,comp-sci,software-design
+en,Introduction to the Theory of Computation,,Michael Sipser,,1996,Cengage Learning,480,⚙️,gear,comp-sci,theoretical-computation
+en,Introduction to Algorithms,,Thomas H. Cormen,,1990,MIT Press,1312,💡,light-bulb,comp-sci,algorithms
+en,Operating System Concepts,,Abraham Silberschatz,,1983,John Wiley & Sons,976,🖥️,computer,comp-sci,operating-systems
+en,Human Molecular Genetics,,Tom Strachan,,1996,Garland Science,782,🧬,dna,genetics,human-genetics
+en,The Algorithm Design Manual,,Steven S. Skiena,,1997,Springer,730,🔗,link,comp-sci,algorithm-design
+en,Gray's Anatomy,,Henry Gray,,1858,John W. Parker and Son,1257,🦴,bone,medicine,anatomy
+en,Modern Quantum Mechanics,,J. J. Sakurai,,1985,Benjamin/Cummings,512,🌀,atom,physics,quantum-mechanics
+en,Statistical Mechanics,,R. K. Pathria,,1972,Butterworth-Heinemann,544,🌡️,thermometer,physics,statistical-mechanics
+en,Principles of Biochemistry,,Albert L. Lehninger,,1982,Worth Publishers,1100,🧪,test-tube,bio,biochemistry
+en,Physical Chemistry,,Peter Atkins,,1978,Oxford University Press,1008,⚛️,atom,chemistry,physical-chemistry
+en,The C++ Programming Language,,Bjarne Stroustrup,,1985,Addison-Wesley,1346,💻,computer,comp-sci,programming
+en,Clean Code: A Handbook of Agile Software Craftsmanship,,Robert C. Martin,,2008,Prentice Hall,464,🧽,sponge,comp-sci,software-development
+
+es,El Quijote,Don Quixote,Miguel de Cervantes,,1605,,863,🌬,windmill,historical,adventure
+es,Cien años de soledad,One Hundred Years of Solitude,Gabriel García Márquez,,1967,,422,☀️,sun,literary,magic realism
+es,Don Juan Tenorio,,José Zorrilla,,1844,,159,💀,skull,drama,romanticism
+es,La Regenta,,Leopoldo Alas Clarín,,1884,,1022,❤️,heart,literary,realism
+es,La Celestina,,Fernando de Rojas,,1499,,160,❤️,heart,drama,tragicomedy
+es,La vida es sueño,Life is a Dream,Pedro Calderón de la Barca,,1635,,168,🌙,moon,drama,philosophy
+es,El Lazarillo de Tormes,,Anónimo,,1554,,104,👁,eye,literary,picaresque
+es,Poema de mio Cid,Poem of the Cid,Anónimo,,1207,,170,⚔️,sword,historical,epic
+es,La Colmena,The Hive,Camilo José Cela,,1951,,360,🐝,bee,literary,postwar
+es,El Buscón,,Francisco de Quevedo,,1626,,160,👁,eye,literary,picaresque
+es,El Hobbit,The Hobbit,J. R. R. Tolkien,,1937,,310,🏔,dwarf,fantasy,middle-earth
+es,El Señor de los Anillos,The Lord of the Rings,J. R. R. Tolkien,,1954,,1178,🪐,eye,fantasy,middle-earth
+es,Harry Potter y la piedra filosofal,Harry Potter and the Philosopher's Stone,J. K. Rowling,,1997,,223,🧙‍♂️,wizard,fantasy,wizardry
+es,El Principito,The Little Prince,Antoine de Saint-Exupéry,,1943,,96,🦊,fox,philosophical,fable
+es,El alquimista,The Alchemist,Paulo Coelho,,1988,,208,🍶,alchemy,philosophical,adventure
+es,El Código Da Vinci,The Da Vinci Code,Dan Brown,,2003,,454,🎨,eye,thriller,conspiracy
+es,El retrato de Dorian Gray,The Picture of Dorian Gray,Oscar Wilde,,1890,,254,🖌,paint-brush,literary,supernatural
+es,El laberinto de los espíritus,The Labyrinth of the Spirits,Carlos Ruiz Zafón,,2016,,925,👁,eye,literary,mystery
+es,El arte de la guerra,The Art of War,Sun Tzu,,400 BC,,104,⚔️,sword,philosophical,strategy
+es,Rimas y leyendas,Rhymes and Legends,Gustavo Adolfo Bécquer,,1871,200,🍃,leaf,poetry,romanticism
+es,Los girasoles ciegos,The Blind Sunflowers,Alberto Méndez,,2004,160,🌻,sunflower,literary,civil war
+es,El túnel,The Tunnel,Ernesto Sabato,,1948,200,🚇,tunnel,philosophical,mystery
+es,Los siete pilares de la sabiduría,The Seven Pillars of Wisdom,T. E. Lawrence,,1926,672,🏜,desert,autobiography,war
+es,El camino,The Path,Miguel Delibes,,1950,272,🚲,bicycle,literary,growth
+es,Nada,Nothing,Carmen Laforet,,1945,272,🚪,door,literary,postwar
+es,El príncipe de la niebla,The Prince of Mist,Carlos Ruiz Zafón,,1993,240,🌫,fog,horror,mystery
+es,El jinete polaco,The Polish Rider,Antonio Muñoz Molina,,1991,736,🐎,horse,literary,historical
+es,La sombra del viento,The Shadow of the Wind,Carlos Ruiz Zafón,,2001,576,📚,book,literary,mystery
+es,La verdad sobre el caso Savolta,The Truth About the Savolta Case,Eduardo Mendoza,,1975,448,🔍,magnifying-glass,literary,mystery
+es,Los detectives salvajes,The Savage Detectives,Roberto Bolaño,,1998,648,🔎,magnifying-glass,literary,adventure
+es,2666,2666,Roberto Bolaño,,2004,1126,🔢,numbers,literary,mystery
+es,Ficciones,Fictions,Jorge Luis Borges,,1944,240,🔮,crystal-ball,literary,short-stories
+es,El Aleph,The Aleph,Jorge Luis Borges,,1949,146,🌀,spiral,literary,short-stories
+es,Rayo Macoy,Rayo Macoy,Luis Gutiérrez Maluenda,,1998,280,⚡,lightning,thriller,crime
+es,El amor en los tiempos del cólera,Love in the Time of Cholera,Gabriel García Márquez,,1985,348,💘,heart-arrow,literary,romance
+es,Cronica de una muerte anunciada,Chronicle of a Death Foretold,Gabriel García Márquez,,1981,120,🔪,knife,literary,crime
+es,El entenado,The Witness,Juan José Saer,,1983,176,🌊,canoe,literary,historical
+es,Los pasos perdidos,The Lost Steps,Alejo Carpentier,,1953,312,🥾,boot,literary,adventure
+es,La fiesta del chivo,The Feast of the Goat,Mario Vargas Llosa,,2000,576,🐐,goat,literary,historical
+es,La ciudad y los perros,The Time of the Hero,Mario Vargas Llosa,,1963,384,🐕,dog,literary,youth
+es,Como agua para chocolate,Like Water for Chocolate,Laura Esquivel,,1989,246,🍫,chocolate,literary,magic realism
+es,Los de abajo,The Underdogs,Mariano Azuela,,1915,160,🔫,gun,historical,revolution
+es,Confabulario,Confabulario,Juan José Arreola,,1952,160,🎭,mask,literary,short-stories
+es,La tía Julia y el escribidor,Aunt Julia and the Scriptwriter,Mario Vargas Llosa,,1977,384,✒️,pen,literary,romance
+es,Terra Nostra,Terra Nostra,Carlos Fuentes,,1975,816,🌍,globe,literary,historical
+es,La muerte de Artemio Cruz,The Death of Artemio Cruz,Carlos Fuentes,,1962,320,⏳,hourglass,literary,historical
+es,La región más transparente,Where the Air Is Clear,Carlos Fuentes,,1958,480,🌆,cityscape,literary,society
+es,Don Segundo Sombra,Don Segundo Sombra,Ricardo Güiraldes,,1926,292,🐎,horse,literary,rural-life
+es,Martín Fierro,Martín Fierro,José Hernández,,1872,226,🤠,cowboy,poetry,rural-life
+
+fr,Les Misérables,Les Misérables,Victor Hugo,,1862,,1900,👁,eye,drama,social-justice
+fr,Le Petit Prince,The Little Prince,Antoine de Saint-Exupéry,,1943,,96,🦊,fox,philosophical,fable
+fr,Le Comte de Monte-Cristo,The Count of Monte Cristo,Alexandre Dumas,,1844,,464,⛰,sword,drama,revenge
+fr,Notre-Dame de Paris,The Hunchback of Notre-Dame,Victor Hugo,,1831,,940,🏰,cathedral,drama,romance
+fr,Le Rouge et le Noir,The Red and the Black,Stendhal,,1830,,576,🔴⚫,duality,drama,social-climbing
+fr,Vingt mille lieues sous les mers,Twenty Thousand Leagues Under the Sea,Jules Verne,,1870,,288,🦑,submarine,fantasy,adventure
+fr,Les Trois Mousquetaires,The Three Musketeers,Alexandre Dumas,,1844,,704,⚔️,sword,drama,adventure
+fr,Le Tour du monde en quatre-vingts jours,Around the World in Eighty Days,Jules Verne,,1873,,256,🌍,hot-air-balloon,adventure,travel
+fr,Le Père Goriot,Father Goriot,Honoré de Balzac,,1835,,443,💍,coin,drama,social-climbing
+fr,L'Étranger,The Stranger,Albert Camus,,1942,123,🌞,sun,existential,alienation
+fr,La Peste,The Plague,Albert Camus,,1947,308,🐀,rat,existential,epidemic
+fr,Candide,Candide,Voltaire,,1759,144,🌋,volcano,satire,optimism
+fr,Madame Bovary,Madame Bovary,Gustave Flaubert,,1857,365,💔,heart,drama,adultery
+fr,À la recherche du temps perdu,In Search of Lost Time,Marcel Proust,,1913,4215,🕰,clock,novel,society
+fr,Germinal,Germinal,Émile Zola,,1885,591,⛏,pick,realism,social-strife
+fr,Thérèse Raquin,Thérèse Raquin,Émile Zola,,1867,334,🌊,water,drama,guilt
+fr,La Chute,The Fall,Albert Camus,,1956,147,🍷,glass,existential,guilt
+fr,La Jalousie,Jealousy,Alain Robbe-Grillet,,1957,189,🌴,palm,modernist,obsession
+fr,Le Silence de la mer,The Silence of the Sea,Vercors,,1942,76,⚓,anchor,drama,occupation
+fr,Voyage au bout de la nuit,Journey to the End of the Night,Louis-Ferdinand Céline,,1932,505,🚶,walker,novel,war
+fr,Les Particules élémentaires,The Elementary Particles,Michel Houellebecq,,1998,392,🧬,dna,novel,modern-life
+fr,La Condition humaine,Man's Fate,André Malraux,,1933,368,🔫,gun,novel,revolution
+fr,L'Immoraliste,The Immoralist,André Gide,,1902,224,🌵,cactus,novel,self-discovery
+fr,Les Fleurs du mal,The Flowers of Evil,Charles Baudelaire,,1857,247,🌺,flower,poetry,decadence
+fr,Le Deuxième Sexe,The Second Sex,Simone de Beauvoir,,1949,972,♀️,female,sociology,feminism
+fr,Histoire de ma vie,Story of My Life,Giacomo Casanova,,1789,4520,💋,lip,autobiography,adventures
+fr,L'Amant,The Lover,Marguerite Duras,,1984,117,🎎,dolls,drama,love
+fr,Les Justes,The Just Assassins,Albert Camus,,1949,128,💣,bomb,drama,resistance
+fr,Les Gommes,The Erasers,Alain Robbe-Grillet,,1953,250,🔍,magnifying-glass,novel,mystery
+fr,Bonjour tristesse,Hello Sadness,Françoise Sagan,,1954,154,☀️,sun,novel,youth
+fr,Zazie dans le métro,Zazie in the Metro,Raymond Queneau,,1959,221,🚇,metro,novel,language
+fr,Les Yeux jaunes des crocodiles,The Yellow Eyes of Crocodiles,Katherine Pancol,,2006,624,🐊,crocodile,drama,family
+fr,Extension du domaine de la lutte,Whatever,Michel Houellebecq,,1994,163,💼,briefcase,novel,society
+fr,Chanson douce,Lullaby,Leïla Slimani,,2016,227,🍼,bottle,novel,family
+fr,Le Dernier Jour d'un condamné,The Last Day of a Condemned Man,Victor Hugo,,1829,127,⛓,chains,drama,death-penalty
+fr,L'Écume des jours,Froth on the Daydream,Boris Vian,,1947,246,🎺,trumpet,novel,absurdism
+fr,La Horde du Contrevent,The Wind Walkers,Alain Damasio,,2004,736,🌬,wind,fantasy,epic
+fr,L'Insoutenable légèreté de l'être,The Unbearable Lightness of Being,Milan Kundera,,1984,392,🕊,dove,novel,existential
+fr,La Vie devant soi,The Life Before Us,Romain Gary,,1975,221,👩‍🦱,woman-child,drama,society
+
+zh,红楼梦,Dream of the Red Chamber,曹雪芹,Cao Xueqin,1791,,2500,🏯,house,drama,social
+zh,西游记,Journey to the West,吴承恩,Wu Cheng'en,1592,,2000,🐒,monkey,fantasy,adventure
+zh,水浒传,Outlaws of the Marsh,施耐庵,Shi Nai'an,1589,,2300,⚔️,hero,drama,rebellion
+zh,三国演义,Romance of the Three Kingdoms,罗贯中,Luo Guanzhong,1522,,2400,⚔️,sword,drama,war
+zh,道德经,Tao Te Ching,老子,Laozi,600 BC,,81,📜,book,philosophy,taoism
+zh,边城,Border Town,沈从文,Shen Congwen,1934,,260,🌊,boat,drama,rural life
+zh,围城,Fortress Besieged,钱钟书,Qian Zhongshu,1947,,400,🏰,castle,drama,marriage
+zh,射雕英雄传,The Legend of the Condor Heroes,金庸,Jin Yong,1957,,1500,🏹,bow,fantasy,adventure
+zh,平凡的世界,A Ordinary World,路遥,Lu Yao,1991,,1000,🌾,wheat,drama,family
+zh,活着,To Live,余华,Yu Hua,1993,,250,❤️,heartbeat,drama,family
+zh,许三观卖血记,Chronicle of a Blood Merchant,余华,Yu Hua,1995,,300,💉,blood-drop,drama,sacrifice
+zh,家,Family,巴金,Ba Jin,1931,,400,🏠,house,drama,family
+zh,白鹿原,White Deer Plain,陈忠实,Chen Zhongshi,1993,,700,🦌,deer,drama,rural life
+zh,我与地坛,Me and the Temple of Earth,贾平凹,Jia Pingwa,1993,,250,🍂,temple,drama,childhood
+zh,庐山谣,The Lushan Chant,林语堂,Lin Yutang,1937,,350,⛰️,mountain,drama,romance
+zh,草原,The Steppe,巴金,Ba Jin,1937,,320,🌾,grass,drama,nature
+zh,在细雨中呼喊,Calling in the Rain,余华,Yu Hua,1990,,280,☔,rain,drama,youth
+zh,龙族,The Dragon Family,江南,Jiang Nan,2010,,1500,🐉,dragon,fantasy,adventure
+zh,全球通史,The History of the World,罗尔斯,Christopher Beckwith,2011,,400,🌍,globe,history,world-history
+zh,微微一笑很倾城,Just One Smile is Very Alluring,顾漫,Gu Man,2008,,300,💻,computer,romance,online gaming
+
+de,Die Verwandlung,The Metamorphosis,Franz Kafka,,1915,56,🐜,bug,literary,surrealism
+de,Der Prozess,The Trial,Franz Kafka,,1925,304,⚖️,scales,literary,surrealism
+de,Der Zauberberg,The Magic Mountain,Thomas Mann,,1924,1008,🏔,mountain,literary,philosophical
+de,Buddenbrooks,Buddenbrooks,Thomas Mann,,1901,736,🏠,house,literary,family-saga
+de,Steppenwolf,Steppenwolf,Hermann Hesse,,1927,237,🐺,wolf,philosophical,existentialism
+de,Siddhartha,Siddhartha,Hermann Hesse,,1922,152,🌿,leaf,philosophical,spiritual
+de,Das Parfum,Perfume,Patrick Süskind,,1985,263,🌹,rose,literary,crime
+de,Berlin Alexanderplatz,Berlin Alexanderplatz,Alfred Döblin,,1929,606,🌆,cityscape,literary,urban-life
+de,Die Blechtrommel,The Tin Drum,Günter Grass,,1959,576,🥁,drum,literary,history
+de,Im Westen nichts Neues,All Quiet on the Western Front,Erich Maria Remarque,,1929,296,🕊,dove,historical,war
+de,Tod in Venedig,Death in Venice,Thomas Mann,,1912,156,🎭,mask,literary,obsession
+de,Narziß und Goldmund,Narcissus and Goldmund,Hermann Hesse,,1930,368,🎨,art,philosophical,friendship
+de,Doktor Faustus,Doctor Faustus,Thomas Mann,,1947,534,🎻,violin,literary,culture
+de,Die Dreigroschenoper,The Threepenny Opera,Bertolt Brecht,,1928,112,🎭,theater,drama,satire
+de,Effi Briest,Effi Briest,Theodor Fontane,,1895,320,💌,letter,literary,society
+de,Der geteilte Himmel,Divided Heaven,Christa Wolf,,1963,176,✂️,scissors,literary,division
+de,Ansichten eines Clowns,The Clown,Heinrich Böll,,1963,288,🤡,clown,literary,society
+de,Der Vorleser,The Reader,Bernhard Schlink,,1995,216,📖,book,literary,moral-dilemma
+de,Billig. Billig.,Cheap. Cheap.,Josef Hader,,2016,240,💸,money,drama,modern-life
+de,Bekenntnisse des Hochstaplers Felix Krull,Confessions of Felix Krull,Thomas Mann,,1954,384,🎩,hat,literary,con-artist
+de,Die Ratten,The Rats,Gerhart Hauptmann,,1911,96,🐀,rat,drama,society
+de,Der Untertan,The Loyal Subject,Heinrich Mann,,1918,354,🎖,medal,literary,satire
+de,Das Schloss,The Castle,Franz Kafka,,1926,320,🏰,castle,literary,surrealism
+de,Die Marquise von O...,The Marquise of O...,Heinrich von Kleist,,1808,40,⭕,circle,literary,society
+de,Goethe's Faust,Faust,Johann Wolfgang von Goethe,,1808,480,📜,scroll,drama,legend
+de,Werther,The Sorrows of Young Werther,Johann Wolfgang von Goethe,,1774,128,💔,heartbreak,literary,romanticism
+de,Mephisto,Mephisto,Klaus Mann,,1936,416,👹,devil,literary,politics
+de,Der Nachsommer,Indian Summer,Adalbert Stifter,,1857,704,🍂,fallen-leaf,literary,nature
+de,Heimatmuseum,The Heritage,Edgar Reitz,,1988,272,🏠,house,literary,heritage
+de,Tschick,Why We Took the Car,Wolfgang Herrndorf,,2010,256,🚗,car,young-adult,adventure
+
+ru,Война и мир,War and Peace,Лев Толстой,Leo Tolstoy,1869,1225,⚔️,sword,historical,epic
+ru,Анна Каренина,Anna Karenina,Лев Толстой,Leo Tolstoy,1877,864,🚂,train,literary,tragedy
+ru,Преступление и наказание,Crime and Punishment,Фёдор Достоевский,Fyodor Dostoevsky,1866,671,⛏,axe,literary,psychological
+ru,Братья Карамазовы,The Brothers Karamazov,Фёдор Достоевский,Fyodor Dostoevsky,1880,796,📖,book,philosophical,religion
+ru,Идиот,The Idiot,Фёдор Достоевский,Fyodor Dostoevsky,1869,656,❤️,heart,literary,psychological
+ru,Мастер и Маргарита,The Master and Margarita,Михаил Булгаков,Mikhail Bulgakov,1967,384,😺,cat,philosophical,fantasy
+ru,Евгений Онегин,Eugene Onegin,Александр Пушкин,Alexander Pushkin,1833,208,✒️,pen,poetry,romance
+ru,Доктор Живаго,Doctor Zhivago,Борис Пастернак,Boris Pasternak,1957,592,❄️,snowflake,historical,revolution
+ru,Мёртвые души,Dead Souls,Николай Гоголь,Nikolai Gogol,1842,352,👻,ghost,literary,satire
+ru,Отцы и дети,Fathers and Sons,Иван Тургенев,Ivan Turgenev,1862,191,🍂,fallen-leaf,literary,society
+ru,Собачье сердце,Heart of a Dog,Михаил Булгаков,Mikhail Bulgakov,1925,128,🐶,dog,sci-fi,satire
+ru,Оblomов,Oblomov,Иван Гончаров,Ivan Goncharov,1859,608,🛌,bed,literary,society
+ru,Вишнёвый сад,The Cherry Orchard,Антон Чехов,Anton Chekhov,1904,72,🍒,cherry,play,society
+ru,Три сестры,Three Sisters,Антон Чехов,Anton Chekhov,1901,76,👩‍👩‍👧,family,play,society
+ru,Герой нашего времени,A Hero of Our Time,Михаил Лермонтов,Mikhail Lermontov,1840,224,⛰,mountain,literary,romance
+ru,Матрёнин двор,Matryona's Place,Александр Солженицын,Aleksandr Solzhenitsyn,1963,64,🏠,house,literary,society
+ru,Архипелаг ГУЛАГ,The Gulag Archipelago,Александр Солженицын,Aleksandr Solzhenitsyn,1973,1818,🔒,lock,non-fiction,history
+ru,Белая гвардия,The White Guard,Михаил Булгаков,Mikhail Bulgakov,1925,320,⚔️,sword,historical,civil-war
+ru,Колыбельная,Lullaby,Анна Ахматова,Anna Akhmatova,1912,36,🕊,dove,poetry,romance
+ru,Ревизор,The Government Inspector,Николай Гоголь,Nikolai Gogol,1836,100,👓,glasses,play,satire
+ru,Капитанская дочка,The Captain's Daughter,Александр Пушкин,Alexander Pushkin,1836,144,⚔️,sword,historical,romance
+ru,Буря,The Tempest,Александр Островский,Alexander Ostrovsky,1859,92,🌪,cloud,play,society
+ru,Записки из подполья,Notes from Underground,Фёдор Достоевский,Fyodor Dostoevsky,1864,136,✍️,writing,literary,existentialism
+ru,Петербург,Petersburg,Андрей Белый,Andrei Bely,1913,605,🌆,cityscape,literary,symbolism
+ru,День ото дня,Day by Day,Валентин Катаев,Valentin Katayev,1947,472,📅,calendar,historical,war
+ru,Тихий Дон,And Quiet Flows the Don,Михаил Шолохов,Mikhail Sholokhov,1934,1600,🌊,wave,historical,epic
+ru,Красное и чёрное,Red and Black,Михаил Шолохов,Mikhail Sholokhov,1921,95,🟥,red,historical,revolution
+ru,Лето в Бадене,Summer in Baden,Александр Вампилов,Alexander Vampilov,1969,70,🌞,sun,play,romance
+ru,Чайка,The Seagull,Антон Чехов,Anton Chekhov,1895,76,🕊,dove,play,art
+ru,Золотой телёнок,The Little Golden Calf,Илья Ильф,Ilya Ilf; Евгений Петров, Yevgeny Petrov,1931,300,🐄,cow,satire,adventure
+
+jp,源氏物語,The Tale of Genji,紫式部,Murasaki Shikibu,1008,1360,🏯,palace,literary,romance
+jp,こころ,Kokoro,夏目 漱石,Natsume Sōseki,1914,248,❤️,heart,literary,psychological
+jp,夢十夜,Ten Nights of Dreams,夏目 漱石,Natsume Sōseki,1908,48,🌙,moon,literary,dreams
+jp,義経記,The Tale of the Heike,,,1240,800,⚔️,sword,historical,epic
+jp,ノルウェイの森,Norwegian Wood,村上 春樹,Haruki Murakami,1987,389,🌲,tree,literary,romance
+jp,1Q84,1Q84,村上 春樹,Haruki Murakami,2009,1157,🌃,cityscape,literary,magic realism
+jp,霧のむこうのふしぎな町,The Mysterious Town Beyond the Mist,宮沢 賢治,Kenji Miyazawa,1934,42,🌁,fog,literary,fantasy
+jp,雪国,Snow Country,川端 康成,Yasunari Kawabata,1947,175,❄️,snowflake,literary,romance
+jp,千羽鶴,Thousand Cranes,川端 康成,Yasunari Kawabata,1952,147,🏺,teapot,literary,tradition
+jp,女の一生,A Woman's Life,菊池 寛,Kikuchi Kan,1911,200,👩,woman,literary,society
+jp,海と毒薬,The Sea and Poison,遠藤 周作,Shūsaku Endō,1958,192,💉,syringe,literary,war
+jp,沈黙,Silence,遠藤 周作,Shūsaku Endō,1966,256,✝️,cross,literary,religion
+jp,禅僧と硝子細工,Zen Monk and Glasswork,谷崎 潤一郎,Jun'ichirō Tanizaki,1931,50,🧘,meditation,literary,contrast
+jp,細雪,The Makioka Sisters,谷崎 潤一郎,Jun'ichirō Tanizaki,1948,530,🍂,fallen-leaf,literary,family
+jp,夜のピクニック,Night Picnic,深沢 七郎,Shichirō Fukazawa,1957,142,🌌,night-sky,literary,adventure
+jp,戦争と一人の女,One Woman and the War,太宰 治,Osamu Dazai,1946,80,🕊,dove,literary,war
+jp,斜陽,The Setting Sun,太宰 治,Osamu Dazai,1947,240,🌅,sunset,literary,society
+jp,春琴抄,The Tale of the Bamboo Cutter,Anonymous,,10th Century,40,🌕,moon,fantasy,legend
+jp,グッド バイ,Goodbye,吉本 ばなな,Yoshimoto Banana,1988,92,👋,waving-hand,literary,modern life
+jp,キッチン,Kitchen,吉本 ばなな,Yoshimoto Banana,1988,152,🍳,frying-pan,literary,modern life
+jp,モノノ怪,The Apparition,夢野 久作,Kyūsaku Yumeno,1933,200,👻,ghost,literary,supernatural
+
+it,La Divina Commedia,The Divine Comedy,Dante Alighieri,,1320,702,🔥,inferno,poetic,epic
+it,Il Principe,The Prince,Niccolò Machiavelli,,1532,140,👑,crown,philosophy,politics
+it,I Promessi Sposi,The Betrothed,Alessandro Manzoni,,1827,720,💑,couple,literary,historical
+it,Il Gattopardo,The Leopard,Giuseppe Tomasi di Lampedusa,,1958,336,🐆,leopard,literary,historical
+it,Il Giardino dei Finzi-Contini,The Garden of the Finzi-Continis,Giorgio Bassani,,1962,400,🌳,tree,literary,holocaust
+it,Se una notte d'inverno un viaggiatore,If on a winter's night a traveler,Italo Calvino,,1979,260,📚,book,literary,metafiction
+it,Il nome della rosa,The Name of the Rose,Umberto Eco,,1980,512,🌹,rose,literary,mystery
+it,Invisible Cities,Le città invisibili,Italo Calvino,,1972,165,🌆,city,literary,travel
+it,La coscienza di Zeno,Zeno's Conscience,Italo Svevo,,1923,464,🚬,cigarette,literary,psychological
+
+pt,Os Lusíadas,The Lusiads,Luís de Camões,,1572,880,⛵,ship,poetic,epic
+pt,Dom Casmurro,Dom Casmurro,Machado de Assis,,1899,256,👓,glasses,literary,romance
+pt,Memórias Póstumas de Brás Cubas,The Posthumous Memoirs of Bras Cubas,Machado de Assis,,1881,160,💀,skull,literary,satire
+pt,Capitães da Areia,Captains of the Sands,Jorge Amado,,1937,300,🏖,beach,literary,social
+pt,A Moreninha,The Little Brunette,Joaquim Manuel de Macedo,,1844,165,👩,woman,literary,romance
+pt,Amor de Perdição,Doomed Love,Camilo Castelo Branco,,1862,336,❤️,heart,literary,tragedy
+pt,Ensaio sobre a cegueira,Blindness,Jose Saramago,,1995,288,👁,eye,literary,dystopian
+pt,Os Maias,The Maias,José Maria de Eça de Queirós,,1888,704,🏛,mansion,literary,family
+pt,O Evangelho segundo Jesus Cristo,The Gospel According to Jesus Christ,Jose Saramago,,1991,368,✝️,cross,literary,religion

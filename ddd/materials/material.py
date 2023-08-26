@@ -1,5 +1,5 @@
 # DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes
-# Copyright (C) 2021 Jose Juan Montes
+# Copyright (C) 2021-2023 Jose Juan Montes
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -20,15 +20,15 @@ import os
 import numpy as np
 import PIL
 import trimesh
-from csg import geom as csggeom
-from ddd.core.cli import D1D2D3Bootstrap
-from ddd.materials.atlas import TextureAtlas
 from PIL import Image
 from trimesh.scene.scene import Scene, append_scenes
 from trimesh.transformations import quaternion_from_euler
 from trimesh.visual.color import ColorVisuals
 from trimesh.visual.material import PBRMaterial, SimpleMaterial
 from trimesh.visual.texture import TextureVisuals
+
+from ddd.core.cli import D1D2D3Bootstrap
+from ddd.materials.atlas import TextureAtlas
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)

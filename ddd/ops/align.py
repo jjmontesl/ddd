@@ -92,7 +92,7 @@ class DDDAlign():
         """
         Distributes children along a linear geometry reference.
 
-        This method modifies the object chilren in place, returning the same object.
+        This method modifies the object children in place, returning the same object.
         """
         length = reference.length()
         numitems = len(obj.children)

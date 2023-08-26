@@ -1,23 +1,18 @@
 # ddd - D1D2D3
 # Library for simple scene modelling.
-# Jose Juan Montes 2020
+# Jose Juan Montes 2020-2023
 
-import json
 import logging
-import math
+
 import yaml
 
-from shapely import geometry, affinity, ops
-from trimesh import transformations
-from PIL import Image
-
-from ddd.core.exception import DDDException
 from ddd.core.cli import D1D2D3Bootstrap
+from ddd.core.exception import DDDException
 from ddd.ddd import ddd
-
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
+
 
 class DDDYAMLFormat():
 

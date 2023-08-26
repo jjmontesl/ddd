@@ -3,12 +3,13 @@
 # Jose Juan Montes 2020
 
 import logging
-
 from builtins import staticmethod
-from ddd.ddd import ddd
-from svgpathtools import svg2paths
-from svgpath2mpl import parse_path
 
+import numpy as np
+from svgpath2mpl import parse_path
+from svgpathtools import svg2paths
+
+from ddd.ddd import ddd
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ class DDDSVGLoader():
             item = ddd.polygon(coords[0]).clean()  #.convex_hull()
 
             for c in coords[1:]:
-                ng = ddd.polygon(c).clean()  #.convex_hull()
+                ng = ddd.polygon(c).clean(eps=0.0)  #.convex_hull()
                 #ng.show()
                 #print (ng.geom.is_valid)
                 #if not ng.geom.is_valid: continue
@@ -58,6 +59,7 @@ class DDDSVGLoader():
                     item = item.subtract(ng)
                 else:
                     item = item.union(ng)
+                item = item.clean(eps=0.0)
 
             #result = ddd.group([ddd.polygon(c) for c in coords], empty=2)
             result.append(item)
@@ -72,3 +74,29 @@ class DDDSVGLoader():
         #result = ddd.align.anchor(result, ddd.ANCHOR_CENTER)
 
         return result
+
+    @staticmethod
+    def path_to_node2(path):
+        """
+        """
+        mpl_path = parse_path(path)
+        #coords = mpl_path.to_polygons(closed_only=True)
+        geoms_coords = mpl_path.to_polygons(closed_only=False)
+
+        result = ddd.DDDNode2(name="SVGPath")
+        for coords in geoms_coords:
+            if np.array_equal(coords[0], coords[-1]):
+                element = ddd.polygon(coords)
+            else:
+                element = ddd.line(coords)
+            result.append(element)
+        
+        #ddd.trace(locals())
+
+        # Transform in a multiline if needed
+        result = result.union()
+            
+
+        return result
+        
+        

@@ -16,7 +16,7 @@
 
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import (appliances, buildings, common, industrial,
+from ddd.pack.sketchy import (appliances, bathroom, buildings, common, industrial,
                               interior, printing, urban,
                               )
 from ddd.pack.sketchy.urban import (lamp_ball, lamppost, post_arm_angled,
@@ -40,6 +40,13 @@ def pipeline_start(pipeline, root):
     items = ddd.group3()
 
     
+    item = bathroom.wc()
+    items.append(item)
+
+    item = interior.carpet_rect()
+    item.show()
+    items.append(item)
+    
     item = appliances.clock_wall_round()
     items.append(item)
 
@@ -57,6 +64,13 @@ def pipeline_start(pipeline, root):
 
     item = printing.poster_ripped()
     #item.show()
+    items.append(item)
+
+    item = printing.card()
+    item.show()
+    items.append(item)
+
+    item = printing.book()
     items.append(item)
 
     item = printing.poster_flat()

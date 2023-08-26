@@ -36,6 +36,8 @@ class AABox(DDDNode3):
     (Also, are collider coordinates in local space I guess? Better: normalize colliders as nodes like DDDSlots?) 
 
     TODO: Separate from Node3 (should be only "trimesh mesh" if anything, or a primitive) Move to primitives (check Trimesh primitives)
+
+    TODO: Move collision support to 'ext'
     """
 
     @staticmethod

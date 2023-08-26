@@ -5,14 +5,9 @@
 import argparse
 import logging
 
-from ddd.core.command import DDDCommand
 from ddd.pipeline.pipeline import DDDPipeline
-from ddd.util.common import parse_bool
-from shapely.geometry.geo import shape
-
 from ddd.core.commands.run import RunCommand
 
-#from osm import OSMDDDBootstrap
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
@@ -24,6 +19,8 @@ class DescribeCommand(RunCommand):
         logger.info("Describing DDD pipeline: %s", self.script)
 
         pipeline = DDDPipeline(self.script, name="DDD Build Pipeline")
+
+        # TODO: use the text formatter (Jinja2 based) ? (remember to check word-wrapping + indenting for long texts, etc)
 
         for task in pipeline.tasks:
             #logger.info("Task: %s", task)

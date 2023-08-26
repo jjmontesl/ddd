@@ -166,9 +166,12 @@ class D1D2D3():
 
         TODO: consider if this should also/instead return a DDDPath3
         """
-        # TODO: implement (through DDDSVGLoader (?))
-        raise NotImplementedError()
-        
+        from ddd.formats.loader.svgloader import DDDSVGLoader
+
+        result = DDDSVGLoader.path_to_node2(path)
+        if name: result.setname(name)
+        return result
+
     #@staticmethod
     def geometry(self, geometry):
         """
