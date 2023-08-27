@@ -85,8 +85,19 @@ def clock_wall_round_framed(radius=0.24, frame_width=0.03):
     return clock_frame
 
 
+def fan_blade():
+    # TODO: delegate to 'pack.shapes.propellers.blade' or similar
+    pass
+
+def fan_blade_assembly():
+    pass
+
+
+
 """
 TODO:
+
+- Fan + Fan stand + Fan floor + Fan tabletop (+ sim components, also wind affects some objects -paper balls, etc-)
 
 - Microwave Oven
 - Fridge (solid or hollow)
@@ -106,6 +117,4 @@ TODO:
 - Tablet
 - Cellphone Smartphone
 - Cellphone Analog (w antenna)
-
-
 """

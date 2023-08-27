@@ -781,8 +781,7 @@ def gardener(length=2.0):
     pass
 
 
-def bench(length=1.40, height=1.00, width=0.8, seat_height=0.45,
-          legs=2, hangout=0.20):
+def bench(length=1.40, width=0.7, seat_height=0.45, legs=2):
 
     seat_thick = 0.05
     leg_thick = 0.05
@@ -801,7 +800,7 @@ def bench(length=1.40, height=1.00, width=0.8, seat_height=0.45,
         legs_objs.append(leg)
 
     bench = ddd.group([seat] + legs_objs, name="Bench")
-    bench = bench.material(ddd.mats.stone)
+    bench = bench.material(ddd.mats.granite_polished)
     bench = ddd.uv.map_cubic(bench)
     bench.name = "Bench"
     bench.mat = None  # to avoid batching issues
@@ -810,10 +809,25 @@ def bench(length=1.40, height=1.00, width=0.8, seat_height=0.45,
 
     return bench
 
-def bank(length=1.40, height=1.00, seat_height=0.45,
-          legs=2, hangout=0.20, angle=100.0, arms=0):
-    #bench =
-    pass
+
+def bank(length=1.40, width=0.6, height=1.00, seat_height=0.45, legs=2, backrest_angle=10.0, arms=0): 
+    bank_bench = bench(length=length, width=width, seat_height=seat_height, legs=legs)
+    
+    backrest_height = height - seat_height
+    bank_backrest = ddd.rect([-length/ 2.0, 0, length / 2.0, backrest_height], name="Backrest")
+    bank_backrest = bank_backrest.extrude(-0.05)
+    
+    bank_backrest = bank_backrest.material(ddd.mats.granite_polished)
+    bank_backrest = ddd.uv.map_cubic(bank_backrest)
+
+    bank_backrest = bank_backrest.rotate([(90 - backrest_angle) * ddd.DEG_TO_RAD, 0, 0])
+    bank_backrest = bank_backrest.translate([0, width / 2 - 0.05, seat_height])
+
+    bank = ddd.group3([bank_bench, bank_backrest], name="Bank")
+    bank = bank.combine()
+
+    return bank
+
 
 def trash_bin(height=1.20, r=0.35):
     base = ddd.disc(r=r - 0.05, resolution=3)

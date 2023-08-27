@@ -68,21 +68,27 @@ class DefaultMaterials(MaterialsCollection):
         # Structural / building materials
         self.bronze = ddd.material(name="Bronze", color='#f0cb11', metallic_factor=0.95, roughness_factor=0.25)
         self.steel = ddd.material(name="Steel", color='#78839c', metallic_factor=0.975, roughness_factor=0.125)
-        self.metal = ddd.material(name="Steel", color='#68738c', metallic_factor=0.975, roughness_factor=0.125)
+        self.metal = self.steel
 
         self.stone = ddd.material(name="Stone", color='#9c9378')
+
+        self.bricks = ddd.material(name="Bricks", color='#d49156')
+        self.bricks_raw = ddd.material(name="Bricks Raw", color='#d49156')
         self.cement = ddd.material(name="Cement", color='#b8b8a0')
         self.concrete = ddd.material(name="Concrete", color='#a9b7ba')
         self.concrete_planks = ddd.material(name="Concrete Planks", color='#8e999c')
-        self.bricks = ddd.material(name="Bricks", color='#d49156')
-        self.bricks_raw = ddd.material(name="Bricks Raw", color='#d49156')
-        self.marble_white = ddd.material(name="Marble White", color='#c0c3c8', metallic_factor=0.4, roughness_factor=0.05)
 
         self.clay = ddd.material(name="Clay", color='#e57757', metallic_factor=0.02, roughness_factor=0.85)  # E.g. pottery...
+
+        self.granite_polished = ddd.material(name="Granite Polished", color='#9e9380', metallic_factor=0.025, roughness_factor=0.2)
+        self.granite = self.stone
+
+        self.marble_white = ddd.material(name="Marble White", color='#c0c3c8', metallic_factor=0.4, roughness_factor=0.05)
 
         self.porcelain_white = ddd.material("Porcelain White", color='#f2f5fe', metallic_factor=0.2, roughness_factor=0.2)
         self.porcelain = self.porcelain_white
 
+        # Woods and natural materials
         self.wood = ddd.material(name="Wood", color='#efae85', metallic_factor=0.0, roughness_factor=0.7)
         self.wood_planks = ddd.material(name="Wood Planks", color='#b57857', metallic_factor=0.0, roughness_factor=0.6)
         self.wood_planks_stained = ddd.material(name="Wood Planks Stained", color='#856231', metallic_factor=0.0, roughness_factor=0.65)
@@ -120,6 +126,8 @@ class DefaultMaterials(MaterialsCollection):
         # FIXME: ddd:reflection, which semantically relates to mirrors / reflective surfaces (rel: reflection probes) in VRS, should NOT be a default for glass (which does requires env reflections but not necessarily a probe)
         self.glass = ddd.material("Glass", color=[46/255, 65/255, 63/255, 0.5], metallic_factor=0.5, roughness_factor=0.0, extra={'ddd:transparent': True, 'ddd:reflection': True}, alpha_mode='BLEND')  #  , extra={'ddd:transparent': True}
         self.glass_red = ddd.material("Glass Red", color=[255/255, 65/255, 63/255, 0.5], metallic_factor=0.5, roughness_factor=0.0, extra={'ddd:transparent': True, 'ddd:reflection': True}, alpha_mode='BLEND')  #  , extra={'ddd:transparent': True}
+        
+        self.glass_mirror = ddd.material("Glass", color=[46/255, 65/255, 63/255, 0.5], metallic_factor=0.9, roughness_factor=0.0, extra={'ddd:transparent': False, 'ddd:reflection': True})  #  , extra={'ddd:transparent': True}
 
         # Vegetation (trees, hedges)
         self.bark = ddd.material(name="Bark", color='#df9e75')

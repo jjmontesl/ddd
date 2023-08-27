@@ -121,6 +121,10 @@ def pipeline_start(pipeline, root):
     item = urban.busstop_small(text="Bus Stop")
     items.append(item)
 
+    item = urban.bank()
+    item.show()
+    items.append(item)
+
     item = urban.bench()
     items.append(item)
 

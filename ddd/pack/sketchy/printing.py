@@ -108,7 +108,7 @@ def text_note_teared(width=0.210, height=0.297, tear_height_norm=0.75, text="Thi
     hole = hole_broken(width * 2, height * 2, noise_scale=width * 0.05)
     hole = hole.recenter().translate([width * 0.5, -tear_height_norm * height])
 
-    ddd.group([item, hole]).show()
+    #ddd.group([item, hole]).show()
     item = item.subtract(hole)
 
     item = item.triangulate().twosided()

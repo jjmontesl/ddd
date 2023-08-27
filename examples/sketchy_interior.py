@@ -40,11 +40,19 @@ def pipeline_start(pipeline, root):
     items = ddd.group3()
 
     
+    item = bathroom.sink_bathroom()
+    #item.show()
+    items.append(item)
+
     item = bathroom.wc()
     items.append(item)
 
-    item = interior.carpet_rect()
+    item = bathroom.shower()
     item.show()
+    items.append(item)
+
+    item = interior.carpet_rect()
+    #item.show()
     items.append(item)
     
     item = appliances.clock_wall_round()
@@ -67,7 +75,6 @@ def pipeline_start(pipeline, root):
     items.append(item)
 
     item = printing.card()
-    item.show()
     items.append(item)
 
     item = printing.book()

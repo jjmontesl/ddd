@@ -79,6 +79,14 @@ class DDDGeometry():
                            length_seg.geom.coords[1][0] - length_seg.geom.coords[0][0])
 
         return (major_seg, minor_seg, angle)  #, length_seg, width_seg)
+    
+    def inscribed_radius(self, obj):
+        """
+        Return the radius of the smallest circle that can be guaranteed to fit the object.
+        """
+        (axis_major, axis_minor, axis_angle) = self.oriented_axis(obj) 
+        result = Vector2([axis_major.length() / 2.0, axis_minor.length() / 2.0]).length()
+        return result
 
     def remove_holes_split(self, obj):
         """
@@ -268,4 +276,17 @@ class DDDGeometry():
         result = obj.copy()
         result.geom = LineString(coords)
 
+        return result
+    
+    def mirror_x(self, obj, simplify_dist=None):
+        """
+        Mirrors an object around the X axis.
+
+        Note: currently doesn't support children.
+        """
+        result = obj.copy()
+        result = result.append(result.scale([-1.0, 1.0])).union()
+        if simplify_dist:
+            result = result.simplify(simplify_dist)
+        #result = result.clean(eps=0.0)
         return result
