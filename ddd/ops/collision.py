@@ -122,7 +122,7 @@ class DDDCollision():
         bounds = obj.bounds()
         collider = AABox.from_bounds(bounds)
 
-        obj.prop_set('ddd:collider:primitive', collider)
+        obj.set('ddd:collider:primitive', collider)
 
         return obj
 

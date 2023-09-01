@@ -17,7 +17,7 @@ def features_export_2d(root):
     root.save("/tmp/godot-features.json")
 
     root = root.copy().scale([1, -1])
-    root.find("/Features").prop_set('svg:stroke-width', 1.0, children=True)
+    root.find("/Features").set('svg:stroke-width', 1.0, children=True)
     root.find("/Features").save("/tmp/godot-features.svg")
 
 

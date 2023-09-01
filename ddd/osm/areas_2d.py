@@ -40,7 +40,16 @@ class Areas2DOSMBuilder():
             #area_smaller = area.buffer(-0.05)
             #area.set('ddd:area:original', default=area)
             for larger in areas[idx + 1:]:
-                if larger.contains(area):
+                larger_contains_area = None
+                try:
+                    larger_contains_area = larger.contains(area)
+                except Exception as e:
+                    logger.warning("Error calculating area containment (1/2): %s %s", area, larger)
+                    larger = larger.clean(eps=0.01)
+                    area = area.clean(eps=-0.01)
+                    larger_contains_area = larger.contains(area)
+                    
+                if larger_contains_area:
                     #logger.info("Area %s contains %s.", larger, area)
                     area.extra['ddd:area:container'] = larger
                     larger.extra['ddd:area:contained'].append(area)

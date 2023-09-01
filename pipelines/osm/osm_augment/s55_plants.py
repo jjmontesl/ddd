@@ -79,7 +79,7 @@ def osm_augment_trees_annotate(obj, root):
 
     if add_trees:
         obj.extra["ddd:aug:itemfill"] = True
-        obj.prop_set("ddd:aug:itemfill:density", default=0.0025)
+        obj.set("ddd:aug:itemfill:density", default=0.0025)
         # TODO: Change tree type propabilities according to geographic zone
         # ...Different probabilities for planted trees (urban / beach) than from forest (natural flora)
 

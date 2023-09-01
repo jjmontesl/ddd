@@ -1,5 +1,5 @@
 # DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes
-# Copyright (C) 2021 Jose Juan Montes
+# Copyright (C) 2021-2023 Jose Juan Montes
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -26,6 +26,7 @@ from ddd.formats.presentation.generic import Generic3DPresentation
 from ddd.math.transform import DDDTransform
 from trimesh import transformations
 from ddd.ddd import ddd
+from ddd.util.common import parse_bool
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -527,9 +528,6 @@ class DDDNode():
                 if key not in self.extra or self.extra[key] is None:
                     self.extra[key] = default
         return self
-
-    def prop_set(self, key, *args, **kwargs):
-        return self.set(key, *args, **kwargs)
 
     def counter(self, key, add=1):
         """

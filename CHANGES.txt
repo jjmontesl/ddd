@@ -1,4 +1,4 @@
-[0.6.5]
+[0.7.0]
 
   * 5f146d5 - Added carpets, wcs and other minor changes. (hace 2 días) <Jose Juan Montes>
   * 0516b9a - Trying to normalize slots (DDDSlot) and added very basic book generation. (hace 5 días) <Jose Juan Montes>

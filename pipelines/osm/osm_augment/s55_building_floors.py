@@ -29,7 +29,7 @@ def osm_augment_building_levels(root, osm, pipeline, logger):
 def osm_augment_building_levels_select(root, osm, pipeline, logger, obj):
     """
     """
-    obj.prop_set('ddd:augment:building:levels', default=True)
+    obj.set('ddd:augment:building:levels', default=True)
 
 
 @dddtask(path="/Buildings/*", select='["ddd:augment:building:levels"]')

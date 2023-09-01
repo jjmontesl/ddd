@@ -52,7 +52,7 @@ def osm_select_ways_motorway(obj, root):
     obj.extra['ddd:way:lane_width_right'] = 1.5
     obj.extra['ddd:way:lane_width_left'] = 0.8
     obj.extra['ddd:way:roadlines'] = True
-    obj.prop_set('ddd:way:lanes', default=2)
+    obj.set('ddd:way:lanes', default=2)
     root.find("/Ways").append(obj)
 
 
@@ -65,7 +65,7 @@ def osm_select_ways_motorway_link(obj, root):
     obj.extra['ddd:way:lane_width_right'] = 1.5
     obj.extra['ddd:way:lane_width_left'] = 0.8
     obj.extra['ddd:way:roadlines'] = True
-    obj.prop_set('ddd:way:lanes', default=1)
+    obj.set('ddd:way:lanes', default=1)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "trunk"]')
@@ -77,7 +77,7 @@ def osm_select_ways_trunk(obj, root):
     obj.extra['ddd:way:lane_width_right'] = 1.0
     obj.extra['ddd:way:lane_width_left'] = 0.5
     obj.extra['ddd:way:roadlines'] = True
-    obj.prop_set('ddd:way:lanes', default=2)
+    obj.set('ddd:way:lanes', default=2)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "trunk_link"]')
@@ -89,7 +89,7 @@ def osm_select_ways_trunk_link(obj, root):
     obj.extra['ddd:way:lane_width_right'] = 1.0
     obj.extra['ddd:way:lane_width_left'] = 0.5
     obj.extra['ddd:way:roadlines'] = True
-    obj.prop_set('ddd:way:lanes', default=1)
+    obj.set('ddd:way:lanes', default=1)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "primary"]')
@@ -102,7 +102,7 @@ def osm_select_ways_primary(obj, root):
     obj.extra['ddd:way:lane_width_left'] = 0.5
     obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:sidewalk:width'] = 4.0  # TODO: Only inside cities or in bridges
-    obj.prop_set('ddd:way:lanes', default=2)
+    obj.set('ddd:way:lanes', default=2)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "primary_link"]')
@@ -116,7 +116,7 @@ def osm_select_ways_primary_link(obj, root):
     obj.extra['ddd:way:roadlines'] = True
 
     lanes = 1 if obj.extra.get('osm:oneway', False) else 2
-    obj.prop_set('ddd:way:lanes', default=lanes)
+    obj.set('ddd:way:lanes', default=lanes)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "secondary"]')
@@ -129,10 +129,10 @@ def osm_select_ways_secondary(obj, root):
     obj.extra['ddd:way:traffic_signals'] = True
     obj.extra['ddd:way:traffic_signs'] = True
     obj.extra['ddd:way:sidewalk:width'] = 4.0  # TODO: Only inside cities or in bridges
-    obj.prop_set('ddd:way:lamps', default=True)
+    obj.set('ddd:way:lamps', default=True)
 
     lanes = 2 if obj.extra.get('osm:oneway', False) else 3
-    obj.prop_set('ddd:way:lanes', default=lanes)
+    obj.set('ddd:way:lanes', default=lanes)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "tertiary"]')
@@ -144,8 +144,8 @@ def osm_select_ways_tertiary(obj, root):
     obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:traffic_signals'] = True
     obj.extra['ddd:way:traffic_signs'] = True
-    obj.prop_set('ddd:way:lamps', default=True)
-    obj.prop_set('ddd:way:lanes', default=2)
+    obj.set('ddd:way:lamps', default=True)
+    obj.set('ddd:way:lanes', default=2)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "road"]')
@@ -157,8 +157,8 @@ def osm_select_ways_road(obj, root):
     obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:traffic_signals'] = True
     obj.extra['ddd:way:traffic_signs'] = True
-    obj.prop_set('ddd:way:lamps', default=True)
-    obj.prop_set('ddd:way:lanes', default=2)
+    obj.set('ddd:way:lamps', default=True)
+    obj.set('ddd:way:lanes', default=2)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "service"]')
@@ -168,8 +168,8 @@ def osm_select_ways_service(obj, root):
     obj.extra['ddd:way:weight'] = 21
     obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:traffic_signs'] = True
-    obj.prop_set('ddd:way:lamps', default=False)
-    obj.prop_set('ddd:way:lanes', default=1)
+    obj.set('ddd:way:lamps', default=False)
+    obj.set('ddd:way:lanes', default=1)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "residential"]')
@@ -180,11 +180,11 @@ def osm_select_ways_residential(obj, root):
     obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:traffic_signs'] = True
     obj.extra['ddd:way:traffic_signals'] = False
-    obj.prop_set('ddd:way:lamps', default=True)
+    obj.set('ddd:way:lamps', default=True)
     obj.extra['ddd:way:sidewalk:width'] = 4.0  # TODO: Only inside cities or in bridges
 
     lanes = 2 if obj.extra.get('osm:oneway', False) else 2
-    obj.prop_set('ddd:way:lanes', default=lanes)
+    obj.set('ddd:way:lanes', default=lanes)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "living_street"]')
@@ -195,11 +195,11 @@ def osm_select_ways_living_street(obj, root):
     obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:traffic_signs'] = True
     obj.extra['ddd:way:traffic_signals'] = False
-    obj.prop_set('ddd:way:lamps', default=True)
+    obj.set('ddd:way:lamps', default=True)
 
     lanes = 1 if obj.extra.get('osm:oneway', False) else 2
     obj.extra['ddd:way:lane_width'] = 3.2 * 1.2 if lanes == 1 else 3.0
-    obj.prop_set('ddd:way:lanes', default=lanes)
+    obj.set('ddd:way:lanes', default=lanes)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "track"]')
@@ -210,8 +210,8 @@ def osm_select_ways_track(obj, root):
     obj.extra['ddd:way:roadlines'] = False
     obj.extra['ddd:way:traffic_signs'] = True
     obj.extra['ddd:way:traffic_signals'] = False
-    obj.prop_set('ddd:way:lamps', default=False)
-    obj.prop_set('ddd:way:lanes', default=1)
+    obj.set('ddd:way:lamps', default=False)
+    obj.set('ddd:way:lanes', default=1)
     obj.extra['ddd:way:height'] = 0 #0.2
     root.find("/Ways").append(obj)
 
@@ -255,7 +255,7 @@ def osm_select_ways_pedestrian(obj, root):
     obj.extra['ddd:way:width'] = 6.60
     #obj.extra['ddd:way:overlay'] = True  # Calculate after generating areas/sidewalks/squares
     obj = obj.material(ddd.mats.pathwalk)
-    obj.prop_set('ddd:way:lamps', default=True)
+    obj.set('ddd:way:lamps', default=True)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "path"]')
@@ -319,7 +319,7 @@ def osm_select_ways_cycleway(obj, root):
     obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:overlay'] = True
     obj = obj.material(ddd.mats.pitch_red)
-    obj.prop_set('ddd:way:lamps', default=False)
+    obj.set('ddd:way:lamps', default=False)
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "unclassified"]')
@@ -516,21 +516,21 @@ def osm_select_ways_manmade_pier(root, osm, obj):
 @dddtask(order="30.30.40.+", path="/Ways/*")
 def osm_select_ways_default_data(obj, root):
     """Sets default data for ways."""
-    obj.prop_set('ddd:way:weight', default=100)  # Lowest
-    obj.prop_set('ddd:way:lanes', default=None)
-    obj.prop_set('ddd:way:lane_width', default=3.3)
-    obj.prop_set('ddd:way:lane_width_right', default=0.3)  # Forward direction
-    obj.prop_set('ddd:way:lane_width_left', default=0.3)  # Reverse direction
+    obj.set('ddd:way:weight', default=100)  # Lowest
+    obj.set('ddd:way:lanes', default=None)
+    obj.set('ddd:way:lane_width', default=3.3)
+    obj.set('ddd:way:lane_width_right', default=0.3)  # Forward direction
+    obj.set('ddd:way:lane_width_left', default=0.3)  # Reverse direction
 
-    obj.prop_set('ddd:way:roadlines', default=False)
+    obj.set('ddd:way:roadlines', default=False)
 
 
     # TODO: rename as ddd:augment: or whatever
-    obj.prop_set('ddd:way:lamps', default=False)
+    obj.set('ddd:way:lamps', default=False)
     if obj.extra.get('osm:lit', None) is not None:
         obj.extra['ddd:way:lamps'] = parse_bool(obj.get('osm:lit'))
-    obj.prop_set('ddd:way:traffic_signals', default=False)
-    obj.prop_set('ddd:way:traffic_signs', default=False)
+    obj.set('ddd:way:traffic_signals', default=False)
+    obj.set('ddd:way:traffic_signs', default=False)
 
 
 @dddtask(order="30.30.40.+", path="/Ways/*")

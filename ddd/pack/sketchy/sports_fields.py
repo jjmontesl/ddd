@@ -369,7 +369,7 @@ def basketball_hoop():
 
     pole = curvedpost(3.25, arm_length=1.5, corner_radius=0.4).rotate(ddd.ROT_TOP_CCW)
     pole = pole.material(ddd.mats.metal_paint_red)
-    pole.prop_set('uv', None, True)
+    pole.set('uv', None, True)
     pole = pole.translate([0, ring_r + 0.15 + 0.05 + 1.5, 0])
 
     hoop = ddd.group3([pole, board], name="Basketball hoop with pole")

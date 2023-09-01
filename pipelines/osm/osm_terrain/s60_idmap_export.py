@@ -43,12 +43,12 @@ def osm_terrain_export_idmap(root, pipeline, osm, logger):
 
     idmap = root.copy()
     idmap = idmap.remove(idmap.find("/Features"))  # !Altering
-    idmap.prop_set('svg:stroke-width', 0.1, children=True)
-    idmap.prop_set('svg:fill-opacity', 0.7, children=True)
+    idmap.set('svg:stroke-width', 0.1, children=True)
+    idmap.set('svg:fill-opacity', 0.7, children=True)
 
-    #root.find("/Areas").replace(root.find("/Areas").material(ddd.mats.park).prop_set('svg:fill-opacity', 0.6, True))
-    #root.find("/Ways").replace(root.find("/Ways").buffer(1.0).material(ddd.mats.asphalt).prop_set('svg:fill-opacity', 0.8, True))
-    #root.find("/Buildings").replace(root.find("/Buildings").material(ddd.mats.stone).prop_set('svg:fill-opacity', 0.7, True))
+    #root.find("/Areas").replace(root.find("/Areas").material(ddd.mats.park).set('svg:fill-opacity', 0.6, True))
+    #root.find("/Ways").replace(root.find("/Ways").buffer(1.0).material(ddd.mats.asphalt).set('svg:fill-opacity', 0.8, True))
+    #root.find("/Buildings").replace(root.find("/Buildings").material(ddd.mats.stone).set('svg:fill-opacity', 0.7, True))
     #root.find("/Items").replace(root.find("/Items").buffer(1.0).material(ddd.mats.highlight))
 
     #path = pipeline.data['filenamebase'] + ".idmap.svg"
@@ -72,7 +72,7 @@ def osm_terrain_export_idmap(root, pipeline, osm, logger):
     # Save a cropped tileable idmap image of the scene.
     tile = tile.intersection(ddd.shape(osm.area_crop))
     tile = tile.clean()
-    tile.prop_set('svg:stroke-width', 0, children=True)  # 0.01,
+    tile.set('svg:stroke-width', 0, children=True)  # 0.01,
 
     path = pipeline.data['filenamebase'] + ".idmap.png"
     tile.save("/tmp/osm-idmap.png")

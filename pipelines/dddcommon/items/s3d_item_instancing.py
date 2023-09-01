@@ -24,7 +24,7 @@ def generate_item_3d_generic(item_2d, gen_func, name):
 
     #item_3d = item_3d.rotate([0, 0, angle if angle is not None else item_2d.extra['ddd:angle'] - math.pi / 2])
     #item_3d = item_3d.translate([coords[0], coords[1], 0.0])
-    #item_3d.prop_set('ddd:static', False, children=True)  # TODO: Make static or not via styling
+    #item_3d.set('ddd:static', False, children=True)  # TODO: Make static or not via styling
     
     item_3d.name = name
     return item_3d

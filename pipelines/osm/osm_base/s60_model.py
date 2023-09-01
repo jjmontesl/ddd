@@ -240,7 +240,7 @@ def osm_model_generate_buildings(osm, root):
 
 @dddtask(path="/ItemsNodes/*", select='[!"ddd:angle"]')
 def osm_positioning_ensure_angles(pipeline, obj):
-    obj.prop_set('ddd:angle', default=0)
+    obj.set('ddd:angle', default=0)
 
 
 @dddtask(path="/ItemsNodes/*")

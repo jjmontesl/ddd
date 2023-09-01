@@ -19,7 +19,7 @@ def features_export_2d(root):
     root.save("/tmp/features.json")
 
     feats = root.find("/Features2").copy().scale([1, -1])
-    feats.prop_set('svg:stroke-width', 1.0, children=True)
+    feats.set('svg:stroke-width', 1.0, children=True)
     feats.save("/tmp/features.svg")
 
 
