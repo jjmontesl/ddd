@@ -149,6 +149,8 @@ class Areas2DOSMBuilder():
         """
         """
 
+        # TODO: FIXME: This is cutting areas across layers (e.g. elevated pier on Coruña Praia de Santo Amaro). Should it? if so at least it should mark them.
+
         """
         areas_2d_original = ddd.group2()
         for a in areas_2d.children:

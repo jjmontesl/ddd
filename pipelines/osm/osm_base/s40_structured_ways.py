@@ -597,7 +597,13 @@ def osm_structured_areas_subtract_areas_from_interways(pipeline, osm, root, obj,
     cand_geoms = areas_2d.index_query(obj)
 
     if cand_geoms.children:
-        obj = obj.subtract(cand_geoms)
+        try:
+            obj = obj.subtract(cand_geoms)
+        except Exception as e:
+            logger.warning("Could not subtract areas_2d from way (1/1): %s", e)
+            cand_geoms = cand_geoms.clean(eps=-0.01)
+            cand_geoms.validate()
+            obj = obj.subtract(cand_geoms)
 
     if obj.is_empty():
         return False

@@ -165,6 +165,22 @@ def osm_buildings_building_shed(pipeline, osm, root, obj):
     obj = obj.material(ddd.mats.wood)
     return obj
 
+@dddtask(path="/Buildings/*", select='["osm:building" = "tomb"]')
+def osm_buildings_building_tomb(pipeline, osm, root, obj):
+    """
+    Set defaults to tomb buildings.
+    """
+    obj.set('ddd:building:levels', default=1)
+    obj.set('ddd:building:material', default="stone")
+    obj.set('ddd:roof:shape', default="none")
+    obj.set('ddd:building:windows', default=False)  # Mausoleums or packed tombs do not have windows
+    obj.set('ddd:building:doors', default=0)  # Do not add doors to packed tombs
+    #obj.set('ddd:roof:material', default="wood")
+    obj = obj.material(ddd.mats.stone)
+    return obj
+
+
+
 # Materials
 
 @dddtask(path="/Buildings/*", select='["osm:building:material" = "timber_framing"]')

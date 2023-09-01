@@ -26,7 +26,7 @@ from ddd.geo import terrain
 from ddd.osm.buildings.buildings_3d_roof import BuildingsRoofs3DOSMBuilder
 from ddd.pack.sketchy import plants, urban
 from ddd.pack.sketchy.buildings import window_with_border, door, portal
-from ddd.util.common import parse_bool
+from ddd.util.common import parse_bool, parse_int
 from ddd.util.common import parse_meters
 import numpy as np
 
@@ -403,7 +403,8 @@ class Buildings3DOSMBuilder():
 
         # TODO: Temporary, add doors earlier
         doors = 0
-        if floor_num == 0: doors = 1
+        if floor_num == 0: 
+            doors = parse_int(part.get('ddd:building:doors', building_3d.get('ddd:building:doors', 1)))
 
         if len(segments) != len(segments_verts):
             logger.warn("Cannot generate body items floor for building (invalid segment analysis): %s", building_3d)

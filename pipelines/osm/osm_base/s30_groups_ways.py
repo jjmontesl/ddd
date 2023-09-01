@@ -5,6 +5,7 @@
 from ddd.ddd import ddd
 from ddd.osm import osm
 from ddd.pipeline.decorators import dddtask
+from ddd.util.common import parse_bool
 
 
 
@@ -224,6 +225,7 @@ def osm_select_ways_footway(obj, root):
     obj.extra['ddd:way:width'] = 1.5
     obj.extra['ddd:way:lanes'] = 0
     obj.extra['ddd:way:overlay'] = True
+    obj.extra['ddd:way:roadlines'] = False
     obj = obj.material(ddd.mats.pathwalk)  # TODO: Footways/paths are not always dirt
     root.find("/Ways").append(obj)
 
@@ -526,7 +528,7 @@ def osm_select_ways_default_data(obj, root):
     # TODO: rename as ddd:augment: or whatever
     obj.prop_set('ddd:way:lamps', default=False)
     if obj.extra.get('osm:lit', None) is not None:
-        obj.extra['ddd:way:lamps'] = obj.extra['osm:lit']
+        obj.extra['ddd:way:lamps'] = parse_bool(obj.get('osm:lit'))
     obj.prop_set('ddd:way:traffic_signals', default=False)
     obj.prop_set('ddd:way:traffic_signs', default=False)
 

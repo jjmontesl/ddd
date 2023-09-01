@@ -25,6 +25,9 @@ def parse_bool(value):
         return False
     raise DDDException("Could not parse boolean value: %r", value)
 
+def parse_int(value):
+    return int(value)
+
 def parse_xyztile(value):
     x, y, z = value.split(",")
     xyztile = int(x), int(y), int(z)

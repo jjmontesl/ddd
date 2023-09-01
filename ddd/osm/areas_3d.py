@@ -346,7 +346,10 @@ class Areas3DOSMBuilder():
                 if ('way_1d' in area_3d.extra):
                     path = area_3d.extra['way_1d']
                     vertex_func = self.osm.ways1.get_height_apply_func(path)
-                    area_3d = area_3d.vertex_func(vertex_func)
+                    try:
+                        area_3d = area_3d.vertex_func(vertex_func)
+                    except Exception as e:
+                        logger.warning("Error applying Area 3D elevation vertex function on object '%s': %s", area_3d, e)
 
                     apply_layer_height = False  # ddd:height:base is also not applied, as it is applied during area creation (extruded, to avoid
 

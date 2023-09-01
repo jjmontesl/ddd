@@ -544,7 +544,16 @@ class Ways2DOSMBuilder():
                 way = way.subtract(way.extra['way_1d'].extra['intersection_end_2d'])
             if 'ddd:way:intersection:extension' not in way.extra:
                 for ic in way.extra['way_1d'].get('intersection_cap_2d', []):
-                    way = way.subtract(ic)
+                    try:
+                        way = way.subtract(ic)
+                    except Exception as e:
+                        logger.error("Could not subtract intersection cap (1/2) - way: %s, intersection cap: %s - %s", way, ic, e)
+                        # Workaround subtraction
+                        way = way.clean(eps=-0.01)
+                        ic = ic.clean(eps=-0.01)
+                        way.validate()
+                        ic.validate()
+                        way = way.subtract(ic)
 
             '''
             connected = self.follow_way(way.extra['way_1d'], 1)
@@ -554,6 +563,7 @@ class Ways2DOSMBuilder():
             '''
 
             # WARN: This clean() buffer(0.001) is critical for the resolution of roads and intersections, and remove small line fragments (but why? 20210502 - 20211123)
+            # TODO: does it work better if we clean less agresively before all the subtractions?
             way = way.clean(eps=-0.05)
             way = way.buffer(0.001)  # Removing this causes core dumps :?
             if way.is_empty():

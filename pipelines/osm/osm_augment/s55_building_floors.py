@@ -13,7 +13,8 @@ from ddd.geo.sources.population import PopulationModel
 
 
 """
-Assigns building floors where not available.
+This assigns building floors (osm:building:levels) to buildings when not available, 
+using a population database.
 """
 
 #@dddtask(order="45.20.+.+")
