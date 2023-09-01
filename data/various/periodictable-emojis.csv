@@ -1,0 +1,123 @@
+AtomicNumber,Element,IconUnicode,IconKey,IconKeyExplanation
+
+1,H,💧,Water Drop,Symbolizing the key component of water
+2,He,🎈,Balloon,Helium is often filled in balloons
+3,Li,🔋,Battery,Lithium is used in rechargeable batteries
+4,Be,🏔️,Mountain,Beryllium is sourced from minerals in mountains
+5,B,📖,Book,Boron is used in borosilicate glasses, which can be found in some reading glasses
+6,C,💎,Diamond,Carbon forms diamonds under pressure
+7,N,🌀,Cyclone,Nitrogen causes cyclonic activity in the atmosphere
+8,O,🍃,Leaf,Oxygen is essential for plant photosynthesis
+9,F,😁,Grinning Face,Fluoride is used in toothpaste for healthy teeth
+10,Ne,💡,Light Bulb,Neon lights are used in many light bulbs
+11,Na,🧂,Salt Shaker,Represents sodium's presence in table salt (sodium chloride)
+12,Mg,💚,Green Heart,Magnesium is vital for photosynthesis, giving plants their green color
+13,Al,✈️,Airplane,Aluminum is used in aircraft construction
+14,Si,🏖️,Beach,Silicon is abundant in sand, found on beaches
+15,P,💡,Idea,Phosphorescent materials glow, hence the idea/lightbulb association
+16,S,🍳,Frying Egg,Sulfur has that "rotten egg" smell
+17,Cl,🏊‍♂️,Swimmer,Chlorine is commonly used to treat swimming pool water
+18,Ar,🌈,Rainbow,Argon is used in neon lights, which can create rainbow-like colors
+19,K,🍌,Banana,Potassium is abundant in bananas
+20,Ca,🦴,Bone,Calcium is essential for strong bones
+21,Sc,🌌,Galaxy,Scandium is used in some aerospace applications, hence a link to the galaxy
+22,Ti,⛓️,Chains,Titanium is known for its strength and is used in various alloys
+23,V,🍲,Pot,Vanadium is used to make strong steel for pots and pans
+24,Cr,🌟,Sparkling Star,Chrome has a shiny and sparkling appearance
+25,Mn,🧲,Magnet,Manganese is used in alloy steels which can be magnetic
+26,Fe,🔨,Hammer,Iron is a primary component in tools like hammers
+27,Co,🧭,Compass,Cobalt is used in making strong permanent magnets
+28,Ni,🔋,Battery,Nickel is used in certain types of batteries
+29,Cu,🪙,Coin,Copper is commonly used in coins
+30,Zn,🛡️,Shield,Zinc is used in protective galvanizing
+31,Ga,🌡️,Thermometer,Gallium melts near room temperature, used in some thermometers
+32,Ge,🔊,Speaker,Germanium is used in transistors in some electronic devices like speakers
+33,As,🦂,Scorpion,Arsenic, while toxic, is historically associated with the venom of some creatures like scorpions
+34,Se,📷,Camera,Selenium is used in some photocells found in cameras
+35,Br,💡,Light Bulb,Bromine is used in some types of lamps
+36,Kr,💡,Light Bulb,Krypton is used in certain high-performance light bulbs
+37,Rb,⏲️,Timer Clock,Rubidium is used in atomic clocks
+38,Sr,🎆,Firework,Strontium is used in firework to produce a red flame
+39,Y,📱,Mobile Phone,Yttrium is used in some mobile phone screens
+40,Zr,💍,Ring,Zirconium is often found in some decorative crystals used in jewelry
+41,Nb,🌈,Rainbow,Niobium is used in alloys that have superconducting properties, represented by the range of colors in a rainbow.
+42,Mo,🔧,Wrench,Molybdenum is used in steel alloys to enhance strength, commonly found in tools like wrenches.
+43,Tc,⏳,Hourglass,Technetium is the first element with no stable isotopes, represented by the temporary nature of an hourglass.
+44,Ru,💎,Diamond,Ruthenium is used in electrical contacts and is hard like diamonds.
+45,Rh,🚗,Car,Rhodium is used in catalytic converters for cars.
+46,Pd,🦷,Tooth,Palladium is used in dental fillings and crowns.
+47,Ag,🥄,Spoon,Silver is used in utensils like spoons.
+48,Cd,🔋,Battery,Cadmium is used in rechargeable nickel-cadmium batteries.
+49,In,📺,Television,Indium is used in making touchscreens and LCDs of televisions.
+50,Sn,🥫,Can,Tin is used in making cans for food storage.
+51,Sb,🔌,Plug,Antimony is used in semiconductors and some electrical plugs.
+52,Te,📀,CD, Tellurium is used in certain types of CDs and DVDs.
+53,I,🧂,Salt,Iodine is essential for the human diet and is added to table salt.
+54,Xe,💡,Light Bulb,Xenon is used in certain types of high-intensity lamps.
+55,Cs,⏲️,Timer Clock,Cesium is used in atomic clocks.
+56,Ba,📊,Bar Chart,Barium is used in X-ray diagnostic work to highlight certain areas of the body.
+57,La,🔦,Flashlight,Lanthanum is used in the glass used in camera and telescope lenses.
+58,Ce,🧲,Magnet,Cerium is used in making strong magnets.
+59,Pr,📺,Television,Praseodymium is used in coloring glasses and enamels, also in some TV screens.
+60,Nd,🎧,Headphones,Neodymium is used in headphones and loudspeaker magnets.
+AtomicNumber,Element,IconUnicode,IconKey,IconKeyExplanation
+61,Pm,🔍,Magnifying Glass,Promethium is used in luminous paint, where it's applied to watches, clocks, and instruments to be read in the dark.
+62,Sm,🧪,Test Tube,Samarium is used in cancer treatment and in certain nuclear reactors.
+63,Eu,💡,Light Bulb,Europium is used in fluorescent light bulbs.
+64,Gd,💉,Syringe,Gadolinium is used as a contrast agent in MRI scanning.
+65,Tb,🖥️,Monitor,Terbium is used in color television tubes and fluorescent lamps.
+66,Dy,🧲,Magnet,Dysprosium is crucial for the production of hard drive disks and high-performance magnets.
+67,Ho,🌡️,Thermometer,Holmium is used in a variety of electronic equipment and has magnetic properties.
+68,Er,📡,Satellite Dish,Erbium is used in the telecommunications industry, especially in fiber-optic communications.
+69,Tm,🦷,Tooth,Thulium is used in portable X-ray machines and is also found in some dental equipment.
+70,Yb,💰,Money Bag,Ytterbium can be used to help improve the grain refinement, strength, and other mechanical properties of stainless steel.
+71,Lu,🔬,Microscope,Lutetium is used in various research applications and in petroleum refining.
+72,Hf,🔥,Fire,Hafnium is used in equipment that operates at high temperatures.
+73,Ta,📱,Mobile Phone,Tantalum is used in the manufacturing of electronic components, particularly in capacitors for mobile phones.
+74,W,💡,Light Bulb,Tungsten (often referred to as "Wolfram") is used in light bulb filaments.
+75,Re,✈️,Airplane,Rhenium is used in jet engines.
+76,Os,💍,Ring,Osmium, one of the densest elements, is used in fountain pen tips and electrical contacts, and historically in phonograph needles. It forms strong alloys with platinum used in jewelry.
+77,Ir,🖋️,Fountain Pen,Iridium is used in fountain pen tips.
+78,Pt,💍,Ring,Platinum is often used in jewelry due to its resistance to corrosion.
+79,Au,🏅,Medal,Gold (Au) is used in jewelry, coins, and medals.
+80,Hg,🌡️,Thermometer,Mercury is famously known for its use in thermometers.
+81,Tl,🔋,Battery,Thallium was historically used in rat poisons and insecticides, and is now used in some types of batteries.
+82,Pb,🪜,Ladder,Lead is used in batteries, weights, and was historically used in paints and pipes.
+83,Bi,💄,Lipstick,Bismuth compounds are used in cosmetics, particularly in lipstick.
+84,Po,☢️,Radioactive,Polonium is a highly radioactive element.
+85,At,⚗️,Alembic,Astatine is a rare, radioactive element with very few uses, represented by the alembic (a symbol for alchemy and research).
+86,Rn,🏠,House,Radon is a radioactive gas known for its presence in homes and its health risks.
+87,Fr,🔥,Fire,Francium is a highly reactive metal.
+88,Ra,💡,Light Bulb,Radium was historically used in luminous paint for watch dials.
+89,Ac,🌡️,Thermometer,Actinium glows faintly in the dark due to its radioactivity and was named after the Greek word for 'ray'.
+90,Th,☢️,Radioactive,Thorium is a naturally occurring radioactive metal that has been considered as an alternative nuclear fuel.
+91,Pa,📚,Book,Protactinium was first identified in 1913 by Kasimir Fajans and Oswald Helmuth Göhring and was named after the Greek word 'proto', meaning 'first', to highlight its position in the periodic table.
+92,U,☢️,Radioactive,Uranium is a heavy metal used as fuel in nuclear power plants.
+93,Np,🌍,Earth,Neptunium was the first synthetic transuranium element of the actinide series, named after the planet Neptune.
+94,Pu,💥,Explosion,Plutonium is used in nuclear weapons and reactors.
+95,Am,🔋,Battery,Americium is used in smoke detectors and some types of batteries.
+96,Cm,🔬,Microscope,Curium is used in research and has been used in space missions as a heat source.
+97,Bk,📚,Book,Berkelium was named after the city of Berkeley, California.
+98,Cf,🌌,Milky Way,Californium is used in neutron moisture gauges and as a neutron source.
+99,Es,🎉,Tada (Confetti),Einsteinium was named after the physicist Albert Einstein.
+100,Fm,📻,Radio,Fermium was named after physicist Enrico Fermi, and the radio represents Fermi's contributions to the development of the first nuclear reactor.
+101,Md,🩺,Stethoscope,Mendelevium is named after the "father" of the periodic table, Dmitri Mendeleev, and the stethoscope represents the scientific contribution.
+102,No,🚫,No Entry,Nobelium is named after Alfred Nobel, who is known for the Nobel Prizes (and dynamite). The "No Entry" sign is a play on the element's symbol "No".
+103,Lr,🔦,Flashlight,Lawrencium is named after the Lawrence Berkeley National Laboratory; the flashlight represents exploration and discovery.
+
+104,Rf,🌪️,Tornado,Rutherfordium is named after Ernest Rutherford, known for his model of the atom; the tornado represents the dynamic nature of atoms.
+105,Db,🎸,Guitar,Dubnium's naming was controversial between Russian and American scientists. The guitar represents a rock-n-roll (or 'rocky') journey.
+106,Sg,🎤,Microphone,Seaborgium is named after Glenn T. Seaborg, a great scientist and communicator; hence, the microphone.
+107,Bh,🌉,Bridge,Bohrium is named after Niels Bohr; the bridge symbolizes the Bohr model's impact in bridging classical and quantum physics.
+108,Hs,🏞️,Landscape,Hassium is named after the German state of Hesse. The landscape icon represents regions or states.
+109,Mt,🏔️,Mountain,Meitnerium is named after Lise Meitner. The mountain represents the peaks of scientific discovery.
+110,Ds,🎭,Theatre Masks,Darmstadtium is named after the city of Darmstadt. The theatre masks represent the city's cultural significance.
+111,Rg,🌈,Rainbow,Roentgenium is named after Wilhelm Conrad Röntgen, the discoverer of X-rays. The rainbow represents the spectrum of X-rays.
+112,Cn,🖌️,Paintbrush,Copernicium is named after Nicolaus Copernicus. The paintbrush symbolizes the Renaissance period and the art of discovery.
+113,Nh,🍣,Sushi,Nihonium is named after Japan (Nihon in Japanese). Sushi is a well-known Japanese dish.
+114,Fl,🔌,Plug,Flerovium is named after the Flerov Laboratory of Nuclear Reactions. The plug symbolizes the element's connection to nuclear science.
+115,Mc,🌌,Galaxy,Moscovium is named after the Moscow region. The galaxy represents the vastness of scientific exploration.
+116,Lv,🌋,Volcano,Livermorium is named after Lawrence Livermore National Laboratory. The volcano represents explosive discoveries.
+117,Ts,🌪️,Cyclone,Tennessine is named after the state of Tennessee, known for its scientific contributions. The cyclone represents dynamic and transformative research.
+118,Og,🎈,Balloon,Oganesson is named after Yuri Oganessian. Being a noble gas, the balloon symbolizes elements that are typically unreactive and light.
+

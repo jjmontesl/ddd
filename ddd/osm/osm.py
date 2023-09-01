@@ -159,7 +159,6 @@ class OSMBuilder():
 
             try:
                 geom = shape(f['geometry'])
-
             except Exception as e:
                 logger.warn("Could not load feature with invalid geometry (%s): %s", str(f.properties)[:240], e)
                 continue
@@ -174,6 +173,7 @@ class OSMBuilder():
                 logger.debug("Could not load feature (1/2) with invalid geometry (%s): %s", str(f.properties)[:240], e)
                 # Attempt intersection first
                 try:
+                    geom = ddd.shape(geom).clean(eps=0.0).geom
                     geom = geom.intersection(self.area_filter)
                     if self.area_filter.intersects(geom):
                         filtered.append(f)

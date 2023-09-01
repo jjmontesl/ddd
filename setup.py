@@ -15,7 +15,9 @@ setup(
     zip_safe=False,
     include_package_data=True,
     package_data = {
+        # TODO: include data, pipelines, yaml descriptors (?)
         #'sitetool': ['*.template']
+        #'pipelines': ['*']
     },
 
     #url='',

@@ -113,7 +113,9 @@ def osm_model_generate_coastline(osm, root, obj, logger):
     if not coastlines_3d.geom:
         return
 
-    coastlines_3d = coastlines_3d.individualize().extrude(15.0).flip_faces().translate([0, 0, -15.0])
+    coastline_height = 10.0  # Formerly 15.0
+    #coastlines_3d = coastlines_3d.individualize().extrude(coastline_height).flip_faces().translate([0, 0, -coastline_height])
+    coastlines_3d = coastlines_3d.individualize().extrude(coastline_height).translate([0, 0, -coastline_height])
 
     # Subdivide
     if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:

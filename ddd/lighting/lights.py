@@ -5,18 +5,21 @@
 import logging
 from ddd.ddd import ddd
 from ddd.nodes.instance import DDDInstance
+from ddd.nodes.node3 import DDDNode3
 
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
 
 
-class Light(DDDInstance):
+#class Light(DDDInstance):  # formerly lights were instances, but there are issues on export and... they should not be anyway
+class Light(DDDNode3):
     """
-    Base class for light components.
+    Base class for light nodes.
     """
 
     def material(self, material):
+        # Assigning materials to lights is ignored
         logger.debug("Assigning material to light (ignoring): %s", self)
         return self
 
@@ -27,7 +30,7 @@ class PointLight(Light):
 
     def __init__(self, pos=None, name="Light", color="#ffffff", radius=5, intensity=1.05, enabled=True):
 
-        super(PointLight, self).__init__(None, name=name)
+        super(PointLight, self).__init__(name=name)
 
         if pos:
             self.transform.position = pos

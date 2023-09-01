@@ -74,9 +74,9 @@ def osm_init_params(root, pipeline, logger):
 
     xyztile = pipeline.data.get('ddd:osm:area:xyztile', None)
     if xyztile:
-        if ('ddd:osm:area:radius' in pipeline.data or
-            'ddd:osm:area:center' in pipeline.data or
-            'ddd:osm:area:size' in pipeline.data):
+        if (pipeline.data.get('ddd:osm:area:radius', None) or
+            pipeline.data.get('ddd:osm:area:center', None) or
+            pipeline.data.get('ddd:osm:area:size', None)):
             logger.error("Option --xyztile cannot be used with --radius, --center or --size .")
             sys.exit(2)
 

@@ -83,7 +83,7 @@ def osm_materials():
     '''
 
     ddd.mats.grass = ddd.material(name="Grass", color='#2dd355', extra={'uv:scale': 0.5},  # 0.25  # #2dd355
-                                 metallic_factor=0.35, roughness_factor=0.85, index_of_refraction=1.36, bump_strength=2.0,
+                                 metallic_factor=0.05, roughness_factor=0.90, bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_*.png",)
                                  # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Normal.png",
                                  # texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Height.png",)
@@ -315,7 +315,7 @@ def osm_materials():
                                           extra={'uv:scale': 0.5, 'tags': ['plastic', 'pbr', 'rough', 'green', 'coloured']})
 
     # Glass
-    ddd.mats.glass = ddd.material("Glass", color='#2e4163',  # color='#b3b7c0', # extra={'ddd:transparent': True}
+    ddd.mats.glass = ddd.material("Glass", color='#222d47',  # color='#2e4163',  # extra={'ddd:transparent': True}
                               metallic_factor=0.0, roughness_factor=0.0)  # , # index_of_refraction=1.36,)#
 
     # Vegetation (trees, hedges)
@@ -324,11 +324,11 @@ def osm_materials():
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bark06/Bark06_*.jpg",)
                                  # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Bark06/Bark06_nrm.jpg",)
     ddd.mats.treetop = ddd.material(name="Treetop", color='#1da345', extra={'uv:scale': 0.25},
-                                 metallic_factor=0.0, roughness_factor=1.0, bump_strength=2.0,  # index_of_refraction=1.36,
+                                 metallic_factor=0.035, roughness_factor=0.98, bump_strength=2.0,  # index_of_refraction=1.36,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_*.png",)
                                  # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Normal.png",)
     ddd.mats.hedge = ddd.material(name="Hedge", color='#1d9335', extra={'uv:scale': 1.0},  # 0.25
-                                 metallic_factor=0.35, roughness_factor=0.85, index_of_refraction=1.36, bump_strength=2.0,
+                                 metallic_factor=0.025, roughness_factor=0.975, index_of_refraction=1.36, bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_*.png",)
                                  # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Grass01/Grass_01_2K_Normal.png",)
 

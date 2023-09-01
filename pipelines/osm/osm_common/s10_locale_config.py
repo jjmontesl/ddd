@@ -17,7 +17,6 @@ def osm_config_locale_es_salamanca(root, osm, pipeline):
     config = ddd.point([-5.664, 40.965], name="Salamanca Config")
     config.extra['osm:tree:type'] = {'default': 1, 'fir': 0.5}
     #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
-
     pipeline.data['ddd:config:items'].append(config)
 
 @dddtask()
@@ -25,7 +24,6 @@ def osm_config_locale_es_vigo(root, osm, pipeline):
     config = ddd.point([-8.723, 42.238], name="Vigo Config")
     config.extra['osm:tree:type'] = {'default': 1.9, 'fir': 0.1 }  #, 'fir': 1, 'palm': 0.25}
     #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
-
     pipeline.data['ddd:config:items'].append(config)
 
 @dddtask()
@@ -33,7 +31,6 @@ def osm_config_locale_es_huesca(root, osm, pipeline):
     config = ddd.point([-0.4116850, 42.1367415], name="Huesca Config")
     config.extra['osm:tree:type'] = {'default': 1, 'fir': 0.1 }  #, 'fir': 1, 'palm': 0.25}
     #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
-
     pipeline.data['ddd:config:items'].append(config)
 
 @dddtask()
@@ -41,7 +38,13 @@ def osm_config_locale_es_vilanovailageltru(root, osm, pipeline):
     config = ddd.point([1.725,41.224], name="Vilanova i la Geltrú Config")
     config.extra['osm:tree:type'] = {'default': 0.5, 'fir': 0.25, 'palm': 1}
     #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
+    pipeline.data['ddd:config:items'].append(config)
 
+@dddtask()
+def osm_config_locale_es_tenerife(root, osm, pipeline):
+    config = ddd.point([-16.2546046, 28.4530496], name="Santa Cruz de Tenerife")
+    config.extra['osm:tree:type'] = {'default': 0.4, 'fir': 0.05, 'palm': 1}
+    #config.extra['ddd:aug:itemfill:types'] = {'default': 1, 'fir': 1}
     pipeline.data['ddd:config:items'].append(config)
 
 
@@ -54,7 +57,7 @@ def osm_config_locale_apply(logger, root, osm, pipeline):
     items = osm.project_coordinates(items, osm.osm_proj, osm.ddd_proj)
 
     (closest_object, closest_distance) = items.closest(center)
-    logger.info("Config selected: %s (%s m)", closest_object, closest_distance)
+    logger.info("Applying region config: %s (distance: %.2f km)", closest_object, closest_distance / 1000.0)
 
     # Apply config to pipeline
     pipeline.data.update(closest_object.extra)

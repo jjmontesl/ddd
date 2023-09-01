@@ -27,7 +27,7 @@ def osm_augment_rocks_condition(pipeline):
 def osm_augment_rocks_generate_rocks(obj, osm, root):
     """
     """
-    item_density_m2 = 1.0 / 1000.0
+    item_density_m2 = 0.5 / 1000.0
     num_items = int((obj.area() * item_density_m2))
 
     def filter_func_noise(coords):

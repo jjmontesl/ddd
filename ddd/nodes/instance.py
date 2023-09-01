@@ -51,6 +51,9 @@ class DDDInstance(DDDNode):
         """
         return False
 
+    def clean(self, remove_empty=False, validate=True):
+        return self
+
     def translate(self, v):
         obj = self.copy()
         obj.transform.position = [obj.transform.position[0] + v[0], obj.transform.position[1] + v[1], obj.transform.position[2] + v[2]]
@@ -85,10 +88,12 @@ class DDDInstance(DDDNode):
         obj.transform.position = np.dot(rotation_matrix, obj.transform.position + [1])[:3]
 
         rotation_quat = quaternion_from_euler(v[0], v[1], v[2], "sxyz")
-        rotation_quat_conj = quaternion_conjugate(rotation_quat)
-        #rotation_quat_inv = quaternion_inverse(rotation_quat)
-        obj.transform.rotation = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_conj)
-        obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)
+        #rotation_quat_conj = quaternion_conjugate(rotation_quat)
+        ##rotation_quat_inv = quaternion_inverse(rotation_quat)
+        #obj.transform.rotation = transformations.quaternion_multiply(obj.transform.rotation, rotation_quat_conj)
+        #obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)
+
+        obj.transform.rotation = transformations.quaternion_multiply(rotation_quat, obj.transform.rotation)  
 
         return obj
 
@@ -182,6 +187,7 @@ class DDDInstance(DDDNode):
     def expanded_instances(self):
         """
         Return a copy of the referenced node by this DDDInstance.
+        TODO: seems there's some inconsistency about whether this (or rather, catalog-export) needs to include an intermediate node (see catalog export)
         """
         if not self.ref:
             raise DDDException("Cannot expand instance without reference: %s" % (self, ))

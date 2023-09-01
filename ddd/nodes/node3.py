@@ -309,7 +309,6 @@ class DDDNode3(DDDNode):
         if result.mesh:
             flipped_faces = np.fliplr(result.mesh.faces)
             result.mesh.faces = flipped_faces
-            #result.geom = result.geom.simplify(distance)  #, preserve_topology=True)
         result.children = [c.flip_faces() for c in self.children]
         return result    
     

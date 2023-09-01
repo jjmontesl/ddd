@@ -659,7 +659,7 @@ class ItemsOSMBuilder():
         key = "lamppost-default-1"
         item_3d = self.osm.catalog.instance(key)
         if not item_3d:
-            item_3d = urban.lamppost(height=5.5, r=0.35)
+            item_3d = urban.lamppost(height=5.5)
             item_3d = self.osm.catalog.add(key, item_3d)
 
         item_3d.extra.update(item_2d.extra)

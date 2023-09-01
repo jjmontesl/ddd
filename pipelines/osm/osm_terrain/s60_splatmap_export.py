@@ -199,8 +199,12 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
 
     # Spatial index and cached groups
     channel_items_all = {chan_idx: splatmap.find("/Channel%s" % chan_idx) for chan_idx in channel_indexes}
-    channel_items_index = {chan_idx: STRtree(channel_items_all[chan_idx].geom_recursive()) for chan_idx in channel_indexes}
-    channel_items_all_union = {chan_idx: chan.union() for chan_idx, chan in channel_items_all.items()}
+
+    #channel_items_index = {chan_idx: STRtree(channel_items_all[chan_idx].geom_recursive()) for chan_idx in channel_indexes}
+    channel_items_index = {chan_idx: channel_items_all[chan_idx] for chan_idx in channel_indexes}
+    for ci, cia in channel_items_index.items(): cia.index_create()
+
+    #channel_items_all_union = {chan_idx: chan.union() for chan_idx, chan in channel_items_all.items()}
     channel_items_sand_spread_union = splatmap.select('["ddd:material" = "Sand"]["osm:natural" = "beach"]').union()
 
     transformer = pyproj.Transformer.from_proj(osm.ddd_proj, 'epsg:3857', always_xy=True)
@@ -224,8 +228,8 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
 
                 channel_items = channel_items_all[chan_idx]
 
-                cand_geoms = channel_items_index[chan_idx].query(pixel_rect.geom)
-                cand_items = [c._ddd_obj for c in cand_geoms if c.intersects(pixel_rect.geom) and c._ddd_obj in channel_items.children]
+                cand_geoms = channel_items_index[chan_idx].index_query(pixel_rect)  # .geom)
+                cand_items = [c for c in cand_geoms.children if c.intersects(pixel_rect) and c in channel_items.children]
 
                 # Check if intersects and percentage
                 pixel_item = ddd.group2(cand_items).intersection(pixel_rect).union()

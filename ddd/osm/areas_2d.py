@@ -95,9 +95,9 @@ class Areas2DOSMBuilder():
         """
         try:
             union = groups.copy().union_replace()
-            union = union.clean(eps=0.01)
+            #union = union.clean(eps=0.01)
         except TopologicalError as e:
-            logger.debug("Error calculating safe union_safe (1/3): %s", e)
+            logger.info("Error calculating safe union_safe (1/2): %s", e)
             children_unions = []
             for g in groups.children:
                 u = g.clean(eps=0.01).union()
@@ -106,9 +106,12 @@ class Areas2DOSMBuilder():
                 union = ddd.group2(children_unions)
                 union = union.union()
             except TopologicalError as e:
-                logger.error("Error calculating union_safe (2/3): %s", e)
+                logger.error("Error calculating union_safe (2/2): %s", e)
                 #union = groups.clean(eps=0.05).union()  # causes areas overlap?
                 #union = ddd.group2()
+        
+        union.validate()
+
         return union
 
     def generate_areas_2d_ways_interiors(self, union):
@@ -205,8 +208,8 @@ class Areas2DOSMBuilder():
                     area_original_outline = area_original.outline()
                     try:
                         # Margin is used to avoid same way chunk touching original area indefinitely.
-                        # Note that this algorithm is weak and can potentially result in infinite loops (chunks are re-added for processing)
-                        intersects = way_2d.buffer(-0.05).intersects(area_original)  # FIDME: arbitrary 5cm margin
+                        # FIXME: Note that this algorithm is weak and can potentially result in infinite loops (chunks are re-added for processing)
+                        intersects = way_2d.buffer(-0.05).intersects(area_original)  # FIXME: arbitrary 5cm margin
                         intersects_outline = way_2d.intersects(area_original_outline)
                     except Exception as e:
                         logger.error("Could not calculate intersections between way and area: %s %s", way_2d, area_original)

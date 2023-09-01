@@ -50,7 +50,7 @@ def osm_structured_export_2d_tile(root, osm, pipeline):
 
     ]).flatten().select(func=lambda o: o.extra.get('ddd:area:type') != 'underwater')
 
-    tile.dump()
+    #tile.dump()
 
     tile = tile.intersection(ddd.shape(osm.area_crop))
     tile = tile.clean()

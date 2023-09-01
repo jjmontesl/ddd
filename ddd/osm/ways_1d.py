@@ -379,6 +379,9 @@ class Ways1DOSMBuilder():
 
             # logger.info("Transition from %s to %s", height_start, height_end)
 
+            if way.geom.type != "LineString":
+                raise DDDException("Cannot propagate height to non LineString geometry: %s" % way)
+
             coords = way.geom.coords
 
             # Walk segment
@@ -394,7 +397,7 @@ class Ways1DOSMBuilder():
                 # logger.debug("  Distance: %.2f  Height: %.2f", l, h)
                 ncoords.append((pn[0], pn[1], h))
 
-            way.geom.coords = ncoords
+            way.geom = LineString(ncoords)
 
             # way.extra['height_start'] = height_start
             # way.extra['height_end'] = height_end
@@ -425,7 +428,7 @@ class Ways1DOSMBuilder():
             # Find nearest points in path, then interpolate z
             coords = way.geom.coords if way.geom.geom_type == "LineString" else sum([list(g.coords) for g in way.geom.geoms], [])
 
-            way.dump(data='ddd')
+            #way.dump(data='ddd')
             coords_p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = way.closest_segment(ddd.point([x, y]))
             dist_a = math.sqrt( (segment_coords_a[0] - coords_p[0]) ** 2 + (segment_coords_a[1] - coords_p[1]) ** 2 )
             dist_b = math.sqrt( (segment_coords_b[0] - coords_p[0]) ** 2 + (segment_coords_b[1] - coords_p[1]) ** 2 )

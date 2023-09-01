@@ -111,6 +111,12 @@ class PrefabCatalog():
 
         def _clean_loaded(obj):
             obj._trimesh_material_cached = None
+            if hasattr(obj, 'index_clear'):
+                obj.index_clear()
+            if hasattr(obj, 'validate'):
+                obj.validate()
+            if hasattr(obj, 'clean'):
+                obj.clean(remove_empty=False)
 
         if os.path.exists(filename):
             logger.info("Loading catalog object '%s' from: %s", key, filename)
@@ -136,14 +142,18 @@ class PrefabCatalog():
     def export(self, path="catalog.glb"):
         scene = self.all()
 
-        # Expand instances, so their children and content are included in the export
-        scene = scene.expanded_instances()
+        # TODO: seems there's some inconsistency about whether this needs to include an intermediate node (see catalog export)
 
+        # TODO: FIXME: These two were added during VRSpace development, but don't work for dddviewer catalog (causing picking errors due to geometry problems)
+        logger.warn("TODO: Catalog export differs between DDD and VRSpace: review this.")
+        # Expand instances, so their children and content are included in the export
+        #scene = scene.expanded_instances()
         # Currently this is needed to avoid name clashing when importing from side-loaded JSON file (e.g. DDD -> Unity)
-        scene.rename_unique()
+        #scene.rename_unique()
+
+        scene.save(path, instance_mesh=True, instance_marker=True)
 
         path_wo_ext = os.path.splitext(path)[0]
-
         scene.save(path_wo_ext + ".json", instance_mesh=True, instance_marker=True)
-        scene.save(path, instance_mesh=True, instance_marker=True)
+        
 

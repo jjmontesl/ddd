@@ -241,12 +241,6 @@ def lamp_lantern():  # length=0.8, width=0.15, bevel=[0.10, 0.10], color=[1.0, 1
     return lamp
 
 
-def lamp_lantern_wall(length=0.8, width=0.15, bevel=[0.10, 0.10], color=[1.0, 1.0, 1.0]):
-    # TODO: do not create specific wall arm, use slots/connectors instead
-    obj = lamp_lantern(length=length, width=width, bevel=bevel, color=color)
-    return obj
-
-
 def lamp_lantern_grid(height=0.40, width=0.20, thick=0.16, color=[1.0, 1.0, 1.0]):
     
     round = 0.05
@@ -280,29 +274,29 @@ def skylight_grid(length=0.60, width=0.40, thick=0.05, round=0.05, color=[1.0, 1
     margin = 0.025
     border_width = 0.03
     grid_width = 0.02
-    grid_spacing = 0.05
+    grid_spacing = 0.075
 
     base = ddd.rect(([-width / 2, -length / 2], [width / 2, length / 2]))
     if round:
-        base = base.buffer(-round).buffer(round, join_style=ddd.JOIN_ROUND)
+        base = base.buffer(-round).buffer(round, resolution=2, join_style=ddd.JOIN_ROUND)
         
     interior = base.buffer(-border_width)
     
     base = base.subtract(interior)
-    base = base.extrude(thick)
+    base = base.extrude(thick, base=False)
 
     #grid_over = lamp_lantern_case_grid_front(height=height - margin * 2, width=width - margin * 2, thick=thick)
 
     grid = ddd.grid2(interior.bounds(), detail=grid_spacing, adjust=True)
     grid = grid.outline().buffer(grid_width / 2).union().intersection(interior).clean(eps=-0.001)
-    grid = grid.extrude(thick / 4).translate([0, 0, thick / 4])
+    grid = grid.extrude(thick / 4, base=False).translate([0, 0, thick / 4])
 
     obj = base.append(grid)
     #obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
     obj = obj.combine().material(ddd.mats.metal)
     base = ddd.uv.map_cubic(base)
 
-    light_box = interior.extrude(thick / 4)
+    light_box = interior.extrude(thick / 4, base=False)
     light_box = light_box.material(ddd.mats.lightbulb)
     #light_box = lamp_bulb.translate([0, -0.09, 0.11])
     obj.append(light_box)

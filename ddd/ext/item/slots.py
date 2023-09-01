@@ -28,7 +28,8 @@ class DDDSlots():
         slot.set('ddd:slot:parent:ref', obj)
 
         slot.transform.translate(position)
-        if rotation is not None: slot.transform.rotate(rotation)
+        if rotation is not None: 
+            slot.transform.rotate(rotation)
 
         obj.append(slot)
         
@@ -62,6 +63,8 @@ class DDDSlots():
 
         # Connect object to slot
         slot.append(obj2)
+        #obj2.transform = slot.transform.copy()
+        #obj.append(obj2)
 
         # Mark slot as used
         slot.set('ddd:slot:used', True)

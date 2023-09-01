@@ -33,8 +33,8 @@ def osm_positioning_init(pipeline, osm, root, logger):
     pipeline.data['positioning_ways_2d_0_major'] = root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False, empty=2).flatten().filter(lambda i: i.extra.get('osm:highway', None) not in ('path', 'track', 'footway', None))
     #pipeline.data['positioning_ways_2d_0_traffic_sign'] = root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False).flatten().filter(lambda i: i.extra.get('osm:highway', None) not in ('path', 'track', 'footway', None))
     pipeline.data['positioning_buildings_2d'] = root.select(path="/Buildings/*", recurse=False, empty=2)
-    pipeline.data['positioning_ways_2d_0_and_buildings'] = ddd.group([pipeline.data['positioning_ways_2d_0'], pipeline.data['positioning_buildings_2d']], empty=2).individualize().clean(eps=0.01)
-    pipeline.data['positioning_areas_ways_2d_outline'] = ddd.group([root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False).outline(), root.select(path="/Areas/*", selector='["osm:layer" = "0"]', recurse=False).outline()])
+    pipeline.data['positioning_ways_2d_0_and_buildings'] = ddd.group2([pipeline.data['positioning_ways_2d_0'], pipeline.data['positioning_buildings_2d']], empty=2).individualize().clean(eps=0.01)
+    pipeline.data['positioning_areas_ways_2d_outline'] = ddd.group2([root.select(path="/Ways/*", selector='["osm:layer" = "0"]', recurse=False, empty=2), root.select(path="/Areas/*", selector='["osm:layer" = "0"]', recurse=False, empty=2)]).outline()
 
 
 # TODO: Tag earlier, during items creation

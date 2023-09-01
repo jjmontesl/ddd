@@ -20,6 +20,7 @@ import PIL
 from ddd.ddd import ddd, DDDMaterial
 from ddd.pipeline.decorators import dddtask
 import numpy as np
+
 import osm_base.s10_init
 
 
@@ -56,7 +57,8 @@ def materials_list(root):
                     DDDMaterial._texture_cache[mat.texture] = image_linear
                 '''
 
-                marker = ddd.marker(name=mat.name)
+                #marker = ddd.marker(name=mat.name)
+                marker = ddd.box(name=mat.name)
                 marker = marker.material(mat)
                 mats.append(marker)
                 added_names.append(mat.name)
@@ -65,6 +67,7 @@ def materials_list(root):
 def materials_show(root):
     mats = root.find("/Materials")
     mats = ddd.align.grid(mats, space=2.0)
+    mats.dump()
     mats.show()
 
 @dddtask()

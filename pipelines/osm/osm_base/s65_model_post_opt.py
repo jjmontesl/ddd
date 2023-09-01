@@ -112,7 +112,11 @@ def osm_models_instances_buffers_items(pipeline, osm, root, logger):
     """
     Generates geometry instancing buffers for repeated scenery DDDInstance objects.
     """
-    keys = ('grassblade', 'grassblade-dry')
+    keys = ('grassblade', 'grassblade-dry', 'flowers-blue', 'flowers-roses', 
+            'natural-rock-1', 'natural-rock-2', 'natural-rock-3', 'natural-rock-4',
+            'tree-bush-1', 'tree-bush-2', 'tree-bush-3', 'tree-bush-4', 'tree-bush-5',
+            'tree-reed-1', 'tree-reed-2', 'tree-reed-3', 'tree-reed-4', 'tree-reed-5',
+            )
 
     for key in keys:
         instances = root.select(path="/Items3/*", selector='["ddd:instance:key" = "%s"]' % key)

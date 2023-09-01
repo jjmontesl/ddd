@@ -81,7 +81,7 @@ class Buildings2DOSMBuilder():
 
             #candidate_parents = buildings_2d._strtree.query(feature_margin.geom)
             candidate_parents = buildings_2d.index_query(feature_margin)
-            building_parents = [o for o in candidate_parents if o.get('osm:building', None) and o != feature and o.contains(feature_margin) and o in features_2d_original]
+            building_parents = [o for o in candidate_parents.children if o.get('osm:building', None) and o != feature and o.contains(feature_margin) and o in features_2d_original]
             building_parents = ddd.group2(building_parents)
 
             if len(building_parents.children) == 0:

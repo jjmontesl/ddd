@@ -60,7 +60,9 @@ class DDDNode2(DDDNode):
     def __init__(self, name=None, children=None, geom=None, extra=None, material=None, transform=None):
         super().__init__(name, children, extra, material, transform)
         self.geom = geom
+        
         self._strtree = None
+        self._reftable = None
 
     def __repr__(self):
         return "%s (%s %s %sv %dc)" % (self.name, self.__class__.__name__, self.geom.geom_type if hasattr(self, 'geom') and self.geom else None, self.vertex_count() if hasattr(self, 'geom') else None, len(self.children) if self.children else 0)
@@ -127,6 +129,7 @@ class DDDNode2(DDDNode):
         """
         Returns a list of candidate geometries that **potentially** intersect with the given geometry.
         """
+        assert not other.children
         cand_geoms = self._strtree.query(other.geom)
         result = ddd.group2([self._reftable[id(cg)] for cg in cand_geoms])
         return result
@@ -455,24 +458,15 @@ class DDDNode2(DDDNode):
         #if not result.intersects(other):
         #    return result
 
-        '''
-        if self.geom and other.geom:
-            try:
-                diffgeom = result.geom.difference(other.geom)
-                result.geom = diffgeom
-            except Exception as e:
-                logger.error("Error subtracting geometry. Trying cleaning.")
-                result = result.clean(eps=0.01)
-                if result.geom:
-                    try:
-                        diffgeom = result.geom.difference(other.geom)
-                        result.geom = diffgeom
-                    except Exception as e:
-                        raise DDDException("Cannot subtract geometries: %s - %s: %s" % (self, other, e),
-                                           ddd_obj=ddd.group2([self, other.material(ddd.mats.highlight)]))
-        '''
-
         if other.children or (self.geom and self.geom.geom_type in ('MultiPolygon', 'GeometryCollection')):
+            
+            # As an optimization, if 'other' has an index, use it to query for geometries that intersect with this one
+            '''
+            if other._strtree:
+                cand_geoms = other.index_query(self)
+                other = cand_geoms
+            '''
+            
             other = other.union()
 
         #for c in other.children:
@@ -571,6 +565,7 @@ class DDDNode2(DDDNode):
         if not self.geom:
             return 0
         elif self.geom.geom_type == 'MultiPolygon':
+            # TODO: Should we count all coords (interior too?)
             return sum([len(p.exterior.coords) for p in self.geom.geoms])
         elif self.geom.geom_type == 'MultiLineString':
             return sum([len(p.coords) for p in self.geom.geoms])
@@ -579,6 +574,8 @@ class DDDNode2(DDDNode):
         elif self.geom.geom_type == 'Polygon':
             if self.geom.is_empty: return 0
             return len(self.geom.exterior.coords) + sum([len(i.coords) for i in self.geom.interiors])
+        elif self.geom.geom_type == 'GeometryCollection':
+            return sum([ddd.shape(g).vertex_count() for g in self.geom.geoms])
         else:
             try:
                 return len(self.geom.coords)
@@ -603,10 +600,13 @@ class DDDNode2(DDDNode):
                         nnints.append([(c[0], c[1]) for c in gi.coords])
                     pols.append(Polygon(nnext, nnints))
                 result.geom = MultiPolygon(pols)
+            elif result.geom.geom_type == "LineString":
+                result.geom = LineString([(c[0], c[1]) for c in result.geom.coords])
             elif result.geom.geom_type == "MultiLineString":
-                for g in result.geom.geoms:
-                    g.coords = [(c[0], c[1]) for c in g.coords]
-                    #g.coords[:,2] = 0
+                result.geom = MultiLineString(([(c[0], c[1]) for c in g.coords] for g in result.geom.geoms))
+                #for g in result.geom.geoms:
+                #    g.coords = [(c[0], c[1]) for c in g.coords]
+                #    #g.coords[:,2] = 0
             elif result.geom.geom_type == "Polygon":
                 #result.geom.exterior.coords = [(x, y) for (x, y, _) in result.geom.exterior.coords]
                 #for g in result.geom.interiors:
@@ -618,7 +618,9 @@ class DDDNode2(DDDNode):
                 result.geom = Polygon(nnext, nnints)
 
             else:
+                logger.warn("FIXME: remove_z() not implemented for geometry type: %s", result.geom.geom_type)
                 result.geom.coords = [(c[0], c[1]) for c in result.geom.coords]
+
         result.children = [c.remove_z() for c in result.children]
         return result
 
@@ -664,8 +666,15 @@ class DDDNode2(DDDNode):
                 result = result.individualize()
 
         objs = result.children
-        result.children = []
 
+        geoms = result.recurse_geom() + (other.recurse_geom() if other else [])
+
+        result.children = []
+        result_geom = ops.unary_union(geoms)
+        result.geom = result_geom
+        return result
+
+        '''
         if len(objs) > 0:
             objs[0].union_replace()
             while len(objs) > 1:
@@ -701,6 +710,7 @@ class DDDNode2(DDDNode):
                 result.geom = union.geom
 
         return result
+        '''
 
     def intersection(self, other):
         """
@@ -1206,11 +1216,14 @@ class DDDNode2(DDDNode):
         """
         Orients a line so it starts from the closest point to `other` object.
         """
+        if self.geom.type != 'LineString':
+            raise DDDException("Cannot orient_from() a non LineString geometry: %s" % self.geom.type)
+        
         result = self.copy()
         dist_0 = other.distance(ddd.point(self.geom.coords[0]))
         dist_1 = other.distance(ddd.point(self.geom.coords[-1]))
         if dist_1 < dist_0:
-            result.geom.coords = reversed(list(result.geom.coords))
+            result.geom = LineString(reversed(list(result.geom.coords)))
         return result
 
     def simplify(self, distance):
@@ -1466,13 +1479,17 @@ class DDDNode2(DDDNode):
         This method mutates the object.
         """
 
+        if self.geom.type != "LineString":
+            raise DDDException("Cannot insert vertex on non LineString geometry: %s" % self)
+
         coords, segment_idx, segment_coords_a, segment_coords_b = self.interpolate_segment(distance)
 
         dist1 = np.linalg.norm(np.array(coords) - np.array(segment_coords_a))
         dist2 = np.linalg.norm(np.array(coords) - np.array(segment_coords_b))
 
         if dist1 > ddd.EPSILON and dist2 > ddd.EPSILON:
-            self.geom.coords = self.geom.coords[:segment_idx + 1] + [coords] + self.geom.coords[segment_idx + 1:]
+            #self.geom.coords = self.geom.coords[:segment_idx + 1] + [coords] + self.geom.coords[segment_idx + 1:]
+            self.geom = LineString(self.geom.coords[:segment_idx + 1] + [coords] + self.geom.coords[segment_idx + 1:])
 
         return coords
 

@@ -263,14 +263,17 @@ class Areas3DOSMBuilder():
 
             else:
                 logger.debug("Generating Area: %s" % area_2d)
+                #area_2d.dump(data=True)
 
                 # Validate area (areas should be correct at this point, but this avoids core dumps in triangulate())
                 try:
-                    area_2d = area_2d.clean(eps=-0.01)  # 0.01 didn't work for fixing errors
+                    #area_2d = area_2d.clean(eps=-0.01)  # 0.01 didn't work for fixing errors
+                    #area_2d = area_2d.clean(eps=-0.05)
+                    area_2d = area_2d.clean(eps=0.00)
                     area_2d.validate()
                 except Exception as e:
                     logger.warn("Invalid area %s: %s", area_2d, e)
-                    return None
+                    return #None ddd.DDDObject3()  #None
 
 
                 try:
@@ -290,8 +293,12 @@ class Areas3DOSMBuilder():
                             area_3d = ddd.meshops.remove_faces_pointing(area_3d, ddd.VECTOR_DOWN)
 
                     else:
+                        # Segment violation happens here (core dump)
                         area_3d = area_2d.triangulate()
-                    area_3d = ddd.uv.map_cubic(area_3d)
+
+                    #print("Map Cubic")
+                    #area_3d = ddd.uv.map_cubic(area_3d)
+
                 except Exception as e:
                     logger.error("Could not generate area: %s (%s)", e, area_2d)
                     area_3d = ddd.DDDObject3()

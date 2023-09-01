@@ -120,7 +120,7 @@ class DDDMeshOps():
             #obj.mesh.remove_degenerate_faces()
             #print(obj.mesh.vertices.shape)
 
-        obj.children = [self.remove_faces_pointing(c, obj, func) for c in obj.children]
+        obj.children = [self.filter_faces_func(c, obj, func) for c in obj.children]
 
         return obj
 

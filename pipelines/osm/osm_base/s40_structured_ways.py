@@ -96,6 +96,8 @@ def osm_structured_split_ways_by_crossing(osm, root, obj, logger):
                 continue
 
             #crossing_point_in_way_start, segment_idx, segment_coords_a, segment_coords_b = way.interpolate_segment(crossing_distance_in_way_start)
+            
+            # This used to support any geometry, but now only supports LineString
             crossing_point_in_way_start = way.insert_vertex_at_distance(crossing_distance_in_way_start)
 
             #ddd.group2([way.buffer(0.5), ddd.point(crossing_point_in_way_start).buffer(2.0)]).show()
@@ -328,17 +330,18 @@ def osm_structured_generate_areas_interways_phase1_ways_sidewalks(pipeline, osm,
 
     # TODO: if done, this shall generate at different layers and according to way metadata
 
-    logger.info("Generating sidewalks for ways.")
-    ways = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]["ddd:way:sidewalk:width"]')
+    logger.info("Generating sidewalks for ways - calculating ways and areas union")
 
     # Calculate union
-    union = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"]').union()
+    union = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]').union()
     union = union.append(pipeline.data['buildings_level_0'])
     union = union.append(root.find("/Areas"))
-    union = osm.areas2.generate_union_safe(union)
+    union = osm.areas2.generate_union_safe(union.flatten())
     union = union.clean()
 
     # Buffer sidewalks
+    ways = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]["ddd:way:sidewalk:width"]')
+    logger.info("Generating sidewalks for ways - buffering sidewalks")
     sidewalks = ddd.group2()
     for sidewalk in ways.flatten().children:
         sidewalk_width = sidewalk.get('ddd:way:sidewalk:width', None)
@@ -349,6 +352,7 @@ def osm_structured_generate_areas_interways_phase1_ways_sidewalks(pipeline, osm,
     sidewalks = sidewalks.union().subtract(union).individualize(always=True).flatten().clean(eps=0.0)  # -0.01)
 
     # Construct sidewalks 2D
+    logger.info("Generating sidewalks for ways - constructing sidewalks 2d")
     for sidewalk in sidewalks.children:
 
         if sidewalk.is_empty(): continue
@@ -519,7 +523,8 @@ def osm_structured_generate_areas_ground_fill(pipeline, osm, root, logger):
     union.append(buildings)
 
     union = osm.areas2.generate_union_safe(union)
-    union = union.clean(eps=0.01)  # Removing this causes a core dump during 3D generation
+    #union = union.union()
+    union = union.clean(eps=-0.01)  # Removing this causes a core dump during 3D generation
 
     terr = ddd.rect(area_fill.bounds, name="Ground")
     terr = terr.material(ddd.mats.terrain)
@@ -534,8 +539,6 @@ def osm_structured_generate_areas_ground_fill(pipeline, osm, root, logger):
         return
 
     root.find("/Areas").append(terr)
-
-
 
 
 
@@ -571,20 +574,43 @@ def osm_structured_areas_subtract_buildings(pipeline, osm, root, obj, logger):
     obj = obj.subtract(buildings)
     return obj
 
+
 @dddtask()
 def osm_structured_areas_calculate_areas_subtract(pipeline, osm, root, logger):
-    """"""
+    """
+    Select all areas 
+    """
     areas_2d = root.find("/Areas").select('["ddd:layer" = "%s"][!"ddd:area:interways"]' % 0)
-    areas_2d = areas_2d.union()
+    #areas_2d = areas_2d.union()
+    #areas_2d = areas_2d.copy()
+    areas_2d.index_create()
     pipeline.data['areas_2d_level_0'] = areas_2d
 
 @dddtask(path="/Areas/*", select='["ddd:area:interways"]')
 def osm_structured_areas_subtract_areas_from_interways(pipeline, osm, root, obj, logger):
+    """
+    """
+
     areas_2d = pipeline.data['areas_2d_level_0']
-    obj = obj.subtract(areas_2d)
+
+    # Use index to find areas that intersect with this one
+    cand_geoms = areas_2d.index_query(obj)
+
+    if cand_geoms.children:
+        obj = obj.subtract(cand_geoms)
+
     if obj.is_empty():
         return False
+    
     return obj
+
+@dddtask()
+def osm_structured_areas_calculate_areas_subtract_clean(pipeline, osm, root, logger):
+    """
+    Select all areas 
+    """
+    pipeline.data['areas_2d_level_0'].index_clear()
+    del(pipeline.data['areas_2d_level_0'])
 
 
 @dddtask()
@@ -766,7 +792,7 @@ def osm_structured_splatmap_materials(pipeline, osm, root, logger):
     """
     Mark materials for splatmap usage.
     """
-    root.find("/Areas").select('[ddd:layer="0"]([!ddd:height];[ddd:height = 0])').set('ddd:material:splatmap', True, children=True)
+    root.find("/Areas").select('[ddd:layer="0"]([!ddd:height];[ddd:height = 0];[osm:natural="bare_rock"])').set('ddd:material:splatmap', True, children=True)
     root.find("/Ways").select('[ddd:layer="0"][ddd:area:type != "stairs"]').set('ddd:material:splatmap', True, children=True)
 
 @dddtask(order="40.80.+")

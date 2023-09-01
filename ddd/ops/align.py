@@ -16,7 +16,7 @@ class DDDAlign():
 
     def grid(self, obj, space=5.0, width=None):
         """
-        Distribute children in a grid.
+        Distribute children in a grid, by altering the object transforms.
         """
 
         if width is None:
@@ -27,10 +27,11 @@ class DDDAlign():
             col = idx % width
             row = int(idx / width)
             pos = [col * space, row * space, 0.0]
-            result.append(c.translate(pos))
+            #result.append(c.translate(pos))
+            c.transform.translate(pos)
             col += 1
 
-        obj.children = result
+        #obj.children = result
 
         return obj
 
@@ -79,6 +80,8 @@ class DDDAlign():
 
         Recenters an object around a given anchor.
         Anchor is a normalized vector relative to the object's bounding box.
+        
+        This alters object's geometry in place, as well as its children TODO: what should happen to intermediate transforms?
         """
         (xmin, ymin, _), (xmax, ymax, _) = obj.bounds()
         center = (xmin + (xmax - xmin) * anchor[0], ymin + (ymax - ymin) * anchor[1])

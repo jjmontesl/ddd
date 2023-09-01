@@ -29,15 +29,20 @@ def example_catalog(pipeline, root, logger):
 
     items = ddd.DDDNode3(name="Items")
 
+    # Rotate elements to test instance rotation works correctly
     for i in range(6):
         item = catalog.instance('prefab1')
+        #item = item.rotate([0, 0, i * -ddd.PI_OVER_3])
+        item.transform.rotate([0, 0, i * -ddd.PI_OVER_3])
         items.append(item)
     for i in range(6):
         item = catalog.instance('prefab2')
+        item = item.rotate([0, 0, i * -ddd.PI_OVER_3])
+        #item.transform.rotate([0, 0, i * -ddd.PI_OVER_3])
         items.append(item)
 
     # All items
-    items = ddd.align.grid(items, space=10.0)
+    items = ddd.align.grid(items, space=10.0, width=6)
     root.append(items)
 
     root.append(ddd.helper.all())

@@ -25,6 +25,7 @@ def osm_model_export_3d(root, osm, pipeline, logger):
 
 
     #root.dump()
+    #root = root.clean()  # Test (issues with Babylon picking - meshes with no or invalid indices or vertices)
     root.save(pipeline.data['filenamebase'] + ".glb")
 
     # PNG

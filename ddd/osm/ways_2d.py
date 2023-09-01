@@ -205,7 +205,8 @@ class Ways2DOSMBuilder():
                     #    votes_name_list = sorted([(k, v) for k, v in votes_name.items()], key=lambda o: len(o[1]))  # Sort by surfaces
                     #    highest_ways = votes_name_list[-1][1]
             else:
-                logger.warn("Intersection with no highest ways: %s", intersection)
+                #logger.warn("Intersection with no highest ways: %s", intersection)
+                #logger.debug("Intersection with no highest ways: %s", intersection)
                 highest_ways = [j.way for j in intersection]
 
             # Generate intersection geometry

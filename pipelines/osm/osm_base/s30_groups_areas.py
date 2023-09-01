@@ -325,7 +325,7 @@ def osm_groups_areas_natural_bare_rock(obj, osm):
     obj.name = "Bare Rock: %s" % obj.name
     obj.extra['ddd:area:type'] = "default"
     obj = obj.material(ddd.mats.rock)
-    obj.extra['ddd:height'] = 0.40
+    obj.extra['ddd:height'] = 0.25
     return obj
 
 @dddtask(path="/Areas/*", select='["osm:natural" = "scree"]')  # scree: pedregal

@@ -37,3 +37,4 @@ class CatalogShowCommand(DDDCommand):
         #items.show()
         
         catalog.show()
+

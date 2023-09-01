@@ -106,7 +106,7 @@ def pipeline_start(pipeline, root):
     items.append(item)
 
     item = buildings.door()
-    #item.show()
+    item.show()
     items.append(item)
 
     #item = buildings.door()

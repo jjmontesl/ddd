@@ -22,7 +22,7 @@ def wc_cistern(height=0.8 - 0.42, width=0.36, depth=0.16):
     WC cistern (water tank).
     """
 
-    # TODO: This construction (beveled trapezoid box) should be in the "shapes" pack (e.g. shapes.volumes.parallelepiped)
+    # TODO: This construction (beveled trapezoid box) should be in the "shapes" pack (e.g. shapes.volumes.parallelepiped) - cistern, shopping baskets, tray containers...
     base = ddd.rect([width, depth - 0.03]).translate([-width / 2, - (depth - 0.03)])
     base = base.buffer(-0.01).buffer(0.01, join_style=ddd.JOIN_BEVEL)
     top = base.scale([1, (depth + 0.03) / depth])

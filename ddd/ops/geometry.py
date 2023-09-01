@@ -246,7 +246,7 @@ class DDDGeometry():
         if obj.children:
             raise NotImplementedError()
 
-        geom_b.exterior.coords = LinearRing(coords_b)
+        #geom_b.exterior.coords = LinearRing(coords_b)
         obj.geom = Polygon(coords_b, obj.geom.interiors)
         return obj
 
