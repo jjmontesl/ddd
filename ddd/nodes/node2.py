@@ -1208,7 +1208,13 @@ class DDDNode2(DDDNode):
     def orient(self, ccw=True):
         result = self.copy()
         if result.geom:
-            result.geom = polygon.orient(result.geom, 1 if ccw else -1)
+            if result.geom.type == 'Polygon':
+                result.geom = polygon.orient(result.geom, 1 if ccw else -1)
+            elif result.geom.type == 'MultiPolygon':
+                result.geom = MultiPolygon([polygon.orient(p, 1 if ccw else -1) for p in result.geom.geoms])
+            elif result.geom.type == 'GeometryCollection':
+                logger.error("Cannot orient GeometryCollection: %s", result.geom)
+
         result.children = [c.orient(ccw) for c in self.children]
         return result
 

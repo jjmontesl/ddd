@@ -251,6 +251,11 @@ def osm_materials():
                                          texture_path=ddd.DATA_DIR + "/osmmaterials/Marble012/Marble012_2K_*.jpg",)
     ddd.mats.marble = ddd.mats.marble_white
 
+    # Tiles (bathrooms, kitchens, pools) - made of porcelain, etc (not floor or wooden tiles)
+    ddd.mats.porcelain_tiles_blue = ddd.material("Porcelain Tiles Blue", color='#1a6fbf', 
+                                             metallic_factor=0.1, roughness_factor=0.3,
+                                             texture_path=ddd.DATA_DIR + "/osmmaterials/.../_*.*",)
+
 
     # ddd.mats.stone = ddd.material(name="Stone", color='#484846', # Solid stone material, for waycross, beams, or similar (not to be confused with stones, in plural, though may be using the same texture)
     #                              texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",

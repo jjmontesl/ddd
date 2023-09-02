@@ -323,6 +323,7 @@ def osm_model_elevation_apply_min_height(obj, osm, root):
 @dddtask(path="/Items3/*", select='["ddd:elevation" = "geotiff"]')
 def osm_model_elevation_apply_terrain(obj, osm, root):
     obj = terrain.terrain_geotiff_elevation_apply(obj, osm.ddd_proj)
+    
     return obj
 
 @dddtask(path="/Items3/*", select='["ddd:elevation" = "building"]')
@@ -346,7 +347,9 @@ def osm_model_elevation_apply_building(logger, obj, osm, pipeline, root):
         #ddd.trace(locals())
         logger.error("No parent building elevation found for object %s (parent building: %s)", obj, building_parent)
         #raise DDDException("No parent building elevation found for object %s (parent building: %s)" % (obj, building_parent))
-    obj = obj.translate([0, 0, -0.20])
+    
+    # FIXME: this margin is currently necessary but totally undesirable, as we cannot position things on the ground precisely
+    obj = obj.translate([0, 0, -0.20]) 
     return obj
 
 
@@ -360,6 +363,20 @@ def osm_model_elevation_apply_terrain_min(obj, osm, root):
 @dddtask(path="/Items3/*", select='["ddd:elevation" = "max"]')
 def osm_model_elevation_apply_terrain_max(obj, osm, root):
     obj = terrain.terrain_geotiff_max_elevation_apply(obj, osm.ddd_proj)
+    return obj
+
+# TODO: Similar code is now also on ddd_common
+@dddtask(path="/Items3/*", select='["ddd:elevation" ~ "geotiff|min|max"]')
+def osm_model_elevation_apply_container_offset(obj, osm, root):
+    
+    # Apply container height offset if set (e.g. orchards or bunkers which go under the base surface)
+    # TODO: again this would be solved by a comprehensive height / height function solution
+    area_container = obj.get('ddd:area:container', None)
+    if area_container:
+        height_offset = area_container.get('ddd:area:contained:height:offset', 0)
+        if height_offset:
+            obj = obj.translate([0, 0, height_offset])
+
     return obj
 
 

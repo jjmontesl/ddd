@@ -131,8 +131,11 @@ class AreaItemsOSMBuilder():
 
     def generate_item_3d_swimming_pool(self, item_2d):
 
+        # TODO: Move pool building to pack.buildings.pools (variety: border overhang, or smooth, rounded corners, rounded bottom...)
+
         # TODO: This should be an area, so stuff can be positioned on top and etc.
-        exterior = item_2d.buffer(1.5).subtract(item_2d.buffer(-0.05)).extrude(3.0)
+        border_exterior_width = 1.0
+        exterior = item_2d.buffer(border_exterior_width).subtract(item_2d.buffer(-0.05)).extrude(3.0)
         exterior = ddd.meshops.remove_faces_pointing(exterior, ddd.VECTOR_DOWN)
         exterior = exterior.material(ddd.mats.tiles_stones)
         exterior = ddd.uv.map_cylindrical(exterior)
@@ -143,7 +146,9 @@ class AreaItemsOSMBuilder():
         vase = ddd.uv.map_cubic(vase)
 
         water = item_2d.triangulate().material(ddd.mats.water)
-        water = ddd.uv.map_cubic(water)
+        #water = ddd.meshops.subdivide_to_grid(water, float(ddd.data.get('ddd:area:subdivide')) * 2)
+        water = ddd.uv.map_xy(water)
+        
         water = water.translate([0, 0, -0.35])
 
         #coords = item_2d.geom.centroid.coords[0]

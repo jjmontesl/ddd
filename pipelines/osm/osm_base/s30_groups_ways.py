@@ -177,14 +177,19 @@ def osm_select_ways_residential(obj, root):
     """Define road data."""
     obj = obj.copy()
     obj.extra['ddd:way:weight'] = 22
-    obj.extra['ddd:way:roadlines'] = True
+    obj.extra['ddd:way:roadlines'] = False  # True
     obj.extra['ddd:way:traffic_signs'] = True
     obj.extra['ddd:way:traffic_signals'] = False
     obj.set('ddd:way:lamps', default=True)
     obj.extra['ddd:way:sidewalk:width'] = 4.0  # TODO: Only inside cities or in bridges
 
-    lanes = 2 if obj.extra.get('osm:oneway', False) else 2
-    obj.set('ddd:way:lanes', default=lanes)
+    if obj.extra.get('osm:oneway', False):
+        obj.set('ddd:way:lanes', default=1)
+        obj.set('ddd:way:lane_width', 3.8)
+    else:
+        obj.set('ddd:way:lanes', default=2)
+        obj.set('ddd:way:lane_width', 3.1)
+
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "living_street"]')

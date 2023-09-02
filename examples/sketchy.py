@@ -37,6 +37,7 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
+
     item = industrial.crate()
     items.append(item)
 
@@ -102,6 +103,10 @@ def pipeline_start(pipeline, root):
     item = urban.childrens_playground_arc()
     items.append(item)
 
+
+    item = urban.panel_digital()
+    item.show()
+    items.append(item)
 
     item = urban.patio_table()
     items.append(item)

@@ -228,12 +228,14 @@ class Buildings3DOSMBuilder():
                 return
 
             # Roof
-            #try:
-            roof = self.buildings_3d_roofs.generate_building_3d_part_roof(part)
+            roof = None
+            try:
+                roof = self.buildings_3d_roofs.generate_building_3d_part_roof(part)
+            except Exception as e:
+                logger.warning("Cannot generate roof for part %s (geom: %s): %s" % (part, part.geom, e))
+            
             if roof:
                 building_3d.children.append(roof)
-            #except Exception as e:
-            #    logger.warning("Cannot generate roof: %s (geom: %s)" % (e, part.geom))
 
         except ValueError as e:
             logger.error("Cannot generate building part %s: %s (geom: %s)" % (part, e, part.geom))
@@ -525,8 +527,12 @@ class Buildings3DOSMBuilder():
 
         dir_ver = (segment_coords_b[0] - segment_coords_a[0], segment_coords_b[1] - segment_coords_a[1])
         dir_ver_length = math.sqrt(dir_ver[0] ** 2 + dir_ver[1] ** 2)
-        dir_ver = (dir_ver[0] / dir_ver_length, dir_ver[1] / dir_ver_length)
-        angle = math.atan2(dir_ver[1], dir_ver[0]) + math.pi
+        try:
+            dir_ver = (dir_ver[0] / dir_ver_length, dir_ver[1] / dir_ver_length)
+            angle = math.atan2(dir_ver[1], dir_ver[0]) + math.pi
+        except ZeroDivisionError:
+            logger.error("Cannot snap item %s to building %s (segment %s): zero length segment.", item_3d, building_3d, segment_idx)
+            return None
 
         # Reverse angle if point is inside
         #if building_2d.contains(item_1d.centroid()):

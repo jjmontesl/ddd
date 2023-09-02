@@ -481,6 +481,29 @@ def sign_pharmacy_side(size=1.0, depth=0.3, arm_length=1.0):
     sign = sign.translate([0, -(arm_length + size * 0.66), 0])
     return ddd.group([sign, arm], name="Pharmacy Side Sign with Arm")
 
+def panel_digital(height=0.3, width=1.2, thick=0.24, border_width=0.02, text_lines=1, sides=2):
+    """
+    A digital panel, like the ones below pharmacy signs (matrix or 7 segments). Just the box with the panel.
+    
+    Can be used from above, side, or mounted on top of a pole.
+
+    Presented with front face facing -Y, lying on the XZ plane, centered.
+    """
+    
+    rounded_radius = 0.02
+    rect = ddd.rect([-width / 2, -height / 2, width / 2, height / 2], "PanelDigital")
+    rect_round = rect.buffer(-rounded_radius).buffer(rounded_radius, resolution=2, join_style=ddd.JOIN_ROUND)
+    panel = rect_round.extrude_step(rect_round, thick, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+    panel = panel.extrude_step(rect.buffer(-border_width), 0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+    panel = panel.extrude_step(rect.buffer(-border_width), -border_width, method=ddd.EXTRUSION_METHOD_WRAP)
+
+    panel = panel.material(ddd.mats.metal_paint_black)
+    panel = ddd.uv.map_cubic(panel)
+    panel = panel.rotate(ddd.ROT_FLOOR_TO_FRONT)
+
+    return panel
+    
+
 def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=None, center=False):
     '''
     A panel, like what commerces have either sideways or sitting on the facade. Also

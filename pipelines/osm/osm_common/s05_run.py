@@ -106,6 +106,19 @@ def osm_init_params_xyztile(root, pipeline, logger):
     pipeline.data['ddd:osm:area:center'] = (center_lon, center_lat)
     pipeline.data['ddd:osm:area:shape'] = ddd.rect([min_lon, min_lat, max_lon, max_lat]).geom
 
+    # Also generate N centers around, in order to merge data if needed
+    pipeline.data['ddd:osm:datasource:around'] = []
+    for ox in range (-1, 2):
+        for oy in range (-1, 2):
+            #if ox == 0 and oy == 0: continue
+            tile = Tile.from_google(x + ox, y + oy, zoom=z)
+            point_min, point_max = tile.bounds
+            min_lat, min_lon = point_min.latitude_longitude
+            max_lat, max_lon = point_max.latitude_longitude
+            center_lat = (min_lat + max_lat) / 2.0
+            center_lon = (min_lon + max_lon) / 2.0
+            pipeline.data['ddd:osm:datasource:around'].append((center_lon, center_lat))
+
 @dddtask(init=True)
 def osm_init_name(root, pipeline, logger):
 
@@ -137,23 +150,35 @@ def osm_bootstrap_data_fetch(root, pipeline, logger):
     path = pipeline.data.get('ddd:osm:datasource:path', os.path.join(settings.DDD_WORKDIR, "data/osm/"))
     logger.info("OSM source data path: %s", path)
 
+    # Round download center points to very roughly 500m
     sides = 5 * 0.001
     roundto = sides / 3
-    datacenter = int(center[0] / roundto) * roundto, int(center[1] / roundto) * roundto
-    dataname = name + "_%.4f_%.4f" % datacenter
-    datafile = os.path.join(path, "%s.osm.geojson" % dataname)
 
-    # Get data if needed or forced
-    file_exists = os.path.isfile(datafile)
-    force_get_data = parse_bool(pipeline.data.get('ddd:osm:datasource:force_refresh', False))
+    fetch_targets = pipeline.data['ddd:osm:datasource:around']
+    fetch_datafiles = []
+    for fetch_target in fetch_targets:
 
-    if force_get_data or not file_exists:
-        logger.info("Data file '%s' not found or datasource:force_refresh is True. Trying to produce data." % datafile)
-        osmdatasource = OnlineOSMDataSource()
-        osmdatasource.get_data(path, dataname, datacenter, force_get_data)
+        #datacenter = int(center[0] / roundto) * roundto, int(center[1] / roundto) * roundto
+        datacenter = int(fetch_target[0] / roundto) * roundto, int(fetch_target[1] / roundto) * roundto
+        dataname = name + "_%.4f_%.4f" % datacenter
+        datafile = os.path.join(path, "%s.osm.geojson" % dataname)
+
+        # Get data if needed or forced
+        file_exists = os.path.isfile(datafile)
+        force_get_data = parse_bool(pipeline.data.get('ddd:osm:datasource:force_refresh', False))
+
+        if force_get_data or not file_exists:
+            logger.info("Data file '%s' not found or datasource:force_refresh is True. Trying to produce data." % datafile)
+            osmdatasource = OnlineOSMDataSource()
+            osmdatasource.get_data(path, dataname, datacenter, force_get_data)
+
+        fetch_datafiles.append(datafile)
+
+    # Make unique
+    fetch_datafiles = list(set(fetch_datafiles))
 
     # Set input files
-    files = [os.path.join(path, f) for f in [dataname + '.osm.geojson'] if os.path.isfile(os.path.join(path, f)) and f.endswith(".geojson")]
+    files = [f for f in fetch_datafiles if os.path.isfile(datafile) and f.endswith(".geojson")]
     pipeline.data['osmfiles'] = files
     logger.info("Reading %d files from %s: %s" % (len(files), path, files))
 

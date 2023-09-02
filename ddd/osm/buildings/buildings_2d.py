@@ -396,7 +396,7 @@ class Buildings2DOSMBuilder():
         if othersegments:
             segment.contact = othersegments[0]
         if len(othersegments) > 1:
-            logger.warn("Building segment with several contacts to other buildings, using only first contact.")
+            logger.debug("FIXME: Building segment with several contacts to other buildings (using only first contact!): %s - Segment: %s", part, segment)
 
         # Get the closest (forward) way to the segment,
         seg_center = (np.array(segment.p2) + np.array(segment.p1)) / 2

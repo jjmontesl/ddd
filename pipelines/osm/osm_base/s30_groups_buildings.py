@@ -34,7 +34,9 @@ def osm_generate_buildings_select_features(root, obj):
     #item.extra['ddd:building:items'] = []
     if 'ddd:building:parts' not in item.extra: item.extra['ddd:building:parts'] = []
 
-    item = item.material(random.choice([ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.building_4, ddd.mats.building_5]))
+    random_materials = (ddd.mats.building_1, ddd.mats.building_2, ddd.mats.building_3, ddd.mats.building_4, ddd.mats.building_5)
+    default_random_material = ddd.random.choice(random_materials, seed=item.get('osm:id'))
+    item = item.material(default_random_material)
     root.find("/Buildings").append(item)
 
 
@@ -148,7 +150,9 @@ def osm_buildings_building_roof(pipeline, osm, root, obj):
     obj.set('ddd:building:levels', default=1)
     #obj.set('ddd:building:material', default="steel")
     obj.set('ddd:roof:material', default="wood")
-    obj.set('ddd:roof:shape', default=random.choice(["gabled", "skillion"]))
+    obj.set('ddd:roof:shape', default=random.choice(["gabled", "skillion", "flat"]))
+    # Do not remove floor (support "leave as is"), build columns or supports
+    
     #obj = obj.material(ddd.mats.steel)
     return obj
 
@@ -165,10 +169,12 @@ def osm_buildings_building_shed(pipeline, osm, root, obj):
     obj = obj.material(ddd.mats.wood)
     return obj
 
-@dddtask(path="/Buildings/*", select='["osm:building" = "tomb"]')
+
+@dddtask(path="/Buildings/*", select='[osm:building = "tomb"];([osm:building][osm:historic ~ "tomb"])')
 def osm_buildings_building_tomb(pipeline, osm, root, obj):
     """
-    Set defaults to tomb buildings.
+    Set defaults to tomb buildings (stacked frontal tombstones).
+    Added also for historic=tomb, as long as building is set, as it has been seen (incorrectly) applied to stacked tomb buildings.
     """
     obj.set('ddd:building:levels', default=1)
     obj.set('ddd:building:material', default="stone")

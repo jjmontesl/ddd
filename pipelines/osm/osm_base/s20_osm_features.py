@@ -1,6 +1,6 @@
 # ddd - DDD123
 # Library for simple scene modelling.
-# Jose Juan Montes and Contributors 2019-2021
+# Jose Juan Montes and Contributors 2019-2023
 
 import sys
 
@@ -33,7 +33,7 @@ def osm_features_filter_custom(pipeline, osm, root, logger):
         root.find("/Features").children = filtered.children
 
 
-@dddtask(path="/Features/*")  # and o.geom.geom_type in ('Point', 'Polygon', 'MultiPolygon') .. and o.geom.geom_type == 'Polygon' |  ... path="/Features", select=r'["geom:type"="Polygon"]'
+@dddtask(path="/Features/*")
 def osm_features_crop_extended_area(pipeline, osm, root, obj, logger):
     """Crops to extended area size to avoid working with huge areas."""
 
@@ -42,7 +42,22 @@ def osm_features_crop_extended_area(pipeline, osm, root, obj, logger):
     #osm.preprocess_features()
     #logger.info(obj)
     obj.extra['osm:original'] = obj.copy()
-    obj = obj.intersection(osm.area_filter2)
+
+    #obj = obj.intersection(osm.area_filter2)  # old method
+    if not obj.intersects(osm.area_filter2):
+        return False
+
+    # This is CRITICAL, but poorly justified... walls and others need to keep orientation (left vs side)
+    # Formerly, the (incorrect) intersection with area_filter2 caused the reordering :o
+    # If there shoudl be a preferred orientation for polygons/multipol, should it be OSM, GeoJSON's, Shapely?
+    # Reordering of polygons is done here as otherwise buildings are analyzed incorrectly (and windows and other features are reversed inside)
+    # Perhaps, if orientation is needed, it can/must be enforced later: e.g. before analyzing buildings
+
+    obj = obj.orient(ccw=False)
+
+    #obj = obj.clean(eps=0.0)
+    #obj.validate()
+
     return obj
 
 

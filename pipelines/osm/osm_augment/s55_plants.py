@@ -14,7 +14,7 @@ import math
 
 
 # Generate grass
-@dddtask(order="55.49.+", path="/Areas/*", select='["ddd:material" ~ "Park|Grass|Garden|Forest"]["osm:golf" != "green"]')
+@dddtask(order="55.49.+", path="/Areas/*", select='["ddd:material" ~ "Park|Grass|Garden|Forest"][osm:golf != "green"][osm:leisure !="pitch"]')
 def osm_augment_plants_generate_grass_blades(obj, osm, root):
     """
     Generates grass blades.
@@ -92,6 +92,7 @@ def osm_augment_trees_generate(logger, pipeline, root, obj):
 
     for o in obj.individualize(always=True).children:
         trees = generate_area_2d_park(o, tree_density_m2, tree_types)
+        trees.set('ddd:area:container', obj, children=True)
         root.find("/ItemsNodes").children.extend(trees.children)
 
 

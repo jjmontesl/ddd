@@ -245,16 +245,20 @@ class ItemsOSMBuilder():
         #if not self.osm.osmops.placement_valid(ddd.disc(coords, r=0.4), invalid=invalid):
         #    return None
 
-
-        numvariants = 5  # 7
-
+        tree_type = item_2d.get('osm:tree:type')
         '''
-        tree_type = item_2d.extra.get('osm:tree:type')
         if tree_type is None:
             tree_type = random.choice(['default', 'palm'])
         '''
 
-        tree_type = item_2d.get('osm:tree:type')
+        numvariants = 5  # 7
+        # TODO: get this from item definitions, along with whether to use catalog or not
+        if tree_type == 'olive': numvariants = 4
+        if tree_type == 'bush': numvariants = 4
+        if tree_type == 'fir': numvariants = 4
+        if tree_type == 'reed': numvariants = 3
+
+
         if isinstance(tree_type, dict):
             tree_type = ddd.random.weighted_choice(tree_type)
 
@@ -272,6 +276,9 @@ class ItemsOSMBuilder():
             elif tree_type == 'palm':
                 plant_height += 6
                 item_3d = plants.tree_palm(height=plant_height)
+            elif tree_type == 'olive':
+                plant_height = plant_height * 0.5
+                item_3d = plants.tree_default(height=plant_height)
             elif tree_type == 'fir':
                 item_3d = plants.tree_fir(height=plant_height)
             elif tree_type == 'bush':

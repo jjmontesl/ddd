@@ -185,7 +185,10 @@ def osm_groups_areas_landuse_greenfield(obj, osm):
 
 @dddtask(path="/Areas/*", select='["osm:landuse" = "allotments"]')
 def osm_groups_areas_landuse_allotments(obj, osm):
-    """Define area data."""
+    """
+    Define area data.
+    Allotments ("parcelas" in ES).
+    """
     obj.name = "Allotments: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
     obj = obj.material(ddd.mats.terrain)
@@ -497,4 +500,8 @@ def osm_groups_trees_banana_plants(obj, osm):
     """Specifies that an orchard is a banana plantation."""
     obj.set('ddd:aug:itemfill:types', {'palm': 1})
 
+@dddtask(path="/Areas/*", select='["osm:trees" ~ "olive_trees|olive_tree|olive"]')
+def osm_groups_trees_olive_trees(obj, osm):
+    """Specifies that an orchard is an olive tree plantation."""
+    obj.set('ddd:aug:itemfill:types', {'olive': 1})
 

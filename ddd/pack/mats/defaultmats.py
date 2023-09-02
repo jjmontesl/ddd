@@ -63,6 +63,7 @@ class DefaultMaterials(MaterialsCollection):
         self.pitch_red = ddd.material(name="Pitch Red", color='#b34446')  # Eg. leisure track
 
         self.painted_line = ddd.material(name="Painted Line", color='#ffffff',
+                                         metallic_factor=0.0, roughness_factor=1.0,
                                          extra={'zoffset': -8.5, 'ddd:collider': False, 'ddd:shadows': False})  # Eg. leisure track
 
         # Structural / building materials
@@ -87,6 +88,10 @@ class DefaultMaterials(MaterialsCollection):
 
         self.porcelain_white = ddd.material("Porcelain White", color='#f2f5fe', metallic_factor=0.2, roughness_factor=0.2)
         self.porcelain = self.porcelain_white
+
+        # Tiles (bathrooms, kitchens, pools) - made of porcelain, etc (not floor or wooden tiles)
+        self.porcelain_tiles_blue = ddd.material("Porcelain Tiles Blue", color='#1a6fbf', metallic_factor=0.1, roughness_factor=0.3)
+
 
         # Woods and natural materials
         self.wood = ddd.material(name="Wood", color='#efae85', metallic_factor=0.0, roughness_factor=0.7)
@@ -118,6 +123,7 @@ class DefaultMaterials(MaterialsCollection):
         self.plastic_yellow = ddd.material("Plastic Yellow", color='#fffb08', metallic_factor=0.0, roughness_factor=0.7)
         self.plastic_blue = ddd.material("Plastic Blue", color='#1763bf', metallic_factor=0.0, roughness_factor=0.7)
         self.plastic_white = ddd.material("Plastic White", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)
+
 
         # Fabrics
         self.carpet_red = ddd.material("Carpet Red", color='#9c0b0b', metallic_factor=0.0, roughness_factor=0.975)

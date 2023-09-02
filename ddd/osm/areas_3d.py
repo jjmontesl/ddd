@@ -185,8 +185,12 @@ class Areas3DOSMBuilder():
 
             elif area_2d.extra.get('ddd:area:type', None) == 'bunker':
 
-                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), -0.4, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), -0.3, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                default_bunker_height = -0.7
+                bunker_height = area_2d.get('ddd:bunker:height', default_bunker_height)
+                area_3d = area_2d.extrude_step(area_2d.buffer(-1.0), bunker_height * 0.6, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d = area_3d.extrude_step(area_2d.buffer(-3.0), bunker_height * 0.4, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+                area_3d.set('ddd:area:contained:height:offset', bunker_height)
+                area_2d.set('ddd:area:contained:height:offset', bunker_height)
 
             elif area_2d.extra.get('ddd:area:type', None) == 'steps':
                 # This is the steps area, not the stairs.
