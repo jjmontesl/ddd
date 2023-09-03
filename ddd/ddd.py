@@ -77,6 +77,8 @@ class D1D2D3():
     PI_OVER_3 = math.pi / 3.0
     GOLDEN_RATIO = (1 + 5 ** 0.5) / 2
 
+    B_TO_MB = 1 / (1024 * 1024)
+
     VECTOR_UP = np.array([0.0, 0.0, 1.0])
     VECTOR_DOWN = np.array([0.0, 0.0, -1.0])
     VECTOR_RIGHT = np.array([1.0, 0.0, 0.0])

@@ -236,6 +236,7 @@ def osm_materials():
                                         texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
                                         extra={'uv:scale': 0.25, 'tags': ['stones', 'tiles', 'dark', 'old', 'black', 'procedural', 'pbr']})
     ddd.mats.stones = ddd.mats.stones_black
+    
 
     ddd.mats.cement = ddd.material(name="Concrete", color='#b8b8a0', extra={'uv:scale': 0.25},  #
                                    texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete17/Concrete17_*.jpg",)
@@ -252,15 +253,20 @@ def osm_materials():
     ddd.mats.marble = ddd.mats.marble_white
 
     # Tiles (bathrooms, kitchens, pools) - made of porcelain, etc (not floor or wooden tiles)
-    ddd.mats.porcelain_tiles_blue = ddd.material("Porcelain Tiles Blue", color='#1a6fbf', 
-                                             metallic_factor=0.1, roughness_factor=0.3,
-                                             texture_path=ddd.DATA_DIR + "/osmmaterials/.../_*.*",)
+    ddd.mats.porcelain_blue_tiles = ddd.material("Porcelain Blue Tiles", color='#1a6fbf', 
+                                                  metallic_factor=0.15, roughness_factor=0.3,
+                                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles020_2K-JPG/Tiles020_2K-JPG_*.jpg")
+    ddd.mats.porcelain_blue_tiles_round = ddd.material("Porcelain Blue Tiles Round", color='#166fcf', 
+                                                        metallic_factor=0.05, roughness_factor=0.5,
+                                                        texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles118_2K-JPG/Tiles118_2K-JPG_*.jpg",)
 
-
+    
+    # FIXMME: Stone is failing?, anyway it was incorrect to use tiled stones for stone
     # ddd.mats.stone = ddd.material(name="Stone", color='#484846', # Solid stone material, for waycross, beams, or similar (not to be confused with stones, in plural, though may be using the same texture)
     #                              texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
     #                              extra={'uv:scale': 1.0, 'tags': []})
     ddd.mats.stone = ddd.mats.tiles_stones.copy(name="Stone")
+
 
     ddd.mats.plaster_paint_white = ddd.material(name="Plaster Paint White", color='#d1d2cd', texture_color='#ffffff',
                                   metallic_factor=0.05, roughness_factor=0.9,  # bump_strength=2.0,
@@ -274,6 +280,7 @@ def osm_materials():
                                  # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/[2K]Wood39/Wood39_nrm.jpg",
                                  # texture_displacement_path=ddd.DATA_DIR + "/osmmaterials/[2K]Wood39/Wood39_disp.jpg",
                                  # texture_roughness_path=ddd.DATA_DIR + "/osmmaterials/[2K]Wood39/Wood39_rgh.jpg",)
+    ddd.mats.wood_planks = ddd.mats.wood
 
     # Painted materials
     ddd.mats.metal_paint_green = ddd.material("PaintGreen", color='#265e13',

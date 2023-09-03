@@ -132,13 +132,14 @@ def osm_generate_buildings_man_made_water_tower(pipeline, osm, root, obj):
 @dddtask(path="/Buildings/*", select='["osm:building" = "roof"]["osm:amenity" = "fuel"]')
 def osm_buildings_building_roof_fuel(pipeline, osm, root, obj):
     """
-    Set defaults to sheds.
     """
     obj.set('ddd:building:levels', default=3)  # TODO: use height, not levels
     obj.set('ddd:building:levels:0:height', default=8.5)  # TODO: use height, not levels
     #obj.set('ddd:building:material', default="steel")
     obj.set('ddd:roof:material', default="metal")
     obj.set('ddd:roof:shape', default=random.choice(["skillion", "flat"]))
+    obj.set('ddd:area:hole:ground', default=False)
+    
     #obj = obj.material(ddd.mats.steel)
     return obj
 
@@ -152,6 +153,7 @@ def osm_buildings_building_roof(pipeline, osm, root, obj):
     obj.set('ddd:roof:material', default="wood")
     obj.set('ddd:roof:shape', default=random.choice(["gabled", "skillion", "flat"]))
     # Do not remove floor (support "leave as is"), build columns or supports
+    obj.set('ddd:area:hole:ground', default=False)
     
     #obj = obj.material(ddd.mats.steel)
     return obj

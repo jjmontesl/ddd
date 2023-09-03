@@ -71,6 +71,10 @@ class DefaultMaterials(MaterialsCollection):
         self.steel = ddd.material(name="Steel", color='#78839c', metallic_factor=0.975, roughness_factor=0.125)
         self.metal = self.steel
 
+        #self.stones_white...
+        #self.stones_black...
+        #self.stones
+
         self.stone = ddd.material(name="Stone", color='#9c9378')
 
         self.bricks = ddd.material(name="Bricks", color='#d49156')
@@ -90,8 +94,10 @@ class DefaultMaterials(MaterialsCollection):
         self.porcelain = self.porcelain_white
 
         # Tiles (bathrooms, kitchens, pools) - made of porcelain, etc (not floor or wooden tiles)
-        self.porcelain_tiles_blue = ddd.material("Porcelain Tiles Blue", color='#1a6fbf', metallic_factor=0.1, roughness_factor=0.3)
-
+        self.porcelain_blue_tiles = ddd.material("Porcelain Blue Tiles", color='#1a6fbf', 
+                                                metallic_factor=0.15, roughness_factor=0.3)
+        self.porcelain_blue_tiles_round = ddd.material("Porcelain Blue Tiles Round", color='#166fcf', 
+                                                metallic_factor=0.05, roughness_factor=0.5)
 
         # Woods and natural materials
         self.wood = ddd.material(name="Wood", color='#efae85', metallic_factor=0.0, roughness_factor=0.7)

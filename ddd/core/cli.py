@@ -43,7 +43,7 @@ class D1D2D3Bootstrap():
         self.debug = True
 
     @staticmethod
-    def initialize_logging(debug=False, warnonly=False):
+    def initialize_logging(debug=False, warnonly=False, logfile=None):
 
         if D1D2D3Bootstrap._logging_initialized:
             return
@@ -55,19 +55,24 @@ class D1D2D3Bootstrap():
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
 
+        format = '%(asctime)s  %(message)s'
         if debug:
-            logging.basicConfig(format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', level=default_level)
-            #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
-        else:
-            #logging.basicConfig(format='%(asctime)s %(message)s', level=default_level)
-            logging.basicConfig(format='%(asctime)s  %(message)s', level=default_level)
+            format='%(asctime)s - %(levelname)s - %(module)s - %(message)s'
+        logging.basicConfig(format=format, level=default_level)
 
         #warnings.filterwarnings(action='ignore',module='.*paramiko.*')
         logging.getLogger("trimesh").setLevel(logging.INFO)
         logging.getLogger('paramiko.transport').setLevel(logging.WARN)
         logging.getLogger('invoke').setLevel(logging.WARN)
 
+        if logfile:
+            file_handler = logging.FileHandler(logfile)
+            file_handler.setLevel(default_level)
+            file_handler.setFormatter(logging.Formatter(format))
+            logging.getLogger().addHandler(file_handler)
+
         logger.info("DDD logging initialized.")
+        if logfile: logger.info("DDD logging to file: %s", logfile)
         logger.debug("DDD debug logging enabled (%d settings).", len(settings.__dict__))
 
 
@@ -85,7 +90,8 @@ class D1D2D3Bootstrap():
         parser.add_argument("-h", "--help", action="store_true", default=False, help="show help and exit")
         parser.add_argument("-v", "--visualize-errors", action="store_true", default=False, help="visualize object that caused exception if available")
         parser.add_argument("-o", "--overwrite", action="store_true", default=False, help="overwrite output files")
-
+        parser.add_argument("--logfile", type=str, default=False, help="write log to file")
+        
         parser.add_argument("-r", "--profile", type=str, default=False, help="profile execution writing results to filename")
 
         parser.add_argument("-c", "--config", action="append", help="load config file before running")
@@ -144,6 +150,8 @@ class D1D2D3Bootstrap():
                 unparsed_args = unparsed_args + ['-h']
 
         self.profile = args.profile
+        
+        self.logfile = args.logfile
 
         D1D2D3Bootstrap.debug = self.debug
 
@@ -286,7 +294,7 @@ class D1D2D3Bootstrap():
 def main():
     ddd_bootstrap = D1D2D3Bootstrap()
     ddd_bootstrap.parse_args(sys.argv)
-    D1D2D3Bootstrap.initialize_logging(debug=ddd_bootstrap.debug, warnonly=ddd_bootstrap.help)
+    D1D2D3Bootstrap.initialize_logging(debug=ddd_bootstrap.debug, warnonly=ddd_bootstrap.help, logfile=ddd_bootstrap.logfile)
     ddd_bootstrap.runconfig()
 
     logger.info("Running %s", ddd_bootstrap.command_class)

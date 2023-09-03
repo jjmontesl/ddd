@@ -14,7 +14,7 @@ import math
 
 
 # Generate grass
-@dddtask(order="55.49.+", path="/Areas/*", select='["ddd:material" ~ "Park|Grass|Garden|Forest"][osm:golf != "green"][osm:leisure !="pitch"]')
+@dddtask(order="55.49.+", path="/Areas/*", select='["ddd:material" ~ "Park|Grass|Garden|Forest"][osm:golf != "green"][osm:golf != "fairway"][osm:leisure !="pitch"]')
 def osm_augment_plants_generate_grass_blades(obj, osm, root):
     """
     Generates grass blades.

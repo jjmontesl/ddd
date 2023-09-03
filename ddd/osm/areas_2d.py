@@ -31,7 +31,7 @@ class Areas2DOSMBuilder():
         #areas = list(areas_2d.children)
         areas = areas_2d.select('["ddd:area:area"]').children
 
-        logger.info("Sorting 2D areas (%d).", len(areas))
+        logger.debug("Sorting 2D areas (%d).", len(areas))
         areas.sort(key=lambda a: a.get('ddd:area:area'))  # extra['ddd:area:area'])
         #areas.sort(key=lambda a: a.geom.area)  # extra['ddd:area:area'])
 
@@ -67,7 +67,7 @@ class Areas2DOSMBuilder():
 
             #feature = area.extra['osm:feature']
             if not area.geom:
-                logger.error("Area with no geometry: %s", area)
+                logger.warning("Area with no geometry (ignoring): %s", area)
                 continue
             if area.geom.geom_type == 'Point': continue
 
@@ -82,8 +82,9 @@ class Areas2DOSMBuilder():
                     narea = narea.subtract(contained)
             except TopologicalError as e:
                 logger.warn("Could not generate 2D area %s (cleaning): %s", area, e)
-                narea = narea.clean(-0.01)
-                narea = narea.subtract(union)
+                narea = area.clean(-0.01).subtract(union.clean(eps=0.01))
+                if contained:
+                    narea = narea.subtract(contained.clean(eps=0.01))
 
             #narea = narea.clean()  #eps=0.0)
 
@@ -156,6 +157,11 @@ class Areas2DOSMBuilder():
 
     def generate_areas_2d_postprocess_cut_outlines(self, areas_2d, ways_2d):
         """
+        Cuts ways that enter an area, splitting the way in two (or more), tagging inside and outside parts
+        so they can be included within their corresponding area, and perhaps transitions made as needed.
+
+        It also cuts some ways from inside other areas (sideways) (check if also when they don't intersect the outline)
+        in order to keep ways info when they are overlapped with other areas (either in the map or augmented like sidewalks in districts).
         """
 
         # TODO: FIXME: This is cutting areas across layers (e.g. elevated pier on Coruña Praia de Santo Amaro). Should it? if so at least it should mark them.
@@ -191,6 +197,8 @@ class Areas2DOSMBuilder():
 
                 if way_2d.is_empty(): continue
 
+                if not way_2d.intersects(self.osm.area_crop2): continue
+
                 #if way_2d.extra.get('osm:highway', None) not in ('footway', 'path', 'track', None): continue
                 if way_2d.get('ddd:area:type', None) == 'water': continue
 
@@ -204,6 +212,8 @@ class Areas2DOSMBuilder():
                 # Find candidate intersections
                 cand_areas = areas_2d_originals_idx.index_query(way_2d)
 
+                way_2d_reduced = way_2d.buffer(-0.05)
+
                 #for area in areas_2d_original.children:  #self.osm.areas_2d.children:  # self.osm.areas_2d.children:
                 for area_original in cand_areas.children:
 
@@ -211,16 +221,23 @@ class Areas2DOSMBuilder():
 
                     if area_original.is_empty(): continue
 
-                    # Skip areas that have already cut
+                    # Skip areas that have already been cut by this object
                     if area_original in way_2d.extra["ddd:area:cut:by"]: continue
+
+                    # Skip areas in other layers
+                    # FIXME: ddd:layer_int is not set (at least for some objects), why?
+                    #if area_original.get('ddd:layer') != way_2d.get('ddd:layer'): continue
+                    if area_original.get('ddd:layer_int', 0) != way_2d.get('ddd:layer_int', 0): continue
 
                     #if area.extra.get('ddd:area:type', None) != 'sidewalk': continue
 
-                    area_original_outline = area_original.outline()
                     try:
                         # Margin is used to avoid same way chunk touching original area indefinitely.
                         # FIXME: Note that this algorithm is weak and can potentially result in infinite loops (chunks are re-added for processing)
-                        intersects = way_2d.buffer(-0.05).intersects(area_original)  # FIXME: arbitrary 5cm margin
+                        intersects = way_2d_reduced.intersects(area_original)  # FIXME: arbitrary 5cm margin
+                        if not intersects: continue
+                        
+                        area_original_outline = area_original.outline()
                         intersects_outline = way_2d.intersects(area_original_outline)
                     except Exception as e:
                         logger.error("Could not calculate intersections between way and area: %s %s", way_2d, area_original)
@@ -274,7 +291,6 @@ class Areas2DOSMBuilder():
                     ways_2d.append(a)
 
         #self.osm.areas_2d.children = [c for c in self.osm.areas_2d.children if c not in to_remove]
-
 
     def generate_areas_2d_postprocess_water(self, areas_2d, ways_2d):
         logger.info("Postprocessing water areas and ways")
@@ -411,7 +427,12 @@ class Areas2DOSMBuilder():
             if not self.osm.area_crop2.contains(item): continue
             # Find closest building
             #point = feature.copy(name="Point: %s" % (feature.extra.get('name', None)))
-            areas = areas_2d.select(func=lambda a: a.contains(item)).children
+            try:
+                areas = areas_2d.select(func=lambda a: a.contains(item)).children
+            except Exception as e:
+                logger.error("Error linking item %s to areas (ignoring item): ", item, e)
+                continue
+
             if areas:
                 areas.sort(key=lambda a: a.geom.area if a.geom else float("inf"))  # extra['ddd:area:area'])
                 #logger.debug("Assigning point feature to area: %s -> %s", item, areas[0])

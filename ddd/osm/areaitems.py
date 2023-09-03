@@ -98,17 +98,27 @@ class AreaItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_fountain(self, item_2d):
-        # Todo: Use fountain shape if available, instead of centroid
-        exterior = item_2d.subtract(item_2d.buffer(-0.3)).extrude(1.0).material(ddd.mats.stone)
-        exterior = ddd.uv.map_cubic(exterior)
+        
+        # TODO: Call fountain builder(s)...
 
-        water =  item_2d.buffer(-0.20).triangulate().material(ddd.mats.water).translate([0, 0, 0.4])
+        border_width = 0.3
+        exterior = item_2d
+        interior = item_2d.subtract(item_2d.buffer(-border_width))
+        
+        fountain = exterior.extrude_step(exterior, 1.0, base=False)
+        fountain = fountain.extrude_step(interior, 0.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+        fountain = fountain.extrude_step(interior, -1.4, cap=False)
+        
+        fountain = fountain.material(ddd.mats.stone)
+        fountain = ddd.uv.map_cubic(fountain)
+
+        water =  item_2d.buffer(-border_width / 2).triangulate().material(ddd.mats.water).translate([0, 0, 0.4])
         water = ddd.uv.map_cubic(water)  # map_2d_linear
 
         #coords = item_2d.geom.centroid.coords[0]
         #insidefountain = urban.fountain(r=item_2d.geom).translate([coords[0], coords[1], 0.0])
 
-        item_3d = ddd.group([exterior, water])
+        item_3d = ddd.group([fountain, water])
 
         item_3d.name = 'Fountain: %s' % item_2d.name
         return item_3d
@@ -132,17 +142,21 @@ class AreaItemsOSMBuilder():
     def generate_item_3d_swimming_pool(self, item_2d):
 
         # TODO: Move pool building to pack.buildings.pools (variety: border overhang, or smooth, rounded corners, rounded bottom...)
+        vase_materials = [ddd.mats.porcelain_blue_tiles, ddd.mats.porcelain_blue_tiles_round]
+        vase_material = ddd.random.choice(vase_materials, seed=item_2d.get('osm:id'))
+        exterior_materials = [ddd.mats.tiles_stones, ddd.mats.wood_planks]
+        exterior_material = ddd.random.choice(exterior_materials + [vase_material], seed=item_2d.get('osm:id'))
 
         # TODO: This should be an area, so stuff can be positioned on top and etc.
         border_exterior_width = 1.0
         exterior = item_2d.buffer(border_exterior_width).subtract(item_2d.buffer(-0.05)).extrude(3.0)
         exterior = ddd.meshops.remove_faces_pointing(exterior, ddd.VECTOR_DOWN)
-        exterior = exterior.material(ddd.mats.tiles_stones)
+        exterior = exterior.material(exterior_material)
         exterior = ddd.uv.map_cylindrical(exterior)
         exterior = exterior.translate([0, 0, -2.8])
 
         vase = item_2d.extrude_step(item_2d, -2.2, base=False)
-        vase = vase.material(ddd.mats.tiles_stones)
+        vase = vase.material(vase_material)
         vase = ddd.uv.map_cubic(vase)
 
         water = item_2d.triangulate().material(ddd.mats.water)

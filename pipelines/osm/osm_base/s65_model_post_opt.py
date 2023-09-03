@@ -111,6 +111,9 @@ def osm_models_instances_buffers_buildings(pipeline, osm, root, logger):
 def osm_models_instances_buffers_items(pipeline, osm, root, logger):
     """
     Generates geometry instancing buffers for repeated scenery DDDInstance objects.
+
+    TODO: currently ddd-viewer applies a LOD distance to instance buffers, so trees
+          disappear too early, customize this in this metadata.
     """
     keys = ('grassblade', 'grassblade-dry', 
             'flowers-blue', 'flowers-roses', 

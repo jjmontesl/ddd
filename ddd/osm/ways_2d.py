@@ -227,6 +227,7 @@ class Ways2DOSMBuilder():
                     part_int = shape1.intersection(shape2)
                     intersection_shape.append(part_int)
 
+            intersection_shape = intersection_shape.clean(eps=0.01)  # Added trying to avoid spurious (infrequent) errors: "No Shapely geometry can be created from null value"
             intersection_shape = intersection_shape.union()
 
             # This converts invalid linearrings (without 3 coordinate tuples or with null area)
@@ -654,6 +655,8 @@ class Ways2DOSMBuilder():
         # Generate lines
         if way_2d.extra.get('ddd:way:roadlines', False):
 
+            roadlines_sides = way_2d.extra.get('ddd:way:roadlines:sides', True)
+
             lanes = way_2d.extra['ddd:way:lanes']
             numlines = lanes - 1 + 2
             for lineind in range(numlines):
@@ -963,7 +966,6 @@ class Ways2DOSMBuilder():
         #step_depth = obj.get('ddd:steps:depth', 0.375)
         step_depth = obj.get('ddd:steps:depth', 0.75)
 
-        # Generate lamp posts
         interval = step_depth
         numsteps = int(length / interval)
 
@@ -997,7 +999,7 @@ class Ways2DOSMBuilder():
                     step = obj.copy(name="Step %s: %s" % (idx, obj.name))
                     step.children = []
                     step.geom = splits[0]
-                    step.extra['ddd:elevation:level'] = 0.90
+                    #step.extra['ddd:elevation:level'] = 0.90  # DEPRECATED
                     step.extra['ddd:area:elevation'] = 'max'
                     step.extra['ddd:area:type'] = 'default'
                     #step.extra['ddd:extra_height'] = 0.0
@@ -1008,7 +1010,7 @@ class Ways2DOSMBuilder():
                         remaining.geom = remaining.geom.union(s)
 
             remaining.name = "Step 0: %s" % (obj.name)
-            remaining.extra['ddd:elevation:level'] = 0.90
+            #remaining.extra['ddd:elevation:level'] = 0.90  # DEPRECATED
             remaining.extra['ddd:area:elevation'] = 'max'
             remaining.extra['ddd:area:type'] = 'default'
             stairs.append(remaining)

@@ -39,9 +39,8 @@ def osm_model_3d_compress_draco(root, osm, pipeline, logger):
     # Compare sizes
     input_size = os.path.getsize(input_file)
     output_size = os.path.getsize(output_file)
-    logger.info("  Input:  %s B", input_size)
-    logger.info("  Output: %s B (%.2f %%, %s B)", output_size, output_size / input_size, output_size - input_size)
-
+    logger.info("  Input:  %.3f MB", input_size * ddd.B_TO_MB)
+    logger.info("  Output: %.3f MB (%.2f %%, %.3f MB)", output_size * ddd.B_TO_MB, output_size / input_size * 100.0, (output_size - input_size) * ddd.B_TO_MB)
 
 
     # Exchange files

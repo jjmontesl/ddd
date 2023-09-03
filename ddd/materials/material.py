@@ -45,7 +45,7 @@ class DDDMaterial():
         'displacement': ['_Height', '_Displacement', '_Disp', '_disp', '_dis'],
         'roughness': ['_Roughness', '_rgh'],
         'emissive': ['_Emission'],
-        #: ['_AO', ],
+        #: ['_AO', '_AmbientOcclusion'], 
     }
 
     @staticmethod

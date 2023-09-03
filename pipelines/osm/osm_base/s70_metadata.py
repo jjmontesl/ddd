@@ -39,7 +39,7 @@ def osm_metadata_generate_output_descriptor(root, pipeline, osm, logger):
         'ddd:pipeline:current_date': datetime.datetime.now(),
 
         'attribution': "ODbL © OpenStreetMap Contributors + (Check About)",
-        'generator': "DDD-3DS - https://github.com/jjmontesl/ddd",
+        'generator': "DDD-OSM - https://github.com/jjmontesl/ddd",
 
         #'_pipeline':   # For debugging purposes
     }

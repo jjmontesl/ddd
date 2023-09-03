@@ -254,12 +254,19 @@ def osm_structured_ways_layer(osm, root, obj):
 
 @dddtask()
 def osm_structured_generate_areas_calculate_buildings_ground_footprint(pipeline, osm, root, logger):
-    """Calculates building footprint to be removed from areas (terrain, sidewalk...)."""
+    """
+    Calculates building footprint to be removed from areas (terrain, sidewalk...).
+
+    Some elements, like building=roof (which is a building or building part), must not be considered.
+    Some other elements, like area fountains or pits, may require subtraction. These use `ddd:area:hole:ground = True`.
+    """
+
     # FIXME: This condition for footprints is weak, use a building footprint generation function
     # Also, seems that at this moment ddd:building:min_level, etc are not available (is it too soon? min/max levels/height shall be available earlier)
     buildings = root.select(path="/Buildings/*", func=lambda o:
-        (o.get('ddd:building:parent', None) or not o.get('ddd:building:parts', None)) and
-        o.get("osm:building:min_level", None) is None)
+        (o.get('ddd:building:parent', None) or not o.get('ddd:building:parts', None))
+        and o.get("osm:building:min_level", None) is None
+        and o.get("ddd:area:hole:ground", None) is False)
     buildings = buildings.copy2()
     buildings = buildings.union()
     pipeline.data['buildings_level_0'] = buildings
@@ -334,7 +341,7 @@ def osm_structured_generate_areas_interways_phase1_ways_sidewalks(pipeline, osm,
 
     # Calculate union
     union = root.find("/Ways").select('["ddd:layer" ~ "0|-1a"][ ! "ddd:way:overlay"]').union()
-    union = union.append(pipeline.data['buildings_level_0'])
+    union = union.append(pipeline.data['buildings_level_0'])  # shall buildings be here? should be optional at least?
     union = union.append(root.find("/Areas"))
     union = osm.areas2.generate_union_safe(union.flatten())
     union = union.clean()
@@ -449,7 +456,7 @@ def osm_structured_surfaces(osm, root, pipeline):
 '''
 
 @dddtask()
-def osm_structured_tunnel(osm, root, pipeline):
+def osm_structured_tunnel(osm, root, pipeline, logger):
     """
     Create tunnel walls for tunnels.
     TODO: More tunnel types
@@ -467,7 +474,12 @@ def osm_structured_tunnel(osm, root, pipeline):
     union_with_transitions = ddd.group(ways, empty="2").union()
     union_sidewalks = union_with_transitions.buffer(0.6, cap_style=2, join_style=2)
 
-    sidewalks_2d = union_sidewalks.subtract(union_with_transitions)  # we include transitions
+    try:
+        sidewalks_2d = union_sidewalks.subtract(union_with_transitions)  # we include transitions
+    except Exception as e:
+        logger.error("Error generating tunnel sidewalks_2d (1/2) - (%s, %s): %s", union_sidewalks, union_with_transitions, e)
+        sidewalks_2d = union_sidewalks.clean(eps=0.01).subtract(union_with_transitions.clean(eps=-0.01))
+
     sidewalks_2d.name="Tunnel Sidewalks"
     sidewalks_2d.set("ddd:layer", "-1")
     sidewalks_2d = sidewalks_2d.material(ddd.mats.pavement)
@@ -514,6 +526,7 @@ def osm_structured_generate_areas_ground_fill(pipeline, osm, root, logger):
 
     union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "^(0|-1a)$"]'),
                         root.find("/Areas").select('["ddd:layer" ~ "^(0|-1a)$"]'),
+                        root.find("/ItemsAreas").select('["ddd:layer" ~ "^(0|-1a)$"][ddd:area:hole:ground = True]'),
                         ])
     #union = union.clean_replace(eps=0.01)
     ##union = union.clean(eps=0.01)
@@ -776,7 +789,7 @@ def osm_structured_ways_2d_generate_roadlines_way(root, osm, pipeline, obj):
 
 
 @dddtask()
-def debug_ways_roadlines(root, osm, pipeline):
+def debug_ways_roadlines_show(root, osm, pipeline):
     ways = root.find("/Ways")
     roadlines = root.find("/Roadlines2")
     #ddd.group([ways, roadlines]).show(label="Ways + Roadlines2")

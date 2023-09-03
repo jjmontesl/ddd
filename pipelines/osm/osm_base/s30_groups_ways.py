@@ -177,18 +177,25 @@ def osm_select_ways_residential(obj, root):
     """Define road data."""
     obj = obj.copy()
     obj.extra['ddd:way:weight'] = 22
-    obj.extra['ddd:way:roadlines'] = False  # True
+    obj.extra['ddd:way:roadlines'] = True
     obj.extra['ddd:way:traffic_signs'] = True
-    obj.extra['ddd:way:traffic_signals'] = False
+    #obj.extra['ddd:way:traffic_signals'] = True
     obj.set('ddd:way:lamps', default=True)
     obj.extra['ddd:way:sidewalk:width'] = 4.0  # TODO: Only inside cities or in bridges
 
-    if obj.extra.get('osm:oneway', False):
+    if obj.get('osm:oneway', False):
         obj.set('ddd:way:lanes', default=1)
-        obj.set('ddd:way:lane_width', 3.8)
     else:
         obj.set('ddd:way:lanes', default=2)
-        obj.set('ddd:way:lane_width', 3.1)
+
+    if int(obj.get('osm:lanes', 1)) == 1:
+        if obj.get('osm:oneway', False):
+            #obj.set('ddd:way:lane_width', 3.6)
+            obj.set('ddd:way:roadlines:sides', False)
+            obj.set('ddd:way:traffic_signals', False)
+        else:
+            obj.set('ddd:way:lane_width', 3.6)
+            obj.set('ddd:way:roadlines', False)
 
     root.find("/Ways").append(obj)
 
@@ -202,9 +209,17 @@ def osm_select_ways_living_street(obj, root):
     obj.extra['ddd:way:traffic_signals'] = False
     obj.set('ddd:way:lamps', default=True)
 
-    lanes = 1 if obj.extra.get('osm:oneway', False) else 2
+    lanes = int(obj.get('osm:lanes', 1 if obj.get('osm:oneway', False) else 2))
     obj.extra['ddd:way:lane_width'] = 3.2 * 1.2 if lanes == 1 else 3.0
     obj.set('ddd:way:lanes', default=lanes)
+
+    if lanes == 1:
+        if obj.get('osm:oneway', False):
+            obj.set('ddd:way:roadlines', False)
+            obj.set('ddd:way:traffic_signals', False)
+    elif lanes == 2:
+        obj.set('ddd:way:roadlines:sides', False)
+
     root.find("/Ways").append(obj)
 
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" = "track"]')
@@ -441,7 +456,7 @@ def osm_select_ways_barrier_retaining_wall(root, osm, obj):
     #obj.extra['ddd:way:weight'] = 90
     #obj.extra['ddd:way:lanes'] = None
     obj.extra['ddd:width'] = float(obj.extra.get('osm:width', 0.50))
-    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 1.4))
+    obj.extra['ddd:height'] = float(obj.extra.get('osm:height', 0.8))
     obj.extra['ddd:min_height'] = float(obj.extra.get('osm:min_height', 0.0))
     obj.extra['ddd:subtract_buildings'] = True
     obj = obj.material(ddd.mats.stone)

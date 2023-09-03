@@ -29,10 +29,12 @@ def osm_groups_items_areas_amenity_fountain(obj, root):
     #obj.extra['ddd:area:water'] = 'ignore'  # Water is created by the fountain object, but the riverbank still requires
     #obj.extra['ddd:item:type'] = "area"
     #obj.extra['osm:natural']
-    fountain.extra["ddd:elevation"] = "min"  # Make min+raise-height
+    fountain.set("ddd:elevation", "min")  # Make min+raise-height
+    fountain.set('ddd:area:hole:ground', True)
     root.find("/ItemsAreas").append(fountain)  # ItemsAreas
 
     # Area below fountain
+    '''
     area = fountain.copy()
     area.set('ddd:area:type', 'default')  # 'void'
     area.set('ddd:area:height', 0)  # 'void'
@@ -42,6 +44,7 @@ def osm_groups_items_areas_amenity_fountain(obj, root):
     area = area.material(ddd.mats.terrain)  # Better, use fountain:base (terrain vs base) leave void and construct fopuntain base base, get materia from surrounding possibly
     #area.set["ddd:elevation:"] = "min"  # Make min+raise-height
     root.find("/Areas").append(area)  # ItemsAreas
+    '''
 
 
 @dddtask(path="/Features/*", select='["osm:water" = "pond"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
