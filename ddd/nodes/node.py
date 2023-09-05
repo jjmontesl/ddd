@@ -618,7 +618,10 @@ class DDDNode():
     def is_empty(self):
         """
         Tells whether this object has no geometry, or geometry is empty, and
-        all children are also empty.
+        all children are also empty (contain no geometry).
+
+        NOTE: that merely having children does not make this true, at least one of the children needs to contain geometry.
+        TODO: Refactor method name, as it is confusing: call it "has_geometry" or something like that. Review usage.
         """
         for c in self.children:
             if not c.is_empty():

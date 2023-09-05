@@ -266,7 +266,7 @@ def osm_structured_generate_areas_calculate_buildings_ground_footprint(pipeline,
     buildings = root.select(path="/Buildings/*", func=lambda o:
         (o.get('ddd:building:parent', None) or not o.get('ddd:building:parts', None))
         and o.get("osm:building:min_level", None) is None
-        and o.get("ddd:area:hole:ground", None) is False)
+        and o.get("ddd:area:hole:ground", None) is not False)
     buildings = buildings.copy2()
     buildings = buildings.union()
     pipeline.data['buildings_level_0'] = buildings
@@ -526,7 +526,7 @@ def osm_structured_generate_areas_ground_fill(pipeline, osm, root, logger):
 
     union = ddd.group2([root.find("/Ways").select('["ddd:layer" ~ "^(0|-1a)$"]'),
                         root.find("/Areas").select('["ddd:layer" ~ "^(0|-1a)$"]'),
-                        root.find("/ItemsAreas").select('["ddd:layer" ~ "^(0|-1a)$"][ddd:area:hole:ground = True]'),
+                        #root.find("/ItemsAreas").select('["ddd:layer" ~ "^(0|-1a)$"][ddd:area:hole:ground = true]'),  # currently, a 'void' 'area is created
                         ])
     #union = union.clean_replace(eps=0.01)
     ##union = union.clean(eps=0.01)

@@ -31,7 +31,7 @@ def osm_augment_rocks_generate_rocks(obj, osm, root):
     num_items = int((obj.area() * item_density_m2))
 
     def filter_func_noise(coords):
-        val = noise.pnoise2(coords[0], coords[1], octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
+        val = noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
         return (val > random.uniform(-0.5, 0.5))
 
     items = ddd.group2(name='Rocks: %s' % obj.name)

@@ -32,5 +32,37 @@ class MaterialsCollection():
     def find(self, key):
         """
         Returns a material by its attribute name (not its Material name, so 'wood_planks' instead of 'Wood Planks'.
+        TODO: Rename method to 'get'
         """
         return getattr(self, key)
+
+
+class MaterialMapper():
+
+    # TODO: Not un use, made for OSM material searches
+
+    def __init__(self):
+        #self.mappings = []
+        pass
+
+    def fuzzysearch_list(self, text, color):  # , mappings=None):
+        """
+        Return an ordered list of materials that match requirements.
+        """
+
+        # Refine by tags
+
+        # Refine by color proximity
+
+        # Refine by name / fuzzy
+
+        # Refine by overrided mappings
+
+        raise NotImplementedError()
+
+    def fuzzysearch(self, text, color):
+        results = self.fuzzysearch_list(text, color)
+        if results:
+            return results[0]
+        
+        return None

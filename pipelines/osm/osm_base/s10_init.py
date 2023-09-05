@@ -220,6 +220,8 @@ def osm_materials():
                                  extra={'uv:scale': 0.25, 'tags': ['bricks', 'red', 'pbr']})
     ddd.mats.brick = ddd.mats.bricks
 
+    # Stone materials (note: stones and tiled-stones vs stone)
+
     ddd.mats.tiles_stones = ddd.material(name="Tiles Stones", color='#7b7d69', texture_color='#ffffff',
                                  metallic_factor=0.0, roughness_factor=1.0,  # bump_strength=2.0,
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles084_2K-JPG/Tiles084_2K_*.jpg",
@@ -229,13 +231,16 @@ def osm_materials():
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles083_2K-JPG/Tiles083_2K_*.jpg",
                                  extra={'uv:scale': 0.25})
 
-    ddd.mats.stones_white = ddd.material(name="Stones White", color='#9c9378',
-                                         texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_*.jpg",
-                                         extra={'uv:scale': 0.25})
     ddd.mats.stones_black = ddd.material(name="Stones Dark", color='#484846',
                                         texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
-                                        extra={'uv:scale': 0.25, 'tags': ['stones', 'tiles', 'dark', 'old', 'black', 'procedural', 'pbr']})
+                                        extra={'uv:scale': 0.25, 'ddd:material:tags': ['stones', 'tiles', 'irregular tiles', 'dark', 'old', 'black', 'procedural', 'pbr']})
     ddd.mats.stones = ddd.mats.stones_black
+    
+
+    ddd.mats.stone_white = ddd.material(name="Stone White", color='#9c9378',
+                                         texture_path=ddd.DATA_DIR + "/osmmaterials/[2K]Concrete23/Concrete23_*.jpg",
+                                         extra={'uv:scale': 0.25})
+    ddd.mats.stone = ddd.mats.stone_white
     
 
     ddd.mats.cement = ddd.material(name="Concrete", color='#b8b8a0', extra={'uv:scale': 0.25},  #
@@ -259,13 +264,6 @@ def osm_materials():
     ddd.mats.porcelain_blue_tiles_round = ddd.material("Porcelain Blue Tiles Round", color='#166fcf', 
                                                         metallic_factor=0.05, roughness_factor=0.5,
                                                         texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles118_2K-JPG/Tiles118_2K-JPG_*.jpg",)
-
-    
-    # FIXMME: Stone is failing?, anyway it was incorrect to use tiled stones for stone
-    # ddd.mats.stone = ddd.material(name="Stone", color='#484846', # Solid stone material, for waycross, beams, or similar (not to be confused with stones, in plural, though may be using the same texture)
-    #                              texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
-    #                              extra={'uv:scale': 1.0, 'tags': []})
-    ddd.mats.stone = ddd.mats.tiles_stones.copy(name="Stone")
 
 
     ddd.mats.plaster_paint_white = ddd.material(name="Plaster Paint White", color='#d1d2cd', texture_color='#ffffff',
@@ -382,7 +380,7 @@ def osm_materials():
 
     # Buildings
     '''
-    ddd.mats.building_1 = ddd.mats.stones_white  # ddd.material("Building Stone Tiles White", color='#f7f0be',
+    ddd.mats.building_1 = ddd.mats.stone_white  # ddd.material("Building Stone Tiles White", color='#f7f0be',
     ddd.mats.building_2 = ddd.mats.tiles_stones  # ddd.material(color='#bdb9a0')
     ddd.mats.building_3 = ddd.mats.cement  #  ddd.material(color='#c49156')
     ddd.mats.building_4 = ddd.mats.bricks

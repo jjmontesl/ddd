@@ -243,7 +243,7 @@ def osm_groups_areas_natural_wetland(obj, osm):
     """Define area data."""
     obj.name = "Wetland: %s" % obj.name
     obj.extra['ddd:area:type'] = "park"
-    obj.extra['ddd:aug:itemfill:density'] = 0.008
+    obj.extra['ddd:aug:itemfill:density'] = 0.020
     obj.extra['ddd:aug:itemfill:types'] = {'reed': 0.8, 'bush': 0.2, 'default': 0.01}
     obj = obj.material(ddd.mats.wetland)
     return obj
@@ -270,8 +270,8 @@ def osm_groups_areas_natural_scrub(obj, osm):
     """Define area data."""
     obj.name = "Scrub: %s" % obj.name
     obj.extra['ddd:area:type'] = "bunker"
-    obj.extra['ddd:aug:itemfill:density'] = 0.008
-    obj.extra['ddd:aug:itemfill:types'] = {'reed': 0.2, 'bush': 0.7, 'default': 0.1}  # bushes, depending on biome
+    obj.extra['ddd:aug:itemfill:density'] = 0.015
+    obj.extra['ddd:aug:itemfill:types'] = {'reed': 0.4, 'bush': 0.7, 'default': 0.1}  # bushes, depending on biome
     obj = obj.material(ddd.mats.forest)  # wetland
     return obj
 
@@ -446,7 +446,7 @@ def osm_groups_areas_tourism_artwork(obj, osm):
     obj.extra['ddd:steps:height'] = 0.16
     obj.extra['ddd:steps:depth'] = 0.38
     #obj.extra['ddd:height'] = 0.35
-    obj = obj.material(ddd.mats.stones)
+    obj = obj.material(ddd.mats.stone)
     return obj
 
 # Move this to "s30_interpretations" (not raw OSM)

@@ -107,6 +107,12 @@ class DDDHelper():
         return result
     
     def offset_objects(self, obj, offset=0.02):
+        """
+        Offset objects in vertical.
+
+        TODO: Currently naively done in order of enumeration. Ideally, they should be stacked according to containment.
+        """
+
         result = obj.copy()
         for (i, o) in enumerate(result.iterate_objects()):
             if o.is_empty(): continue

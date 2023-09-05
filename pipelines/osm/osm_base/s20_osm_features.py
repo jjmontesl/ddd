@@ -53,7 +53,9 @@ def osm_features_crop_extended_area(pipeline, osm, root, obj, logger):
     # Reordering of polygons is done here as otherwise buildings are analyzed incorrectly (and windows and other features are reversed inside)
     # Perhaps, if orientation is needed, it can/must be enforced later: e.g. before analyzing buildings
 
-    obj = obj.orient(ccw=False)
+    # This is possibly incorrect (rivers, coastlines...)
+    if obj.get('osm:building', None) or obj.get('osm:building:part', None):
+        obj = obj.orient(ccw=False)
 
     #obj = obj.clean(eps=0.0)
     #obj.validate()

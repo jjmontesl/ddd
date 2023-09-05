@@ -160,6 +160,9 @@ def osm_model_generate_areas(osm, root, pipeline, obj):
 
     area_3d = osm.areas3.generate_area_3d(obj)
 
+    if not area_3d:
+        return
+
     if not '_areas_areas_new' in pipeline.data:
         pipeline.data['_areas_areas_new'] = ddd.group3(name="Areas")
     pipeline.data['_areas_areas_new'].append(area_3d)
@@ -400,7 +403,7 @@ def osm_model_texts_fonts(pipeline, root, logger):
     #pipeline.data['font'] = Font()
     pipeline.data['font:atlas:opensansemoji_64'] = ddd.material(name="FontOpenSansEmoji-64", color='#f88888',
                                                 texture_path=ddd.DATA_DIR + "/fontatlas/opensansemoji64.greyscale.png",
-                                                alpha_cutoff=0.5, metallic_factor=0.0, roughness_factor=1.0,
+                                                alpha_cutoff=0.1, metallic_factor=0.0, roughness_factor=1.0,
                                                 extra={'ddd:material:type': 'font', 'ddd:collider': False, 'ddd:shadows': False,
                                                        'uv:scale': 1.00, 'zoffset': -5.0, 'ddd:texture:resize': 4096})
     pipeline.data['font:atlas:dddfonts_01_64'] = ddd.material(name="DDDFonts-01-64", color='#f88888',

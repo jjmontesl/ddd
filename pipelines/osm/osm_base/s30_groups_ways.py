@@ -544,11 +544,8 @@ def osm_select_ways_default_data(obj, root):
 
     obj.set('ddd:way:roadlines', default=False)
 
-
-    # TODO: rename as ddd:augment: or whatever
-    obj.set('ddd:way:lamps', default=False)
-    if obj.extra.get('osm:lit', None) is not None:
-        obj.extra['ddd:way:lamps'] = parse_bool(obj.get('osm:lit'))
+    # TODO: rename as ddd:augment:* or similar
+    obj.set('ddd:way:lamps', default=(obj.get('osm:lit', False) is False))
     obj.set('ddd:way:traffic_signals', default=False)
     obj.set('ddd:way:traffic_signs', default=False)
 

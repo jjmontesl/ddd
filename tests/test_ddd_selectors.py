@@ -50,14 +50,53 @@ def setup... (check test API for setup, etc)
 class SelectorTestCase(TestCase):
 
     def setUp(self):
-        node = ddd.DDDNode2(name="TestNode")
-        self.root = node
+        root = ddd.DDDNode2(name="TestNodeRoot")
+        self.root = root
+        
+        nodedata = ddd.DDDNode2(name="TestNodeWithData")
+        nodedata.set('test:bool:true', True)
+        nodedata.set('test:bool:false', False)
+        nodedata.set('test:bool:none', None)
+        nodedata.set('test:bool:true:str1', "True")
+        nodedata.set('test:bool:true:str2', "true")
+        root.append(nodedata)    
+        self.nodedata = nodedata
+
 
     def test_selector_simple(self):
         """
         Tests simple selectors.
         """
-        result = self.root.select(selector='["ddd:name" = "TestNode"]')
-        #print(result.children)
-        self.assertGreater(len(result.children), 0)
+        result = self.root.select(selector='["ddd:name" = "TestNodeRoot"]')
+        self.assertEqual(result.count(), 1)
+
+    def test_selector_bool(self):
+        """
+        Tests boolean conditions.
+        """
+        result = self.root.select(selector='["test:bool:true" = true]')
+        self.assertEqual(result.count(), 1)
+        self.assertEqual(result.one(), self.nodedata)
+
+        result = self.root.select(selector='["test:bool:true" = True]')
+        self.assertEqual(result.count(), 1)
+        self.assertEqual(result.one(), self.nodedata)
+
+        result = self.root.select(selector='["test:bool:true" = false]')
+        self.assertEqual(result.count(), 0)
+
+
+        '''
+        result = self.root.select(selector='["test:bool:true:str" = true]')
+        self.assertEqual(result.count(), 1)
+        self.assertEqual(result.one(), self.nodedata)
+
+        result = self.root.select(selector='["test:bool:true:str" = True]')
+        self.assertEqual(result.count(), 1)
+        self.assertEqual(result.one(), self.nodedata)
+
+        result = self.root.select(selector='["test:bool:true:str" = false]')
+        self.assertEqual(result.count(), 0)
+        '''
+
 

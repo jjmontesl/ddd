@@ -219,6 +219,44 @@ def column(height=2.00, r=0.075):
     return col
 
 
+def awning_default(width=1.64, height=0.50, depth=0.76, valance_height=0.16):
+    """
+    Simple awning ("toldo" in ES), inclined and frontal valance ("doselera" in ES), 
+    with a simple frame: two side arms and front. Height is the frame height, not 
+    including the valance.
+
+    Lying centered on the XZ plane, the frame lying on the floor plane (valance below 0).
+    """
+
+    frame_padding = 0.02
+
+    frame_thick = 0.04
+    frame_width = width - frame_padding * 2
+    frame = ddd.rect([-frame_width * 0.5, 0, frame_width * 0.5, -depth], name="Awning Frame")
+    frame_subtract = ddd.rect([-frame_width * 0.5 + frame_thick, 1.0, frame_width * 0.5 - frame_thick, -depth + frame_thick])
+    frame = frame.subtract(frame_subtract)
+
+    frame = frame.extrude(-frame_thick)
+    frame = frame.material(ddd.mats.metal)
+    frame = ddd.uv.map_cubic(frame)
+
+    awning_shape = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Awning Main")
+    valance_shape = ddd.rect([-width * 0.5, 0, width * 0.5, -valance_height], name="Awning Valance")
+    awning = ddd.group([awning_shape.triangulate(), valance_shape.triangulate()], name="Awning")
+    awning = awning.combine().merge_vertices()
+    awning = awning.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    awning = awning.vertex_func(
+        func=lambda x, y, z, iv, o: [x, y - depth - 0.005, z + 0.005],
+        mask=lambda x, y, z, iv: z <= 0
+    )
+    awning = awning.material(ddd.mats.rope)
+    awning = awning.twosided()
+    awning = ddd.uv.map_cubic(awning)
+
+    obj = ddd.group([frame, awning], name="Awning")
+
+    return obj
+
 
 '''
 def building_level(height, sides_buffer=None):

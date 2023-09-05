@@ -156,11 +156,12 @@ def ladder_pool(height=1.75, width=0.6):
     arc = circleline.buffer(arc_thick / 2, cap_style=ddd.CAP_FLAT)  #.intersection(ddd.rect([-length, 0, length, height * 2]))
     arc = arc.extrude(arc_thick, center=True).material(ddd.mats.steel)
     arc = arc.rotate(ddd.ROT_FLOOR_TO_FRONT)
-    arc = ddd.uv.map_cubic(arc)
 
     arc1 = arc.copy().translate([0, -width / 2, 0])
     arc2 = arc.copy().translate([0, +width / 2, 0])
-    item = ddd.group([arc1, arc2])
+    item = ddd.group([arc1, arc2]).combine()
+    item = item.merge_vertices().smooth()
+    item = ddd.uv.map_cubic(item)
 
     bar = ddd.point(name="Ladder step").buffer(bar_thick / 2).extrude(width - arc_thick, center=True).rotate(ddd.ROT_FLOOR_TO_FRONT)
     bar = bar.material(ddd.mats.steel)

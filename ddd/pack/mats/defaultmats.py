@@ -71,10 +71,10 @@ class DefaultMaterials(MaterialsCollection):
         self.steel = ddd.material(name="Steel", color='#78839c', metallic_factor=0.975, roughness_factor=0.125)
         self.metal = self.steel
 
-        #self.stones_white...
         #self.stones_black...
         #self.stones
 
+        #self.stone_white...
         self.stone = ddd.material(name="Stone", color='#9c9378')
 
         self.bricks = ddd.material(name="Bricks", color='#d49156')
@@ -129,7 +129,6 @@ class DefaultMaterials(MaterialsCollection):
         self.plastic_yellow = ddd.material("Plastic Yellow", color='#fffb08', metallic_factor=0.0, roughness_factor=0.7)
         self.plastic_blue = ddd.material("Plastic Blue", color='#1763bf', metallic_factor=0.0, roughness_factor=0.7)
         self.plastic_white = ddd.material("Plastic White", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)
-
 
         # Fabrics
         self.carpet_red = ddd.material("Carpet Red", color='#9c0b0b', metallic_factor=0.0, roughness_factor=0.975)

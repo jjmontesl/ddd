@@ -374,6 +374,8 @@ class Areas2DOSMBuilder():
 
 
         areas_2d = []
+        coastlines_1d_outline = coastlines_1d.outline().clean()
+
         #geoms = coastline_areas.geom.geoms if coastline_areas.geom.geom_type == 'MultiPolygon' else [coastline_areas.geom]
         for water_area_geom in coastline_areas.individualize().flatten().clean().children:
             # Find closest point, closest segment, and angle to closest segment
@@ -386,10 +388,11 @@ class Areas2DOSMBuilder():
             if not water_area_geom.geom: continue
 
             #water_area_geom.dump()
-            coastlines_1d = coastlines_1d.outline().clean()
+            if coastlines_1d_outline.is_empty():
+                continue
 
             water_area_point = water_area_geom.geom.representative_point()
-            p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = coastlines_1d.closest_segment(ddd.shape(water_area_point))
+            p, segment_idx, segment_coords_a, segment_coords_b, closest_obj, closest_d = coastlines_1d_outline.closest_segment(ddd.shape(water_area_point))
             pol = LinearRing([segment_coords_a, segment_coords_b, (water_area_point.coords[0][0], water_area_point.coords[0][1], 0)])
 
             if not pol.is_ccw:

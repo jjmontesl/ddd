@@ -103,17 +103,18 @@ class AreaItemsOSMBuilder():
 
         border_width = 0.3
         exterior = item_2d
-        interior = item_2d.subtract(item_2d.buffer(-border_width))
+        interior = item_2d.buffer(-border_width)
         
-        fountain = exterior.extrude_step(exterior, 1.0, base=False)
+        fountain = exterior.extrude_step(exterior, 1.0, base=False, method=ddd.EXTRUSION_METHOD_WRAP)
         fountain = fountain.extrude_step(interior, 0.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
-        fountain = fountain.extrude_step(interior, -1.4, cap=False)
+        fountain = fountain.extrude_step(interior, -1.4, cap=True, method=ddd.EXTRUSION_METHOD_WRAP)
         
         fountain = fountain.material(ddd.mats.stone)
         fountain = ddd.uv.map_cubic(fountain)
 
         water =  item_2d.buffer(-border_width / 2).triangulate().material(ddd.mats.water).translate([0, 0, 0.4])
-        water = ddd.uv.map_cubic(water)  # map_2d_linear
+        water = water.smooth()
+        water = ddd.uv.map_xy(water)
 
         #coords = item_2d.geom.centroid.coords[0]
         #insidefountain = urban.fountain(r=item_2d.geom).translate([coords[0], coords[1], 0.0])
@@ -129,7 +130,7 @@ class AreaItemsOSMBuilder():
         exterior = ddd.uv.map_cubic(exterior)
 
         water = item_2d.buffer(-0.2).triangulate().material(ddd.mats.water)
-        water = ddd.uv.map_cubic(water)  # map_2d_linear
+        water = ddd.uv.map_xy(water)  # map_2d_linear
 
         #coords = item_2d.geom.centroid.coords[0]
         #insidefountain = urban.fountain(r=item_2d.geom).translate([coords[0], coords[1], 0.0])
@@ -140,6 +141,9 @@ class AreaItemsOSMBuilder():
         return item_3d
 
     def generate_item_3d_swimming_pool(self, item_2d):
+        """
+        This swimming pool generates a border _outside_ its shape (note this is unusual for shape-based builders).
+        """
 
         # TODO: Move pool building to pack.buildings.pools (variety: border overhang, or smooth, rounded corners, rounded bottom...)
         vase_materials = [ddd.mats.porcelain_blue_tiles, ddd.mats.porcelain_blue_tiles_round]
@@ -149,21 +153,41 @@ class AreaItemsOSMBuilder():
 
         # TODO: This should be an area, so stuff can be positioned on top and etc.
         border_exterior_width = 1.0
-        exterior = item_2d.buffer(border_exterior_width).subtract(item_2d.buffer(-0.05)).extrude(3.0)
-        exterior = ddd.meshops.remove_faces_pointing(exterior, ddd.VECTOR_DOWN)
-        exterior = exterior.material(exterior_material)
-        exterior = ddd.uv.map_cylindrical(exterior)
-        exterior = exterior.translate([0, 0, -2.8])
+        border_interior_width = random.choice([0.0, 0.05, 0.1])  # for hanging borders
+        border_height = 0.2
+        pool_depth = 2.2  # relative to base, not to border
+        water_level = -0.35  # relative to base, not to border
+        height_margin = pool_depth + 0.2  # because the elevation positioning will account only for the interior, we need a safety margin
+        bevel = 0.015
+        
+        interior = item_2d
+        if border_interior_width > 0: interior = item_2d.buffer(-border_interior_width)
+        exterior = item_2d.buffer(border_exterior_width)
+        exterior = exterior.extrude_step(exterior, border_height + height_margin)
+        if bevel:
+            exterior = exterior.extrude_step(interior.buffer(bevel), 0.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+            exterior = exterior.extrude_step(interior, -bevel, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+        else:
+            exterior = exterior.extrude_step(interior, 0.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+        exterior = exterior.extrude_step(interior, -(border_height - bevel), method=ddd.EXTRUSION_METHOD_WRAP)
+        if border_interior_width > 0:
+            exterior = exterior.extrude_step(item_2d, 0.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
 
-        vase = item_2d.extrude_step(item_2d, -2.2, base=False)
+        exterior = exterior.translate([0, 0, -height_margin])
+        exterior = exterior.material(exterior_material)
+        exterior = exterior.smooth(ddd.PI_OVER_8)
+        exterior = ddd.uv.map_cubic(exterior)
+
+        vase = item_2d.extrude_step(item_2d, -pool_depth, base=False)
         vase = vase.material(vase_material)
         vase = ddd.uv.map_cubic(vase)
 
         water = item_2d.triangulate().material(ddd.mats.water)
         #water = ddd.meshops.subdivide_to_grid(water, float(ddd.data.get('ddd:area:subdivide')) * 2)
+        water = water.smooth()
         water = ddd.uv.map_xy(water)
         
-        water = water.translate([0, 0, -0.35])
+        water = water.translate([0, 0, water_level])
 
         #coords = item_2d.geom.centroid.coords[0]
         #insidefountain = urban.fountain(r=item_2d.geom).translate([coords[0], coords[1], 0.0])

@@ -34,17 +34,17 @@ def osm_groups_items_areas_amenity_fountain(obj, root):
     root.find("/ItemsAreas").append(fountain)  # ItemsAreas
 
     # Area below fountain
-    '''
+    # Creating the area for the areaitem seems necessary to allow for it to be subtracted from other areas, etc
     area = fountain.copy()
-    area.set('ddd:area:type', 'default')  # 'void'
-    area.set('ddd:area:height', 0)  # 'void'
+    area.set('ddd:area:type', 'void')  # 'void'
+    area.set('ddd:area:height', 0)  # 'void'  # relative height for item placement (?) or use separate attrib?
     area.set('ddd:area:weight', 200)  # Higher than default priority (100) ?
     area.set('ddd:area:area', area.geom.area)  # Needed for area to be processed in s40
-    area.set('ddd:layer', '0')
-    area = area.material(ddd.mats.terrain)  # Better, use fountain:base (terrain vs base) leave void and construct fopuntain base base, get materia from surrounding possibly
+    area.set('ddd:layer', fountain.get('ddd:layer', "0"))  
+    area.set('ddd:area:hole:ground', True)
+    area = area.material(ddd.mats.terrain)  # Better, use fountain:base (terrain vs base) leave void and construct fountain base base, get materia from surrounding possibly
     #area.set["ddd:elevation:"] = "min"  # Make min+raise-height
     root.find("/Areas").append(area)  # ItemsAreas
-    '''
 
 
 @dddtask(path="/Features/*", select='["osm:water" = "pond"]["geom:type" ~ "Polygon|MultiPolygon|GeometryCollection"]')
@@ -135,6 +135,7 @@ def osm_groups_items_areas_leisure_swimming_pool(obj, root, osm):
     pool_outline = pool.copy()
     pool_outline.geom = polygon.orient(pool_outline.geom, 1)
     pool_outline = pool_outline.outline()
+
     ladder_pos_d = random.uniform(0, pool_outline.length())
     ladder_pos, segment_idx, segment_coords_a, segment_coords_b = pool_outline.interpolate_segment(ladder_pos_d)
     ladder = obj.copy(name="Swimming Pool Ladder")
@@ -147,10 +148,10 @@ def osm_groups_items_areas_leisure_swimming_pool(obj, root, osm):
     #pool.extra["ddd:elevation"] = "max"
     root.find("/ItemsNodes").append(ladder)
 
-
     # Define terrain/area below pool as void
     area = pool.copy()
     area.set('ddd:area:type', 'void')  # 'void' # will be constructed by the pool areaitem
+    area.set('ddd:area:hole:ground', True)
     area.set('ddd:area:height', -2.0)  # 'void'
     #area.set('ddd:area:weight', 200)  # Higher than default priority (100) ?
     area.set('ddd:area:area', area.geom.area)  # Needed for area to be processed in s40

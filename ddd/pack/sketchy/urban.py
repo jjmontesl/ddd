@@ -545,6 +545,48 @@ def panel(height=1.0, width=2.0, depth=0.2, text=None, text_back=None, texture=N
 
     return panel
 
+def panel_marquee_angled(height=0.3, width=2.4, depth=1.0, corner_r=0.4, text=None):
+    """
+    A front marquee panel, like what commerces (or larger ones in cinemas or theaters) have 
+    on the facade, also providing shelter.The sides may be beveled or rounded.
+
+    Facing -Y, lying on the floor and front planes, centered on X.
+    
+    This could be considered a building:part of type "roof" (although this is not the case atm).
+
+    TODO: text should be a slot, so both text 2D or 3D, or other items can be used.
+    """
+    
+    if corner_r >= depth:
+        logger.warn("Marquee corner radius too large, setting below depth / 2")
+        corner_r = depth - 0.02
+
+    panel = ddd.rect([-width / 2.0, -depth, width / 2.0, depth])
+    if corner_r:
+        panel = panel.buffer(-corner_r).buffer(corner_r, join_style=ddd.JOIN_BEVEL)
+    panel = panel.subtract(ddd.rect([-width, 0, width, depth * 2]))
+
+    panel = panel.extrude(height)
+    panel = panel.material(ddd.material(color='#f0f0ff'))
+
+    panel = ddd.uv.map_cubic(panel)
+    panel.name = "Marquee"
+
+    panel = ddd.group3([panel])
+
+    if text:
+        #textobj = ddd.marker(name="Panel Text Marker").translate([0, -depth * 0.5 - 0.02, 0])
+        textobj = ddd.instance(None, name="Panel Text Marker").translate([0, -depth - 0.02, height / 2])
+        textobj.extra['ddd:text'] = text
+        textobj.extra['ddd:text:width'] = (width - corner_r * 2) * 0.9
+        textobj.extra['ddd:text:height'] = height * 0.9
+        textobj.extra['ddd:collider'] = False
+        textobj.extra['ddd:shadows'] = False
+        textobj.extra['ddd:occluder'] = False
+        #textobj.extra['ddd:layer'] = "Texts"
+        panel.append(textobj)
+    
+    return panel
 
 def busstop_small(height=2.50, panel_height=1.4, panel_width=0.45, text=None):
     text = "🚍 %s" % text
@@ -690,7 +732,7 @@ def sculpture_text(text, d=1.0, height=3.0, vertical=False):
     return item
 
 
-def drinking_water(height=1.4, r=0.2):
+def drinking_water(height=1.3, r=0.2):
     base = ddd.rect([r * 2, r * 2], name="Drinking water").recenter()
     item = base.scale(0.8)
     item = item.extrude_step(base, height)
@@ -707,14 +749,17 @@ def drinking_water(height=1.4, r=0.2):
 def fountain(r=1.5):
     # Base
     base = ddd.disc(r=r, resolution=2).extrude(0.30).material(ddd.mats.stone)
+    base = base.smooth()
     base = ddd.uv.map_cylindrical(base)
 
     # Fountain
     fountain = ddd.sphere(r=r, subdivisions=1).subtract(ddd.cube(d=r * 1.2)).subtract(ddd.sphere(r=r - 0.2, subdivisions=1))
     fountain = fountain.translate([0, 0, 1.2])  # TODO: align
     fountain = fountain.material(ddd.mats.stone)
+    fountain = fountain.smooth()
     fountain = ddd.uv.map_spherical(fountain)
     #.subtract(base)
+    
     # Water
     water = ddd.disc(r=r-0.2, resolution=2).triangulate().translate([0, 0, 1.1]).material(ddd.mats.water)
     water.extra['ddd:collider'] = False

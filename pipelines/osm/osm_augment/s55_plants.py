@@ -23,7 +23,7 @@ def osm_augment_plants_generate_grass_blades(obj, osm, root):
     num_blades = int((obj.area() * blade_density_m2))
 
     def filter_func_noise(coords):
-        val = noise.pnoise2(coords[0], coords[1], octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
+        val = noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
         return (val > random.uniform(-0.5, 0.5))
 
     blades = ddd.group2(name='Grass Blades: %s' % obj.name)
@@ -42,7 +42,7 @@ def osm_augment_plants_generate_flowers(obj, osm, root):
     num_blades = int((obj.area() * blade_density_m2))
 
     def filter_func_noise(coords):
-        val = noise.pnoise2(coords[0], coords[1], octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
+        val = noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
         return (val > random.uniform(-0.5, 0.5))
 
     blades = ddd.group2(name='Flowers: %s' % obj.name)
@@ -133,7 +133,7 @@ def generate_area_2d_park(area, tree_density_m2=0.0025, tree_types=None):
                     val = noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)
                     return (val > random.uniform(-0.5, 0.5))
 
-                for p in tree_area.random_points(num_points=num_trees):
+                for p in tree_area.random_points(num_points=num_trees, filter_func=filter_func_noise):
                     tree_type = ddd.random.weighted_choice(tree_types)
                     tree = ddd.point(p, name="Tree")
                     tree.extra['ddd:aug:status'] = 'added'

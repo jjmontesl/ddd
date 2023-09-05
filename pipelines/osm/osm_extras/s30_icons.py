@@ -7,7 +7,7 @@ from ddd.pipeline.decorators import dddtask
 from ddd.core.exception import DDDException
 
 
-svg_size_base = 5.0
+SVG_SIZE_BASE = 8.0  # In units in the SVG drawing (in OSM, the scale is 1unit = 1m)
 
 @dddtask(order="30.80.+.+", log=True)
 def osm_icons(root, osm):
@@ -28,8 +28,8 @@ def osm_icons_amenity(obj, root, osm, logger):
 
     if icon_data:
         obj.extra['svg:image:data'] = icon_data
-        obj.extra['svg:image:width'] = svg_size_base
-        obj.extra['svg:image:height'] = svg_size_base
+        obj.extra['svg:image:width'] = SVG_SIZE_BASE
+        obj.extra['svg:image:height'] = SVG_SIZE_BASE
 
 @dddtask(path="/ItemsNodes/*", select='["osm:shop"]')
 def osm_icons_shop(obj, root, osm, logger):
@@ -46,6 +46,6 @@ def osm_icons_shop(obj, root, osm, logger):
 
     if icon_data:
         obj.extra['svg:image:data'] = icon_data
-        obj.extra['svg:image:width'] = svg_size_base
-        obj.extra['svg:image:height'] = svg_size_base
+        obj.extra['svg:image:width'] = SVG_SIZE_BASE
+        obj.extra['svg:image:height'] = SVG_SIZE_BASE
 

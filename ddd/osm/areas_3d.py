@@ -115,7 +115,7 @@ class Areas3DOSMBuilder():
             return self.generate_area_3d_underwater(area_2d)
         elif area_2d.get('ddd:area:type', None) == 'railway':
             return self.osm.ways3.generate_way_3d_railway(area_2d)
-        elif area_2d.get('ddd:area:type', None) == 'ignore':
+        elif area_2d.get('ddd:area:type', None) in ('ignore', 'void'):
             return None
         else:
             return self.generate_area_3d_gen(area_2d)

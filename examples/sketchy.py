@@ -44,6 +44,7 @@ def pipeline_start(pipeline, root):
     item = urban.lamppost_high_mast()
     items.append(item)
 
+    
     item = buildings.portal()
     #item = ddd.meshops.batch_by_material(item)
     items.append(item)
@@ -54,6 +55,10 @@ def pipeline_start(pipeline, root):
     #item.show()
 
     item = buildings.window_with_border()
+    items.append(item)
+
+    item = buildings.awning_default()
+    item.show()
     items.append(item)
 
 
@@ -105,8 +110,16 @@ def pipeline_start(pipeline, root):
 
 
     item = urban.panel_digital()
+    items.append(item)
+
+    item = urban.panel_marquee_angled()
     item.show()
     items.append(item)
+
+    item = urban.panel_marquee_angled(depth=0.5, corner_r=0.5)
+    item.show()
+    items.append(item)
+
 
     item = urban.patio_table()
     items.append(item)
@@ -127,7 +140,6 @@ def pipeline_start(pipeline, root):
     items.append(item)
 
     item = urban.bank()
-    item.show()
     items.append(item)
 
     item = urban.bench()
