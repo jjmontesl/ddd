@@ -19,13 +19,14 @@ import logging
 import sys
 import time
 from typing import Iterable
+
 import numpy as np
+from trimesh import transformations
+
 from ddd.core.exception import DDDException
 from ddd.core.selectors.selector import DDDSelector
-from ddd.formats.presentation.generic import Generic3DPresentation
-from ddd.math.transform import DDDTransform
-from trimesh import transformations
 from ddd.ddd import ddd
+from ddd.math.transform import DDDTransform
 from ddd.util.common import parse_bool
 
 # Get instance of logger for this module
@@ -114,24 +115,28 @@ class DDDNode():
         return obj
 
     def copy2(self, name=None, copy_children=True):
+        from ddd.nodes.node2 import DDDNode2
+
         if name is None: name = self.name
         children = []
         # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
         if copy_children:
             children = [c.copy(copy_children=True) for c in self.children]
-        obj = ddd.DDDNode2(name=name, children=children, material=self.mat, extra=dict(self.extra))
+        obj = DDDNode2(name=name, children=children, material=self.mat, extra=dict(self.extra))
         obj.transform = self.transform.copy()
         return obj
 
     def copy3(self, name=None, copy_children=False):
         """
-        Copies this DDDObject2 into a DDDObject3, maintaining metadata but NOT children or geometry.
+        Copies this DDDNode2 into a DDDNode3, maintaining metadata but NOT children or geometry.
         """
         # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
+        from ddd.nodes.node3 import DDDNode3
+
         if copy_children:
-            obj = ddd.DDDObject3(name=name if name else self.name, children=[(c.copy3(copy_children=True) if hasattr(c, 'copy3') else c.copy()) for c in self.children], mesh=None, extra=dict(self.extra), material=self.mat)
+            obj = DDDNode3(name=name if name else self.name, children=[(c.copy3(copy_children=True) if hasattr(c, 'copy3') else c.copy()) for c in self.children], mesh=None, extra=dict(self.extra), material=self.mat)
         else:
-            obj = ddd.DDDObject3(name=name if name else self.name, children=[], mesh=None, extra=dict(self.extra), material=self.mat)
+            obj = DDDNode3(name=name if name else self.name, children=[], mesh=None, extra=dict(self.extra), material=self.mat)
         obj.transform = self.transform.copy()
 
         return obj
@@ -539,9 +544,9 @@ class DDDNode():
 
     def grouptyped(self, children=None, name=None, empty=None):
         result = None
-        if isinstance(self, ddd.DDDObject2):
+        if isinstance(self, ddd.DDDNode2):
             result = ddd.group(children, empty=2)
-        elif isinstance(self, ddd.DDDObject3) or isinstance(self, ddd.DDDInstance):
+        elif isinstance(self, ddd.DDDNode3) or isinstance(self, ddd.DDDInstance):
             result = ddd.group(children, empty=3)
         else:
             result = ddd.group(children, empty=empty)
@@ -650,8 +655,10 @@ class DDDNode():
         """
         Shows the node and its descendants.
         """
-        #try:
+        
+        from ddd.formats.presentation.generic import Generic3DPresentation
 
+        #try:
         # Present 2D objects as 3D (recursively)
         showobj = Generic3DPresentation.present(self)
         showobj.show3(label=label)
@@ -738,13 +745,13 @@ class DDDNode():
 
 
 """
-class DDDNode(DDDObject3):
+class DDDNode(DDDNode3):
 
 
     def __init__(self, name=None, children=None, extra=None, material=None):
         self.transform = DDDTransform()
 
-        # Temporary while we extend DDDObject3
+        # Temporary while we extend DDDNode3
         super().__init__(name, children, None, extra, material)
 
     def __repr__(self):
@@ -844,16 +851,16 @@ class DDDNode(DDDObject3):
         TODO: Maybe this method should not exist, and client code should either replace instances before combining (there's curerntly no method for that),
               or remove them if they are to be managed separately.
         '''
-        return DDDObject3(name=name)
+        return DDDNode3(name=name)
         if self.ref:
             meshes = self.ref._recurse_meshes(True, False)
             obj = ddd.group3(name=name)
             for m in meshes:
-                mo = DDDObject3(mesh=m)
+                mo = DDDNode3(mesh=m)
                 obj.append(mo)
             return obj.combine(name=name)
         else:
-            return DDDObject3(name=name)
+            return DDDNode3(name=name)
 
     def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None):
 

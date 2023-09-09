@@ -67,7 +67,7 @@ class BuildingSegment:
     '''
 
 
-class Building():  # DDDObject3, DDDDataObject
+class Building():  # DDDNode3, DDDDataObject
 
     def __init__(self, obj):  # extend or wrap?
         self.obj = obj

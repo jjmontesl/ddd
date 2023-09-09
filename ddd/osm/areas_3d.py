@@ -260,7 +260,7 @@ class Areas3DOSMBuilder():
 
                 except Exception as e:
                     logger.error("Could not generate area: %s (%s)", e, area_2d)
-                    area_3d = ddd.DDDObject3()
+                    area_3d = ddd.DDDNode3()
 
             elif area_2d.extra.get('ddd:area:type', None) == 'void':
                 area_3d = area_2d.copy3("Void area: %s" % area_2d.name)
@@ -277,7 +277,7 @@ class Areas3DOSMBuilder():
                     area_2d.validate()
                 except Exception as e:
                     logger.warn("Invalid area %s: %s", area_2d, e)
-                    return #None ddd.DDDObject3()  #None
+                    return #None ddd.DDDNode3()  #None
 
 
                 try:
@@ -305,12 +305,12 @@ class Areas3DOSMBuilder():
 
                 except Exception as e:
                     logger.error("Could not generate area: %s (%s)", e, area_2d)
-                    area_3d = ddd.DDDObject3()
+                    area_3d = ddd.DDDNode3()
 
         else:
             if len(area_2d.children) == 0:
                 logger.warning("Null area geometry (children?): %s", area_2d)
-            area_3d = ddd.DDDObject3()
+            area_3d = ddd.DDDNode3()
 
         # Subdivide
         if int(ddd.data.get('ddd:area:subdivide', 0)) > 0:

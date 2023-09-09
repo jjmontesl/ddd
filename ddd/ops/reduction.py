@@ -9,7 +9,7 @@ from ddd.ddd import ddd
 from shapely.geometry import Polygon, polygon
 from trimesh import creation, intersections
 
-from ddd.nodes.node2 import DDDObject2
+from ddd.nodes.node2 import DDDNode2
 from ddd.nodes.instance import DDDInstance
 
 # Get instance of logger for this module
@@ -79,7 +79,13 @@ class DDDMeshOps():
             if target_ratio:
                 target_faces = int(len(o3d_mesh.triangles) * target_ratio)
 
-            o3d_result = o3d_mesh.simplify_quadric_decimation(target_number_of_triangles=target_faces)
+            try:
+                o3d_result = o3d_mesh.simplify_quadric_decimation(target_number_of_triangles=target_faces)
+            except Exception as e:
+                logger.error("Could not simplify by quadric decimation: %s", o3d_mesh)
+                obj.dump(data=True)
+                return obj
+
             logger.info("Simplified object from %d to %d faces", len(o3d_mesh.triangles), len(o3d_result.triangles))
             obj.mesh.vertices  = o3d_result.vertices
             obj.mesh.faces = o3d_result.triangles
@@ -129,7 +135,7 @@ class DDDMeshOps():
         Subdivides a mesh ensuring that every face has vertices in the grid.
 
         TODO: Update UVs / normals.
-        TODO: mention this method in the doc for DDDObject3.subdivide
+        TODO: mention this method in the doc for DDDNode3.subdivide
         TODO: optionally and by default flip in checkerboard (like grid3 does)
         """
         result = obj.copy()
@@ -226,7 +232,7 @@ class DDDMeshOps():
 
                     # May be unnecessary, didn't solve the core dump issue
                     try:
-                        ogeom = DDDObject2(geom=geom)
+                        ogeom = DDDNode2(geom=geom)
                         ogeom = ogeom.clean(eps=0)
                         ogeom.validate()
                         geom = ogeom.geom

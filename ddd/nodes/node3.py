@@ -110,7 +110,7 @@ class DDDNode3(DDDNode):
             children = [c.copy() for c in self.children]
             # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
         obj = DDDNode3(name=name, children=children, mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra), transform=self.transform.copy())
-        #obj = DDDObject3(name=name, children=[c.copy() for c in self.children], mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
+        #obj = DDDNode3(name=name, children=[c.copy() for c in self.children], mesh=self.mesh.copy() if self.mesh else None, material=self.mat, extra=dict(self.extra))
 
         return obj
 
@@ -132,7 +132,7 @@ class DDDNode3(DDDNode):
         instances in lists.
         """
         # TODO: Study if the system shall modify instances and let user handle cloning, this method would be unnecessary
-        super(DDDObject3, self).replace(obj)
+        super(DDDNode3, self).replace(obj)
         self.mesh = obj.mesh
         return self
 
@@ -430,7 +430,7 @@ class DDDNode3(DDDNode):
         mesh.fix_normals()
         mesh.merge_vertices(merge_norm=True)
 
-        obj = DDDObject3(mesh=mesh, children=self.children, material=self.mat)
+        obj = DDDNode3(mesh=mesh, children=self.children, material=self.mat)
         return obj
 
     def _csg_trimesh(self, other, operation):
@@ -566,7 +566,7 @@ class DDDNode3(DDDNode):
     #def extrude_step(self, obj_2d, offset, cap=True, base=None, method=D1D2D3.EXTRUSION_METHOD_WRAP):
     def extrude_step(self, obj_2d, offset, cap=True, base=None, method=extrusion.EXTRUSION_METHOD_WRAP):
         """
-        Base argument is supported for compatibility with DDDObject2 signature, but ignored.
+        Base argument is supported for compatibility with DDDNode2 signature, but ignored.
         """
 
         if self.children:
@@ -985,7 +985,7 @@ class DDDNode3(DDDNode):
         """
         cobjs = [self]
         for c in self.children:
-            if isinstance(c, DDDObject3):
+            if isinstance(c, DDDNode3):
                 cobjs.extend(c.recurse_objects())
         return cobjs
 
@@ -1166,4 +1166,4 @@ class DDDNode3(DDDNode):
                 f.write(data)
 
 
-DDDObject3 = DDDNode3
+DDDNode3 = DDDNode3

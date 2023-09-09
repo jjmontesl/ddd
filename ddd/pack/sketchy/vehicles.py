@@ -58,6 +58,9 @@ def cart_wheel_axis(height_to_axis=0.1, wheel_radius=0.075, width=0.06, thick_in
 
 
 def cart_wheel_and_axis():
+    """
+    Small rigid wheel and axis, like those in supermarket carts or soapbox cars.
+    """
     axis = cart_wheel_axis()
     wheel = cart_wheel().rotate(ddd.ROT_TOP_CW)
     wheel = wheel.translate(axis.extra['ddd:connector:axis'])
@@ -71,7 +74,7 @@ def rim(r=0.20):
 def tyre(r=0.25, r_rim_ratio=0.8, width=0.25):
     pass
 
-def wheel(r=0.25, r_rim_ratio=0.8, width=0.25):
+def wheel_with_rim_and_tyre(r=0.25, r_rim_ratio=0.8, width=0.25):
     pass
 
 def car():

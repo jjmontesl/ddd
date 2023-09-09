@@ -460,9 +460,9 @@ class Ways1DOSMBuilder():
         part2.geom = LineString(way.geom.coords[coord_idx:])
         part2.extra['ddd:connections'] = []
         '''
-        part1 = DDDObject2(name=way.name + "/1", geom=LineString(way.geom.coords[:coord_idx + 1]), extra=copy.deepcopy(way.extra))
+        part1 = DDDNode2(name=way.name + "/1", geom=LineString(way.geom.coords[:coord_idx + 1]), extra=copy.deepcopy(way.extra))
         part1.extra['ddd:connections'] = []
-        part2 = DDDObject2(name=way.name + "/2", geom=LineString(way.geom.coords[coord_idx:]), extra=copy.deepcopy(way.extra))
+        part2 = DDDNode2(name=way.name + "/2", geom=LineString(way.geom.coords[coord_idx:]), extra=copy.deepcopy(way.extra))
         part2.extra['ddd:connections'] = []
         '''
 

@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class PathHeightFunction(HeightFunction):
 
     def __init__(self, path):
-        assert(isinstance(path, ddd.DDDObject2))
+        assert(isinstance(path, ddd.DDDNode2))
         self.path = path
 
     def value(self, x, y, z, idx=None, o=None):

@@ -170,7 +170,7 @@ class DDDInstance(DDDNode):
         TODO: Maybe this method should not exist, and client code should either replace instances before combining (there's currently no method for that),
               or remove them if they are to be managed separately.
         """
-        return DDDObject3(name=name)
+        return DDDNode3(name=name)
 
         # This was all commented out before the entire combine function was
         if self.ref:

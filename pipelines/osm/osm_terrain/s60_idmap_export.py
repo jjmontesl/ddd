@@ -106,7 +106,7 @@ def osm_terrain_export_idmap(root, pipeline, osm, logger):
                 continue
 
             items = sorted(items, key=lambda o: o.area)
-            item = items[0]._ddd_obj  # TODO: This is unsafe, generate a dictionary of id(geom) -> object (see https://shapely.readthedocs.io/en/stable/manual.html#strtree.STRtree.strtree.query), and see DDDObject2.geom_recursive
+            item = items[0]._ddd_obj  # TODO: This is unsafe, generate a dictionary of id(geom) -> object (see https://shapely.readthedocs.io/en/stable/manual.html#strtree.STRtree.strtree.query), and see DDDNode2.geom_recursive
 
             item_splat_key = SPLAT_UNKNOWN
 

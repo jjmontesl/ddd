@@ -118,12 +118,13 @@ def osm_models_instances_buffers_items(pipeline, osm, root, logger):
     keys = ('grassblade', 'grassblade-dry', 
             'flowers-blue', 'flowers-roses', 
             'natural-rock-1', 'natural-rock-2', 'natural-rock-3', 'natural-rock-4',
+            'tree-default-1', 'tree-default-2', # 'tree-default-3', 'tree-default-4', 'tree-default-5',
             'tree-bush-1', 'tree-bush-2', 'tree-bush-3', 'tree-bush-4', 'tree-bush-5',
             'tree-reed-1', 'tree-reed-2', 'tree-reed-3', 'tree-reed-4', 'tree-reed-5',
             'tree-olive-1', 'tree-olive-2', 'tree-olive-3', 'tree-olive-4', 'tree-olive-5',
             'tree-palm-1', 'tree-palm-2', 'tree-palm-3', 'tree-palm-4', 'tree-palm-5',
             'tree-fir-1', 'tree-fir-2', 'tree-fir-3', 'tree-fir-4', 'tree-fir-5',
-            'bicycle-parking-bar-u',
+            'bicycle-parking-bar-u', 'lamppost-default-1',
             )
 
     for key in keys:

@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import logging
 import math
-import sys
-import json
 
 import numpy as np
 import trimesh
@@ -32,7 +31,6 @@ from trimesh.base import Trimesh
 from ddd.core import settings
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
-from ddd.core.selectors.selector_ebnf import selector_ebnf
 from ddd.materials.material import DDDMaterial
 from ddd.ops import extrusion
 from ddd.math.bounds import DDDBounds
@@ -58,12 +56,7 @@ class D1D2D3():
 
     FLOAT_INF_POS = float('inf')
     FLOAT_INF_NEG = float('-inf')
-
-    # Positive rotations are counter-clockwise (from 0, into the first quadrant)
-    ROT_FLOOR_TO_FRONT = (math.pi / 2.0, 0, 0)
-    ROT_TOP_CW = (0, 0, -math.pi / 2.0)
-    ROT_TOP_CCW = (0, 0, math.pi / 2.0)
-    ROT_TOP_HALFTURN = (0, 0, math.pi)
+    FLOAT_NAN = float('nan')
 
     DEG_TO_RAD = (math.pi / 180.0)
     RAD_TO_DEG = (180.0 / math.pi)
@@ -72,13 +65,28 @@ class D1D2D3():
     TWO_PI = math.pi * 2.0
     TAU = math.pi * 2.0
     PI_OVER_2 = math.pi / 2.0
+    PI_OVER_3 = math.pi / 3.0
     PI_OVER_4 = math.pi / 4.0
     PI_OVER_8 = math.pi / 8.0
-    PI_OVER_3 = math.pi / 3.0
-    GOLDEN_RATIO = (1 + 5 ** 0.5) / 2
+    PI_OVER_12 = math.pi / 12.0
+    SQRT_2 = math.sqrt(2.0)
+    GOLDEN_RATIO = (1 + 5 ** 0.5) / 2  # Golden ratio > 1 (1.618...)
 
+    # Positive rotations are counter-clockwise (from 0, into the first quadrant)
+    ROT_FLOOR_TO_FRONT = (PI_OVER_2, 0, 0)
+    ROT_FLOOR_TO_BACK = (-PI_OVER_2, 0, 0)
+    ROT_TOP_CW = (0, 0, -PI_OVER_2)
+    ROT_TOP_CCW = (0, 0, PI_OVER_2)
+    ROT_TOP_HALFTURN = (0, 0, PI)
+
+    # Bytes conversion factors
+    B_TO_KB = 1 / 1024
     B_TO_MB = 1 / (1024 * 1024)
+    MB_TO_B = 1024 * 1024
+    MB_TO_KB = 1024
 
+    # Vectors
+    # TODO: Use Vector3 or Vector2 members? check if they could be numpy arrays?
     VECTOR_UP = np.array([0.0, 0.0, 1.0])
     VECTOR_DOWN = np.array([0.0, 0.0, -1.0])
     VECTOR_RIGHT = np.array([1.0, 0.0, 0.0])
@@ -89,7 +97,9 @@ class D1D2D3():
     ANCHOR_CENTER = (0.5, 0.5)
     ANCHOR_BOTTOM_CENTER = (0.5, 0.0)
 
-    EPSILON = 1e-8
+    # According to numpy.finfo and https://stackoverflow.com/questions/56514892/how-many-digits-can-float8-float16-float32-float64-and-float128-contain
+    # float32 can reliably store 6 decimal digits, float64 can reliably store 15 decimal digits
+    EPSILON = 1e-6  # Was 1e-8 up to ddd-0.7.0
 
     EXTRUSION_METHOD_WRAP = extrusion.EXTRUSION_METHOD_WRAP
     EXTRUSION_METHOD_SUBTRACT = extrusion.EXTRUSION_METHOD_SUBTRACT # For internal/external/vertical extrusions
@@ -100,14 +110,6 @@ class D1D2D3():
 
     data = {}
 
-    #@staticmethod
-    def initialize_logging(self, debug=True):
-        """
-        Convenience method for users.
-        """
-        D1D2D3Bootstrap.initialize_logging(debug)
-
-    #@staticmethod
     def trace(self, local=None):
         """
         Start an interactive session.
@@ -120,47 +122,46 @@ class D1D2D3():
         logger.info("Debugging console: %s", local)
         code.interact(local=local)
 
-    #@staticmethod
     def material(self, name=None, color=None, extra=None, **kwargs):
         #material = SimpleMaterial(diffuse=color, )
         #return (0.3, 0.9, 0.3)
         material = DDDMaterial(name=name, color=color, extra=extra, **kwargs)
         return material
 
-    #@staticmethod
     def point(self, coords=None, name=None, extra=None):
+        """
+        Creates a point element as 2D geometryu at the given coordinates.
+
+        The point will be stored as geometry with Z coordinate, even if it's not passed.
+        """
         if coords is None:
             coords = [0, 0, 0]
         elif len(coords) == 2:
             coords = [coords[0], coords[1], 0.0]
         geom = geometry.Point(*coords[:3])
-        return self.DDDObject2(geom=geom, name=name, extra=extra)
+        return self.DDDNode2(geom=geom, name=name, extra=extra)
 
-    #@staticmethod
     def line(self, points, name=None):
         '''
         Expects an array of coordinate tuples.
         '''
         geom = geometry.LineString(points)
-        return self.DDDObject2(geom=geom, name=name)
+        return self.DDDNode2(geom=geom, name=name)
 
-    #@staticmethod
     def polygon(self, coords, name=None):
         geom = geometry.Polygon(coords)
-        return self.DDDObject2(geom=geom, name=name)
+        return self.DDDNode2(geom=geom, name=name)
 
-    #@staticmethod
     def regularpolygon(self, sides, r=1.0, name=None):
         coords = [[math.cos(-i * math.pi * 2 / sides) * r, math.sin(-i * math.pi * 2 / sides) * r] for i in range(sides)]
         return ddd.polygon(coords, name=name)
 
-    #@staticmethod
     def shape(self, geometry, name=None):
         """
         GeoJSON or dict
         """
         geom = shape(geometry)
-        return ddd.DDDObject2(geom=geom, name=name)
+        return ddd.DDDNode2(geom=geom, name=name)
     
     def svgpath(self, path, name=None):
         """
@@ -174,15 +175,13 @@ class D1D2D3():
         if name: result.setname(name)
         return result
 
-    #@staticmethod
     def geometry(self, geometry):
         """
         @deprecate in favour of shape
         """
         geom = shape(geometry)
-        return ddd.DDDObject2(geom=geom)
+        return ddd.DDDNode2(geom=geom)
 
-    #@staticmethod
     def rect(self,  bounds=None, name=None):
         """
         Returns a 2D rectangular polygon for the given bounds [[xmin, ymin, 0], [xmax, ymax, 0]].
@@ -208,27 +207,25 @@ class D1D2D3():
                                  (cmax[0], cmax[1], 0.0), (cmin[0], cmax[1], 0.0)])
         #geom = polygon.orient(geom, -1)  # Until 2022-10, this line was enabled
         #geom = polygon.orient(geom, 1)  # CCW (this is also how vertices above are defined)
-        return self.DDDObject2(geom=geom, name=name)
+        return self.DDDNode2(geom=geom, name=name)
 
-    #@staticmethod
     def disc(self, center=None, r=None, resolution=4, name=None):
         if isinstance(center, Iterable): center = ddd.point(center, name=name)
         if center is None: center = ddd.point([0, 0, 0], name=name)
         if r is None: r = 1.0
         geom = center.geom.buffer(r, resolution=resolution)
-        return self.DDDObject2(geom=geom, name=name)
+        return self.DDDNode2(geom=geom, name=name)
+    
 
-    #@staticmethod
     def sphere(self, center=None, r=None, subdivisions=2, name=None):
         if center is None: center = ddd.point([0, 0, 0])
         if isinstance(center, Iterable): center = ddd.point(center)
         if r is None: r = 1.0
         mesh = primitives.Sphere(center=center.point_coords(), radius=r, subdivisions=subdivisions)
         mesh = Trimesh([[v[0], v[1], v[2]] for v in mesh.vertices], list(mesh.faces))
-        return self.DDDObject3(mesh=mesh, name=name)
+        return self.DDDNode3(mesh=mesh, name=name)
 
-    @staticmethod
-    def cube(center=None, d=None, name=None):
+    def cube(self, center=None, d=None, name=None):
         """
         Cube is sitting on the Z plane defined by the center position.
         `d` is the distance to the side, so cube side length will be twice that value.
@@ -264,7 +261,7 @@ class D1D2D3():
     def trimesh(self, mesh=None, name=None):
         """
         """
-        result = self.DDDObject3(name=name, mesh=mesh)
+        result = self.DDDNode3(name=name, mesh=mesh)
         return result
 
     def mesh(self, mesh=None, name=None):
@@ -273,7 +270,7 @@ class D1D2D3():
         return self.trimesh(mesh=mesh, name=name)
 
     def path3(self, mesh_or_coords=None, name=None):
-        if isinstance(mesh_or_coords, self.DDDObject2):
+        if isinstance(mesh_or_coords, self.DDDNode2):
             if mesh_or_coords.geom.geom_type != 'LineString':
                 raise ValueError('Expected a LineString geometry: %s', mesh_or_coords)
             coords = mesh_or_coords.geom.coords
@@ -309,10 +306,10 @@ class D1D2D3():
         return marker
 
     def ddd2(self, *args, **kwargs):
-        return self.DDDObject2(*args, **kwargs)
+        return self.DDDNode2(*args, **kwargs)
 
     def ddd3(self, *args, **kwargs):
-        return self.DDDObject3(*args, **kwargs)
+        return self.DDDNode3(*args, **kwargs)
 
     def grid2(self, bounds: DDDBounds, detail=1.0, name=None, adjust=False):
 
@@ -334,10 +331,10 @@ class D1D2D3():
                 rect.geom = orient(rect.geom, 1)
                 rects.append(rect.geom)
         geom = geometry.MultiPolygon(rects)
-        #DDDObject2(geom=geom).show()
+        #DDDNode2(geom=geom).show()
         #geom = geom.buffer(0.0)  # Sanitize, but this destroys the grid
-        #DDDObject2(geom=geom).show()
-        return self.DDDObject2(name=name, geom=geom)
+        #DDDNode2(geom=geom).show()
+        return self.DDDNode2(name=name, geom=geom)
 
     def grid3(self, bounds, detail=1.0, name=None):
         """
@@ -373,7 +370,7 @@ class D1D2D3():
         mesh = Trimesh(vertices, faces)
         #mesh.fix_normals()
         mesh.merge_vertices()
-        return self.DDDObject3(name=name, mesh=mesh)
+        return self.DDDNode3(name=name, mesh=mesh)
 
     #@staticmethod
     def group2(self, children=None, name=None, empty=None, extra=None):
@@ -407,9 +404,9 @@ class D1D2D3():
 
             #logger.debug("Tried to create empty group.")
             #return None
-        elif isinstance(children[0], self.DDDObject2):
+        elif isinstance(children[0], self.DDDNode2):
             result = self.DDDNode2(children=children, name=name)
-        elif isinstance(children[0], ddd.DDDObject3) or isinstance(children[0], self.DDDInstance):
+        elif isinstance(children[0], ddd.DDDNode3) or isinstance(children[0], self.DDDInstance):
             result = self.DDDNode3(children=children, name=name)
         elif isinstance(children[0], self.DDDNode):
 
@@ -439,7 +436,6 @@ class D1D2D3():
         obj = self.DDDInstance(obj, name)
         return obj
 
-    #@staticmethod
     def json_serialize(self, obj):
         if hasattr(obj, 'export'):
             data = obj.export()
@@ -481,6 +477,7 @@ class D1D2D3():
             
     def load(self, name):
 
+        # TODO: Implement, and move to GLB loader
         def load_glb():
             scene = trimesh.load("some_file.glb")
             #mesh = trimesh.load_mesh('./test.stl',process=False) mesh.is_watertight
@@ -492,13 +489,22 @@ class D1D2D3():
         if (name.endswith(".glb")):
             return load_glb(name)
 
-        if (name.endswith(".svg")):
+        elif (name.endswith(".svg")):
             from ddd.formats.loader.svgloader import DDDSVGLoader
             return DDDSVGLoader.load_svg(name)
+    
+        elif (name.endswith(".fbx")):
+            raise NotImplementedError()
+        
+        elif (name.endswith(".png")):
+            raise NotImplementedError()
+        elif (name.endswith(".jpg")):
+            raise NotImplementedError()
+        
         else:
             raise DDDException("Cannot load file (unknown extension): %s" % (name))
 
-    #@staticmethod
+    
     def initialize(self):
         """
         Initializes the ddd module and instance.
@@ -522,15 +528,6 @@ class D1D2D3():
         ddd.DDDInstance = DDDInstance
         ddd.DDDNode2 = DDDNode2
         ddd.DDDNode3 = DDDNode3
-
-        #ddd.node2 = DDDNode2
-        #ddd.node3 = DDDNode3
-        #Node = DDDObject
-        #Geometry2D = DDDObject2
-        #Mesh = DDDObject3
-
-        ddd.DDDObject2 = DDDNode2
-        ddd.DDDObject3 = DDDNode3
         ddd.DDDPath3 = DDDPath3
 
         # NOTE: This way of initializing modules and assigning them to ddd is not too pythonic and confuses some code editors.

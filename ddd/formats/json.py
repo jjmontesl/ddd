@@ -11,7 +11,6 @@ from trimesh import transformations
 
 from ddd.core.exception import DDDException
 from ddd.core.cli import D1D2D3Bootstrap
-from ddd.ddd import ddd
 
 
 # Get instance of logger for this module
@@ -22,7 +21,7 @@ class DDDJSONFormat():
     @staticmethod
     def export_json(obj, path_prefix="", instance_mesh=True, instance_marker=False):
 
-        from ddd.ddd import D1D2D3
+        from ddd.ddd import ddd
         data = DDDJSONFormat.export_data(obj, path_prefix, "", instance_mesh, instance_marker)
         encoded = json.dumps(data, indent=2, default=lambda x: ddd.json_serialize(x))
 

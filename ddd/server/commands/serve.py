@@ -254,7 +254,7 @@ class ServerServeCommand(DDDCommand):
             result = {'data': self.pipeline.root, 'label': 'DDDServer Root Node'}
 
         # Process result
-        #if isinstance(root, DDDObject2):
+        #if isinstance(root, DDDNode2):
         #    root = root.copy3(copy_children=True)
         #root = root.find("/Elements3")
 

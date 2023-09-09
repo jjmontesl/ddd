@@ -545,9 +545,9 @@ def osm_select_ways_default_data(obj, root):
     obj.set('ddd:way:roadlines', default=False)
 
     # TODO: rename as ddd:augment:* or similar
-    obj.set('ddd:way:lamps', default=(obj.get('osm:lit', False) is False))
-    obj.set('ddd:way:traffic_signals', default=False)
-    obj.set('ddd:way:traffic_signs', default=False)
+    obj.set('ddd:way:lamps', bool(obj.get('osm:lit', obj.get('ddd:way:lamps', None))))
+    obj.set('ddd:way:traffic_signals', default=None)
+    obj.set('ddd:way:traffic_signs', default=None)
 
 
 @dddtask(order="30.30.40.+", path="/Ways/*")

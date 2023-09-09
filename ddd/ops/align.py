@@ -44,7 +44,7 @@ class DDDAlign():
             posx, posy = math.cos(angle) * d, math.sin(angle) * d
             newc = c.copy()
             if rotate:
-                if isinstance(newc, ddd.DDDObject3):
+                if isinstance(newc, ddd.DDDNode3):
                     newc = newc.rotate([0, 0, angle + (math.pi / 2)])
                 else:
                     newc = newc.rotate(angle)
@@ -115,6 +115,8 @@ class DDDAlign():
         Source can be any DDDObject (2D, 3D or instances).
 
         If target is a geometry, uses its coordinates.
+
+        Note: Used e.g. by 'waste container' to replicate the wheels.
         """
 
         result = source.grouptyped(name="Group: %s" % source.name)
@@ -124,7 +126,8 @@ class DDDAlign():
         # Note: it's called vertex_iterator for 3D objects
         for c in set(target.coords_iterator()):
             obj = source.copy()
-            obj = obj.translate(c)
+            #obj = obj.translate(c)
+            obj.transform.translate(c)  # Formerly using translate, but now using transform (since 0.7.0)
             result.append(obj)
 
         return result

@@ -34,13 +34,13 @@ class Generic3DPresentation():
 
             # Convert base DDDNode to DDDNode3
             #if node.__class__ is ddd.DDDNode:
-            #    result = ddd.DDDObject3.from_node(node)
+            #    result = ddd.DDDNode3.from_node(node)
 
             if isinstance(node, ddd.DDDPath3):
                 nresult = node.copy()
                 result = nresult
 
-            elif isinstance(node, ddd.DDDObject3):
+            elif isinstance(node, ddd.DDDNode3):
                 result = node.copy()
                 result.children = []
 
@@ -48,7 +48,7 @@ class Generic3DPresentation():
                 result = node.copy()
                 #result.children = []
 
-            elif isinstance(node, ddd.DDDObject2):
+            elif isinstance(node, ddd.DDDNode2):
                 if node.geom:
                     if node.geom.geom_type == 'LineString':
                         result = ddd.path3(node.geom.coords)

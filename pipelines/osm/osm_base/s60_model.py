@@ -256,6 +256,7 @@ def osm_model_generate_items_nodes(obj, osm, root):
 @dddtask(path="/ItemsAreas/*")
 def osm_model_generate_items_areas(obj, osm, root):
     """Generating 3D area items."""
+    obj.set('ddd:area:area', obj.area())
     item_3d = osm.items2.generate_item_3d(obj)
     if item_3d:
         root.find("/Items3").append(item_3d)

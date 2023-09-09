@@ -16,7 +16,7 @@
 
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import printing, sports_fields, urban, landscape, industrial, interior, vehicles, common, buildings
+from ddd.pack.sketchy import printing, rooftops, sports_fields, urban, landscape, industrial, interior, vehicles, common, buildings
 from ddd.pipeline.decorators import dddtask
 from ddd.pack.sketchy.urban import lamppost, lamp_ball, roundedpost,\
     post_arm_angled
@@ -37,6 +37,9 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
+    #item = vehicles.cart_wheel_and_axis()
+    #item.show()
+    
 
     item = industrial.crate()
     items.append(item)
@@ -44,6 +47,18 @@ def pipeline_start(pipeline, root):
     item = urban.lamppost_high_mast()
     items.append(item)
 
+    
+    #item = rooftops.satellite_dish()
+    item = rooftops.roof_antena_satellite_dish()
+    item.show()
+    items.append(item)
+
+    item = rooftops.antenna_mast()
+    items.append(item)
+    
+    item = rooftops.roof_antenna_tv(width=0.8, segments=rooftops.ROOF_ANTENA_TV_MID)
+    items.append(item)
+    
     
     item = buildings.portal()
     #item = ddd.meshops.batch_by_material(item)
@@ -208,24 +223,24 @@ def pipeline_start(pipeline, root):
     items.append(item)
 
 
-    #item.show()
-
-    '''
     # Reduced
-    items_org = items.copy()
-
-    items = ddd.meshops.reduce(items_org)
-
-    items = ddd.align.grid(items)
-    items.append(ddd.helper.all())
-    items.show()
-
-    items = ddd.meshops.reduce_bounds(items_org)
-
-    items = ddd.align.grid(items)
-    items.append(ddd.helper.all())
-    items.show()
     '''
+    ritems = ddd.meshops.reduce(items.copy())
+    ritems = ddd.align.grid(ritems)
+    ritems.append(ddd.helper.all())
+    ritems.show()
+
+    ritems = ddd.meshops.reduce_bounds(items.copy())
+    ritems = ddd.align.grid(ritems)
+    ritems.append(ddd.helper.all())
+    ritems.show()
+
+    ritems = ddd.meshops.reduce_quadric_decimation(items.copy(), target_ratio=0.5)
+    ritems = ddd.align.grid(ritems)
+    ritems.append(ddd.helper.all())
+    ritems.show()
+    '''
+
 
     items = ddd.align.grid(items)
     items.append(ddd.helper.all())

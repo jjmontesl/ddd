@@ -109,6 +109,7 @@ def catenary_cable(a, b, thick=0.10, length_ratio=1.1):
     item = base.extrude_along(path)
     #item = item.rotate(ddd.ROT_FLOOR_TO_FRONT).rotate(ddd.ROT_TOP_CW)
     item = item.material(ddd.mats.steel)
+    #item = item.material(ddd.mats.cable_metal)
 
     item = item.merge_vertices()
     item = item.smooth(angle=math.pi * 2/3)
@@ -1178,18 +1179,17 @@ def waste_container(width=1.41, length=0.76, height=1.23):
     obj.name = "Waste Container"  # (Open)
     obj = obj.material(ddd.mats.plastic_green)
     obj = ddd.uv.map_cubic(obj)
-
+    
     # Wheels
     wheels_padding = 0.08
     wheelpos = base.scale([base_size_factor, base_size_factor]).buffer(-wheels_padding)
     wheel_axis = vehicles.cart_wheel_and_axis().rotate(ddd.ROT_TOP_CW)
     wheels = ddd.align.clone_on_coords(wheel_axis, wheelpos)
     for w in wheels.children:
-        nw = w.rotate([0, 0, random.uniform(-1, 1) * math.pi * 0.3], origin="bounds_center")
-        w.replace(nw)
+        w.transform.rotate([0, 0, random.uniform(-1, 1) * math.pi * 0.3])  # Formerly using rotate, now using the transform
     obj.append(wheels)
 
-    obj = obj.translate([0, 0, wheelaxis_height])
+    obj.transform.translate([0, 0, wheelaxis_height])
 
     return obj
 
@@ -1208,8 +1208,10 @@ def waste_container_lid(width=1.41, length=0.76, height=0.15):
 
 def waste_container_with_lid_closed(width=1.41, length=0.76, container_height=1.23):
 
+    wheelaxis_height = 0.175  # Should not be constant here
+
     obj = waste_container()
-    lid = waste_container_lid().translate([0, 0, container_height])
+    lid = waste_container_lid().translate([0, 0, container_height - wheelaxis_height])
     obj.append(lid)
 
     obj.name = "Waste Container Closed"

@@ -181,9 +181,11 @@ def osm_materials():
                                      # texture_roughness_path=ddd.DATA_DIR + "/osmmaterials/PavingStones046_2K-JPG/PavingStones046_2K_Roughness.jpg",)
 
     ddd.mats.sidewalk = ddd.material(name="Sidewalk", color='#f1f1f1', texture_color='#ffffff', extra={'uv:scale': 0.25},
+                                     metallic_factor=0.05, roughness_factor=0.97,
                                      texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles38/Tiles38_*.jpg",)
                                      # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Tiles38/Tiles38_nrm.jpg",)
     ddd.mats.pavement = ddd.material(name="Pavement", color='#e1e1e1', texture_color='#ffffff', extra={'uv:scale': 0.25},
+                                     metallic_factor=0.05, roughness_factor=0.97,
                                      texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles38/Tiles38_*.jpg",)
                                      # texture_normal_path=ddd.DATA_DIR + "/osmmaterials/Tiles38/Tiles38_nrm.jpg",)
 
@@ -231,6 +233,10 @@ def osm_materials():
                                  texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles083_2K-JPG/Tiles083_2K_*.jpg",
                                  extra={'uv:scale': 0.25})
 
+    ddd.mats.stones_white = ddd.material(name="Stones White", color='#767664', texture_color='#ffffff',
+                                 metallic_factor=0.05, roughness_factor=0.975,  # bump_strength=2.0,
+                                 texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles084_2K-JPG/Tiles084_2K_*.jpg",
+                                 extra={'uv:scale': 0.25})
     ddd.mats.stones_black = ddd.material(name="Stones Dark", color='#484846',
                                         texture_path=ddd.DATA_DIR + "/osmmaterials/Tiles093_2K-JPG/Tiles093_2K_*.jpg",
                                         extra={'uv:scale': 0.25, 'ddd:material:tags': ['stones', 'tiles', 'irregular tiles', 'dark', 'old', 'black', 'procedural', 'pbr']})
@@ -374,12 +380,12 @@ def osm_materials():
     ddd.mats.metallic_grid = ddd.material(name="MetallicGrid", color='#28281e', extra={'ddd:transparent': True})  # Floors
 
     '''
-    self.cable_metal = ddd.material(name="CableMetal", color='#28282e')
     self.chain = ddd.material(name="CableMetal", color='#28282e')
     self.rope = ddd.material(name="Rope", color='#c7b01c')
+    '''
+    ddd.mats.cable_metal = ddd.mats.metal  # ddd.material(name="CableMetal", color='#28282e')
 
     # Buildings
-    '''
     ddd.mats.building_1 = ddd.mats.stone_white  # ddd.material("Building Stone Tiles White", color='#f7f0be',
     ddd.mats.building_2 = ddd.mats.tiles_stones  # ddd.material(color='#bdb9a0')
     ddd.mats.building_3 = ddd.mats.cement  #  ddd.material(color='#c49156')

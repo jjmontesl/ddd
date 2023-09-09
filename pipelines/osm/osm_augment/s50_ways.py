@@ -24,7 +24,7 @@ def osm_augment_ways2(root, osm, pipeline, logger):
     """
     pipeline.data['_lamps'] = root.select('["osm:highway" = "street_lamp"]')
 
-@dddtask(path="/Ways/*", select='["ddd:way:lamps" = True]')  # shall be osm:lit?
+@dddtask(path="/Ways/*", select='["ddd:way:lamps" = True]')
 def osm_augment_ways_2d_lamps(root, osm, pipeline, logger, obj):
     """
     """

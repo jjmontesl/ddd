@@ -1,5 +1,5 @@
 # DDD(123) - Library for procedural generation of 2D and 3D geometries and scenes
-# Copyright (C) 2021 Jose Juan Montes
+# Copyright (C) 2021-203 Jose Juan Montes
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -23,32 +23,33 @@ import random
 
 import cairosvg
 import numpy as np
+from centerline.geometry import Centerline
+from shapely import affinity, geometry, ops
+from shapely.geometry import polygon, shape
+from shapely.geometry.linestring import LineString
+from shapely.geometry.multilinestring import MultiLineString
+from shapely.geometry.multipolygon import MultiPolygon
+from shapely.geometry.point import Point
+from shapely.geometry.polygon import Polygon, orient
+from shapely.ops import polygonize, unary_union
+from shapely.strtree import STRtree
+from trimesh import boolean, creation, primitives, remesh, transformations
+from trimesh.base import Trimesh
+
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
 from ddd.core.selectors.selector_ebnf import selector_ebnf
 from ddd.ddd import ddd
 from ddd.formats.geojson import DDDGeoJSONFormat
 from ddd.formats.json import DDDJSONFormat
-from ddd.formats.yaml import DDDYAMLFormat
 from ddd.formats.svg import DDDSVG
+from ddd.formats.yaml import DDDYAMLFormat
 from ddd.math.vector2 import Vector2
 from ddd.math.vector3 import Vector3
 from ddd.nodes.node import DDDNode
-from ddd.nodes.node3 import DDDObject3
+from ddd.nodes.node3 import DDDNode3
 from ddd.ops import extrusion
 from ddd.util.common import parse_bool
-from shapely import affinity, geometry, ops
-from shapely.geometry import polygon, shape
-from shapely.geometry.linestring import LineString
-from shapely.geometry.multilinestring import MultiLineString
-from shapely.geometry.multipolygon import MultiPolygon
-from shapely.geometry.polygon import Polygon, orient
-from shapely.geometry.point import Point
-from shapely.ops import polygonize, unary_union
-from shapely.strtree import STRtree
-from trimesh import boolean, creation, primitives, remesh, transformations
-from trimesh.base import Trimesh
-from centerline.geometry import Centerline
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -76,20 +77,20 @@ class DDDNode2(DDDNode):
             # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
             children = [c.copy() for c in self.children]
         # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
-        #obj = DDDObject2(name=name if name else self.name, children=children, geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
-        obj = DDDObject2(name=name if name else self.name, children=children, geom=self.geom if self.geom else None, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
+        #obj = DDDNode2(name=name if name else self.name, children=children, geom=copy.deepcopy(self.geom) if self.geom else None, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
+        obj = DDDNode2(name=name if name else self.name, children=children, geom=self.geom if self.geom else None, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
         return obj
 
     # FIXME: Points_to_transform is confusing, should possibly be requested explicitly? 
     def copy3(self, name=None, mesh=None, copy_children=False, points_to_transform=True):
         """
-        Copies this DDDObject2 into a DDDObject3, maintaining metadata but NOT children or geometry.
+        Copies this DDDNode2 into a DDDNode3, maintaining metadata but NOT children or geometry.
         """
         # TODO: FIXME: Whether to clone geometry and recursively copy children (in all Node, Node2 and Node3) heavily impacts performance, but removing it causes errors (and is semantically incorect) -> we should use a dirty/COW mechanism?
         if copy_children:
-            obj = ddd.DDDObject3(name=name if name else self.name, children=[(c.copy3(copy_children=True, points_to_transform=points_to_transform) if hasattr(c, 'copy3') else c.copy()) for c in self.children], mesh=mesh, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
+            obj = DDDNode3(name=name if name else self.name, children=[(c.copy3(copy_children=True, points_to_transform=points_to_transform) if hasattr(c, 'copy3') else c.copy()) for c in self.children], mesh=mesh, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
         else:
-            obj = ddd.DDDObject3(name=name if name else self.name, children=[], mesh=mesh, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
+            obj = DDDNode3(name=name if name else self.name, children=[], mesh=mesh, extra=dict(self.extra), material=self.mat, transform=self.transform.copy())
         #obj.set('source_node2', self)
 
         if points_to_transform and self.geom and self.geom.geom_type == "Point":
@@ -104,7 +105,7 @@ class DDDNode2(DDDNode):
         instances in lists.
         """
         # TODO: Study if the system shall modify instances and let user handle cloning, this method would be unnecessary
-        super(DDDObject2, self).replace(obj)
+        super(DDDNode2, self).replace(obj)
         self.geom = obj.geom
         return self
 
@@ -149,7 +150,7 @@ class DDDNode2(DDDNode):
         linecoords.append(nextpoint)
 
         geom = geometry.LineString(linecoords)
-        return DDDObject2(geom=geom)
+        return DDDNode2(geom=geom)
 
     def line_to(self, coords):
         if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
@@ -820,7 +821,7 @@ class DDDNode2(DDDNode):
     def area(self):
         """
         Returns the area of this shape.
-        Children are unioned before computing the area.
+        Children, if they exist, are unioned before computing the area.
         If the geometry is empty or there is no geometry, 0 is returned.
         """
         area_union = self
@@ -948,7 +949,7 @@ class DDDNode2(DDDNode):
             if self.geom.geom_type == 'MultiPolygon' or self.geom.geom_type == 'MultiLineString' or self.geom.geom_type == 'GeometryCollection':
                 meshes = []
                 for geom in self.geom.geoms:
-                    pol = DDDObject2(geom=geom, extra=dict(self.extra), name="Triangulated Multi: %s" % self.name)
+                    pol = DDDNode2(geom=geom, extra=dict(self.extra), name="Triangulated Multi: %s" % self.name)
                     mesh = pol.triangulate(twosided)
                     meshes.append(mesh)
                 result = self.copy3()
@@ -961,7 +962,7 @@ class DDDNode2(DDDNode):
                     vertices, faces = creation.triangulate_polygon(self.geom, triangle_args="p", engine='triangle')  # Flat, minimal, non corner-detailing ('pq30' produces more detailed triangulations)
                 except Exception as e:
                     logger.info("Could not triangulate geometry for %s (geom=%s): %s", self, self.geom, e)
-                    return ddd.DDDObject3("Cannot triangulate: %s" % e)
+                    return ddd.DDDNode3("Cannot triangulate: %s" % e)
                     #raise
 
                     try:
@@ -984,7 +985,7 @@ class DDDNode2(DDDNode):
                     mesh.merge_vertices()
                     result = self.copy3(mesh=mesh)
                 else:
-                    result = DDDObject3(name="Could not triangulate (error during triangulation)")
+                    result = DDDNode3(name="Could not triangulate (error during triangulation)")
 
                 # Map UV coordinates if they were set on the polygon
                 if self.get('uv', None):
@@ -992,9 +993,9 @@ class DDDNode2(DDDNode):
                     result = uvmapping.map_3d_from_2d(result, self)
 
             else:
-                result = ddd.DDDObject3("Cannot triangulate: unknown geometry type")
+                result = ddd.DDDNode3("Cannot triangulate: unknown geometry type")
         else:
-            result = ddd.DDDObject3()
+            result = ddd.DDDNode3()
 
         if self.mat is not None:
             result = result.material(self.mat)
@@ -1064,10 +1065,10 @@ class DDDNode2(DDDNode):
                         logger.error("Could not extrude Polygon in MultiPolygon: %s", e)
                     except IndexError as e:
                         logger.error("Could not extrude Polygon in MultiPolygon: %s", e)
-                result = DDDObject3(children=meshes, name="%s (split extr)" % self.name)
+                result = DDDNode3(children=meshes, name="%s (split extr)" % self.name)
             #elif self.geom.geom_type == "Polygon" and self.geom.exterior.type == "LinearRing" and len(list(self.geom.exterior.coords)) < 3:
             #    logger.warn("Cannot extrude: A LinearRing must have at least 3 coordinate tuples (cleanup first?)")
-            #    result = DDDObject3(children=[], name="%s (empty polygon extr)" % self.name)
+            #    result = DDDNode3(children=[], name="%s (empty polygon extr)" % self.name)
             elif not self.geom.is_empty and not self.geom.geom_type == 'LineString' and not self.geom.geom_type == 'Point':
                 # Triangulation mode is critical for the resulting quality and triangle count.
                 #mesh = creation.extrude_polygon(self.geom, height)
@@ -1084,7 +1085,7 @@ class DDDNode2(DDDNode):
                                                            height=abs(height),
                                                            cap=cap, base=base)
                     mesh.merge_vertices()
-                    result = ddd.DDDObject3(mesh=mesh)
+                    result = ddd.DDDNode3(mesh=mesh)
                 except Exception as e:
                     raise DDDException("Could not extrude %s: %s" % (self, e), ddd_obj=self)
 
@@ -1103,7 +1104,7 @@ class DDDNode2(DDDNode):
                 #mesh.vertices = list(mesh.vertices) + list(mesh2.vertices)
                 #mesh.faces = list(mesh.faces) + [(f[0] + offset, f[1] + offset, f[2] + offset) for f in mesh2.faces]
 
-                result = DDDObject3(mesh=mesh)
+                result = DDDNode3(mesh=mesh)
                 if center:
                     result = result.translate([0, 0, -height / 2])
                 elif height < 0:
@@ -1111,9 +1112,9 @@ class DDDNode2(DDDNode):
 
             else:
                 #logger.warn("Cannot extrude (empty polygon)")
-                result = DDDObject3()
+                result = DDDNode3()
         else:
-            result = DDDObject3()
+            result = DDDNode3()
 
         result.children.extend([c.extrude(height, cap=cap, base=base) for c in self.children])
 
@@ -1171,7 +1172,7 @@ class DDDNode2(DDDNode):
         else:
             result = self.copy3()
             '''
-            result = DDDObject3()
+            result = DDDNode3()
             # Copy extra information from original object
             result.name = self.name if result.name is None else result.name
             result.extra = dict(self.extra)
@@ -1458,10 +1459,10 @@ class DDDNode2(DDDNode):
     def vertex_index(self, coords):
         """
         Returns the vertex at given coordinates.
-        Coords can be a coordinate tuple or a Point-like DDDObject2
+        Coords can be a coordinate tuple or a Point-like DDDNode2
         Does not support children in "other" geometry.
         """
-        if isinstance(coords, DDDObject2) and coords.geom.geom_type == "Point":
+        if isinstance(coords, DDDNode2) and coords.geom.geom_type == "Point":
             if coords.children:
                 raise DDDException("Calculating closest vertex to a geometry with children is not supported.")
             coords = coords.geom.coords[0]
@@ -1605,7 +1606,7 @@ class DDDNode2(DDDNode):
         
         return geoms
 
-    # DDDObject2 didn't have this, and Presentations are used instead: normalize with DDDNode. Added to support render to pyrender (?)
+    # DDDNode2 didn't have this, and Presentations are used instead: normalize with DDDNode. Added to support render to pyrender (?)
     def _recurse_meshes(self, instance_mesh, instance_marker):
         cmeshes = []
         if self.children:
@@ -1613,7 +1614,7 @@ class DDDNode2(DDDNode):
                 cmeshes.extend(c._recurse_meshes(instance_mesh, instance_marker))
         return cmeshes
 
-    # DDDObject2 didn't have this, and Presentations are used instead: normalize with DDDNode
+    # DDDNode2 didn't have this, and Presentations are used instead: normalize with DDDNode
     def _recurse_scene_tree(self, path_prefix, name_suffix, instance_mesh, instance_marker, include_metadata, scene=None, scene_parent_node_name=None, usednames=None, axis=None):
 
         if usednames is None: usednames = set()
@@ -1725,4 +1726,4 @@ class DDDNode2(DDDNode):
         with open(path, 'wb') as f:
             f.write(data)
 
-DDDObject2 = DDDNode2
+DDDNode2 = DDDNode2

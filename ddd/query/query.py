@@ -3,7 +3,7 @@
 # Jose Juan Montes 2020
 
 import logging
-from ddd.ddd import DDDMaterial, DDDObject3, ddd
+from ddd.ddd import DDDMaterial, DDDNode3, ddd
 
 
 # Get instance of logger for this module

@@ -167,9 +167,9 @@ class DefaultMaterials(MaterialsCollection):
         self.railing = ddd.material(name="Fence", color='282024', extra={'ddd:transparent': True})
         self.metallic_grid = ddd.material(name="Fence", color='#28281e', extra={'ddd:transparent': True})  # Floors
 
-        self.cable_metal = ddd.material(name="CableMetal", color='#28282e')
         self.chain = ddd.material(name="Chain", color='#202022')
         self.rope = ddd.material(name="Rope", color='#c7b01c')
+        self.cable_metal = self.metal #   ddd.material(name="CableMetal", color='#1a1a20')  # Aluminum matte coated/ high voltage lines
 
         # Interior (props) materials
         self.paper = ddd.material(name="Paper", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)

@@ -8,7 +8,6 @@ import yaml
 
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.exception import DDDException
-from ddd.ddd import ddd
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -19,7 +18,7 @@ class DDDYAMLFormat():
     @staticmethod
     def export_yaml(obj, path_prefix="", instance_mesh=True, instance_marker=False):
 
-        from ddd.ddd import D1D2D3
+        from ddd.ddd import ddd
         data = DDDYAMLFormat.export_data(obj, path_prefix, "", instance_mesh, instance_marker)
 
         encoded = yaml.dump(data, indent=2, sort_keys=True, default_flow_style=False, width=None)

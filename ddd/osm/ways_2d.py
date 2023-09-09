@@ -37,7 +37,7 @@ class Ways2DOSMBuilder():
                 return way_2d
         logger.warn("Tried to get way 2D for not existing way 1D: %s", way_1d)
         # raise ValueError("Tried to get way 2D for not existing way 1D: %s" % way_1d)
-        return DDDObject2()
+        return DDDNode2()
 
     def generate_ways_2d(self, ways_1d):
 

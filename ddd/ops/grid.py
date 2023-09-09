@@ -23,7 +23,7 @@ def polygon_from_bounds(bounds_or_obj, sides=4):
         bounds = DDDBounds(bounds_or_obj)
     else:
         #boundsg = bounds_or_obj.flatten()
-        #boundsg.children = [c for c in boundsg.children if isinstance(c, DDDObject3)]
+        #boundsg.children = [c for c in boundsg.children if isinstance(c, DDDNode3)]
         #bounds = boundsg.bounds()
         bounds = bounds_or_obj.bounds()
 

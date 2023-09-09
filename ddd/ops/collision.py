@@ -8,7 +8,7 @@ import sys
 
 from shapely.geometry.polygon import LinearRing
 
-#from ddd.ddd import ddd, DDDObject3, DDDObject
+#from ddd.ddd import ddd, DDDNode3, DDDObject
 import numpy as np
 from trimesh.transformations import quaternion_from_euler
 from trimesh import transformations

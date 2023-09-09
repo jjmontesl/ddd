@@ -145,33 +145,41 @@ class AreaItemsOSMBuilder():
         This swimming pool generates a border _outside_ its shape (note this is unusual for shape-based builders).
         """
 
+        small_pool_area_max = 8.0
+
         # TODO: Move pool building to pack.buildings.pools (variety: border overhang, or smooth, rounded corners, rounded bottom...)
         vase_materials = [ddd.mats.porcelain_blue_tiles, ddd.mats.porcelain_blue_tiles_round]
         vase_material = ddd.random.choice(vase_materials, seed=item_2d.get('osm:id'))
-        exterior_materials = [ddd.mats.tiles_stones, ddd.mats.wood_planks]
+        exterior_materials = [ddd.mats.tiles_stones, ddd.mats.stone]  
+        if item_2d.area() < small_pool_area_max: exterior_materials.append(ddd.mats.wood_planks)  # For spas/balneariums, or small pools:  ddd.mats.wood_planks | .wood
         exterior_material = ddd.random.choice(exterior_materials + [vase_material], seed=item_2d.get('osm:id'))
 
-        # TODO: This should be an area, so stuff can be positioned on top and etc.
+        shape_margin = 0.03  # used to prevent coplanar faces with the container area
         border_exterior_width = 1.0
+        if item_2d.area() < small_pool_area_max: border_exterior_width = 0.5
         border_interior_width = random.choice([0.0, 0.05, 0.1])  # for hanging borders
-        border_height = 0.2
+        border_height = 0.15
         pool_depth = 2.2  # relative to base, not to border
         water_level = -0.35  # relative to base, not to border
         height_margin = pool_depth + 0.2  # because the elevation positioning will account only for the interior, we need a safety margin
-        bevel = 0.015
+        bevel = 0.03
+        #bottom_corner_radius = 0.05
+        
+        item_2d = item_2d.buffer(-shape_margin)
         
         interior = item_2d
         if border_interior_width > 0: interior = item_2d.buffer(-border_interior_width)
-        exterior = item_2d.buffer(border_exterior_width)
-        exterior = exterior.extrude_step(exterior, border_height + height_margin)
+        exterior_shape = item_2d.buffer(border_exterior_width)
+        exterior = exterior_shape.extrude_step(exterior_shape, border_height + height_margin - bevel, base=False)
         if bevel:
+            exterior = exterior.extrude_step(exterior_shape.buffer(-bevel), bevel, method=ddd.EXTRUSION_METHOD_SUBTRACT)
             exterior = exterior.extrude_step(interior.buffer(bevel), 0.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
             exterior = exterior.extrude_step(interior, -bevel, method=ddd.EXTRUSION_METHOD_SUBTRACT)
         else:
             exterior = exterior.extrude_step(interior, 0.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
-        exterior = exterior.extrude_step(interior, -(border_height - bevel), method=ddd.EXTRUSION_METHOD_WRAP)
+        exterior = exterior.extrude_step(interior, -(border_height - bevel), method=ddd.EXTRUSION_METHOD_WRAP, cap=False)
         if border_interior_width > 0:
-            exterior = exterior.extrude_step(item_2d, 0.0, method=ddd.EXTRUSION_METHOD_SUBTRACT)
+            exterior = exterior.extrude_step(item_2d, 0.0, method=ddd.EXTRUSION_METHOD_SUBTRACT, cap=False)
 
         exterior = exterior.translate([0, 0, -height_margin])
         exterior = exterior.material(exterior_material)
@@ -184,7 +192,7 @@ class AreaItemsOSMBuilder():
 
         water = item_2d.triangulate().material(ddd.mats.water)
         #water = ddd.meshops.subdivide_to_grid(water, float(ddd.data.get('ddd:area:subdivide')) * 2)
-        water = water.smooth()
+        water = water.smooth()  # .twosided() 
         water = ddd.uv.map_xy(water)
         
         water = water.translate([0, 0, water_level])

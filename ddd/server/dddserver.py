@@ -17,7 +17,7 @@ from watchdog.observers import Observer
 from ddd.core import settings
 from ddd.core.cli import D1D2D3Bootstrap
 from ddd.core.command import DDDCommand
-from ddd.ddd import DDDObject2, DDDObject3
+from ddd.ddd import DDDNode2, DDDNode3
 from ddd.osm import osm
 from ddd.pipeline.pipeline import DDDPipeline
 

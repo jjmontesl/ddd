@@ -221,7 +221,7 @@ class Ways3DOSMBuilder():
 
         sidewalk_width = 0.4
 
-        elevated_union = DDDObject2()
+        elevated_union = DDDNode2()
         for way in ways:
             # way_longer = way.buffer(0.3, cap_style=1, join_style=2)
 

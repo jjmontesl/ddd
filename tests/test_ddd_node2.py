@@ -32,3 +32,27 @@ class DDDNode2TestCase(TestCase):
         self.assertEqual(node.vertex_count(), (4 + 1) + 2)
 
         
+
+    def test_ddd_line(self):
+
+        node = ddd.line([(0, 0), (1, 0)])
+        self.assertEqual(node.geom.type, 'LineString')
+        self.assertEqual(node.vertex_count(), 2)
+        self.assertEqual(node.geom.coords[0], (0.0, 0.0))
+        self.assertEqual(node.geom.coords[1], (1.0, 0.0))
+
+        self.assertEqual(node.length(), 1.0)
+        
+    def test_ddd_line_z(self):
+
+        # Z coordinate set, but in 2D, it's is not used in calculations (e.g. length)
+        node = ddd.line([(0, 0, 0), (0, 1, 1)])
+        self.assertEqual(node.geom.type, 'LineString')
+        self.assertEqual(node.vertex_count(), 2)
+        self.assertEqual(node.geom.coords[0], (0.0, 0.0, 0.0))
+        self.assertEqual(node.geom.coords[1], (0.0, 1.0, 1.0))
+        
+        self.assertEqual(node.length(), 1.0, "Length of 2D line with Z coordinate should be 1.0 (ignoring Z coordinate in 2D)")
+
+
+

@@ -69,6 +69,8 @@ class Buildings2DOSMBuilder():
             if not feature.geom: continue
             if feature.geom.geom_type == 'Point': continue
 
+            #feature.set('ddd:area:area', feature.area())
+
             # Skip parents, so nested buildings (eg. Torre de Hercules) are considered independently
             if feature.extra.get('osm:building', None): continue
 
