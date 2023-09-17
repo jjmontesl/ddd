@@ -77,6 +77,8 @@ class D1D2D3():
     ROT_FLOOR_TO_BACK = (-PI_OVER_2, 0, 0)
     ROT_TOP_CW = (0, 0, -PI_OVER_2)
     ROT_TOP_CCW = (0, 0, PI_OVER_2)
+    ROT_FRONT_CW = (0, -PI_OVER_2, 0)
+    ROT_FRONT_CCW = (0, PI_OVER_2, 0)
     ROT_TOP_HALFTURN = (0, 0, PI)
 
     # Bytes conversion factors
@@ -149,6 +151,17 @@ class D1D2D3():
         return self.DDDNode2(geom=geom, name=name)
 
     def polygon(self, coords, name=None):
+        """
+        Build a polygon using the given coordinates. 
+        
+        Note that this method will not check whether the polygon is defined correctly
+        (eg: if it's self-intersecting, or if it's not closed), and also will not orient it in any way (cw / ccw).
+        """
+
+        # If coords is a DDDNode2, use its geometry (eg: for a DDDNode2 with a LineString)
+        if isinstance(coords, self.DDDNode2):
+            coords = coords.geom.coords
+
         geom = geometry.Polygon(coords)
         return self.DDDNode2(geom=geom, name=name)
 
@@ -540,7 +553,7 @@ class D1D2D3():
         from ddd.ops.geometry import DDDGeometry
         from ddd.ops.helper import DDDHelper
         from ddd.ops.paths import DDDPathOps
-        from ddd.ops.reduction import DDDMeshOps
+        from ddd.ops.meshops import DDDMeshOps
         from ddd.ops.snap import DDDSnap
         from ddd.ops.uvmapping import DDDUVMapping
         from ddd.pack.mats.defaultmats import DefaultMaterials

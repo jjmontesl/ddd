@@ -191,6 +191,30 @@ class DDDNode2(DDDNode):
         result = self.copy()
         result.geom = geometry.LineString(linecoords)
         return result
+    
+    def arc_quarter_to(self, coords, ccw, resolution=4):
+        
+        if len(coords) == 2: coords = [coords[0], coords[1], 0.0]
+
+        linecoords = list(self.geom.coords)
+        lastpoint = linecoords[-1]
+
+        # Generate unity arc
+        if coords[0] > lastpoint[0]:
+            unityarc = ddd.point().arc_to([1, 1], [0, 1], ccw, resolution=resolution)
+        else:
+            unityarc = ddd.point().arc_to([1, 1], [1, 0], ccw, resolution=resolution)
+
+        # Calculate arc coordinates from center
+
+        # Calculate difference from last point to coords
+        diff = Vector2(coords) - Vector2(lastpoint)
+        arc = unityarc.scale(diff).translate(lastpoint)
+
+        result = self.copy()
+        result.geom = LineString(list(self.geom.coords) + arc.geom.coords[1:])
+
+        return result
 
     def centroid(self):
         if self.geom and self.geom.geom_type == 'Point':

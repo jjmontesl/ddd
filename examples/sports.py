@@ -15,7 +15,8 @@ items.append(item)
 item.show()
 '''
 
-functions = (sports_fields.handball_field_lines, sports_fields.basketball_field_lines,
+functions = (sports_fields.american_football_field_lines,
+             sports_fields.handball_field_lines, sports_fields.basketball_field_lines,
              sports_fields.tennis_field_lines, sports_fields.football_field_lines)
 
 count = 3

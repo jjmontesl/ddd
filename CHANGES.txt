@@ -1,80 +1,51 @@
 [0.7.0]
 
-  * 5f146d5 - Added carpets, wcs and other minor changes. (hace 2 días) <Jose Juan Montes>
-  * 0516b9a - Trying to normalize slots (DDDSlot) and added very basic book generation. (hace 5 días) <Jose Juan Montes>
-  * d93e47d - Added some door handles. (hace 5 días) <Jose Juan Montes>
-  * 7a14331 - (origin/jjmontes/devel) Refactored some modules, added some pack objects, added centerline() method to DDDNode2. (hace 6 días) <Jose Juan Montes>
-  * 95d10d8 - Minor fixes and refactorings, added some pack items. (hace 3 semanas) <Jose Juan Montes>
-  * ca07a39 - Separated ceiling building. (hace 5 semanas) <Jose Juan Montes>
-  * 14d35c0 - Adding some helpers for item building. (hace 5 semanas) <Jose Juan Montes>
-  * 1b0738b - Improved height functions for usage in VRS pipeline (updated examples). (hace 6 semanas) <Jose Juan Montes>
-  * 06fd700 - Minor fixes and objects added to sketchy pack. (hace 7 semanas) <Jose Juan Montes>
-  * e10c4d7 - Fixes for running on docker. (hace 9 semanas) <Jose Juan Montes>
-  * bda3aed - Removed usage of geom.type (deprecated by Shapely in favour of geom.geom_type. (hace 9 semanas) <Jose Juan Montes>
-  * 7d66bb6 - Fixing ddd-docker build. (hace 10 semanas) <Jose Juan Montes>
-  * d0e253f - Added reduce support for tasks. Other fixes. (hace 3 meses) <Jose Juan Montes>
-  * 78f6d93 - Fixed rotation including support for transforms and instances and path3. Added axis transform support for export. (hace 3 meses) <Jose Juan Montes>
-  * fc4938e - Several fixes to transforms and transform operations, heavy changes to rotate. (hace 3 meses) <Jose Juan Montes>
-  * fdc17dc - Slowly migrating towards parenting and transforms, instances, nodes... (hace 3 meses) <Jose Juan Montes>
-  * 97f4b97 - (private/jjmontes/devel) Changed vertex_func() to support world coordinates and using more transforms (which causes some regressions). (hace 3 meses) <Jose Juan Montes>
-  * 2b788eb - Added some minor packs (posters and shapes). (hace 10 meses) <Jose Juan Montes>
-  * 040ca4d - Fixes to split operations and others. Added missing features and cases to existing operations. (hace 11 meses) <Jose Juan Montes>
-  * 3465a95 - Some fixes to OSM generation and bug fixes. (hace 11 meses) <Jose Juan Montes>
-  * bef3d6a - Fixes to DDDNodes, added CSG ops through trimesh, instances export, markers and others. (hace 11 meses) <Jose Juan Montes>
-  * 57c7b6e - Large changes to unify DDDObject 2 and 3 into DDDNode. (1 año, y 2 meses atrás) <Jose Juan Montes>
-  * 91fdb29 - Separated DDDMaterial from ddd, refactoring hierarchy naming. (1 año, y 2 meses atrás) <Jose Juan Montes>
-  * 7c5148f - Fixes to path height perp interpolation and object dump repr. (1 año, y 2 meses atrás) <Jose Juan Montes>
-  * b9f946e - Added path height, and some severe changes to group2/3 (allowing mixing). (1 año, y 2 meses atrás) <Jose Juan Montes>
-  * ea46733 - Adding support for path entities (arcs, bezier) and new path-height function which correctly interpolates height on curves. (1 año, y 2 meses atrás) <Jose Juan Montes>
-  * ff03d0d - Separated logo item to pack. (1 año, y 2 meses atrás) <Jose Juan Montes>
-  * 2b6b51a - Added FBX export through Blender. (1 año, y 2 meses atrás) <Jose Juan Montes>
-  * 6c73a28 - (origin/master, master) Updated Shapely version. (1 año, y 3 meses atrás) <Jose Juan Montes>
-  * 5f6ee76 - Fixes to SVG export and added SVG text export. (1 año, y 5 meses atrás) <Jose Juan Montes>
-  * 990f3d4 - Upgraded dependencies and venv for Ubuntu 20.04, and subsequent fixes. (1 año, y 5 meses atrás) <Jose Juan Montes>
-  * b3f38e2 - Resolving way to area cut for parallel/along paths, with reabsorption. (1 año, y 9 meses atrás) <Jose Juan Montes>
-  * 6124186 - Restored lock file functionality. (1 año, y 9 meses atrás) <Jose Juan Montes>
-  * 7b655a8 - Fixed roadlines overlap regression (ignoring ways with empty geometry, as intersections with roadlines were passing). (1 año, y 9 meses atrás) <Jose Juan Montes>
-  * 2d88b92 - Areas2d cut changes (weak 2d areas and ways, ways and roadlines discontinuities regression), dddserver layers, high mast item, building banner alignment. (1 año, y 9 meses atrás) <Jose Juan Montes>
-  * 76edbad - Added vendorized/custom bakefont3 lib. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * b2eff81 - Added lamp_mount=high_mast. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * c2a37d2 - Large changes to interways building, and ways and areas containment processing. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * a68cf6a - Several fixes to building contacts calculations, and workarounded level 0 footprint error. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * e276304 - Improved 2d text: several fonts in an atlas. Improved examples. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * 251689e - Adding support for 2D (font atlas based) text. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * 388c290 - Fixes to osm_tile_info report script. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * f3e9053 - Update gitignore. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * 6a5c7a9 - Adapt osm_tile_info as pipeline. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * f380b7e - Added support for metallic-roughness maps, and missing socketio dependency. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * b5ccf1d - Adding support for no DEM, changing settings/props. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * 21308ab - Several changes to params/settings/paths to adapt to osm_build as pipeline. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * d6c47bb - Added time and object count info to pipeline tasks. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * 75349bd - Very large refactor towards OSM pipeline (draft working), added more examples as pipelines. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * cdac5e8 - Introducing dddserver. (1 año, y 10 meses atrás) <Jose Juan Montes>
-  * c426cea - Renamed gdterrain. Golf fairway and material. (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * 7f86ee3 - Changed ddd:combined for ddd:batch, and related reduction module methods. (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * ec571d6 - Fix bug with empty geometrycollection in tree augmentation (calculating oriented axis). (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * a5c787a - Improvements to catenaries and fixes to plant augmentation for multipolygons. (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * a5262b6 - Added pycatenary and cable catenaries for power lines (wip). (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * 75809db - Subdivide to grid now handles UV correctly. (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * 518c721 - Fixed incorrect two-sided palm tree leaves. (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * 163e49a - Fixed missing splatmap tag for combined materials. (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * 7154e19 - Added support for gridded plant augmentation (orchards, etc). (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * e974856 - Added population database source, and augmentation for building levels using it. (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * ab3e80e - Added lava, Canary Islands, emissive textures. Fixed draco compress command. (1 año, y 11 meses atrás) <Jose Juan Montes>
-  * 1bd33d2 - Added draco compression support. Added plane split method. (hace 2 años) <Jose Juan Montes>
-  * 8a25942 - Reorganised some osm pipeline files. Support for metadata removal. (hace 2 años) <Jose Juan Montes>
-  * 81e4a72 - Separated model combine tasks to s65_model_post_opt. (hace 2 años) <Jose Juan Montes>
-  * bb635eb - Fixes some buildings related bugs causing crashes. (2 años, y 1 mes atrás) <Jose Juan Montes>
-  * c088199 - Uploaded road markings and traffic signs and adapted paths. (2 años, y 1 mes atrás) <Jose Juan Montes>
-  * a1e1f30 - Building containment and floor gen rules. Separated roofs to a module. (2 años, y 2 meses atrás) <Jose Juan Montes>
-  * 437f7e6 - Fixes to building fully-filled fix. Severe bug fix in centroid(). (2 años, y 2 meses atrás) <Jose Juan Montes>
-  * 7fafb85 - Fixes to multilevel hierarchies in building containment. Pipeline setting to disable materials combine. (2 años, y 2 meses atrás) <Jose Juan Montes>
-  * 2c4440f - Fixed GeoJSON metadata export so DDD extra attributes are present in the feature metadata. (2 años, y 2 meses atrás) <Jose Juan Montes>
-  * 0ff07ba - Flattening before combine_group(). (2 años, y 3 meses atrás) <Jose Juan Montes>
-  * 104497a - Fixed extrude_coords support for lines and points, and now reusing closing vertices. (2 años, y 3 meses atrás) <Jose Juan Montes>
-  * 0af135b - Fixes invalid triangles generated by extrude_coords (wrap extrusion method). (2 años, y 3 meses atrás) <Jose Juan Montes>
-  * 6c3f382 - Added support for object combining via group criteria. Marking splat materials as such. (2 años, y 3 meses atrás) <Jose Juan Montes>
-  * ac92844 - Changed buildings generation to support 2 levels, matching 2D and 3D. Overlapped buildings fix. Subtract buildings from floor.
+  * Added sketchy objects: carpets, bathroom items...
+  * Trying to normalize slots (DDDSlot) and added very basic book generation.
+  * Added centerline() method to DDDNode2.
+  * Fixes to support working on up to date Docker images.
+  * Removed usage of geom.type (deprecated by Shapely in favour of geom.geom_type).
+  * Fixed rotation including support for transforms and instances and path3. 
+  * Added axis transform support for export.
+  * Slowly migrating towards parenting and transforms, instances, nodes...
+  * Changed vertex_func() to support world coordinates (breaking change: causes regressions).
+  * Fixes to split operations and others. Added missing features and cases to existing operations.
+  * Large changes to unify DDDObject 2 and 3 into DDDNode.
+  * Separated DDDMaterial from ddd.
+  * Fixes to path height perp interpolation and object dump repr.
+  * Added path height, and some severe changes to group2/3 (now allowing mixing types).
+  * Adding support for path entities (arcs, bezier) and new path-height function which correctly interpolates height on curves.
+  * Separated logo item to pack.
+  * Added FBX export (through Blender).
+
+[0.6.5]
+
+  * Updated Shapely version.
+  * Fixes to SVG export and added SVG text export.
+  * Added vendorized/custom bakefont3 lib.
+  * Added lamp_mount=high_mast.
+  * Large changes to interways building, and ways and areas containment processing.
+  * Several fixes to building contacts calculations, and workarounded level 0 footprint error.
+  * Adding support for 2D (font atlas based) text.
+  * Adapt osm_tile_info as pipeline.
+  * Added support for metallic-roughness maps, and missing socketio dependency.
+  * Adding support for no DEM, changing settings/props.
+  * Several changes to params/settings/paths to adapt to osm_build as pipeline.
+  * Added time and object count info to pipeline tasks.
+  * Introducing dddserver.
+  * Added pycatenary and cable catenaries for power lines.
+  * Subdivide to grid now handles UV correctly.
+  * Fixed missing splatmap tag for combined materials.
+  * Added population database source, and augmentation for building levels using it.
+  * Added lava, Canary Islands, emissive textures.
+  * Added draco compression support. Added plane split method.
+
+  * Fixes to building fully-filled fix. Severe bug fix in centroid().
+  * Fixed GeoJSON metadata export so DDD extra attributes are present in the feature metadata.
+  * Flattening before combine_group().
+  * Fixed extrude_coords support for lines and points, and now reusing closing vertices.
+  * Fixes invalid triangles generated by extrude_coords (wrap extrusion method).
+  * Added support for object combining via group criteria. Marking splat materials as such.
 
 [0.6.4]
 

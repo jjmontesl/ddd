@@ -182,7 +182,7 @@ def osm_buildings_building_tomb(pipeline, osm, root, obj):
     obj.set('ddd:building:material', default="stone")
     obj.set('ddd:roof:shape', default="none")
     obj.set('ddd:building:windows', default=False)  # Mausoleums or packed tombs do not have windows
-    obj.set('ddd:building:doors', default=1)  # Do not add doors to packed tombs
+    obj.set('ddd:building:doors', default=1)  
     obj = obj.material(ddd.mats.stone)
     return obj
 
@@ -200,6 +200,20 @@ def osm_buildings_building_chapel(pipeline, osm, root, obj):
     obj.set('ddd:roof:material', default="roof_tiles")
     obj = obj.material(ddd.mats.stone)
     return obj
+
+@dddtask(path="/Buildings/*", select='[osm:historic = "castle"]')
+def osm_buildings_building_tomb(pipeline, osm, root, obj):
+    """
+    Set defaults to tomb buildings (stacked frontal tombstones).
+    Added also for historic=tomb, as long as building is set, as it has been seen (incorrectly) applied to stacked tomb buildings.
+    """
+    obj.set('ddd:building:levels', default=2)
+    obj.set('ddd:building:material', default="stone")
+    #obj.set('ddd:roof:shape', default="none")
+    obj.set('ddd:building:windows', default=False)  # Mausoleums or packed tombs do not have windows
+    obj = obj.material(ddd.mats.stone)
+    return obj
+
 
 
 # Materials

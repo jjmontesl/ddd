@@ -39,18 +39,31 @@ def jenga():
     raise NotImplementedError()
 
 
-def ball_soccer():
-    raise NotImplementedError()
+def ball_soccer(r=0.11):
+    item = ddd.sphere(r=r)
+    item = item.material(ddd.mats.ball_soccer)
+    return item
 
-def ball_basketball():
-    raise NotImplementedError()
+def ball_basketball(r=0.12):
+    item = ddd.sphere(r=r)
+    item = item.material(ddd.mats.ball_basketball)
+    return item
 
 def ball_beach():
     raise NotImplementedError()
 
-def ball_golf():
-    # Link / refer / deduplicate with 'sports_props.golf_*' module
-    raise NotImplementedError()
+def ball_golf(r=0.043 / 2):
+    item = ddd.sphere(r=r)
+    item = item.material(ddd.mats.plastic_white)
+    item.set('ddd:weight', 0.045)
+    return item
+
+def ball_american_football(length=0.28, radius=0.16 / 2):
+    ball = ddd.point([0, -length / 2]).arc_quarter_to([radius, 0], True, resolution=2).arc_quarter_to([0, length / 2], True, resolution=2)
+    ball = ball.revolve().merge_vertices().flip_faces()
+    ball = ball.smooth(ddd.PI_OVER_4)
+    ball = ball.material(ddd.mats.rubber_orange)
+    return ball
 
 
 def cube_symbols_relief(size=0.1, bevel=0.01, bevel_style=ddd.JOIN_BEVEL, symbols=['1', '2', '3', '4', '5', '6'], symbol_height=0.01):

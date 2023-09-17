@@ -229,10 +229,10 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
                 channel_items = channel_items_all[chan_idx]
 
                 cand_geoms = channel_items_index[chan_idx].index_query(pixel_rect)  # .geom)
-                cand_items = [c for c in cand_geoms.children if c.intersects(pixel_rect) and c in channel_items.children]
+                #cand_items = [c for c in cand_geoms.children if c.intersects(pixel_rect) and c in channel_items.children]
 
                 # Check if intersects and percentage
-                pixel_item = ddd.group2(cand_items).intersection(pixel_rect).union()
+                pixel_item = cand_geoms.intersection(pixel_rect).union()
 
                 item_area = pixel_item.area()
 

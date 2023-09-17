@@ -177,7 +177,6 @@ class DDDNode3(DDDNode):
         result = self.translate([-center[0], -center[1], -center[2]])
         return result
 
-
     def center_aabb(self):
         """
         Returns the center of the axis aligned bounding box for this object's geometry.
@@ -186,9 +185,36 @@ class DDDNode3(DDDNode):
         center_coords = [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]
         return center_coords
 
+    
+    def apply_transform(self, recurse_children=True):
+        """
+        Reduces this node's transform by applying the transform to the mesh
+        vertices, and the transforms of the children. The transform is then
+        set to identity.
+
+        If recurse_children is True, children meshes are also processed (otherwise,
+        only their transforms are updated to account for the application of parent transform).
+        """
+        result = self.copy()
+        
+        if result.mesh:
+            result.mesh = result.mesh.apply_transform(result.transform.to_matrix())
+            #result.mesh.vertices = result.transform.transform_vertices(result.mesh.vertices)
+
+        for c in result.children:
+            c.transform.compose(self.transform)
+
+        result.transform = DDDTransform()
+        
+        if recurse_children:
+            result.children = [c.apply_transform(recurse_children=True) for c in result.children]
+
+        return result
+
+
     def translate(self, v):
         """
-        Translates this object *mesh* by vector v. V is defined in local coordinates.
+        Translates this object *mesh* by vector v, in local coordinates.
 
         Returns a copy of this node.
         """
@@ -518,6 +544,9 @@ class DDDNode3(DDDNode):
         TODO: currently, the first material found will be applied to the parent -show warning (?)-
         """
         result = self.copy(name=name)
+
+        result = result.apply_transform(recurse_children=True)
+
         indexes_list = []
         base_index = 0
 

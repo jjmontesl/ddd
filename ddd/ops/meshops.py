@@ -18,8 +18,6 @@ logger = logging.getLogger(__name__)
 
 class DDDMeshOps():
     """
-    TODO: This module shall not be called "reduction", as it shall gather all meshops.
-          Maybe reduction / simplifying operations could be separated but as of today the naming is incorrect.
     """
 
     def reduce(self, obj):

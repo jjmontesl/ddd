@@ -47,10 +47,24 @@ def pipeline_start(pipeline, root):
     item = urban.lamppost_high_mast()
     items.append(item)
 
-    
+
+    item = rooftops.chimney_open_rect()
+    item.show()
+    items.append(item)
+
+    item = rooftops.chimney_closed_rect()
+    items.append(item)
+
+    item = rooftops.chimney_open_round()
+    item.show()
+    items.append(item)
+
+    item = rooftops.chimney_closed_round()
+    items.append(item)
+
+
     #item = rooftops.satellite_dish()
     item = rooftops.roof_antena_satellite_dish()
-    item.show()
     items.append(item)
 
     item = rooftops.antenna_mast()
@@ -128,10 +142,12 @@ def pipeline_start(pipeline, root):
     items.append(item)
 
     item = urban.panel_marquee_angled()
-    item.show()
     items.append(item)
 
     item = urban.panel_marquee_angled(depth=0.5, corner_r=0.5)
+    items.append(item)
+
+    item = urban.panel_marquee_arc()
     item.show()
     items.append(item)
 

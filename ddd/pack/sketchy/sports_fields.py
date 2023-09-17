@@ -4,6 +4,8 @@
 
 import math
 
+import numpy
+
 from ddd.ddd import ddd
 import logging
 from ddd.pack.sketchy import urban
@@ -182,6 +184,32 @@ def football_goal(width=4.88, height=1.83, thick=0.20):
     line = line.buffer(thick * 0.5, cap_style=ddd.CAP_FLAT).extrude(-thick)
     line = line.rotate(ddd.ROT_FLOOR_TO_FRONT).material(ddd.mats.steel)
     return line
+
+def american_football_goal(width=5.65, height=3.05 * 2, crossbar_height=3.05):
+    """
+    """
+
+    pole_r = 0.15
+    pole_resolution = 2
+
+    item = ddd.group3(name="AFGoal")
+
+    pole = ddd.disc(r=pole_r, name="AFGoal pole", resolution = pole_resolution).extrude(height)
+    pole = pole.material(ddd.mats.metal_paint_yellow)
+
+    poles = ddd.group([
+        pole.copy().translate([-width / 2, 0, 0]),
+        pole.copy().translate([width / 2, 0, 0]),
+    ])
+
+    crossbar = ddd.cylinder(width, r=pole_r, resolution=pole_resolution)
+    crossbar = crossbar.rotate(ddd.ROT_FRONT_CCW).translate([0, 0, crossbar_height])
+    crossbar = crossbar.material(ddd.mats.metal_paint_yellow)
+
+    item.append(poles)
+    item.append(crossbar)
+
+    return item
 
 
 def handball_field_lines(length=40.0, width=20.0, line_width=0.10):
@@ -492,3 +520,112 @@ def golf_flag(pole_height=2.1336, flag_width=20*0.0254, flag_height=14*0.0254):
     item_post = post(height=pole_height, r=0.025, top=flag, mat_post=ddd.mats.metal_paint_yellow)
 
     return item_post
+
+
+def american_football_field_lines(length=109.75, width=48.8, line_width=0.075):
+    """
+    Note that an additional Xm around the field shall be granted.
+
+    Playground fields are seen x: length, y: width
+
+    Official American Football field dimensions: 120 yards (360’ | 109.75 m) long by 53.3 yards (160’ | 48.8 m) wide.
+    The field is divided in half by the 50 yard line, which also designates the line of scrimmage.
+    Every 10 yards (30’ | 9.15 m) are marked with a yard line, and every 5 yards (15’ | 4.57 m) is marked with a line.
+    The end zones are 10 yards (30’ | 9.15 m) deep, and the goal posts are centered on the end lines at the back of each end zone.
+    The goal posts are 18.5 feet (5.64 m) apart and have a crossbar 10 feet (3.05 m) off the ground.
+    The hash marks are 70 feet, 9 inches (21.56 m) from the sidelines and are 18 feet, 6 inches (5.64 m) apart.
+    American football fields are made of either natural grass or artificial turf.
+    Ref: https://www.dimensions.com/element/american-football-field
+    """
+
+    item = ddd.group3(name="AF lines")
+
+    team_area_length = 45.75
+    team_area_width = 5.0  # This value is arbitrary
+
+    length = min(length, 28)
+    width = min(width, 15)
+    (length, width) = enforce_aspect_ratio(length, width, 109.75 / 48.8)
+
+    rectangle = ddd.rect([-length / 2, -width / 2, length / 2, width / 2])
+    coords = rectangle.geom.exterior.coords
+    length_seg = ddd.line([coords[0], coords[1]])
+    width_seg = ddd.line([coords[1], coords[2]])
+    length2_seg = ddd.line([coords[2], coords[3]])
+    width2_seg = ddd.line([coords[3], coords[0]])
+    width_l = width_seg.geom.length
+    length_l = length_seg.geom.length
+
+    exterior = rectangle.outline().buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
+    exterior.name = "Bounds line"
+    exterior.extra['ddd:collider'] = False
+    exterior.extra['ddd:shadows'] = False
+
+    midline_2d = ddd.line([length_seg.geom.centroid, length2_seg.geom.centroid], name="Mid line")
+    midline = midline_2d.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
+    midline.extra['ddd:collider'] = False
+    midline.extra['ddd:shadows'] = False
+
+    item.append(exterior)
+    #item.append(midline)
+    #item.append(midcircle)
+
+    #centralline_2d = ddd.line([width_seg.geom.centroid, width2_seg.geom.centroid], name="Central line")
+
+    # Yard lines
+    areas = 10 + 2
+    for i in numpy.linspace(-1, 1, areas + 1):
+        yardline = midline.copy().translate([i * length * 0.5, 0])
+        yardline.extra['ddd:collider'] = False
+        yardline.extra['ddd:shadows'] = False
+        item.append(yardline)
+        
+    # Sides
+    for side in (-1, 1):
+        '''
+        if width > 12.0:
+            smallarea = ddd.line([[0, -3], [5.80, -(3 - 1.80)]]).arc_to([5.80, 3 - 1.80], center=[5.80, 0], ccw=True).line_to([0, 3])
+            #smallarea = smallarea.scale([smallarea_length_ratio * length, smallarea_width_ratio * width * 0.5])
+            if side == 1: smallarea = smallarea.rotate(math.pi)
+            smallarea = smallarea.translate([side * length_l / 2, 0])
+            smallarea = smallarea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
+            smallarea.extra['ddd:collider'] = False
+            smallarea.extra['ddd:shadows'] = False
+            item.append(smallarea)
+
+            smallline = ddd.line([[5.80, -(3 - 1.80)], [5.80, 3 - 1.80]])
+            if side == 1: smallline = smallline.rotate(math.pi)
+            smallline = smallline.translate([side * length_l / 2, 0])
+            smallline = smallline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
+            smallline.extra['ddd:collider'] = False
+            smallline.extra['ddd:shadows'] = False
+            item.append(smallline)
+
+        if width > 14.0:
+            largearea = ddd.line([[0, -6.75], [1.575, -6.75]]).arc_to([1.575, 6.75], center=[1.575, 0], ccw=True).line_to([0, 6.75])
+            if side == 1: largearea = largearea.rotate(math.pi)
+            largearea = largearea.translate([side * length_l / 2, 0])
+            largearea = largearea.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
+            largearea.extra['ddd:collider'] = False
+            largearea.extra['ddd:shadows'] = False
+            item.append(largearea)
+        '''
+
+        goal_w_official = 5.65
+        goal_w = min(goal_w_official, width * 0.7)
+        goal = american_football_goal(width=goal_w)
+        goal = goal.rotate(ddd.ROT_TOP_CCW)
+        if side == 1: goal = goal.rotate(ddd.ROT_TOP_HALFTURN)
+        goal = goal.translate([side * (length_l / 2), 0, 0])
+        item.append(goal)
+
+    item = ddd.uv.map_cubic(item)
+
+    #hoop = basketball_hoop(width=width + 0.5, net_height_center=net_height_center, net_height_post=net_height_post)
+    #item.append(hoop)
+
+    return item
+
+
+def rugby_field_lines(length=109.75, width=48.8, line_width=0.075):
+    return american_football_field_lines(length=length, width=width, line_width=line_width)

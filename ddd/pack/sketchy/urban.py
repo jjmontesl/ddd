@@ -589,6 +589,51 @@ def panel_marquee_angled(height=0.3, width=2.4, depth=1.0, corner_r=0.4, text=No
     
     return panel
 
+def panel_marquee_arc(height=0.3, width=2.4, length=0.5, length_side=0.3, text=None):
+    """
+    A front marquee panel, like what commerces (or larger ones in cinemas or theaters) have 
+    on the facade, also providing shelter. This 'arc' version generates an arced front
+    (with an optional fixed orthogonal side length -included in the total length-).
+    
+    Facing -Y, lying on the floor and front planes, centered on X.
+    
+    This could be considered a building:part of type "roof" (although this is not the case atm).
+    """
+    
+    shape = ddd.line([(-width / 2.0, -length_side), (-width / 2.0, 0), (width / 2.0, 0), (width / 2.0, -length_side)])
+    # FIXME: Calculate this arc radius properly (and/or define a arc_3_points method that does this easily)
+    arc_radius = 2.00  ## math.sqrt(((width / 2.0) ** 2) + ((length - length_side) ** 2))  # (0, 0)
+    shape = shape.arc_to((-width / 2.0, -length_side), [0, -length + arc_radius], ccw=False, resolution=6)
+    shape = shape.line_to([-width / 2.0, -length_side])  # closing
+    shape = ddd.polygon(shape)
+    
+    panel = shape.extrude(height)
+    
+    panel = panel.material(ddd.mats.plastic_green)
+    panel = panel.smooth()
+    panel = ddd.uv.map_cubic(panel)
+    
+    panel.name = "MarqueeArc"
+
+    panel = ddd.group3([panel])
+
+    # TODO: text should be a slot, so both text 2D or 3D, or other items can be used.
+    # TODO: this text (the slot!) shoud be arced (check API for that, like in periodictable example)
+    if text:
+        #textobj = ddd.marker(name="Panel Text Marker").translate([0, -depth * 0.5 - 0.02, 0])
+        textobj = ddd.instance(None, name="Panel Text Marker").translate([0, -length - 0.02, height / 2])
+        textobj.extra['ddd:text'] = text
+        textobj.extra['ddd:text:width'] = (width) * 0.9
+        textobj.extra['ddd:text:height'] = height * 0.9
+        textobj.extra['ddd:collider'] = False
+        textobj.extra['ddd:shadows'] = False
+        textobj.extra['ddd:occluder'] = False
+        #textobj.extra['ddd:layer'] = "Texts"
+        panel.append(textobj)
+    
+    return panel
+
+
 def busstop_small(height=2.50, panel_height=1.4, panel_width=0.45, text=None):
     text = "🚍 %s" % text
     obj_post = post(height=height).material(ddd.mats.metal_paint_green)

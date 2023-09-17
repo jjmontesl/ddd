@@ -32,31 +32,44 @@ logger = logging.getLogger(__name__)
 Rooftop-specific items (chimneys, antennas, ventilation, A/C, skylights)
 """
 
+# TODO: Use items and item-builders to create various chimneys (e.g. adding caps)
+
 def chimney_round_turbine(obj, height=1.0, radius=0.1):
     """
     Creates a modern chimeney, thin, tall, typically metallic and with a rotatin fan/turbine on top.
     """
     pass
 
-def chimney_open_shape(obj, height=1.0, radius=0.1):
+def chimney_shape(obj, height=1.0, thickness=None):
     """
-    Creates a round chimeney, thin, tall, typically metallic.
-
-    Uses the given shape, this is used by chimney round and chimney rect.
+    Creates a chimeney. Uses the given shape.
     """
-    pass
+    if thickness:
+        obj = obj.subtract(obj.buffer(-thickness))
+    obj = obj.extrude(height, base=False)
+    obj = obj.material(ddd.mats.bricks)
+    obj = ddd.uv.map_cubic(obj)
+    return obj
 
-def chimney_open_round():
-    pass
+def chimney_open_round(radius=0.2, height=0.8, thickness=0.075):
+    obj = ddd.disc(r=radius, resolution=3, name="ChimneyCO")
+    obj = chimney_shape(obj, height, thickness)
+    return obj
 
-def chimney_open_rect():
-    pass
+def chimney_closed_round(radius=0.2, height=0.8):
+    obj = ddd.disc(r=radius, resolution=3, name="ChimneyCO")
+    obj = chimney_shape(obj, height)
+    return obj
 
-def chimney_capped_rect():
-    pass
+def chimney_open_rect(height=1.2, width=0.5, length=0.4, thickness=0.075):
+    obj = ddd.rect([width, length], name="ChimneyCR").recenter()
+    obj = chimney_shape(obj, height, thickness)
+    return obj
 
-def chimney_capped_round():
-    pass
+def chimney_closed_rect(height=1.2, width=0.5, length=0.4):
+    obj = ddd.rect([width, length], name="ChimneyCR").recenter()
+    obj = chimney_shape(obj, height)
+    return obj
 
 
 ROOF_ANTENA_TV_FRONT = [(0.1, 1.0), (0.2, None), (0.3, 0.85), (0.6, 0.5), (0.8, 0.5), (1.0, 0.5) ]  # ratio: 1.25/0.43

@@ -102,6 +102,19 @@ class DDDTransform():
         return self.to_matrix().flatten()
     '''
 
+    def compose(self, other):
+        """
+        Composes this transform with another transform, in place.
+        """
+        #self.position = list(np.dot(self.to_matrix(), list(other.position) + [1])[:3])
+        self.position = Vector3(self.position) + Vector3(other.position)
+        self.rotation = transformations.quaternion_multiply(self.rotation, other.rotation)
+        
+        #rotation_quat_conj = transformations.quaternion_conjugate(other.rotation)
+        #self.rotation = transformations.quaternion_multiply(self.rotation, rotation_quat_conj)
+        #self.rotation = transformations.quaternion_multiply(other.rotation, self.rotation)
+        
+
     def invert(self):
         """
         Inverts the transform in place.

@@ -557,6 +557,7 @@ class DDDNode():
     def flatten(self):
         """
         Flattens the node hierarchy recursively.
+        Note that children transforms are composed to maintain their relative position to this node.
 
         This affects the node hierarchy only, not geometries (in contrast to individualize, which will
         for example also split multipolygons).
@@ -564,15 +565,24 @@ class DDDNode():
 
         result = self.copy()
         result.children = []
-        result.geom = None
+        
+        # FIXME: removing this geometry and adding node, but this should be done in Node2 and Node3, not here
+        if hasattr(result, 'geom'): result.geom = None 
+        if hasattr(result, 'mesh'): result.mesh = None
 
         res = self.copy()
         children = res.children
         res.children = []
-
         result.append(res)
+
+        result.transform = DDDTransform()
+
         for c in children:
-            result.children.extend(c.flatten().children)
+            c_flat = c.flatten()
+            for cc in c_flat.children:
+                #cc.transform.compose(c.transform)
+                cc.transform.compose(self.transform)
+            result.children.extend(c_flat.children)
 
         return result
 

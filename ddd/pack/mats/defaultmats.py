@@ -171,8 +171,13 @@ class DefaultMaterials(MaterialsCollection):
         self.rope = ddd.material(name="Rope", color='#c7b01c')
         self.cable_metal = self.metal #   ddd.material(name="CableMetal", color='#1a1a20')  # Aluminum matte coated/ high voltage lines
 
+        self.rubber_orange = ddd.material(name="Rubber Orange", color="#8B4513", metallic_factor=0.01, roughness_factor=0.9)
+
         # Interior (props) materials
-        self.paper = ddd.material(name="Paper", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.7)
+        self.paper = ddd.material(name="Paper", color='#f2f5f7', metallic_factor=0.0, roughness_factor=0.8)
+
+        self.ball_soccer = ddd.material(name="Ball Soccer", color="#f8f8f8", metallic_factor=0.04, roughness_factor=0.5)
+        self.ball_basketball = self.rubber_orange
 
         # Buildings
         self.building_1 = ddd.material(color='#f7f0be')
