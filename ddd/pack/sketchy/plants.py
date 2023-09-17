@@ -8,7 +8,7 @@ import random
 import functools
 
 from ddd.ddd import ddd
-from ddd.ops import filters, reduction
+from ddd.ops import filters, meshops
 
 
 # TODO: Move tree generation algorithm to a generic "trees pack", and keep here only parameters and other sketchy related stuff
@@ -370,7 +370,39 @@ def tree_stump(height=0.3, r=0.3):
     pass
 
 
-def grass_blade():
+def grass_blade_L1_grid(): # pattern=[2, 3, 4]):
+    """
+    Creates a grass blade made of triangles (meant to be used through instancing).
+
+    Pattern can be 2,3,4 or 3,3,4
+    """
+    vertices = []
+    tris = []
+    pattern=[2, 3, 4]  # currently hardcoded
+    for row, y in enumerate(ddd.math.linspace(0, 1, len(pattern))):
+        for col, x in enumerate(ddd.math.linspace(0, 1, pattern[row])):
+            vertices.append([x, y, 0])
+        if row > 0:
+            tris.append([0, 1, 3])
+    tris = [
+        [0, 3, 2], [0, 1, 3], [1, 4, 3],
+        [2, 6, 5], [2, 3, 6], [6, 3, 7], [7, 3, 4], [4, 8, 7],
+    ]
+
+    blade = ddd.mesh(vertices=vertices, faces=tris, name="Grass Blade")
+    blade = blade.material(ddd.mats.grass_blade)
+    blade = ddd.uv.map_cubic(blade)
+
+    blade = blade.translate([-0.5, 0, 0])
+    #blade = blade.scale([0.85, 0.85, 0.85])
+    blade = blade.rotate(ddd.ROT_FLOOR_TO_FRONT)
+
+    # Alter to give some volume
+    blade = blade.vertex_func(lambda x, y, z, i, o: [x + random.uniform(-0.05, 0.05), y + random.uniform(-0.15, 0.15), z])
+
+    return blade
+
+def grass_blade_L0_quad():
     """
     Creates a grass blade quad (meant to be used through instancing).
     """
@@ -384,6 +416,8 @@ def grass_blade():
     blade = blade.rotate(ddd.ROT_FLOOR_TO_FRONT)
 
     return blade
+
+grass_blade = grass_blade_L1_grid
 
 def flowers_blade(material):
     """

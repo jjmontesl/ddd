@@ -4,6 +4,7 @@
 
 import logging
 import math
+import numpy as np
 
 # Get instance of logger for this module
 logger = logging.getLogger(__name__)
@@ -31,3 +32,7 @@ class DDDMath():
     @staticmethod
     def sign(v):
         return math.copysign(1, v)
+
+    @staticmethod
+    def linspace(start, stop, num, endpoint=True, *args, **kwargs):
+        return np.linspace(start, stop, num, endpoint, *args, **kwargs)

@@ -346,7 +346,7 @@ class DDDNode3(DDDNode):
         if result.mesh:
             inverted = self.mesh.copy()
             inverted.invert()
-            #result.append(ddd.mesh(inverted))
+            #result.append(ddd.trimesh(inverted))
             result.mesh = concatenate(result.mesh, inverted)
 
         return result    

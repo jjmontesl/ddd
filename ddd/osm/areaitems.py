@@ -159,7 +159,7 @@ class AreaItemsOSMBuilder():
         if item_2d.area() < small_pool_area_max: border_exterior_width = 0.5
         border_interior_width = random.choice([0.0, 0.05, 0.1])  # for hanging borders
         border_height = 0.15
-        pool_depth = 2.2  # relative to base, not to border
+        pool_depth = 2.35  # relative to base, not to border
         water_level = -0.35  # relative to base, not to border
         height_margin = pool_depth + 0.2  # because the elevation positioning will account only for the interior, we need a safety margin
         bevel = 0.03

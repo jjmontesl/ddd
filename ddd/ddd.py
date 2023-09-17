@@ -271,17 +271,18 @@ class D1D2D3():
         obj = circle.revolve()
         return obj
 
-    def trimesh(self, mesh=None, name=None):
+    def trimesh(self, mesh, name=None):
         """
         """
         result = self.DDDNode3(name=name, mesh=mesh)
         return result
 
-    def mesh(self, mesh=None, name=None):
+    def mesh(self, vertices, faces, name=None):
         """
         """
+        mesh = Trimesh(vertices=vertices, faces=faces)
         return self.trimesh(mesh=mesh, name=name)
-
+    
     def path3(self, mesh_or_coords=None, name=None):
         if isinstance(mesh_or_coords, self.DDDNode2):
             if mesh_or_coords.geom.geom_type != 'LineString':

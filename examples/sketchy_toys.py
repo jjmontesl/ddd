@@ -16,15 +16,15 @@
 
 
 from ddd.ddd import ddd
-from ddd.pack.sketchy import printing, rooftops, sports_fields, urban, landscape, industrial, interior, vehicles, common, buildings
+from ddd.pack.sketchy import (appliances, bathroom, buildings, common, industrial,
+                              interior, printing, urban, toys
+                              )
 from ddd.pipeline.decorators import dddtask
-from ddd.pack.sketchy.urban import lamppost, lamp_ball, roundedpost,\
-    post_arm_angled
 
 
-"""
-Show and test batching of objects with children and transforms.
-"""
+@dddtask()
+def pipeline_test(pipeline, root):
+    pass
 
 
 @dddtask()
@@ -32,29 +32,28 @@ def pipeline_start(pipeline, root):
 
     items = ddd.group3()
 
-    # Test batching of objects with children and transforms
-
-    item = rooftops.antenna_mast()
-    items.append(item)
     
-    item = buildings.door()
+    item = toys.ball_soccer()
     items.append(item)
 
-    item = buildings.portal()
+    item = toys.ball_basketball()
     items.append(item)
 
-    items = ddd.align.grid(items)
+    item = toys.ball_golf()
+    items.append(item)
 
-    #items = items.apply_transform()
-    #items = items.flatten()
-    items = ddd.meshops.batch_by_material(items)
+    item = toys.ball_american_football()
+    item.show()
+    items.append(item)
 
+
+    items = ddd.align.grid(items, space=4)
     items.append(ddd.helper.all())
     #items.show()
     #items.save("/tmp/test.glb")
 
     #items = ddd.meshops.batch_by_material(items)
-    items.dump(data=True)
+    #items.dump()
     items.show()
     #items.save("/tmp/test.json")
 

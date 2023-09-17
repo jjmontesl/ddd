@@ -14,6 +14,16 @@ def pipeline_start(pipeline, root):
 
     heights = (3.0, 5.0, 10.0, 15.0)
 
+    item = plants.grass_blade()
+    items.append(item)
+    item = plants.grass_blade_L1_grid()
+    items.append(item)
+
+    item = plants.flowers_blade(material=ddd.mats.flowers_blue_blade)
+    items.append(item)
+    item = plants.flowers_blade(material=ddd.mats.flowers_roses_blade)
+    items.append(item)
+
     for h in heights:
         item = landscape.rock([h * 0.2, h * 0.2, h * 0.1])
         items.append(item)

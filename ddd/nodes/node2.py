@@ -1045,7 +1045,7 @@ class DDDNode2(DDDNode):
         # Coords are reversed so 'creation.revolve' creates outwards-facing meshes for ddd.polygon()
         coords = list(reversed(list(self.remove_z().coords_iterator())))
         tmesh = creation.revolve(coords, angle=None, sections=sections)
-        obj = ddd.mesh(tmesh, name=self.name)
+        obj = ddd.trimesh(tmesh, name=self.name)
         obj.copy_from(self)
         return obj
 
