@@ -326,7 +326,7 @@ def osm_groups_areas_leisure_golf_green(obj, osm):
 def osm_groups_areas_natural_bare_rock(obj, osm):
     """Define area data."""
     obj.name = "Bare Rock: %s" % obj.name
-    obj.extra['ddd:area:type'] = "default"
+    obj.extra['ddd:area:type'] = "rocky"  # "default"
     obj = obj.material(ddd.mats.rock)
     obj.extra['ddd:height'] = 0.25
     return obj

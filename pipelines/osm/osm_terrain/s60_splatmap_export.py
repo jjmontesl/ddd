@@ -2,6 +2,7 @@
 # Library for procedural scene modelling.
 # Jose Juan Montes 2020
 
+import io
 import sys
 
 import pyproj
@@ -200,7 +201,7 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
     # Spatial index and cached groups
     channel_items_all = {chan_idx: splatmap.find("/Channel%s" % chan_idx) for chan_idx in channel_indexes}
 
-    #channel_items_index = {chan_idx: STRtree(channel_items_all[chan_idx].geom_recursive()) for chan_idx in channel_indexes}
+    # Per-channel index
     channel_items_index = {chan_idx: channel_items_all[chan_idx] for chan_idx in channel_indexes}
     for ci, cia in channel_items_index.items(): cia.index_create()
 
@@ -213,6 +214,106 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
     pixel_width_x = (ddd_bounds[2] - ddd_bounds[0]) / splatmap_size
     pixel_width_y = (ddd_bounds[3] - ddd_bounds[1]) / splatmap_size
     pixel_area = pixel_width_x * pixel_width_y
+
+    # Rasterize channels
+    for chan_idx in channel_indexes:
+        items = channel_items_all[chan_idx]
+        if items.is_empty(): continue
+
+        # TODO: Unify and provide more core methods to convert between DDD and rasters and raster coordinates, and to show images
+        group = ddd.group2([
+            ddd.shape(osm.area_crop).material(ddd.material(color='#ffffff')),
+            items.copy()
+        ])
+        group.intersection(ddd.shape(osm.area_crop))
+        group = group.clean()
+        group.set('svg:stroke-width', 0.0, children=True)
+
+        # Scale to fit splatmap size (e.g. from ~200m to 256 pixels)
+        group = group.scale([splatmap_size / (ddd_bounds[2] - ddd_bounds[0]), splatmap_size / (ddd_bounds[3] - ddd_bounds[1])])
+
+        pngdata = group.save('.png', output_width=splatmap_size, output_height=splatmap_size)
+        pngstream = io.BytesIO(pngdata)
+        pngarray = np.array(Image.open(pngstream))
+        #group.save('/tmp/test' + str(chan_idx) + '.png')
+        
+        mono = np.max((255 - pngarray[:, :, :3]), 2)
+        mono = mono / np.max(mono)
+        splat_matrix[:, :, chan_idx] += mono
+        #ddd.trace(locals())
+
+
+        # Augmentation tests: park (10) - mixes ground and rock
+
+        if chan_idx == 10 or chan_idx == 11:
+                
+            for yi, xi in np.ndindex(mono.shape):
+            
+                cover_factor = mono[yi, xi]
+
+                if cover_factor > 0.85:
+
+                    # Transform back to DDD coordinates
+                    x = ddd_bounds[0] + (ddd_bounds[2] - ddd_bounds[0]) / splatmap_size * xi
+                    y = ddd_bounds[1] + (ddd_bounds[3] - ddd_bounds[1]) / splatmap_size * yi
+                    x_utm, y_utm = transformer.transform(x, y)
+                    x_utm, y_utm = (x_utm % 4096, y_utm % 4096)
+                    
+                    cover_factor = 1.0
+                    reduce_factor = noise.pnoise2(x_utm * 0.03, y_utm * 0.03, octaves=3, persistence=2.2, lacunarity=0.7, repeatx=4096, repeaty=4096, base=0)
+                    reduce_factor = ddd.math.clamp((reduce_factor - 0.1) * 4.0, 0.0, 1.0) * 0.75  #  * (0.15 if chan_idx == 10 else 0.3)
+                    cover_factor = cover_factor - reduce_factor
+                    splat_matrix[yi, xi, 0] += (reduce_factor * random.uniform(0, 1)) # Increase terrain
+                    splat_matrix[yi, xi, 13] += (reduce_factor * random.uniform(0, 1))  # Increase rock
+
+                    splat_matrix[yi, xi, chan_idx] = cover_factor
+
+
+    # Augmentation tests: sand (12) - extend sand around
+    if not channel_items_sand_spread_union.is_empty():
+        distance_reach = 8.0
+        sand_spread_buffer = channel_items_sand_spread_union.buffer(distance_reach)
+
+        group = ddd.group2([
+            ddd.shape(osm.area_crop).material(ddd.material(color='#ffffff')),
+            sand_spread_buffer.copy()
+        ])
+        group.intersection(ddd.shape(osm.area_crop))
+        group = group.clean()
+        group.set('svg:stroke-width', 0.0, children=True)
+
+        # Scale to fit splatmap size (e.g. from ~200m to 256 pixels)
+        group = group.scale([splatmap_size / (ddd_bounds[2] - ddd_bounds[0]), splatmap_size / (ddd_bounds[3] - ddd_bounds[1])])
+
+        pngdata = group.save('.png', output_width=splatmap_size, output_height=splatmap_size)
+        pngstream = io.BytesIO(pngdata)
+        pngarray = np.array(Image.open(pngstream))
+        #group.save('/tmp/test' + str(chan_idx) + '.png')
+        mono = np.max((255 - pngarray[:, :, :3]), 2)
+        mono = mono / np.max(mono)
+
+        for yi, xi in np.ndindex(mono.shape):
+            
+            # Transform back to DDD coordinates
+            x = ddd_bounds[0] + (ddd_bounds[2] - ddd_bounds[0]) / splatmap_size * xi
+            y = ddd_bounds[1] + (ddd_bounds[3] - ddd_bounds[1]) / splatmap_size * yi
+            x_utm, y_utm = transformer.transform(x, y)
+            x_utm, y_utm = (x_utm % 4096, y_utm % 4096)
+
+            distance = channel_items_sand_spread_union.distance(ddd.point([x, y]))
+
+            #extend_ratio *= noise.pnoise2(coords[0] * 0.1, coords[1] * 0.1, octaves=2, persistence=0.5, lacunarity=2, repeatx=1024, repeaty=1024, base=0)  # Randomize reach
+            aug_factor = max(0, 1.0 - distance / distance_reach)
+            noise_factor = noise.pnoise2(x_utm * 0.03, y_utm * 0.03, octaves=3, persistence=0.2, lacunarity=0.7, repeatx=4096, repeaty=4096, base=0)
+            noise_factor = ddd.math.clamp((noise_factor - 0.5) * 2.0, 0.0, 1.0)  #  * (0.15 if chan_idx == 10 else 0.3)
+            aug_factor = max(aug_factor * noise_factor, 0.0) * 0.75
+
+            splat_matrix[yi, xi, 12] += aug_factor  # Reduce others
+
+
+    '''
+    # OLD approach: deprecated in favour of polygon rasterization instead of scanning the whole area with rects
+    # Assign values to matrices
     points_x = np.linspace(ddd_bounds[0] - pixel_width_x * 0.5, ddd_bounds[2] + pixel_width_x * 0.5, splatmap_size + 1, endpoint=True)
     for xi, (x, xp) in enumerate(zip(points_x, points_x[1:])):
         points_y = list(reversed(np.linspace(ddd_bounds[1] - pixel_width_y * 0.5, ddd_bounds[3] + pixel_width_y * 0.5, splatmap_size + 1, endpoint=True)))
@@ -223,25 +324,30 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
 
             pixel_rect = ddd.rect([x, y, xp, yp])
 
-            # Assign values to matrices
             for chan_idx in channel_indexes:
 
-                channel_items = channel_items_all[chan_idx]
-
                 cand_geoms = channel_items_index[chan_idx].index_query(pixel_rect)  # .geom)
-                #cand_items = [c for c in cand_geoms.children if c.intersects(pixel_rect) and c in channel_items.children]
 
                 # Check if intersects and percentage
-                pixel_item = cand_geoms.intersection(pixel_rect).union()
+                if not cand_geoms.is_empty():
 
-                item_area = pixel_item.area()
+                    pixel_item = cand_geoms.intersection(pixel_rect)
+                    
+                    pixel_item = pixel_item.union()
+                    item_area = pixel_item.area()
+                    
+                    #item_area = max([g.area() for g in pixel_item.individualize().flatten().children] + [0])
 
-                # Calculate cover factor (pixels in the border account for half/quarter the surface due to previous tile clipping (should be avoided)
-                cover_factor = item_area / pixel_area
-                if (xi in (0, splatmap_size - 1)):
-                    cover_factor *= 2
-                if (yi in (0, splatmap_size - 1)):
-                    cover_factor *= 2
+                    # Calculate cover factor (pixels in the border account for half/quarter the surface due to previous tile clipping (should be avoided)
+                    cover_factor = item_area / pixel_area
+                    if (xi in (0, splatmap_size - 1)):
+                        cover_factor *= 2
+                    if (yi in (0, splatmap_size - 1)):
+                        cover_factor *= 2
+
+                else:
+                    item_area = 0.0
+                    cover_factor = 0.0
 
                 # Augmentation tests: sand (12) - extend sand around
                 if chan_idx == 12 and not channel_items_sand_spread_union.is_empty():
@@ -271,13 +377,17 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
 
                 # Detail map (IDs)
                 if use_detailmap:
+                    # FIXME: This is checking intersections again (use cand_geoms from above?)
+                    channel_items = channel_items_all[chan_idx]
+                    cand_items = [c for c in cand_geoms.children if c.intersects(pixel_rect) and c in channel_items.children]
                     for cand_item in cand_items:
 
                         if not pixel_item.intersects(pixel_rect): continue
 
                         detail_id = osm_terrain_splatmap_detail_id(pipeline, cand_item)
                         id_matrix[yi, xi, chan_idx] = detail_id
-
+    '''
+                        
 
     # Clamp to 0..1
     splat_matrix = np.maximum(splat_matrix, 0.0)
@@ -405,7 +515,7 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
     # Metadata (to be saved later to descriptor)
     pipeline.data['splatmap:channels'] = {k: (v.name if v else None) for k, v in enumerate(pipeline.data['splatmap:channels_materials'])}
 
-        # Correct splatmap
+    # Correct splatmap
     pipeline.data['splatmap:ids'] = {v: k for k, v in pipeline.data['splatmap:ids'].items()}
 
 

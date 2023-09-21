@@ -419,19 +419,24 @@ def grass_blade_L0_quad():
 
 grass_blade = grass_blade_L1_grid
 
-def flowers_blade(material):
+def flowers_blade_L0_quad(material):
     """
-    Creates a grass blade quad (meant to be used through instancing).
+    Creates a flower blade quad (meant to be used through instancing).
     """
-    blade = ddd.rect(name="Flowers Blade")
+    blade = grass_blade_L0_quad()
+    blade.setname("Flowers Blade")
     blade = blade.material(material)
-    blade = blade.triangulate()
-    blade = ddd.uv.map_cubic(blade)
-
-    blade = blade.translate([-0.5, 0, 0])
     blade = blade.scale([0.85, 1.0, 1.0])
-    blade = blade.rotate(ddd.ROT_FLOOR_TO_FRONT)
-
     return blade
 
+def flowers_blade_L1_grid(material):
+    """
+    Creates a flower blade tris grid (meant to be used through instancing).
+    """
+    blade = grass_blade_L1_grid()
+    blade.setname("Flowers Blade")
+    blade = blade.material(material)
+    blade = blade.scale([0.85, 1.0, 1.0])
+    return blade
 
+flowers_blade = flowers_blade_L1_grid

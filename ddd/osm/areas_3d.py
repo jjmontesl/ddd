@@ -113,6 +113,8 @@ class Areas3DOSMBuilder():
             return self.generate_area_3d_water(area_2d)
         elif area_2d.get('ddd:area:type', None) == 'underwater':
             return self.generate_area_3d_underwater(area_2d)
+        elif area_2d.get('ddd:area:type', None) == 'rocky':
+            return self.generate_area_3d_rocky(area_2d)
         elif area_2d.get('ddd:area:type', None) == 'railway':
             return self.osm.ways3.generate_way_3d_railway(area_2d)
         elif area_2d.get('ddd:area:type', None) in ('ignore', 'void'):
@@ -169,19 +171,6 @@ class Areas3DOSMBuilder():
                 #                     area_2d.buffer(-3.0).triangulate().translate([0, 0, 0.3])])
 
                 #area_3d = area_3d.translate([0, 0, 0])
-
-            elif area_2d.extra.get('ddd:area:type', None) == 'rocky':
-                # Raise surface, then add random noise
-
-                area_3d = area_2d.extrude_step(area_2d.buffer(-0.3), 0.3, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
-                area_3d = area_3d.extrude_step(area_2d.buffer(-1.5), 1.2, method=ddd.EXTRUSION_METHOD_SUBTRACT)
-
-                # TODO:
-                #last_cap_idx = result.extra.get('_extrusion_last_cap_idx', None)
-                #if last_cap_idx is not None:
-                #    faces = faces[:last_cap_idx]
-
-                # Subdivide and apply noise / tag to avoid further subdivisions (check if other surfaces can be tagged too, eg, playgrounds, etc)
 
             elif area_2d.extra.get('ddd:area:type', None) == 'bunker':
 
@@ -399,16 +388,18 @@ class Areas3DOSMBuilder():
 
         lines = None
         if sport == 'tennis':
-            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.tennis_field_lines, padding=2.5)
+            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.tennis_field_lines, padding=0.5)
         elif sport == 'basketball':
-            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.basketball_field_lines, padding=1)
+            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.basketball_field_lines, padding=0.75)
         elif sport == 'gymnastics':
             #lines = sports.field_lines_area(area_2d_orig, sports.basketball_field_lines, padding=2.0)
             lines = ddd.group3()
-        elif sport in ('handball'):
-            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.handball_field_lines, padding=1)
-        elif sport in ('soccer', 'futsal'):
-            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.football_field_lines, padding=1)
+        elif sport in ('handball', ):
+            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.handball_field_lines, padding=0.85)
+        elif sport in ('soccer', 'futsal', ):
+            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.football_field_lines, padding=1.2)
+        elif sport in ('rugby', 'american_football', ):
+            lines = sports_fields.field_lines_area(area_2d_orig, sports_fields.rugby_field_lines, padding=1.2)
         else:
             # No sport assigned
             lines = ddd.group3()
@@ -423,6 +414,28 @@ class Areas3DOSMBuilder():
             logger.debug("No pitch lines generated.")
 
         return area_3d
+
+    def generate_area_3d_rocky(self, area_2d):
+
+        if area_2d.geom is None or area_2d.geom.is_empty:
+            return None
+
+        area_2d_orig = area_2d.extra.get('ddd:crop:original')  #, area_2d)
+
+        #logger.debug("Pitch: %s", area_2d)
+        area_3d = self.generate_area_3d_gen(area_2d)
+
+        # Apply noise, protecting the edges
+        # Shall already be subdivided
+        area_2d_outline = area_2d.outline().union()
+        area_border_mask_func = lambda x, y, z, i: (ddd.point((x, y, z)).distance(area_2d_outline) > 0.1)
+        noise_rocky_func = lambda x, y, z, i, o: [x + ddd.random.uniform(-0.1, 0.1), y + ddd.random.uniform(-0.1, 0.1), z + ddd.random.uniform(-0.5, 1.5) ]
+        #(terrain.terrain_noise(x, y, z, scale=0.1, octaves=3, persistence=0.5, lacunarity=2.0) - 0.5) * 0.1
+        area_3d = area_3d.vertex_func(noise_rocky_func, mask=area_border_mask_func)
+        area_3d = ddd.uv.map_cubic(area_3d)  # , scale=[1 / 10, 1 / 10])
+
+        return area_3d
+
 
     def generate_area_3d_water(self, area_2d):
         area_3d = self.generate_area_3d_gen(area_2d)

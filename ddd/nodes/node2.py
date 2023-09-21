@@ -1354,7 +1354,7 @@ class DDDNode2(DDDNode):
 
     def distance(self, other):
         """
-        Returns the minimum distance from this object to other.
+        Returns the minimum distance from this object to another.
         """
         if self.children: raise AssertionError()
         if other.children: raise AssertionError()
@@ -1695,7 +1695,7 @@ class DDDNode2(DDDNode):
 
         return scene
 
-    def save(self, path, instance_marker=None, instance_mesh=None, scale=1.0):
+    def save(self, path, instance_marker=None, instance_mesh=None, scale=1.0, **kwargs):
         """
         """
 
@@ -1714,7 +1714,11 @@ class DDDNode2(DDDNode):
             logger.info("Exporting 2D as PNG to: %s", path)
             data = DDDSVG.export_svg(self, instance_mesh=instance_mesh, instance_marker=instance_marker, scale=scale)
             svgdata = data.encode("utf8")
-            data = cairosvg.svg2png(bytestring=svgdata, scale=1.0)  # scale  #, write_to=path) parent_width, parent_height, dpi, scale, unsafe.
+
+            svg2png_args = {}
+            if 'output_width' in kwargs: svg2png_args['output_width'] = kwargs['output_width']
+            if 'output_height' in kwargs: svg2png_args['output_height'] = kwargs['output_height']
+            data = cairosvg.svg2png(bytestring=svgdata, scale=1.0, **svg2png_args)   # scale  #, write_to=path) parent_width, parent_height, dpi, scale, unsafe.
 
             # NOTE: Also, using Inkscape: https://stackoverflow.com/questions/6589358/convert-svg-to-png-in-python
 

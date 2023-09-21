@@ -65,6 +65,14 @@ def ball_american_football(length=0.28, radius=0.16 / 2):
     ball = ball.material(ddd.mats.rubber_orange)
     return ball
 
+def ball_table_tennis(r=0.02):
+    """
+    Official balls: 4cm diameter, mass: 2.7g (bounce restoration energy: ~77%)
+    """
+    item = ddd.sphere(r=r)
+    item = item.material(ddd.mats.plastic_white)
+    return item
+
 
 def cube_symbols_relief(size=0.1, bevel=0.01, bevel_style=ddd.JOIN_BEVEL, symbols=['1', '2', '3', '4', '5', '6'], symbol_height=0.01):
     """

@@ -36,5 +36,15 @@ def pipeline_start(pipeline, root):
     item = ddd.uv.map_cubic(item, scale=[1 / 10, 1 / 10])
     item.show()
 
+
+    # Rocky area
+    area_2d_outline = ddd.disc(r=100)
+    area_border_mask_func = lambda x, y, z, i: (ddd.point((x, y, z)).distance(area_2d_outline) < 0.2)
+    noise_rocky_func = lambda x, y, z, i, o: [x + ddd.random.uniform(-2, 2), y + ddd.random.uniform(2, 2), z + ddd.random.uniform(-5.0, 20) ]
+    #(terrain.terrain_noise(x, y, z, scale=0.1, octaves=3, persistence=0.5, lacunarity=2.0) - 0.5) * 0.1
+    area_3d = item.merge_vertices().vertex_func(noise_rocky_func, mask=area_border_mask_func)
+    area_3d = ddd.uv.map_cubic(area_3d, scale=[1 / 10, 1 / 10])
+    area_3d.show()
+
     root.append(item)
 

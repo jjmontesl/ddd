@@ -34,7 +34,9 @@ def osm_structured_export_2d(root, pipeline):
 
 @dddtask(order="40.90.+")
 def osm_structured_export_2d_tile(root, osm, pipeline):
-    """Save a cropped tileable 2D image of the scene."""
+    """
+    Save a cropped tileable 2D image of the scene.
+    """
 
     tile = ddd.group2([
         ddd.shape(osm.area_crop).material(ddd.material(color='#ffffff')),  # White background (?)
@@ -59,5 +61,5 @@ def osm_structured_export_2d_tile(root, osm, pipeline):
     path = pipeline.data['filenamebase'] + ".png"
     tile.save(path)
 
-    tile.save("/tmp/osm-structured.png")
+    #tile.save("/tmp/osm-structured.png")
 

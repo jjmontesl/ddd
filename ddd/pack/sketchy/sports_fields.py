@@ -349,6 +349,12 @@ def tennis_field_lines(length=23.77, width=10.97, square_length_ratio=6.40 / 23.
         midline.extra['ddd:shadows'] = False
         item.append(midline)
 
+    midcentralline = ddd.line([[-length * square_length_ratio, 0], [length * square_length_ratio, 0]])
+    midcentralline = midcentralline.buffer(line_width, cap_style=ddd.CAP_SQUARE).triangulate().material(ddd.mats.painted_line)
+    midcentralline.extra['ddd:collider'] = False
+    midcentralline.extra['ddd:shadows'] = False
+    item.append(midcentralline)
+
     item = ddd.uv.map_cubic(item)
 
     net = tennis_net(width=width + 0.5, net_height_center=net_height_center, net_height_post=net_height_post)
@@ -407,6 +413,10 @@ def basketball_hoop():
 
 def enforce_aspect_ratio(length, width, ratio):
     """
+    Enforce aspect ratio on a rectangle, given a ratio. The rectangle is
+    reduced to fit the ratio, never enlarged.
+
+    # TODO: Rename and move to a more generic function (in math or util)
     """
     current_ratio = length / width
     if current_ratio > ratio:
@@ -611,6 +621,7 @@ def american_football_field_lines(length=109.75, width=48.8, line_width=0.075):
             item.append(largearea)
         '''
 
+        # Add Goal
         goal_w_official = 5.65
         goal_w = min(goal_w_official, width * 0.7)
         goal = american_football_goal(width=goal_w)
@@ -629,3 +640,16 @@ def american_football_field_lines(length=109.75, width=48.8, line_width=0.075):
 
 def rugby_field_lines(length=109.75, width=48.8, line_width=0.075):
     return american_football_field_lines(length=length, width=width, line_width=line_width)
+
+
+def table_tennis_table(length=2.74, width=1.525, height=0.76):
+    """
+    Creates a table tennis table.
+
+    Official: 2.74 m long, 1.525 m wide, and 76 cm high. Net height: 15.25  Net Overhang: 15.25 cm
+    Balls: 4cm diameter, mass: 2.7g (bounce restoration energy: ~77%)
+    Space (official): 14m x 7m x 5m
+
+    """
+    # TODO: Use Item/ItemBuilders, and slots and supports for legs.
+    pass
