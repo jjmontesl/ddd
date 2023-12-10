@@ -32,7 +32,7 @@ def pipeline_test_line_substring(pipeline, root, logger):
 @dddtask()
 def pipeline_test_centerline(pipeline, root, logger):
     """
-    Tests geometric operations.
+    Tests Node2 centerline() method.
     """
 
     items = ddd.group3()
@@ -71,3 +71,59 @@ def pipeline_test_vertex_order_align_snap(pipeline, root):
 
     root.append(result)
 
+
+@dddtask()
+def pipeline_test_oriented_rect(pipeline, root):
+    """
+    Tests geometric operations.
+    """
+
+    # Test polygon subtract, and 2D convex hull
+    coords = [[10, 10], [5, 9], [3, 12], [1, 5], [-8, 0], [10, 0]]
+    obj = ddd.polygon(coords).subtract(ddd.rect([1,1,2,2]))
+    #ref = obj.convex_hull().material(ddd.MAT_HIGHLIGHT)
+    obj = obj.rotate(ddd.PI_OVER_3)
+    ref = obj.material(ddd.MAT_HIGHLIGHT)
+
+    # Test oriented rect
+    obj = ddd.geomops.oriented_rect(ref)
+
+    result = ddd.group([obj, ref])
+    #result.show()
+
+    root.append(result)
+
+
+@dddtask()
+def pipeline_test_split_bb_area_ratio(pipeline, root):
+    """
+    Tests geometric operations.
+    """
+
+    coords = [[0, 0], [8, 0], [8, 3]]  # , [16, 3]]
+    obj = ddd.line(coords).buffer(0.5)
+    #obj = obj.material(ddd.MAT_HIGHLIGHT)
+
+    obj = ddd.group2(ddd.geomops.split_bb_area_ratio(obj))
+    
+    obj = ddd.helper.colorize_objects(obj)
+    obj.show()
+
+    root.append(obj)
+
+@dddtask()
+def pipeline_test_split_bb_area_ratio_2(pipeline, root):
+    """
+    Tests geometric operations.
+    """
+
+    coords = [[0, 0], [8, 0], [8, 3], [16, 3]]
+    obj = ddd.line(coords).buffer(0.5)
+    #obj = obj.material(ddd.MAT_HIGHLIGHT)
+
+    obj = ddd.group2(ddd.geomops.split_bb_area_ratio(obj))
+    
+    obj = ddd.helper.colorize_objects(obj)
+    obj.show()
+
+    root.append(obj)    

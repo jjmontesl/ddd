@@ -28,16 +28,15 @@ def DDD_NORMALIZE_PATHS():
 # Global settings
 DDD_EXECUTABLE = sys.executable
 
-DDD_DATADIR = './data/'
-DDD_WORKDIR = './output/'  # Stress we are using the working directory and avoids /
+DDD_WORKDIR = './'
 
-for k, v in os.environ.items()  :
-    if k.startswith('DDD'):
+DDD_DATADIR = os.path.join(os.path.dirname(DDD_EXECUTABLE), "/../../data/")  # Tested to at least work in dev environment (no need for this setting on ~/.ddd.conf)
+
+
+# Load environment variables starting with DDD_
+for k, v in os.environ.items():
+    if k.startswith('DDD_'):
         globals()[k] = v
-#if 'DDD_DATADIR' in os.environ:
-#    DDD_DATADIR = os.environ['DDD_DATADIR']
-#if 'DDD_WORKDIR' in os.environ:
-#    DDD_WORKDIR = os.environ['DDD_WORKDIR']
 
 DDD_NORMALIZE_PATHS()
 
@@ -48,7 +47,8 @@ DDD_NORMALIZE_PATHS()
 DDD_INCLUDE('~/.ddd.conf')
 
 # Load extra settings in the data directory (recommended for data-related settings)
-DDD_INCLUDE(DDD_DATADIR + '/ddd.conf')
+DDD_INCLUDE(os.path.join(DDD_DATADIR, '/ddd.conf'))
+
 
 DDD_NORMALIZE_PATHS()
 

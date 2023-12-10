@@ -147,7 +147,7 @@ def osm_bootstrap_data_fetch(root, pipeline, logger):
     # Check if geojson file is available
     #sides = 15 * 0.01  # Approximate degrees to km
 
-    path = pipeline.data.get('ddd:osm:datasource:path', os.path.join(settings.DDD_WORKDIR, "data/osm/"))
+    path = pipeline.data.get('ddd:osm:datasource:path', os.path.join(settings.DDD_WORKDIR, "/osm-data/"))
     logger.info("OSM source data path: %s", path)
 
     # Round download center points to very roughly 500m
@@ -168,7 +168,7 @@ def osm_bootstrap_data_fetch(root, pipeline, logger):
         force_get_data = parse_bool(pipeline.data.get('ddd:osm:datasource:force_refresh', False))
 
         if force_get_data or not file_exists:
-            logger.info("Data file '%s' not found or datasource:force_refresh is True. Trying to produce data." % datafile)
+            logger.info("Data file '%s' not found or datasource:force_refresh is True. Fetching data." % datafile)
             osmdatasource = OnlineOSMDataSource()
             osmdatasource.get_data(path, dataname, datacenter, force_get_data)
 

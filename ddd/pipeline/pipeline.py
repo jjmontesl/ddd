@@ -61,6 +61,9 @@ class DDDPipeline():
         script_name = os.path.basename(configfile)
         module_name = script_name[:-3]  # remove .py
 
+        if self.name is None:
+            self.name = "Pipeline: " + module_name
+
         try:
             # Add to path
             #sys.path.append(script_dirpath)

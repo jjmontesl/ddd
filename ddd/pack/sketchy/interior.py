@@ -162,8 +162,8 @@ def carpet_rect(width=1.0, length=1.5, thickness=0.01, noise=0.005):
     carpet = base.buffer(-0.005).extrude_step(base, thickness * 0.75, base=False, method=ddd.EXTRUSION_METHOD_SUBTRACT)
     carpet = carpet.extrude_step(base.buffer(-0.01), thickness * 0.25, method=ddd.EXTRUSION_METHOD_SUBTRACT)
     carpet = carpet.material(ddd.mats.carpet_red)
-    carpet = ddd.uv.map_cubic(carpet, scale=[0.5, 0.5, 0.5], split=False)
     carpet = carpet.smooth(ddd.PI)
+    carpet = ddd.uv.map_cubic(carpet, scale=[0.5, 0.5, 0.5], split=True)
     return carpet
 
 

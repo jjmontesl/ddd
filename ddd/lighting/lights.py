@@ -28,7 +28,10 @@ class PointLight(Light):
     """
     """
 
-    def __init__(self, pos=None, name="Light", color="#ffffff", radius=5, intensity=1.05, enabled=True):
+    def __init__(self, pos=None, name="Light", color="#ffffff", radius=5, intensity=1.05, enabled=True, shadows=False):
+        """
+        Shadows can currently be: False, True (hard), 'hard', 'soft', 'none'
+        """
 
         super(PointLight, self).__init__(name=name)
 
@@ -40,6 +43,9 @@ class PointLight(Light):
         self.extra['ddd:light:radius'] = radius
         self.extra['ddd:light:intensity'] = intensity
         self.extra['ddd:light:enabled'] = enabled
+        if shadows:
+            shadows_type = 'hard' if shadows is True else shadows
+            self.extra['ddd:light:shadows'] = shadows_type
 
 
 class DirectionalLight(Light):

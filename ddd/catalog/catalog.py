@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class PrefabCatalog():
     """
-    Pre-made object catalog, to ease creation o shared instances.
+    Pre-made object catalog, to ease handling of shared instances.
 
     Features:
 
@@ -24,7 +24,6 @@ class PrefabCatalog():
     - Preseedeable + Readonly option: for cases where the catalog needs to be shared among processes.
     - Loadable: reimport/load catalog to continue generation of related scenes.
     - Export: export in a GLB format that Unity importer understands.
-    - Reproducible: NOT IMPLEMENTED (requires random seeding / reproducible packs)
     - Dummy Catalog: allows for generation without instancing/sharing.
     - (??) Inheritance: a catalog can extend or be based on another one
     """

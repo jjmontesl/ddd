@@ -48,6 +48,30 @@ class DDDPrimitivesTestCase(TestCase):
         self.assertEqual(node.geom.coords[0], (0.0, 0.0, 0.0))
         self.assertEqual(node.geom.coords[1], (1.0, 1.0, 0.0))
 
+    def test_ddd_rect(self):
+
+        node = ddd.rect((1, 1))
+        self.assertEqual(node.geom.type, 'Polygon')
+        self.assertEqual(node.vertex_count(), 4 + 1)
+        self.assertEqual(node.geom.bounds, (0.0, 0.0, 1.0, 1.0))
+        self.assertEqual(node.vertex_list()[0], (0.0, 0.0, 0.0))
+        self.assertEqual(node.vertex_list()[1], (1.0, 0.0, 0.0))
+        self.assertEqual(node.vertex_list()[2], (1.0, 1.0, 0.0))
+        self.assertEqual(node.vertex_list()[3], (0.0, 1.0, 0.0))
+        #self.assertEqual(len(node.vertex_list()), 4)  # 4 or 4 + 1?
+        
+        self.assertEqual(node.length(), 4.0)
+        self.assertEqual(node.area(), 1.0)
+
+        node = ddd.rect([(0, 0, 0), (1, 1, 0)], name="TestRect")
+        self.assertEqual(node.geom.type, 'Polygon')
+        self.assertEqual(node.vertex_count(), 4 + 1)
+        self.assertEqual(node.geom.bounds, (0.0, 0.0, 1.0, 1.0))
+        self.assertEqual(node.vertex_list()[0], (0.0, 0.0, 0.0))
+        self.assertEqual(node.vertex_list()[1], (1.0, 0.0, 0.0))
+        self.assertEqual(node.vertex_list()[2], (1.0, 1.0, 0.0))
+        self.assertEqual(node.vertex_list()[3], (0.0, 1.0, 0.0))
+        self.assertEqual(node.name, "TestRect")
 
 
     '''

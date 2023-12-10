@@ -297,7 +297,6 @@ def osm_select_ways_path(obj, root):
     root.find("/Ways").append(obj)
 
 
-
 @dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:highway" ~ "steps|stairs"]')
 def osm_select_ways_stairs(obj, root):
     """Define road data."""
@@ -531,6 +530,15 @@ def osm_select_ways_manmade_pier(root, osm, obj):
     #obj = obj.buffer(obj.get('ddd:width'), cap_style=ddd.CAP_FLAT)
     obj = obj.material(ddd.mats.wood)
     root.find("/ItemsWays").append(obj)
+
+
+@dddtask(path="/Features/*", select='["geom:type"="LineString"]["osm:sidewalk" = "separate"][!"ddd:way:sidewalk:width"]')
+def osm_select_ways_sidewalk_separate(obj, root):
+    """
+    Sets sidewalk generation when indicated by OSM and not yet configured.
+    TODO: This rule is too overriding and possibly appropriate for a final definition/styling approach (review with VRS, new features/builders, etc)
+    """
+    obj.set('ddd:way:sidewalk:width', 4.0)
 
 
 @dddtask(order="30.30.40.+", path="/Ways/*")

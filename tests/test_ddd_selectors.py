@@ -3,6 +3,7 @@ from ddd.ddd import ddd
 from unittest import TestCase
 
 # TODO: Tests for (future v2) selectors:
+# TODO: 'selector=' shall be 'path' (or first param), and comprehend all path syntaxes (see below)
 
 '''
 
@@ -68,6 +69,9 @@ class SelectorTestCase(TestCase):
         Tests simple selectors.
         """
         result = self.root.select(selector='["ddd:name" = "TestNodeRoot"]')
+        self.assertEqual(result.count(), 1)
+
+        result = self.root.select(selector='[ddd:name = "TestNodeRoot"]')
         self.assertEqual(result.count(), 1)
 
     def test_selector_bool(self):

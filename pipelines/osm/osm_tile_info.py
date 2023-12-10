@@ -25,7 +25,7 @@ def pipeline_start(pipeline, root, logger):
         ddd ~/ddd/pipelines/osm/osm_tile_info.py
     """
 
-    source_dir = settings.DDD_WORKDIR + "/ddd_http/"
+    source_dir = settings.DDD_DATADIR + "/ddd_http/"
     #source_regex = r"output/ddd_http/([0-9]+)/([0-9]+)/([0-9]+)(.*)"
     source_regex = r".*(17)/([0-9]+)/([0-9]+)(.*)"
 

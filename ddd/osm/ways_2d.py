@@ -157,7 +157,7 @@ class Ways2DOSMBuilder():
         ways can intersect each other or intersections if there were no node intersections or, more often,
         when they run through corners or in parallel but with no shared nodes.
 
-        It must be noted that this is a delicate and fragile step that has a large impact on subsequent
+        It must be noted that this is a delicate step (and currently quite fragile) that has a large impact on subsequent
         ways, paths, layers and sidewalks generation (and to a certain extent, area and building generation too).
         """
 

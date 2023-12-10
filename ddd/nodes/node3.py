@@ -1094,7 +1094,7 @@ class DDDNode3(DDDNode):
             raise DDDException("Unknown rendering backend: %s" % D1D2D3Bootstrap.renderer)
 
 
-    def save(self, path, instance_marker=None, instance_mesh=None, include_metadata=True, size=None):
+    def save(self, path, instance_marker=None, instance_mesh=None, include_metadata=True, size=None, **kwargs):
         """
         Saves this object to a file.
 
@@ -1166,7 +1166,7 @@ class DDDNode3(DDDNode):
         elif path.endswith('.json'):
             #rotated = self.rotate([-math.pi / 2.0, 0, 0])
             #scene = rotated._recurse_scene("", instance_mesh=instance_mesh, instance_marker=instance_marker)
-            data = DDDJSONFormat.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker)
+            data = DDDJSONFormat.export_json(self, "", instance_mesh=instance_mesh, instance_marker=instance_marker, **kwargs)
             data = data.encode("utf8")
 
         elif path.endswith('.yaml'):

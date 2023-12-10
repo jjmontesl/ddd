@@ -142,11 +142,13 @@ class DDDNode():
         return obj
 
 
-    def copy_from(self, obj, copy_material=False, copy_children=False, copy_metadata_to_children=False, copy_transform=False):
+    def copy_from(self, obj, copy_material=False, copy_children=False, copy_metadata_to_children=False, copy_transform=False, replace=True):
         """
         Copies metadata (without replacing), and optionally material and children from another object.
 
         Modifies this object in place, and returns itself. This does not copy geometry or meshes or other non-node data.
+
+        Does not copy: 'uv'
 
         TODO: copy_material shall possibly be True by default?
         """
@@ -157,9 +159,15 @@ class DDDNode():
             self.transform = obj.transform.copy()
 
         # Copy attributes
+        exclude_attrs = ('uv', )
         for k, v in obj.extra.items():
-            self.set(k, default=v, children=copy_metadata_to_children)
-        self.extra.update(obj.extra)
+            if k in exclude_attrs: continue
+            if replace:
+                self.set(k, v, children=copy_metadata_to_children)
+            else:
+                self.set(k, default=v, children=copy_metadata_to_children)
+        
+        #self.extra.update(obj.extra)  # This would replace existing values, and was used, and removing it caused some attributes to be lost (light color, wall nonwalkable...)
 
         if copy_children:
             self.children = [c.copy(copy_children=True) for c in obj.children]
@@ -304,6 +312,9 @@ class DDDNode():
             parts = path[1:].split("/")
             result = [o for o in self.children if o.name == parts[0]]
             result = self.grouptyped(result)
+        #elif path.count("/") == 0 and '*' not in path:
+        #    result = [o for o in self.children if o.name == path]
+        #    result = self.grouptyped(result)
         else:
             result = self.select(path=path, recurse=False)
 
@@ -357,7 +368,8 @@ class DDDNode():
         if path:
             # TODO: Implement path pattern matching (ie. css selectors, path selectors... ?)
             path = path.replace("*", "")  # Temporary hack to allow *
-            pathmatches = _rec_path.startswith(path)
+            path_forced_prefixed = path if path[0] == "/" else "/" + path
+            pathmatches = _rec_path.startswith(path_forced_prefixed)
             selected = selected and pathmatches
 
         if func:

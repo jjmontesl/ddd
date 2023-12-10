@@ -164,7 +164,6 @@ class Areas2DOSMBuilder():
         in order to keep ways info when they are overlapped with other areas (either in the map or augmented like sidewalks in districts).
         """
 
-        # TODO: FIXME: This is cutting areas across layers (e.g. elevated pier on Coruña Praia de Santo Amaro). Should it? if so at least it should mark them.
 
         """
         areas_2d_original = ddd.group2()
@@ -226,6 +225,7 @@ class Areas2DOSMBuilder():
 
                     # Skip areas in other layers
                     # FIXME: ddd:layer_int is not set (at least for some objects), why?
+                    # Before this check, though, this was cutting areas across layers (e.g. elevated pier on Coruña Praia de Santo Amaro). Should it? if so at least it should mark them.
                     #if area_original.get('ddd:layer') != way_2d.get('ddd:layer'): continue
                     if area_original.get('ddd:layer_int', 0) != way_2d.get('ddd:layer_int', 0): continue
 

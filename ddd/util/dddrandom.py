@@ -58,3 +58,5 @@ class DDDRandom:
             accum += v
 
         raise DDDException(False, "Incorrect weighted choice.")
+
+    

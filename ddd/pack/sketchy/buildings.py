@@ -129,9 +129,10 @@ def door(width=1.4, height=2.2, depth=0.06):  # , handle_height=None, surface_fr
     obj = ddd.rect([-width * 0.5, 0, width * 0.5, height], name="Door")
     obj = obj.extrude(depth) # .translate([0, 0, depth])
     obj = obj.material(ddd.mats.wood)
+    #obj = obj.material(ddd.MAT_TEST)
     obj = obj.smooth()
-    obj = ddd.uv.map_cubic(obj, split=True)
     obj = obj.rotate(ddd.ROT_FLOOR_TO_FRONT)
+    obj = ddd.uv.map_cubic(obj, split=True)
 
     # TODO: Provide data for hinge joints (Q: as slots?)
 

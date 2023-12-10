@@ -25,7 +25,7 @@ def osm_model_3d_compress_draco(root, osm, pipeline, logger):
 
     draco_home = settings.DDD_GLTF_DRACO_HOME
     draco_script = draco_home + "node_modules/gltf-pipeline/bin/gltf-pipeline.js"
-    node_bin = "node"
+    node_bin = "node --no-experimental-fetch"
 
     input_file_abs = os.path.abspath(input_file)
     output_file_abs = os.path.abspath(output_file)

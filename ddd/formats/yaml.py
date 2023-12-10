@@ -31,6 +31,8 @@ class DDDYAMLFormat():
         TODO: Unify export code paths and recursion, metadata, path name and mesh production.
         """
 
+        from ddd.ddd import ddd
+
         node_name = obj.uniquename() + name_suffix
 
         extra = obj.metadata(path_prefix, name_suffix)

@@ -65,7 +65,7 @@ def rooms_generate_solid(root, pipeline, obj):
     room_solid = obj.copy()
     room_solid.name = "Room: %s" % obj.name
     room_solid = room_solid.clean(eps=-1)
-    rooms_solid = ddd.geomops.remove_holes_split(room_solid)
+    rooms_solid = ddd.geomops.split_holes(room_solid)
 
 
     for room_solid in rooms_solid.children:
@@ -97,7 +97,7 @@ def rooms_generate_hollow(root, pipeline, obj):
 
     room_solid = room_solid.subtract(solid_union)
     room_solid = room_solid.clean(eps=-1)
-    rooms_solid = ddd.geomops.remove_holes_split(room_solid)
+    rooms_solid = ddd.geomops.split_holes(room_solid)
 
     for room_solid in rooms_solid.children:
         room_solid.name = "Room: %s" % obj.name
@@ -128,7 +128,7 @@ def rooms_fore(root, pipeline, obj):
     bg = obj.copy()
     bg = bg.subtract(pipeline.data['rooms:solid_union'])
 
-    bgs = ddd.geomops.remove_holes_split(bg)
+    bgs = ddd.geomops.split_holes(bg)
 
     for bg in bgs.children:
         bg.name = "Foreground"
@@ -281,7 +281,7 @@ def hollow_background(root, pipeline, obj):
     intersects = root.select(path="/Features/*", selector='[ddd:polygon:type="intersect"]').union()
     bg = bg.subtract(intersects)
 
-    bgs = ddd.geomops.remove_holes_split(bg)
+    bgs = ddd.geomops.split_holes(bg)
 
     for bg in bgs.children:
         bg.name = "Hollow Room Background"
@@ -309,7 +309,7 @@ def hollow_background_intersect(root, pipeline, obj):
     bg = obj.copy()
     bg = bg.intersection(pipeline.data['rooms:background_union'])
 
-    bgs = ddd.geomops.remove_holes_split(bg)
+    bgs = ddd.geomops.split_holes(bg)
 
     for bg in bgs.children:
         bg.name = "Hollow Room Background Intersect"
@@ -344,7 +344,7 @@ def holes_frames(root, pipeline, obj):
 
     obj = obj.copy()
     obj = obj.subtract(obj.buffer(-dist))
-    bgs = ddd.geomops.remove_holes_split(obj)
+    bgs = ddd.geomops.split_holes(obj)
     for bg in bgs.children:
         bg = bg.material(mat)
         bg = ddd.uv.map_2d_linear(bg)

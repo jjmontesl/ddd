@@ -259,7 +259,7 @@ def osm_terrain_export_splatmap(root, pipeline, osm, logger):
                     x_utm, y_utm = transformer.transform(x, y)
                     x_utm, y_utm = (x_utm % 4096, y_utm % 4096)
                     
-                    cover_factor = 1.0
+                    #cover_factor = 1.0
                     reduce_factor = noise.pnoise2(x_utm * 0.03, y_utm * 0.03, octaves=3, persistence=2.2, lacunarity=0.7, repeatx=4096, repeaty=4096, base=0)
                     reduce_factor = ddd.math.clamp((reduce_factor - 0.1) * 4.0, 0.0, 1.0) * 0.75  #  * (0.15 if chan_idx == 10 else 0.3)
                     cover_factor = cover_factor - reduce_factor

@@ -28,7 +28,7 @@ class DDDGeoJSONFormat():
 
         #encoded = json.dumps(data, indent=2, default=lambda x: D1D2D3.json_serialize(x))
         from ddd.ddd import D1D2D3
-        encoded = geojson.dumps(feature_collection, default=lambda x: D1D2D3.json_serialize(x))  #, sort_keys=True)
+        encoded = geojson.dumps(feature_collection, default=lambda x: D1D2D3.json_serialize(None, x))  #, sort_keys=True)
         print(encoded)
 
         return encoded
@@ -58,6 +58,27 @@ class DDDGeoJSONFormat():
                 feature = geojson.Feature(geometry=geometry, name=node_name)
                 feature.properties = data
                 features.append(feature)
+            elif obj.geom.geom_type == 'MultiPolygon':
+                geometry = geojson.MultiPolygon([list(poly.exterior.coords) for poly in obj.geom])
+                feature = geojson.Feature(geometry=geometry, name=node_name)
+                feature.properties = data
+                features.append(feature)
+            elif obj.geom.geom_type == 'LineString':
+                geometry = geojson.LineString(list(obj.geom.coords))
+                feature = geojson.Feature(geometry=geometry, name=node_name)
+                feature.properties = data
+                features.append(feature)
+            elif obj.geom.geom_type == 'MultiLineString':
+                geometry = geojson.MultiLineString([list(line.coords) for line in obj.geom])
+                feature = geojson.Feature(geometry=geometry, name=node_name)
+                feature.properties = data
+                features.append(feature)
+            elif obj.geom.geom_type == 'Point':
+                geometry = geojson.Point(list(obj.geom.coords)[0])
+                feature = geojson.Feature(geometry=geometry, name=node_name)
+                feature.properties = data
+                features.append(feature)
+            #elif obj.geom.geom_type == 'MultiPoint':
             else:
                 logger.warning("Invalid node type or geometry to be exported to GeoJSON: %s", obj)
 

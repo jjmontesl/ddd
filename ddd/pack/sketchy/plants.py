@@ -328,6 +328,10 @@ def tree_bush(height=1.0, r=0.30):
 def tree_weeping_willow():
     pass
 
+def tree_pine():
+    """
+    """
+    pass
 
 def reed(height=None, leaves=None):
 

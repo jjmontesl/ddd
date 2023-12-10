@@ -80,6 +80,17 @@ class DDDGeometry():
 
         return (major_seg, minor_seg, angle)  #, length_seg, width_seg)
     
+    def oriented_rect(self, obj):
+        """
+        Calculates the oriented rect to box the object (based on the minimum rotated rectangle)
+
+        Returns a new object.
+        """
+        (major, minor, angle) = self.oriented_axis(obj)
+        result = ddd.rect([major.geom.length, minor.geom.length]).rotate(angle).recenter()
+        result.translate(major.centroid())
+        return result
+    
     def inscribed_radius(self, obj):
         """
         Return the radius of the smallest circle that can be guaranteed to fit the object.
@@ -88,7 +99,67 @@ class DDDGeometry():
         result = Vector2([axis_major.length() / 2.0, axis_minor.length() / 2.0]).length()
         return result
 
-    def remove_holes_split(self, obj):
+    def split_bb_area_ratio(self, obj, ratio=0.45, reduce=True):
+        """
+        Returns an array of objects, splitting the object if its area is smaller than the given ratio to its bounding box area.
+
+        NOTE: currently does not support children.
+
+        @see examples directory 'geomops' script which shows this operation.
+        """
+        
+        assert ratio < 0.5  # A single triangle would have ratio 0.5, so currently target ratio cannot be larger than that
+        
+        result = [obj] # .copy()
+
+        do_split = True
+        while do_split:
+        
+            do_split = False
+            to_add = []
+            to_remove = []
+
+            for obstacle in result:
+                obstacle_area = obstacle.area()
+                obstacle_bb = ddd.geomops.oriented_rect(obstacle)
+                obstacle_bb_area = obstacle_bb.area()
+                area_ratio = obstacle_area / obstacle_bb_area
+
+                if area_ratio < ratio:
+                    
+                    #vertices = obj.vertex_list()
+                    
+                    # FIXME: arbitrary cut for devel/test/draft purposes, unusable
+                    #cut = ddd.line([vertices[0], vertices[len(vertices) // 2]])
+                    
+                    # Find BB center, get closest vertex, use perpendicular/vertex-bisector at vertex
+                    bb_center = obstacle_bb.centroid()
+                    closest_vertex_coords, closest_vertex_idx = obstacle.closest_vertex(bb_center)
+                    
+                    # FIXME: This length limit is arbitrary, use a longer line (but not for representation) or better resolve this
+                    cut = obstacle.linearize().vertex_bisector(closest_vertex_idx, length=10)  # 99999
+                    #cut = obstacle.perpendicular(closest_vertex_idx, length=99999999)
+                    #cut = ddd.geomops.line_extend(cut, start_l=0.01, end_l=0.01)
+
+                    splits = obstacle.split(cut)
+                    #ddd.group(ddd.helper.colorize_objects(splits).children + [cut.highlight()]).show()
+
+                    splits_children = [o for o in splits.individualize(always=True).flatten().clean(eps=-0.01).children if not o.is_empty() and o.geom.type != "Polygon" ]
+
+                    # Check we actually split the piece to prevent infinite loops
+                    if len(splits_children) > 1:
+                        to_add.extend(splits_children)
+                        to_remove.append(obstacle)
+                        if reduce: do_split = True
+                        break  # Break for loop as we cannot continue working this iteration after altering the list of children
+
+            result = [o for o in result if o not in to_remove]
+            result.extend(to_add)
+            #ddd.helper.colorize_objects(ddd.group(result)).show()
+
+        return result
+
+    def split_holes(self, obj):
         """
         Splits a polygon with holes generating several polygons with no holes.
         Returns the same object if it has no interior holes.
@@ -115,7 +186,7 @@ class DDDGeometry():
             else:
                 raise DDDException("Unknown geometry for removing holes: %s" % obj)
 
-        result.children = [self.remove_holes_split(c) for c in result.children]
+        result.children = [self.split_holes(c) for c in result.children]
 
         #ddd.group2([obj, result]).dump()
         #ddd.group2([obj, result]).extrude(10.0).show()

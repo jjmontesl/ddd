@@ -1,15 +1,14 @@
 [0.7.0]
 
-  * Added sketchy objects: carpets, bathroom items...
+  * Added several object generators to the 'sketchy' pack: carpets, bathroom items...
   * Trying to normalize slots (DDDSlot) and added very basic book generation.
   * Added centerline() method to DDDNode2.
   * Fixes to support working on up to date Docker images.
   * Removed usage of geom.type (deprecated by Shapely in favour of geom.geom_type).
   * Fixed rotation including support for transforms and instances and path3. 
   * Added axis transform support for export.
-  * Slowly migrating towards parenting and transforms, instances, nodes...
   * Changed vertex_func() to support world coordinates (breaking change: causes regressions).
-  * Fixes to split operations and others. Added missing features and cases to existing operations.
+  * Fixes to geometry split and other operations. Added missing features and cases to existing operations.
   * Large changes to unify DDDObject 2 and 3 into DDDNode.
   * Separated DDDMaterial from ddd.
   * Fixes to path height perp interpolation and object dump repr.

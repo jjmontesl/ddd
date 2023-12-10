@@ -392,7 +392,8 @@ class DDDNode2(DDDNode):
         result.children = [c.clean(eps=eps, remove_empty=remove_empty, validate=validate, fix_invalid=fix_invalid) for c in self.children]
 
         if remove_empty:
-            result.children = [c for c in result.children if (c.children or c.geom)]
+            #result.children = [c for c in result.children if (c.children or c.geom)]
+            result.children = [c for c in result.children if not c.is_empty()]
             if result.geom and result.geom.is_empty:
                 result.geom = None
 
@@ -1153,6 +1154,18 @@ class DDDNode2(DDDNode):
         return result
 
     def centerline(self, distance=None):
+        """
+        Calculates a central line to a geometry, which divides de geometry in parts that are equually spaced
+        from the result line. Such result line may include several branches (making it a graph represented
+        by a MultiLineString). 
+        
+        Visually, this operation is akin to finding the dividing lines of a "hipped" roof.
+        
+        Note: uses "centerline" library.
+
+        @see examples directory 'geomops' script which shows this operation.
+        """
+
         result = self.copy()
 
         if distance is None:
@@ -1174,7 +1187,7 @@ class DDDNode2(DDDNode):
 
     def extrude_along(self, path):
         """
-        Extrudes a shape along a path
+        Extrudes a shape along a path.
         """
         trimesh_path = path.geom.coords
         mesh = creation.sweep_polygon(self.remove_z().geom, trimesh_path, triangle_args="p", engine='triangle')
@@ -1557,9 +1570,10 @@ class DDDNode2(DDDNode):
         Returns the bisector at a vertex in a line segment (this is the "perpendicular" at the vertex)
         """
 
+        numcoords = self.vertex_count()
         if vertex_index == 0:
             return self.perpendicular(distance=0.0, length=length, double=True)
-        if vertex_index >= len(self.geom.coords) - 1:
+        if vertex_index >= numcoords - 1:
             return self.perpendicular(distance=self.length(), length=length, double=True)
 
         vm1 = Vector3(self.geom.coords[vertex_index - 1])
